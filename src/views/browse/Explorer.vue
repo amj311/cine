@@ -31,7 +31,24 @@ function playVideo(path: string) {
 <template>
 	<div>
 		<!-- Breadcrumb navigation -->
-	
+		<div>
+			<span>
+				<span @click="queryPathStore.goToRoot" style="cursor: pointer">🏠</span>
+				&nbsp;/&nbsp;
+			</span>
+			<span v-if="queryPathStore.currentDir.length > 2">
+				...
+				&nbsp;/&nbsp;
+			</span>
+			<span v-if="queryPathStore.parentFile">
+				<span @click="queryPathStore.goUp" style="cursor: pointer">{{ queryPathStore.parentFile }}</span>
+				&nbsp;/&nbsp;
+			</span>
+			<span v-if="queryPathStore.currentFile">
+				{{ queryPathStore.currentFile }}
+			</span>
+		</div>
+
 
 		<template v-if="exploreMode === 'library'">
 			<template v-for="folder in directory.folders">
