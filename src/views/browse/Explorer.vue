@@ -1,0 +1,108 @@
+<script setup lang="ts">
+import MetadataLoader from '@/components/MetadataLoader.vue';
+import SimplePoster from '@/components/posters/MediaCard.vue';
+import { useRouter } from 'vue-router';
+import { useQueryPathStore } from '@/stores/queryPath.store';
+
+const router = useRouter();
+
+const props = defineProps<{
+	exploreMode: 'library' | 'files';
+	directory: {
+		folders: { folderName: string; libraryItem }[];
+		files: string[];
+	};
+}>();
+
+const queryPathStore = useQueryPathStore();
+queryPathStore.updatePathFromQuery();
+
+function playVideo(path: string) {
+	router.push({
+		name: 'play',
+		query: {
+			path
+		},
+	})
+}
+
+</script>
+
+<template>
+	<div>
+		<!-- Breadcrumb navigation -->
+	
+
+		<template v-if="exploreMode === 'library'">
+			<template v-for="folder in directory.folders">
+				<MetadataLoader
+					v-if="folder.libraryItem"
+					:key="folder.libraryItem.relativePath"
+					:media="folder.libraryItem"
+				>
+					<template #default="{ metadata }">
+						<div class="poster-tile" @click="queryPathStore.enterDirectory(folder.folderName)">
+							<SimplePoster
+								:imageUrl="metadata?.poster"
+								:fallbackIcon="folder.libraryItem.type === 'movie' ? '🎬' : '🗂️'"
+								:aspectRatio="'tall'"
+								:title="folder.libraryItem.name"
+								:subtitle="folder.libraryItem.year || `${folder.libraryItem.children.length} items`"
+								:progress="folder.libraryItem.movie?.watchProgress?.percentage"
+							>
+								<template #overlay>
+									<button v-if="folder.libraryItem.type === 'movie'" @click.stop="() => playVideo(folder.libraryItem.movie.relativePath)">Play</button>
+								</template>
+							</SimplePoster>
+						</div>
+					</template>
+				</MetadataLoader>
+			</template>
+		</template>
+
+		<template v-else>
+			<ul>
+				<li
+					v-for="folder in directory.folders"
+					:key="folder.folderName"
+					@click="queryPathStore.enterDirectory(folder.folderName)"
+					style="cursor: pointer"
+				>
+					🗂️ {{ folder.folderName }}
+				</li>
+				<li v-for="file in directory.files" :key="file">
+					<span v-if="file.endsWith('.mp4')">🎬</span>
+					<span v-else>📄</span>
+					{{ file }}
+					<!-- Add play button for video files -->
+					<button
+						v-if="file.endsWith('.mp4')"
+						@click="playVideo(queryPathStore.currentPath + '/' + file)"
+					>
+						Play
+					</button>
+				</li>
+			</ul>
+		</template>
+	</div>
+</template>
+
+<style scoped lang="scss">
+ul {
+	list-style: none;
+	padding: 0;
+}
+
+li {
+	margin: 5px 0;
+}
+
+.poster-tile {
+	display: inline-block;
+	width: 150px;
+	height: 200px;
+	margin: 10px;
+	cursor: pointer;
+	user-select: none;
+}
+</style>

@@ -1,0 +1,97 @@
+<script setup lang="ts">
+import { computed, ref, onBeforeMount, watch } from 'vue';
+import api from '@/services/api';
+import MetadataLoader from '@/components/MetadataLoader.vue';
+import SimplePoster from '@/components/posters/MediaCard.vue';
+import { useRouter } from 'vue-router';
+import { useQueryPathStore } from '@/stores/queryPath.store';
+import MoviePage from '@/views/browse/MoviePage.vue';
+import Explorer from '@/views/browse/Explorer.vue';
+
+const router = useRouter();
+
+const directory = ref<{ folders: { folderName: string; libraryItem }[]; files: string[] } | null>(null);
+const libraryItem = ref<any>(null);
+const listMode = ref('grid');
+const exploreMode = ref<'library' | 'files'>('library');
+
+const queryPathStore = useQueryPathStore();
+queryPathStore.updatePathFromQuery();
+
+const fetchDirectory = async () => {
+	try {
+		const { data } = await api.get('/dir', { params: { dir: queryPathStore.currentPath || '/' } });
+		directory.value = data.directory;
+		libraryItem.value = data.libraryItem;
+	} catch (error) {
+		console.error('Error fetching directory:', error);
+	}
+};
+
+onBeforeMount(() => {
+	fetchDirectory();
+});
+watch(
+	() => queryPathStore.currentPath,
+	() => {
+		fetchDirectory();
+	}
+);
+
+
+</script>
+
+<template>
+	<div v-if="directory">
+		<div>
+			<span>
+				<span @click="queryPathStore.goToRoot" style="cursor: pointer">🏠</span>
+				&nbsp;/&nbsp;
+			</span>
+			<span v-if="queryPathStore.currentDir.length > 2">
+				...
+				&nbsp;/&nbsp;
+			</span>
+			<span v-if="queryPathStore.parentFile">
+				<span @click="queryPathStore.goUp" style="cursor: pointer">{{ queryPathStore.parentFile }}</span>
+				&nbsp;/&nbsp;
+			</span>
+			<span v-if="queryPathStore.currentFile">
+				{{ queryPathStore.currentFile }}
+			</span>
+		</div>
+
+
+		<template v-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
+			<MoviePage :libraryItem="libraryItem" />
+		</template>
+
+		<!-- TODO Series Page -->
+		<template v-else>
+			<Explorer
+				:exploreMode="exploreMode"
+				:directory="directory"
+			/>
+		</template>
+	</div>
+</template>
+
+<style scoped lang="scss">
+ul {
+	list-style: none;
+	padding: 0;
+}
+
+li {
+	margin: 5px 0;
+}
+
+.poster-tile {
+	display: inline-block;
+	width: 150px;
+	height: 200px;
+	margin: 10px;
+	cursor: pointer;
+	user-select: none;
+}
+</style>
