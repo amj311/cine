@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, onBeforeMount, watch } from 'vue';
 import api from '@/services/api';
-import MetadataLoader from '@/components/MetadataLoader.vue';
-import SimplePoster from '@/components/posters/MediaCard.vue';
 import { useRouter } from 'vue-router';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 import MoviePage from '@/views/browse/MoviePage.vue';
+import SeriesPage from '@/views/browse/SeriesPage.vue';
 import Explorer from '@/views/browse/Explorer.vue';
-
-const router = useRouter();
 
 const directory = ref<{ folders: { folderName: string; libraryItem }[]; files: string[] } | null>(null);
 const libraryItem = ref<any>(null);
-const listMode = ref('grid');
+// const listMode = ref('grid');
 const exploreMode = ref<'library' | 'files'>('library');
 
 const queryPathStore = useQueryPathStore();
@@ -64,6 +61,10 @@ watch(
 
 		<template v-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
 			<MoviePage :libraryItem="libraryItem" />
+		</template>
+
+		<template v-if="exploreMode === 'library' && libraryItem?.type === 'series'">
+			<SeriesPage :libraryItem="libraryItem" />
 		</template>
 
 		<!-- TODO Series Page -->

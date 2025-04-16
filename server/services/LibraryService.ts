@@ -30,6 +30,11 @@ type Movie = {
 	metadata?: MovieMetadata,
 }
 
+type Episode = Playable & {
+	seasonNumber: number,
+	episodeNumber: number,
+}
+
 type Series = {
 	type: 'series',
 	name: string,
@@ -39,12 +44,7 @@ type Series = {
 	// Seasons are a map because they may not be in order or all present
 	seasons?: Array<{
 		seasonNumber: number,
-		episodes: Array<Playable & {
-			seasonNumber: number,
-			episodeNumber: number,
-			fileName: RelativePath,
-			relativePath: RelativePath,
-		}>,
+		episodes: Array<Episode>,
 	}>,
 	metadata?: SeriesMetadata,
 }

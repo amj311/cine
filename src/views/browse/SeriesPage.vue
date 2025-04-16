@@ -11,7 +11,7 @@ defineProps<{
 	libraryItem: any; // libraryItem
 }>();
 
-const extraTypeLabels = {
+const episodeTypeLabels = {
 	'trailer': 'Trailer',
 	'featurette': 'Featurette',
 	'behindthescenes': 'Behind the Scenes',
@@ -39,31 +39,27 @@ function playVideo(path: string) {
 				<div class="poster-wrapper">
 					<SimplePoster
 						:imageUrl="metadata?.poster"
-						:progress="libraryItem.movie.watchProgress?.percentage"
-					>
-						<template #overlay>
-							<button @click="() => playVideo(libraryItem.movie.relativePath)">Play</button>
-						</template>
-					</SimplePoster>
+					/>
 				</div>
 
 
-				<h2>Extras</h2>
-				<div class="hide-scrollbar">
-					<div class="extras-list">
-						<div class="extra-item" v-for="extra in libraryItem.extras" :key="extra.relativePath">
-							<div class="extra-poster-wrapper">
-								<SimplePoster
-									:fallbackIcon="'🎥'"
-									:progress="extra.watchProgress?.percentage"
-									:aspectRatio="'wide'"
-									:title="extra.name"
-									:subtitle="extraTypeLabels[extra.type]"
-								>
-									<template #overlay>
-										<button @click="() => playVideo(extra.relativePath)">Play</button>
-									</template>
-								</SimplePoster>
+				<div v-for="season in libraryItem.seasons" :key="season.relativePath">
+					<h2>Season {{ season.seasonNumber}}</h2>
+					<div class="hide-scrollbar">
+						<div class="episodes-list">
+							<div class="episode-item" v-for="episode in season.episodes" :key="episode.relativePath">
+								<div class="episode-poster-wrapper">
+									<SimplePoster
+										:fallbackIcon="'🎥'"
+										:progress="episode.watchProgress?.percentage"
+										:aspectRatio="'wide'"
+										:title="'Episode ' + episode.episodeNumber"
+									>
+										<template #overlay>
+											<button @click="() => playVideo(episode.relativePath)">Play</button>
+										</template>
+									</SimplePoster>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -81,7 +77,7 @@ function playVideo(path: string) {
 	width: 300px;
 }
 
-.extras-list {
+.episodes-list {
 	display: flex;
 	gap: 10px;
 
@@ -91,8 +87,8 @@ function playVideo(path: string) {
 	white-space: nowrap;
 }
 
-.extra-poster-wrapper {
-	width: 300px;
+.episode-poster-wrapper {
+	width: 200px;
 	display: inline-block;
 	margin: 5px;
 }
