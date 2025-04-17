@@ -34,9 +34,6 @@ export class MediaMetadataProvider {
 		else {
 			this.authToken = loginRes.data.token;
 		}
-
-		console.log(this.authToken);
-
 	}
 
 
@@ -51,7 +48,6 @@ export class MediaMetadataProvider {
 				limit: 1,
 			}
 		});
-		console.log(searchRes);
 		const result = searchRes.data[0];
 		if (!result) {
 			return null;

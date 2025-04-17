@@ -41,6 +41,7 @@ type Series = {
 	year: string,
 	folderName: string,
 	relativePath: RelativePath,
+	numSeasons: number,
 	// Seasons are a map because they may not be in order or all present
 	seasons?: Array<{
 		seasonNumber: number,
@@ -62,9 +63,17 @@ type LibraryItem = Movie | Series | Collection;
 
 export class LibraryService {
 	public static async parseFolderToItem(path: RelativePath, detailed = false): Promise<LibraryItem | undefined> {
+		console.log(`Parsing folder ${path}`);
 		const folderName = path.split('/').pop() || path;
 		const { name, year } = LibraryService.parseNameAndYear(folderName);
 		const children = await DirectoryService.listDirectory(path);
+
+		console.log({
+			folderName,
+			name,
+			year,
+			children,
+		})
 
 		if (!year) {
 			// Find feedOrder if specified in the folder name like ".feedorder-1"
@@ -91,6 +100,7 @@ export class LibraryService {
 				relativePath: path,
 				folderName: folderName,
 				seasons,
+				numSeasons: allSeasonFolders.length,
 				metadata: MediaMetadataService.getCachedMetadata({
 					type: 'series',
 					name,
@@ -146,7 +156,7 @@ export class LibraryService {
 	}
 
 
-	private static parseNameAndYear(path) {
+	public static parseNameAndYear(path) {
 		// MKae sure we're dealing with the folder/file name, not the full path
 		// Also remove anything after a .
 		const folderName = removeExtensionsFromFileName(path.split('/').pop());
@@ -201,11 +211,8 @@ export class LibraryService {
 
 function removeExtensionsFromFileName(filename: string) {
 	// Extensions are everything after a '.' AFTER any spaces
-	// After taking everything after the last space, take all but the first segments between '.'s
-	const extensions = filename.split(' ').pop()?.split('.');
-	extensions?.shift();
-	// take everything before the extensions begin
-	return filename.split('.' + extensions?.join('.'))[0].trim();
+	// Regexp for extension: a . followed by anything other than a space
+	return filename.split(RegExp(/\.[\S]{1,50}/g)).pop() || filename;
 }
 
 function getExtraNameAndType(file: string) {
@@ -218,3 +225,6 @@ function getExtraNameAndType(file: string) {
 		type: type || null,
 	};
 }
+
+
+console.log(removeExtensionsFromFileName('Mr. & Mrs. Smith (2005)'));
