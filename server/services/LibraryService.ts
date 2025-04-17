@@ -63,17 +63,9 @@ type LibraryItem = Movie | Series | Collection;
 
 export class LibraryService {
 	public static async parseFolderToItem(path: RelativePath, detailed = false): Promise<LibraryItem | undefined> {
-		console.log(`Parsing folder ${path}`);
 		const folderName = path.split('/').pop() || path;
 		const { name, year } = LibraryService.parseNameAndYear(folderName);
 		const children = await DirectoryService.listDirectory(path);
-
-		console.log({
-			folderName,
-			name,
-			year,
-			children,
-		})
 
 		if (!year) {
 			// Find feedOrder if specified in the folder name like ".feedorder-1"
