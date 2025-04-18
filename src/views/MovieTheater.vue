@@ -4,7 +4,6 @@
 >
 import { useQueryPathStore } from '@/stores/queryPath.store'
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { useRouter } from 'vue-router';
 import { reactive, ref, onBeforeMount, onBeforeUnmount } from 'vue';
 import api from '@/services/api'
 
@@ -68,7 +67,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<div class="movie-theater">
-		<VideoPlayer ref="playerRef" v-if="state.currentMedia?.endsWith('.mp4')" :src="state.currentMedia" />
+		<VideoPlayer ref="playerRef" v-if="state.currentMedia" :src="state.currentMedia" />
 	</div>
 </template>
 

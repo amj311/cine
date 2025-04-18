@@ -7,6 +7,7 @@ import { ref } from 'vue';
  */
 const props = defineProps<{
 	media;
+	detailed?: boolean;
 }>();
 
 const isLoading = ref(false);
@@ -18,7 +19,7 @@ async function loadMetadata() {
 	}
 	isLoading.value = true;
 	try {
-		metadata.value = await MetadataService.getMetadata(props.media);
+		metadata.value = await MetadataService.getMetadata(props.media, props.detailed);
 	} catch {
 		console.error('Error loading metadata');
 	} finally {

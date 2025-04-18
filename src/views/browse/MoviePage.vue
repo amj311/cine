@@ -47,6 +47,13 @@ function playVideo(path: string) {
 					</SimplePoster>
 				</div>
 
+				<button
+					class="play-button"
+					@click="() => playVideo(libraryItem.movie.relativePath)"
+				>
+					Play
+				</button>
+
 
 				<h2>Extras</h2>
 				<div class="hide-scrollbar">
@@ -59,11 +66,8 @@ function playVideo(path: string) {
 									:aspectRatio="'wide'"
 									:title="extra.name"
 									:subtitle="extraTypeLabels[extra.type]"
-								>
-									<template #overlay>
-										<button @click="() => playVideo(extra.relativePath)">Play</button>
-									</template>
-								</SimplePoster>
+									:playSrc="extra.relativePath"
+								/>
 							</div>
 						</div>
 					</div>
@@ -83,17 +87,17 @@ function playVideo(path: string) {
 
 .extras-list {
 	display: flex;
-	gap: 10px;
+	gap: 20px;
+	padding: 10px;
 
 	width: 100%;
 	overflow-x: auto;
-	overflow-y: hidden;
+	/* overflow-y: visible; */
 	white-space: nowrap;
 }
 
 .extra-poster-wrapper {
 	width: 300px;
 	display: inline-block;
-	margin: 5px;
 }
 </style>

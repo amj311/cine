@@ -12,6 +12,15 @@ const videoRef = ref<HTMLVideoElement>();
 
 const videoUrl = computed(() => baseURL + '/video?src=' + props.src.split('&').join('<amp>'))
 
+const supportedVideoTypes = [
+	'mp4',
+	'mkv',
+];
+
+const goodType = computed(() => {
+	return supportedVideoTypes.find(type => videoUrl.value.endsWith(type));
+});
+
 defineExpose({
 	getProgress() {
 		if (!videoRef.value) {
@@ -37,8 +46,8 @@ defineExpose({
 </script>
 
 <template>
-	<video ref="videoRef" :key="src" class="video-player" :controls="!Boolean(mini)" autoplay>
-		<source :src="videoUrl" type="video/mp4" />
+	<video ref="videoRef" :key="src" class="video-player" :controls="!Boolean(mini)" autoplay v-if="goodType">
+		<source :src="videoUrl" :type="'video/mp4'" />
 	</video>
 </template>
 

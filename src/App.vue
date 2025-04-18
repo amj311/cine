@@ -3,11 +3,20 @@
 	lang="ts"
 >
 import { RouterView } from 'vue-router'
-import MovieTheater from '@/views/MovieTheater.vue'
+import { useTvNavigationStore } from './stores/tvNavigation.store';
+
+const tvNavigationStore = useTvNavigationStore();
+
 </script>
 
 <template>
 	<RouterView />
+	<div v-if="tvNavigationStore.lastKeydownEvent">
+		Last keydown event: {{ tvNavigationStore.lastKeydownEvent }}
+	</div>
+	<div v-if="tvNavigationStore.lastMouseMoveEvent">
+		Last mouse event: {{ tvNavigationStore.lastMouseMoveEvent }}
+	</div>
 </template>
 
 <style>

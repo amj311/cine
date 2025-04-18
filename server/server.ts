@@ -14,7 +14,7 @@ import cors from 'cors';
 import fs, { readdirSync } from 'fs';
 import { DirectoryService } from './services/DirectoryService';
 import { LibraryService } from './services/LibraryService';
-import { MediaMetadataService } from './services/MediaMetadataService';
+import { MediaMetadataService } from './services/metadata/MetadataService';
 import { WatchProgressService } from './services/WatchProgressService';
 import mime from 'mime-types';
 
@@ -95,13 +95,13 @@ app.get("/api/video", function (req, res) {
 		const end = positions[1] ? parseInt(positions[1], 10) : total - 1;
 		const chunksize = (end - start) + 1;
 
-		console.log({
-			src,
-			range,
-			positions,
-			start,
-			end,
-		});
+		// console.log({
+		// 	src,
+		// 	range,
+		// 	positions,
+		// 	start,
+		// 	end,
+		// });
 
 		// Dynamically determine the MIME type
 		const mimeType = mime.lookup(file) || 'application/octet-stream';
@@ -125,8 +125,8 @@ app.get("/api/video", function (req, res) {
 
 app.post('/api/metadata', async (req, res) => {
 	try {
-		const mediaKey = req.body;
-		const metadata = await MediaMetadataService.getMetadata(mediaKey);
+		const { type, path, detailed } = req.body;
+		const metadata = await MediaMetadataService.getMetadata(type, path, detailed);
 		res.json({
 			data: metadata,
 		})

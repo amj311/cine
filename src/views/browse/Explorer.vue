@@ -51,30 +51,30 @@ function playVideo(path: string) {
 
 
 		<template v-if="exploreMode === 'library'">
-			<template v-for="folder in directory.folders">
-				<MetadataLoader
-					v-if="folder.libraryItem"
-					:key="folder.libraryItem.relativePath"
-					:media="folder.libraryItem"
-				>
-					<template #default="{ metadata }">
-						<div class="poster-tile" @click="queryPathStore.enterDirectory(folder.folderName)">
-							<SimplePoster
-								:imageUrl="metadata?.poster"
-								:fallbackIcon="folder.libraryItem.type === 'movie' ? '🎬' : '🗂️'"
-								:aspectRatio="'tall'"
-								:title="folder.libraryItem.name"
-								:subtitle="folder.libraryItem.year || `${folder.libraryItem.children.length} items`"
-								:progress="folder.libraryItem.movie?.watchProgress?.percentage"
-							>
-								<template #overlay>
-									<button v-if="folder.libraryItem.type === 'movie'" @click.stop="() => playVideo(folder.libraryItem.movie.relativePath)">Play</button>
-								</template>
-							</SimplePoster>
-						</div>
-					</template>
-				</MetadataLoader>
-			</template>
+			<div class="library-grid">
+				<template v-for="folder in directory.folders">
+					<MetadataLoader
+						v-if="folder.libraryItem"
+						:key="folder.libraryItem.relativePath"
+						:media="folder.libraryItem"
+					>
+						<template #default="{ metadata }">
+							<div class="poster-tile" @click="queryPathStore.enterDirectory(folder.folderName)">
+								<SimplePoster
+									clickable
+									:imageUrl="metadata?.poster"
+									:fallbackIcon="folder.libraryItem.type === 'movie' ? '🎬' : '🗂️'"
+									:aspectRatio="'tall'"
+									:title="folder.libraryItem.name"
+									:subtitle="folder.libraryItem.year || `${folder.libraryItem.children.length} items`"
+									:progress="folder.libraryItem.movie?.watchProgress?.percentage"
+								/>
+							</div>
+						</template>
+					</MetadataLoader>
+				</template>
+
+			</div>
 		</template>
 
 		<template v-else>
@@ -114,12 +114,14 @@ li {
 	margin: 5px 0;
 }
 
+.library-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 20px;
+	padding: 20px;
+}
 .poster-tile {
 	display: inline-block;
-	width: 150px;
-	height: 200px;
-	margin: 10px;
-	cursor: pointer;
-	user-select: none;
+	width: 100%;
 }
 </style>

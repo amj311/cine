@@ -1,10 +1,21 @@
 import axios from "axios";
-import { Metadata } from "./MediaMetadataService";
+import { CommonDetailsMetadata, CommonSearchKey, CommonSimpleMetadata, MetadataDefinition } from "./MetadataTypes";
+import { IMetadataProvider } from "./IMetadataProvider";
+import { LibraryService } from "../LibraryService";
+
+
+export type MovieMetadata = MetadataDefinition<
+	'movie',
+	CommonSearchKey,
+	CommonSimpleMetadata,
+	CommonDetailsMetadata
+>;
+
 
 /**
  * Responsible for reading metadata about films from a provider API
  */
-export class MediaMetadataProvider {
+export class MovieMetadataProvider extends IMetadataProvider<MovieMetadata> {
 	private authToken: string | null = null;
 
 	private async getApi(skipAuth = false) {
@@ -25,9 +36,6 @@ export class MediaMetadataProvider {
 		const { data: loginRes } = await api.post('/login', {
 			"apikey": "fe254330-557d-4c88-a325-e1e168f16714"
 		});
-
-		console.log(loginRes)
-
 		if (loginRes.status !== 'success') {
 			throw new Error('couldnt log in')
 		}
@@ -36,10 +44,19 @@ export class MediaMetadataProvider {
 		}
 	}
 
+	public createSearchKeyFromPath(path) {
+		// Split the path into file segments, and find one with a (year) in it
+		const movieFileName = path.split('/').find(s => s.match(/\(\d{4}\)/));
+		const { name, year } = LibraryService.parseNameAndYear(movieFileName);
 
-	public async getMetadata<T extends Metadata>(key: T['key']): Promise<T | null> {
+		return {
+			name,
+			year: year || '',
+		}
+	}
+
+	public async fetchMetadata(key) {
 		const api = await this.getApi();
-		// const name = "Concussion (2015)" + '.mp4';
 		const { data: searchRes } = await api.get('/search', {
 			params: {
 				query: key.name,
@@ -55,6 +72,9 @@ export class MediaMetadataProvider {
 		return {
 			overview: result.overviews?.eng,
 			poster: result.image_url,
-		} as T;
+			poster_thumb: result.image_url,
+			name: result.name,
+			year: result.first_aired,
+		};
 	}
 }

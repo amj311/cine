@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import ProgressBar from '@/components/ProgressBar.vue'
+import { useRouter } from 'vue-router';
+const router = useRouter();
 
-defineProps<{
+const props = defineProps<{
 	imageUrl?: string;
 	fallbackIcon?: string;
 	aspectRatio?: 'tall' | 'wide';
@@ -10,12 +12,28 @@ defineProps<{
 	title?: string;
 	subtitle?: string;
 	progress?: number;
+	playSrc?: string;
+	clickable?: boolean;
 }>();
+
+
+function playVideo() {
+	if (!props.playSrc) {
+		return;
+	}
+	router.push({
+		name: 'play',
+		query: {
+			path: props.playSrc
+		},
+	})
+}
+
 
 </script>
 
 <template>
-	<div>
+	<div class="media-card" :class="{ clickable: clickable || playSrc }" @click="playVideo">
 		<div
 			class="poster bg-soft"
 			:class="aspectRatio || 'tall'"
@@ -29,8 +47,8 @@ defineProps<{
 				<ProgressBar :progress="progress" />
 			</div>
 
-			<div v-if="$slots.overlay" class="overlay">
-				<slot name="overlay"></slot>
+			<div v-if="playSrc" class="overlay">
+				<div class="play-button">▶︎</div>
 			</div>
 		</div>
 		<div v-if="title || subtitle">
@@ -41,6 +59,46 @@ defineProps<{
 </template>
 
 <style scoped lang="scss">
+.media-card {
+	transition: transform 50ms ease-in-out;
+	user-select: none;
+	border-radius: 5px;
+	overflow: hidden;
+
+	&.clickable:hover {
+		cursor: pointer;
+		background-color: var(--color-background-mute);
+		outline: 3px solid var(--color-background-mute);
+		transform: scale(1.05);
+	}
+
+	.overlay {
+		display: none;
+	}
+
+	&:hover {
+		.overlay {
+			display: flex;
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.2);
+
+			.play-button {
+				margin: auto auto;
+				font-size: 2rem;
+				color: white;
+			}
+		}
+
+		.poster {
+			background-color: var(--color-background-mute);	
+		}
+	}
+}
+
 .poster {
 	position: relative;
 	background-position: center;
@@ -70,14 +128,5 @@ defineProps<{
 		bottom: 0;
 		width: 100%;
 	}
-
-	.overlay {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-	}
-
 }
 </style>

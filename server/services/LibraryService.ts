@@ -3,7 +3,9 @@
  */
 
 import { DirectoryService, RelativePath } from "./DirectoryService";
-import { MediaMetadataService, MovieMetadata, SeriesMetadata } from "./MediaMetadataService";
+import { MediaMetadataService } from "./metadata/MetadataService";
+import { EitherMetadata, SeriesMetadata } from "./metadata/MetadataTypes";
+import { MovieMetadata } from "./metadata/MovieMetadataProvider";
 import { WatchProgress, WatchProgressService } from "./WatchProgressService";
 
 type Playable = {
@@ -27,7 +29,7 @@ type Movie = {
 	relativePath: RelativePath,
 	movie: Playable,
 	extras?: Array<Extra>,
-	metadata?: MovieMetadata,
+	metadata: EitherMetadata<'movie'> | null,
 }
 
 type Episode = Playable & {
@@ -47,7 +49,7 @@ type Series = {
 		seasonNumber: number,
 		episodes: Array<Episode>,
 	}>,
-	metadata?: SeriesMetadata,
+	metadata: EitherMetadata<'series'> | null,
 }
 
 type Collection = {
@@ -93,11 +95,7 @@ export class LibraryService {
 				folderName: folderName,
 				seasons,
 				numSeasons: allSeasonFolders.length,
-				metadata: MediaMetadataService.getCachedMetadata({
-					type: 'series',
-					name,
-					year,
-				}),
+				metadata: await MediaMetadataService.getMetadata('series', path, false, true),
 			};
 		}
 
@@ -111,7 +109,7 @@ export class LibraryService {
 			if (detailed) {
 				const extraVideos = children.files.filter((file) => file !== movieFile && file.endsWith('.mp4'));
 				extras = extraVideos.map((file) => {
-					const { name: extraName, type } = getExtraNameAndType(file);
+					const { name: extraName, type } = LibraryService.getExtraNameAndType(file);
 					return {
 						name: extraName,
 						type,
@@ -129,17 +127,13 @@ export class LibraryService {
 				relativePath: path,
 				folderName: folderName,
 				movie: {
-					name: removeExtensionsFromFileName(movieFile),
+					name: LibraryService.removeExtensionsFromFileName(movieFile),
 					fileName: movieFile,
 					relativePath: path + '/' + movieFile,
 					watchProgress: WatchProgressService.getWatchProgress(path + '/' + movieFile)
 				},
 				extras,
-				metadata: MediaMetadataService.getCachedMetadata({
-					type: 'movie',
-					name,
-					year,
-				}),
+				metadata: await MediaMetadataService.getMetadata('movie', path, false, true),
 			};
 		}
 
@@ -148,19 +142,6 @@ export class LibraryService {
 	}
 
 
-	public static parseNameAndYear(path) {
-		// MKae sure we're dealing with the folder/file name, not the full path
-		// Also remove anything after a .
-		const folderName = removeExtensionsFromFileName(path.split('/').pop());
-		const YearRegExp = RegExp(/\((\d{4})\)/g);
-		const year = YearRegExp.exec(folderName)?.[1];
-		const titleBeforeYear = folderName.split(YearRegExp)[0].trim();
-
-		return {
-			name: titleBeforeYear,
-			year,
-		}
-	}
 
 	private static async extractSeasons(seasonFolders) {
 		const episodes = await Promise.all(seasonFolders.map(async (folder) => {
@@ -175,7 +156,7 @@ export class LibraryService {
 				return {
 					seasonNumber: parseInt(numbersMatch.seasonNumber),
 					episodeNumber: parseInt(numbersMatch.episodeNumber),
-					name: removeExtensionsFromFileName(file),
+					name: LibraryService.removeExtensionsFromFileName(file),
 					fileName: file,
 					relativePath: folder + '/' + file,
 					watchProgress: WatchProgressService.getWatchProgress(folder + '/' + file),
@@ -199,24 +180,44 @@ export class LibraryService {
 		})).sort((a, b) => a.seasonNumber - b.seasonNumber);
 	}
 
+
+	/*********
+	 * Helper functions
+	 *********/
+
+
+	public static parseNameAndYear(path) {
+		// MKae sure we're dealing with the folder/file name, not the full path
+		// Also remove anything after a .
+		const folderName = LibraryService.removeExtensionsFromFileName(path.split('/').pop());
+		const YearRegExp = RegExp(/\((\d{4})\)/g);
+		const year = YearRegExp.exec(folderName)?.[1];
+		const titleBeforeYear = folderName.split(YearRegExp)[0].trim();
+
+		return {
+			name: titleBeforeYear,
+			year,
+		}
+	}
+
+	private static removeExtensionsFromFileName(filename: string) {
+		// Extensions are everything after a '.' AFTER any spaces
+		// Regexp for extension: a . followed by anything other than a space
+		return filename.split(RegExp(/\.[\S]{1,50}/g))[0] || filename;
+	}
+
+	private static getExtraNameAndType(file: string) {
+		const withoutExtensions = LibraryService.removeExtensionsFromFileName(file);
+		const type = ExtraTypes.find((type) => withoutExtensions.toLowerCase().endsWith('-' + type));
+		const name = type ? withoutExtensions.split('-' + type,)[0].trim() : withoutExtensions;
+
+		return {
+			name,
+			type: type || null,
+		};
+	}
 }
 
-function removeExtensionsFromFileName(filename: string) {
-	// Extensions are everything after a '.' AFTER any spaces
-	// Regexp for extension: a . followed by anything other than a space
-	return filename.split(RegExp(/\.[\S]{1,50}/g)).pop() || filename;
-}
 
-function getExtraNameAndType(file: string) {
-	const withoutExtensions = removeExtensionsFromFileName(file);
-	const type = ExtraTypes.find((type) => withoutExtensions.toLowerCase().endsWith('-' + type));
-	const name = type ? withoutExtensions.split('-' + type,)[0].trim() : withoutExtensions;
-
-	return {
-		name,
-		type: type || null,
-	};
-}
-
-
-console.log(removeExtensionsFromFileName('Mr. & Mrs. Smith (2005)'));
+// import ffmpeg from 'fluent-ffmpeg';
+// console.log(ffmpeg(DirectoryService.resolvePath('Movies/Funny Movies/Stranger Than Fiction (2006)/Stranger Than Fiction (2006).mp4')).ffprobe(console.log))
