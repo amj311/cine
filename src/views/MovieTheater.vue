@@ -49,15 +49,6 @@ async function initialProgress() {
 }
 
 
-function fullscreen() {
-	if (document.fullscreenElement) {
-		document.exitFullscreen();
-	}
-	else {
-		document.documentElement.requestFullscreen();
-	}
-}
-
 onBeforeMount(() => {
 	loadMetadata();
 	initialProgress();
@@ -78,7 +69,7 @@ const progressUpdateInterval = setInterval(async () => {
 			return;
 		}
 		await api.post('/watchProgress', {
-			relativePath: mediaPath,
+			relativePath: mediaPath.value,
 			progress,
 		});
 	}

@@ -51,7 +51,7 @@ function playVideo() {
 				<div class="play-button">▶︎</div>
 			</div>
 		</div>
-		<div v-if="title || subtitle">
+		<div v-if="title || subtitle" class="mt-1 p-1">
 			<div v-if="title" class="title">{{ title }}</div>
 			<div v-if="subtitle" class="subtitle" style="opacity: .7">{{ subtitle }}</div>
 		</div>

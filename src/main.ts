@@ -1,3 +1,4 @@
+import 'primeflex/primeflex.css'
 import './assets/main.scss'
 
 import { createApp } from 'vue'
@@ -5,11 +6,46 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router/router'
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
+import { definePreset } from '@primeuix/themes'
 
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
+
+
+const MyPreset = definePreset(Aura, {
+	semantic: {
+		colorScheme: {
+			light: {
+				formField: {
+					hoverBorderColor: '{primary.color}'
+				}
+			},
+			dark: {
+				formField: {
+					hoverBorderColor: '{primary.color}'
+				}
+			}
+		}
+	}
+});
+
+
+app.use(PrimeVue, {
+	// Default theme configuration
+	theme: {
+		preset: Aura,
+		options: {
+			prefix: 'p',
+			darkModeSelector: 'system',
+			cssLayer: false,
+			ripple: true,
+		}
+	}
+});
 
 app.mount('#app')
 

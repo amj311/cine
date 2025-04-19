@@ -2,13 +2,10 @@
 	setup
 	lang="ts"
 >
-import MediaCard from '@/components/MediaCard.vue';
 import { useRouter } from 'vue-router';
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
-import StarRating from '@/components/StarRating.vue';
-import PeopleList from '@/components/PeopleList.vue';
 
 const router = useRouter();
 const props = defineProps<{
@@ -101,7 +98,6 @@ function formatRuntime(minutes: number) {
 		</div>
 	
 		<p class="show-lg">{{ metadata?.overview }}</p>
-
 
 		<div v-if="metadata?.credits">
 			<h2>Cast & Crew</h2>

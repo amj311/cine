@@ -2,13 +2,10 @@
 	setup
 	lang="ts"
 >
-import MediaCard from '@/components/MediaCard.vue';
 import { useRouter } from 'vue-router';
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
-import StarRating from '@/components/StarRating.vue';
-import PeopleList from '@/components/PeopleList.vue';
 
 const router = useRouter();
 const props = defineProps<{
@@ -89,13 +86,13 @@ function formatRuntime(minutes: number) {
 				<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
 				<br />
 
-				<button
-					style="zoom: 1.5"
+				<Button
+					:size="'large'"
 					class="play-button"
 					@click="() => playVideo(libraryItem.movie.relativePath)"
 				>
 					Play
-				</button>
+				</Button>
 
 				<p class="hide-md" style="max-width: 50em;"><br /><br />{{ metadata?.overview }}</p>
 			</div>
@@ -116,7 +113,7 @@ function formatRuntime(minutes: number) {
 					<div class="extra-item" v-for="extra in libraryItem.extras" :key="extra.relativePath">
 						<div class="extra-poster-wrapper">
 							<MediaCard
-								:fallbackIcon="'🎥'"
+								:fallbackIcon="'🎬'"
 								:progress="extra.watchProgress?.percentage"
 								:aspectRatio="'wide'"
 								:title="extra.name"
