@@ -55,7 +55,7 @@ export class SeriesMetadataProvider extends IMetadataProvider<SeriesMetadata> {
 						episodeNumber: e.episode_number,
 						air_date: e.air_date,
 						runtime: e.runtime,
-						still: api.getImageUrl(e.still_path, 'still', 'small'),
+						still_thumb: api.getImageUrl(e.still_path, 'still', 'small'),
 					})),
 				}
 			}));

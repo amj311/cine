@@ -61,6 +61,49 @@ function formatRuntime(minutes: number) {
 	return `${hours}hr ${minutesOver}min`;
 }
 
+
+// Combine libraryItem.season with matching metadata from metadata.seasons
+const activeSeason = ref(metadata.value?.seasons[0] || null);
+
+const mergedSeasons = computed(() => {
+	const seasons = props.libraryItem.seasons.map((season: any) => {
+		const metadataSeason = metadata.value?.seasons.find((s: any) => s.seasonNumber === season.seasonNumber);
+		return {
+			...season,
+			...metadataSeason,
+			name: season.seasonNumber === 0 ? 'Specials' : season.name,
+			episodes: season.episodes.map((episode: any) => {
+				const metadataEpisode = metadataSeason?.episodes.find((e: any) => e.episodeNumber === episode.episodeNumber);
+				return {
+					...episode,
+					...metadataEpisode,
+				};
+			}),
+		};
+	});
+	// Sort seasons by season number bu put specials last
+	seasons.sort((a: any, b: any) => {
+		if (a.seasonNumber === 0) {
+			return 1;
+		}
+		if (b.seasonNumber === 0) {
+			return -1;
+		}
+		return a.seasonNumber - b.seasonNumber;
+	});
+
+	// Select the first season that is not specials
+	activeSeason.value = seasons.find((season: any) => season.seasonNumber !== 0) || seasons[0];
+	return seasons;
+});
+
+const episodeToPlay = computed(() => {
+	if (!activeSeason.value) {
+		return null;
+	}
+	return activeSeason.value.episodes[0];
+});
+
 </script>
 
 <template>
@@ -88,9 +131,9 @@ function formatRuntime(minutes: number) {
 				<button
 					style="zoom: 1.5"
 					class="play-button"
-					@click="() => playVideo(libraryItem.movie.relativePath)"
+					@click="() => playVideo(episodeToPlay?.relativePath)"
 				>
-					Play
+					Play S{{ episodeToPlay?.seasonNumber }}:E{{ episodeToPlay?.episodeNumber }}
 				</button>
 
 				<p class="hide-md" style="max-width: 50em;"><br /><br />{{ metadata?.overview }}</p>
@@ -102,6 +145,49 @@ function formatRuntime(minutes: number) {
 		<div v-if="metadata?.credits">
 			<h2>Cast & Crew</h2>
 			<PeopleList :people="metadata.credits" />
+		</div>
+
+		<div>
+			<h2 class="mb-2">Episodes</h2>
+			<div class="season-wrapper">
+				<div class="selection">
+					<Button
+						v-for="season in mergedSeasons"
+						:key="season.seasonNumber"
+						class="season-button"
+						severity="secondary"
+						:variant="activeSeason.seasonNumber === season.seasonNumber ? '' : 'text'"
+						@click="() => activeSeason = season"
+					>
+						{{ season.name || `Season ${ season.seasonNumber }` }}
+					</Button>
+				</div>
+				<div class="season-details">
+					<p>{{ activeSeason.overview }}</p>
+					<div class="episodes-list">
+						<div class="episode-item" v-for="episode in activeSeason.episodes" :key="episode.relativePath">
+							<div class="episode-poster-wrapper">
+								<MediaCard
+									:imageUrl="episode.still_thumb"
+									:fallbackIcon="'📺'"
+									:progress="episode.watchProgress?.percentage"
+									:aspectRatio="'wide'"
+									:playSrc="episode.relativePath"
+								/>
+							</div>
+							<div class="episode-info">
+								<h3>{{ episode.episodeNumber }}: {{ episode.name }}</h3>
+								<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+									<span v-if="episode.year">{{ episode.year }}</span>
+									<span v-if="episode.runtime">{{ formatRuntime(episode.runtime) }}</span>
+									<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
+								</div>
+								<p>{{ episode.overview }}</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<div v-if="libraryItem.extras?.length > 0">	
@@ -170,14 +256,15 @@ function formatRuntime(minutes: number) {
 }
 
 .poster-wrapper {
-	width: min(300px, 30vw);
-	min-width: min(300px, 30vw);
+	width: min(250px, 30vw);
+	min-width: min(250px, 30vw);
 }
 
-.extras-list, .credits-list {
+.extras-list {
 	display: flex;
 	gap: 20px;
 	padding: 10px;
+	margin: 0 -10px;
 	width: 100%;
 	overflow-x: auto;
 	white-space: nowrap;
@@ -187,19 +274,14 @@ function formatRuntime(minutes: number) {
 	width: min(250px, 30vw);
 }
 
-.credits-item {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
 
-	.image-wrapper {
-		width: 100px;
-		height: 100px;
-		background-color: var(--color-background-mute);
-		background-size: cover;
-		background-position: center;
-		border-radius: 50%;
-		margin-bottom: 5px;
+.episode-item {
+	display: flex;
+	gap: 20px;
+
+	.episode-poster-wrapper {
+		width: min(200px, 30vw);
+		min-width: min(200px, 30vw);
 	}
 }
 </style>

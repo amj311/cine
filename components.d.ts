@@ -19,6 +19,7 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     StarRating: typeof import('./src/components/StarRating.vue')['default']
     SwapView: typeof import('./src/components/SwapView.vue')['default']
+    ToggleButton: typeof import('primevue/togglebutton')['default']
     VideoPlayer: typeof import('./src/components/VideoPlayer.vue')['default']
   }
 }

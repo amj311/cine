@@ -176,10 +176,11 @@ function formatRuntime(minutes: number) {
 	min-width: min(300px, 30vw);
 }
 
-.extras-list, .credits-list {
+.extras-list {
 	display: flex;
 	gap: 20px;
 	padding: 10px;
+	margin: 0 -10px;
 	width: 100%;
 	overflow-x: auto;
 	white-space: nowrap;
@@ -189,19 +190,4 @@ function formatRuntime(minutes: number) {
 	width: min(250px, 30vw);
 }
 
-.credits-item {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-
-	.image-wrapper {
-		width: 100px;
-		height: 100px;
-		background-color: var(--color-background-mute);
-		background-size: cover;
-		background-position: center;
-		border-radius: 50%;
-		margin-bottom: 5px;
-	}
-}
 </style>

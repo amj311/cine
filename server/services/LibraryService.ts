@@ -49,6 +49,7 @@ type Series = {
 		episodes: Array<Episode>,
 	}>,
 	metadata: EitherMetadata<'series'> | null,
+	extras?: Array<Extra>,
 }
 
 type Collection = {
@@ -86,6 +87,13 @@ export class LibraryService {
 		const allSeasonFolders = children.folders.filter((folder) => folder.toLowerCase().includes('season'));
 		if (allSeasonFolders.length > 0) {
 			const seasons = detailed ? await LibraryService.extractSeasons(allSeasonFolders.map((folder) => path + '/' + folder)) : undefined;
+			// consider files that are not in a season folder as extras
+			let extras: Extra[] = [];
+			if (detailed) {
+				const extraVideos = children.files.filter((file) => !allSeasonFolders.some((folder) => file.startsWith(folder)));
+				extras = LibraryService.prepareExtras(extraVideos, path)
+			}
+
 			return {
 				type: 'series',
 				name,
@@ -95,6 +103,7 @@ export class LibraryService {
 				seasons,
 				numSeasons: allSeasonFolders.length,
 				metadata: await MediaMetadataService.getMetadata('series', path, false, true),
+				extras,
 			};
 		}
 
@@ -106,17 +115,8 @@ export class LibraryService {
 		if (movieFile) {
 			let extras: Extra[] = [];
 			if (detailed) {
-				const extraVideos = children.files.filter((file) => file !== movieFile && file.endsWith('.mp4'));
-				extras = extraVideos.map((file) => {
-					const { name: extraName, type } = LibraryService.getExtraNameAndType(file);
-					return {
-						name: extraName,
-						type,
-						fileName: file,
-						relativePath: path + '/' + file,
-						watchProgress: WatchProgressService.getWatchProgress(path + '/' + file),
-					}
-				});
+				const extraVideos = children.files.filter((file) => file !== movieFile);
+				extras = LibraryService.prepareExtras(extraVideos, path)
 			}
 
 			return {
@@ -179,6 +179,18 @@ export class LibraryService {
 		})).sort((a, b) => a.seasonNumber - b.seasonNumber);
 	}
 
+	private static prepareExtras(extraPaths: string[], parentPath: string): Extra[] {
+		return extraPaths.filter(p => p.endsWith('.mp4')).map((file) => {
+			const { name: extraName, type } = LibraryService.getExtraNameAndType(file);
+			return {
+				name: extraName,
+				type,
+				fileName: file,
+				relativePath: parentPath + '/' + file,
+				watchProgress: WatchProgressService.getWatchProgress(file),
+			}
+		});
+	}
 
 	/*********
 	 * Helper functions
