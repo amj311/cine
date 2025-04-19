@@ -1,16 +1,18 @@
 import { RelativePath } from '../DirectoryService';
 import { EitherMetadata, MetadataType } from './MetadataTypes';
 import { MovieMetadataProvider } from './MovieMetadataProvider';
+import { SeriesMetadataProvider } from './SeriesMetadataProvider';
 
 export type MetadataProviders =
 	MovieMetadataProvider
+	| SeriesMetadataProvider
 	;
 
 // export type Metadata = EitherMetadata<MovieMetadata>;
 
 const Providers: Record<MetadataType, MetadataProviders> = {
 	movie: new MovieMetadataProvider(),
-	series: new MovieMetadataProvider(),
+	series: new SeriesMetadataProvider(),
 };
 
 export class MediaMetadataService {

@@ -4,7 +4,7 @@
 >
 import { useQueryPathStore } from '@/stores/queryPath.store'
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { ref, onBeforeMount, onBeforeUnmount, computed } from 'vue';
+import { ref, onBeforeMount, onBeforeUnmount, computed, onMounted } from 'vue';
 import api from '@/services/api'
 import { MetadataService } from '@/services/metadataService';
 
@@ -48,9 +48,26 @@ async function initialProgress() {
 	}
 }
 
+
+function fullscreen() {
+	if (document.fullscreenElement) {
+		document.exitFullscreen();
+	}
+	else {
+		document.documentElement.requestFullscreen();
+	}
+}
+
 onBeforeMount(() => {
 	loadMetadata();
 	initialProgress();
+})
+
+onMounted(() => {
+	document.documentElement.requestFullscreen();
+})
+onBeforeUnmount(() => {
+	document.exitFullscreen();
 })
 
 const PROGRESS_INTERVAL = 1000 * 60;

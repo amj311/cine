@@ -1,8 +1,6 @@
-import axios from "axios";
 import { CommonDetailsMetadata, CommonSearchKey, CommonSimpleMetadata, MetadataDefinition } from "./MetadataTypes";
 import { IMetadataProvider } from "./IMetadataProvider";
 import { LibraryService } from "../LibraryService";
-import { TvdbApi } from "./TvdbApi";
 import { TmdbApi } from "./TmdbApi";
 
 
@@ -31,37 +29,20 @@ export class MovieMetadataProvider extends IMetadataProvider<MovieMetadata> {
 
 	protected async fetchMetadata(key) {
 		const api = new TmdbApi();
-		const result = await api.getMetadata(key, 'movie', key.details ? ['credits', 'images', 'release_dates'] : []);
+		const result = await api.getMetadataBySearch(key, 'movie');
+		if (!result) {
+			return null;
+		}
 
 		if (key.details) {
-			console.log(result.release_dates.results.find((r) => r.iso_3166_1 === 'US'));
+			const details = await api.getDetailsById('movie/' + result.id, ['credits', 'images', 'release_dates']);
 			return {
-				overview: result.overview,
-				poster_full: api.getImageUrl(result.poster_path, 'poster', 'large'),
-				background: api.getImageUrl(result.backdrop_path, 'backdrop', 'large'),
-				rating: result.vote_average / 2, // out of 5
-				votes: result.vote_count,
-				genres: result.genres?.map(g => g.name),
-				runtime: result.runtime,
-				credits: [
-					...result.credits?.cast.slice(0, 10).map((c) => ({
-						name: c.name,
-						role: c.character,
-						photo: api.getImageUrl(c.profile_path, 'profile', 'small'),
-					})),
-					...result.credits?.crew.slice(0, 10).map((c) => ({
-						name: c.name,
-						role: c.job,
-						photo: api.getImageUrl(c.profile_path, 'profile', 'small'),
-					})),
-				],
-				content_rating: result.release_dates?.results.find((r) => r.iso_3166_1 === 'US')?.release_dates[0]?.certification,
+				...api.parseCommonData({ ...result, ...details }),
 			};
 		}
+		const common = api.parseCommonData(result);
 		return {
-			poster_thumb: api.getImageUrl(result.poster_path, 'poster', 'small'),
-			name: result.name,
-			year: result.first_aired,
+			poster_thumb: common.poster_thumb,
 		}
 	}
 }

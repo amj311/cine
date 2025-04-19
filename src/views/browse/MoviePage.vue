@@ -2,11 +2,13 @@
 	setup
 	lang="ts"
 >
-import SimplePoster from '@/components/posters/MediaCard.vue';
+import MediaCard from '@/components/MediaCard.vue';
 import { useRouter } from 'vue-router';
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
+import StarRating from '@/components/StarRating.vue';
+import PeopleList from '@/components/PeopleList.vue';
 
 const router = useRouter();
 const props = defineProps<{
@@ -69,30 +71,26 @@ function formatRuntime(minutes: number) {
 		<div class="top-wrapper">
 			<div>
 			<div class="poster-wrapper">
-				<SimplePoster
+				<MediaCard
 					:imageUrl="metadata?.poster_full"
 					:progress="libraryItem.movie.watchProgress?.percentage"
-				>
-					<template #overlay>
-						<button @click="() => playVideo(libraryItem.movie.relativePath)">Play</button>
-					</template>
-				</SimplePoster>
+				/>
 			</div>
 		</div>
 
 			<div class="left-side" :style="{ flexGrow: 1 }">
 
 				<h1 class="title">{{ libraryItem.name }}</h1>
-				<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+				<p style="display: flex; gap: 10px; flex-wrap: wrap;">
 					<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
 					<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
 					<span v-if="metadata?.content_rating">{{ metadata.content_rating }}</span>
-				</div>
-				<br />
+				</p>
+				<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
 				<br />
 
 				<button
-					style="zoom: 1.3"
+					style="zoom: 1.5"
 					class="play-button"
 					@click="() => playVideo(libraryItem.movie.relativePath)"
 				>
@@ -106,33 +104,18 @@ function formatRuntime(minutes: number) {
 		<p class="show-lg">{{ metadata?.overview }}</p>
 
 
-		<div>
+		<div v-if="metadata?.credits">
 			<h2>Cast & Crew</h2>
-			<div class="hide-scrollbar">
-				<div class="credits-list">
-					<div class="credits-item" v-for="(person, index) in metadata?.credits" :key="index">
-						<div
-							class="image-wrapper"
-							:style="{ backgroundImage: `url(${person.photo})` }"
-						></div>
-						<div class="credits-name">
-							{{ person.name }}
-						</div>
-						<div class="credits-role" :style="{ opacity: .7 }">
-							{{ person.role }}
-						</div>
-					</div>
-				</div>
-			</div>
+			<PeopleList :people="metadata.credits" />
 		</div>
 
-		<div>
-		<h2>Extras</h2>
+		<div v-if="libraryItem.extras?.length > 0">	
+			<h2>Extras</h2>
 			<div class="hide-scrollbar">
 				<div class="extras-list">
 					<div class="extra-item" v-for="extra in libraryItem.extras" :key="extra.relativePath">
 						<div class="extra-poster-wrapper">
-							<SimplePoster
+							<MediaCard
 								:fallbackIcon="'🎥'"
 								:progress="extra.watchProgress?.percentage"
 								:aspectRatio="'wide'"

@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import api from '@/services/api';
 import VideoPlayer from '@/components/VideoPlayer.vue'; // Import the VideoPlayer component
 import MetadataLoader from '@/components/MetadataLoader.vue';
-import SimplePoster from '@/components/posters/MediaCard.vue';
+import MediaCard from '@/components/MediaCard.vue';
 
 </script>
 

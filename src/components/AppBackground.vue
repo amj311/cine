@@ -24,7 +24,7 @@ const backgroundImage = computed(() => `url(${backgroundStore.backgroundUrl})`);
 		bottom: 0;
 		background-size: cover;
 		background-position: center;
-		filter: blur(50px);
+		filter: blur(20px);
 		z-index: -1;
 		transition: all 600ms;
 	}
@@ -35,7 +35,7 @@ const backgroundImage = computed(() => `url(${backgroundStore.backgroundUrl})`);
 		right: 0;
 		bottom: 0;
 		background-color: var(--color-background);
-		opacity: 0.5;
+		opacity: 0.7;
 		z-index: -1;
 	}
 </style>

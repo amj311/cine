@@ -55,10 +55,3 @@ export type EitherMetadata<Type extends MetadataType = MetadataType> =
 	| MetadataDefinition<Type>['Details']
 	| MetadataDefinition<Type>['SubTypes'][keyof MetadataDefinition<Type>['SubTypes']]['Data']
 	;
-
-export type SeriesMetadata = MetadataDefinition<
-	'series',
-	CommonSearchKey,
-	CommonSimpleMetadata,
-	CommonDetailsMetadata
->;

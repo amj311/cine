@@ -22,38 +22,59 @@ export class TmdbApi {
 		});
 	}
 
-	public async getMetadata(searchParams, type: 'series' | 'movie', appendpoints: string[] = []) {
+	public async getMetadataBySearch(searchParams, entity: 'tv' | 'movie') {
 		const api = await this.getApi();
-		const endpoint = type === 'series' ? 'tv' : 'movie';
-		const { data } = await api.get('/search/' + endpoint, {
+		const { data } = await api.get('/search/' + entity, {
 			params: {
 				query: searchParams.name,
 				primary_release_year: searchParams.year,
 			}
 		});
 		const result = data.results[0];
-		if (!result) {
-			return null;
-		}
-		if (appendpoints.length > 0) {
-			const details = await this.getDetails(result.id, type, appendpoints);
-			return {
-				...result,
-				...details,
-			}
-		}
-		return result;
+		return result || null;
 	}
 
-	private async getDetails(id: string, type: 'series' | 'movie', appendpoints: string[] = []) {
+	public async getDetailsById(path: string, appendpoints: string[] = []) {
 		const api = await this.getApi();
-		const endpoint = type === 'series' ? 'tv' : 'movie';
-		const { data } = await api.get('/' + endpoint + '/' + id, {
+		const { data } = await api.get(path, {
 			params: {
 				append_to_response: appendpoints.join(','),
 			}
 		});
 		return data;
+	}
+
+	public parseCommonData(result: any) {
+		return {
+			overview: result.overview,
+			poster_thumb: this.getImageUrl(result.poster_path, 'poster', 'small'),
+			poster_full: this.getImageUrl(result.poster_path, 'poster', 'large'),
+			background: this.getImageUrl(result.backdrop_path, 'backdrop', 'small'),
+			logo: this.getImageUrl(
+				result.images?.logos?.find(i => i.iso_639_1 === 'en')?.file_path,
+				'logo',
+				'large',
+			),
+			rating: result.vote_average / 2, // out of 5
+			votes: result.vote_count,
+			genres: result.genres?.map(g => g.name),
+			runtime: result.runtime,
+			credits: [
+				...(result.credits?.cast.slice(0, 10).map((c) => ({
+					name: c.name,
+					role: c.character,
+					photo: this.getImageUrl(c.profile_path, 'profile', 'small'),
+				})) || []),
+				...(result.credits?.crew.slice(0, 10).map((c) => ({
+					name: c.name,
+					role: c.job,
+					photo: this.getImageUrl(c.profile_path, 'profile', 'small'),
+				})) || []),
+			],
+			content_rating:
+				result.release_dates?.results.find((r) => r.iso_3166_1 === 'US')?.release_dates[0]?.certification
+				|| result.content_ratings?.results.find((r) => r.iso_3166_1 === 'US')?.rating,
+		}
 	}
 
 	// IMAGE URLS
@@ -89,7 +110,7 @@ const ImageSizes = {
 		small: 'w185',
 	},
 	still: {
-		small: 'w92',
+		small: 'w300',
 		large: 'original',
 	},
 	default: 'original',

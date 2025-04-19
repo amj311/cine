@@ -4,8 +4,7 @@
 
 import { DirectoryService, RelativePath } from "./DirectoryService";
 import { MediaMetadataService } from "./metadata/MetadataService";
-import { EitherMetadata, SeriesMetadata } from "./metadata/MetadataTypes";
-import { MovieMetadata } from "./metadata/MovieMetadataProvider";
+import { EitherMetadata } from "./metadata/MetadataTypes";
 import { WatchProgress, WatchProgressService } from "./WatchProgressService";
 
 type Playable = {

@@ -8,15 +8,6 @@ import AppBackground from './components/AppBackground.vue';
 
 const tvNavigationStore = useTvNavigationStore();
 
-function fullscreen() {
-	if (document.fullscreenElement) {
-		document.exitFullscreen();
-	}
-	else {
-		document.documentElement.requestFullscreen();
-	}
-}
-
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import MetadataLoader from '@/components/MetadataLoader.vue';
-import SimplePoster from '@/components/posters/MediaCard.vue';
+import MediaCard from '@/components/MediaCard.vue';
 import { useRouter } from 'vue-router';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 
@@ -60,7 +60,7 @@ function playVideo(path: string) {
 					>
 						<template #default="{ metadata }">
 							<div class="poster-tile" @click="queryPathStore.enterDirectory(folder.folderName)">
-								<SimplePoster
+								<MediaCard
 									clickable
 									:imageUrl="metadata?.poster_thumb"
 									:fallbackIcon="folder.libraryItem.type === 'movie' ? '🎬' : '🗂️'"
@@ -116,7 +116,7 @@ li {
 
 .library-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
 	gap: 20px;
 	padding: 20px;
 }

@@ -55,12 +55,12 @@
 *::before,
 *::after {
 	box-sizing: border-box;
-	margin: 0;
-	font-weight: normal;
 }
 
 html, body, #app {
 	height: 100%;
+	margin: 0;
+	font-size: 14px;
 }
 
 body {
@@ -116,5 +116,4 @@ body {
 	::-webkit-scrollbar-thumb:hover {
 		background-color: var(--color-background-soft) !important;
 	}
-
 }
