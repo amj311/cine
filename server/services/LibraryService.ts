@@ -145,7 +145,8 @@ export class LibraryService {
 	private static async extractSeasons(seasonFolders) {
 		const episodes = await Promise.all(seasonFolders.map(async (folder) => {
 			const { files } = await DirectoryService.listDirectory(folder);
-			return files.map((file) => {
+			const videoFiles = files.filter((file) => file.endsWith('.mp4'));
+			return videoFiles.map((file) => {
 				const NumbersRegex = RegExp(/s(?<seasonNumber>\d{1,3})e(?<episodeNumber>\d{1,3})/g);
 				const numbersMatch = NumbersRegex.exec(file)?.groups;
 				if (!numbersMatch) {

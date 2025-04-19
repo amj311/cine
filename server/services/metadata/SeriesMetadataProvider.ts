@@ -39,7 +39,6 @@ export class SeriesMetadataProvider extends IMetadataProvider<SeriesMetadata> {
 
 		if (key.details) {
 			const details = await api.getDetailsById('tv/' + result.id, ['credits', 'images', 'content_ratings', 'eipsode_groups']);
-			console.log("\n\n\n\n\n", details)
 
 			const seasons = await Promise.all(details.seasons.map(async (s) => {
 				const seasonDetails = await api.getDetailsById(`tv/${result.id}/season/${s.season_number}`, ['images']);
