@@ -55,7 +55,7 @@ const items = computed(() => {
 			</span>
 		</div>
 
-		<div class="p-3 flex flex-column gap-6">
+		<div class="p-3">
 			<template v-if="exploreMode === 'library'">
 				<div class="folder-grid" v-if="collections.length">
 					<template v-for="folder in collections">
@@ -71,7 +71,7 @@ const items = computed(() => {
 										aspectRatio="wide"
 										:fallbackIcon="'🗂️'"
 										:title="folder.libraryItem.name"
-										:subtitle="folder.libraryItem.year || `${folder.libraryItem.children.length} items`"
+										:subtitle="`${folder.libraryItem.children.length} items`"
 										:progress="folder.libraryItem.movie?.watchProgress?.percentage"
 									/>
 								</div>
@@ -95,7 +95,7 @@ const items = computed(() => {
 										:fallbackIcon="folder.libraryItem.type === 'movie' ? '🎞️' : '📺'"
 										:aspectRatio="'tall'"
 										:title="folder.libraryItem.name"
-										:subtitle="folder.libraryItem.year || `${folder.libraryItem.children.length} items`"
+										:subtitle="folder.libraryItem.numSeasons ? `${folder.libraryItem.numSeasons} Season${folder.libraryItem.numSeasons.length ? 's' : ''}` : folder.libraryItem.year"
 										:progress="folder.libraryItem.movie?.watchProgress?.percentage"
 									/>
 								</div>
@@ -147,6 +147,7 @@ li {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
 	gap: 20px;
+	margin-bottom: 30px;
 }
 .item-grid {
 	display: grid;
