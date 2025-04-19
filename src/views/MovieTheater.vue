@@ -4,27 +4,39 @@
 >
 import { useQueryPathStore } from '@/stores/queryPath.store'
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { reactive, ref, onBeforeMount, onBeforeUnmount } from 'vue';
+import { ref, onBeforeMount, onBeforeUnmount, computed } from 'vue';
 import api from '@/services/api'
+import { MetadataService } from '@/services/metadataService';
 
 const queryPathStore = useQueryPathStore();
 queryPathStore.updatePathFromQuery();
 
-
-const state = reactive({
-	currentMedia: queryPathStore.currentPath || '',
-})
-
+const mediaPath = computed(() => queryPathStore.currentPath || '')
 const playerRef = ref<InstanceType<typeof VideoPlayer>>();
 
-async function fetchProgress() {
-	if (!state.currentMedia) {
+const isLoadingMetadata = ref(false);
+const metadata = ref<any>(null);
+
+async function loadMetadata() {
+	try {
+		isLoadingMetadata.value = true;
+		metadata.value = await MetadataService.getMetadata({ relativePath: mediaPath.value }, true);
+	} catch (error) {
+		console.error('Error loading metadata', error);
+	} finally {
+		isLoadingMetadata.value = false;
+	}
+}
+
+
+async function initialProgress() {
+	if (!mediaPath) {
 		return;
 	}
 	try {
 		const { data } = await api.get('/watchProgress', {
 			params: {
-				relativePath: state.currentMedia,
+				relativePath: mediaPath,
 			}
 		})
 		if (data.data) {
@@ -37,7 +49,8 @@ async function fetchProgress() {
 }
 
 onBeforeMount(() => {
-	fetchProgress();
+	loadMetadata();
+	initialProgress();
 })
 
 const PROGRESS_INTERVAL = 1000 * 60;
@@ -48,7 +61,7 @@ const progressUpdateInterval = setInterval(async () => {
 			return;
 		}
 		await api.post('/watchProgress', {
-			relativePath: state.currentMedia,
+			relativePath: mediaPath,
 			progress,
 		});
 	}
@@ -67,7 +80,7 @@ onBeforeUnmount(() => {
 
 <template>
 	<div class="movie-theater">
-		<VideoPlayer ref="playerRef" v-if="state.currentMedia" :src="state.currentMedia" />
+		<VideoPlayer ref="playerRef" v-if="mediaPath" :src="mediaPath" />
 	</div>
 </template>
 
@@ -76,6 +89,6 @@ onBeforeUnmount(() => {
 	scoped
 >
 	.movie-theater {
-		height: 100vh;
+		height: 100%;
 	}
 </style>

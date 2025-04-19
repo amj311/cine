@@ -6,6 +6,7 @@ import { useQueryPathStore } from '@/stores/queryPath.store';
 import MoviePage from '@/views/browse/MoviePage.vue';
 import SeriesPage from '@/views/browse/SeriesPage.vue';
 import Explorer from '@/views/browse/Explorer.vue';
+import PageWrapper from '@/components/PageWrapper.vue';
 
 const directory = ref<{ folders: { folderName: string; libraryItem }[]; files: string[] } | null>(null);
 const libraryItem = ref<any>(null);
@@ -39,7 +40,7 @@ watch(
 </script>
 
 <template>
-	<div v-if="directory">
+	<PageWrapper v-if="directory">
 		<template v-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
 			<MoviePage :libraryItem="libraryItem" />
 		</template>
@@ -55,7 +56,7 @@ watch(
 				:directory="directory"
 			/>
 		</template>
-	</div>
+	</PageWrapper>
 </template>
 
 <style scoped lang="scss">

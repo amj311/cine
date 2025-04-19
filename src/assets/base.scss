@@ -59,6 +59,10 @@
 	font-weight: normal;
 }
 
+html, body, #app {
+	height: 100%;
+}
+
 body {
 	color: var(--color-text);
 	background: var(--color-background);
@@ -90,29 +94,27 @@ body {
 }
 
 
-/* Make all scrollbars hidden initially, with transparent bg, with --color-background-muted bars  */
-::-webkit-scrollbar {
-	width: 10px;
-	height: 10px;
-}
-::-webkit-scrollbar-track {
-	background-color: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-	background-color: var(--color-background-mute);
-	border-radius: 10px;
-}
 .hide-scrollbar {
-	::-webkit-scrollbar-thumb {
+
+	/* Make all scrollbars hidden initially, with transparent bg, with --color-background-muted bars  */
+	::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+	::-webkit-scrollbar-track {
 		background-color: transparent;
 	}
 
-	&:hover ::-webkit-scrollbar-thumb {
+	::-webkit-scrollbar-thumb {
+		border-radius: 10px;
+		background-color: transparent;
+	}
+	&:hover > ::-webkit-scrollbar-thumb {
 		background-color: var(--color-background-mute);
 	}
-}
+	
+	::-webkit-scrollbar-thumb:hover {
+		background-color: var(--color-background-soft) !important;
+	}
 
-::-webkit-scrollbar-thumb:hover {
-	background-color: var(--color-background-soft) !important;
 }

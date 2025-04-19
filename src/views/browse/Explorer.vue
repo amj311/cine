@@ -62,7 +62,7 @@ function playVideo(path: string) {
 							<div class="poster-tile" @click="queryPathStore.enterDirectory(folder.folderName)">
 								<SimplePoster
 									clickable
-									:imageUrl="metadata?.poster"
+									:imageUrl="metadata?.poster_thumb"
 									:fallbackIcon="folder.libraryItem.type === 'movie' ? '🎬' : '🗂️'"
 									:aspectRatio="'tall'"
 									:title="folder.libraryItem.name"

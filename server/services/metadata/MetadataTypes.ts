@@ -14,7 +14,6 @@ export type CommonSimpleMetadata = {
 	poster_thumb: string,
 	name: string,
 	year: string,
-	overview: string,
 }
 
 export type CommonDetailsMetadata = {
@@ -22,7 +21,7 @@ export type CommonDetailsMetadata = {
 	background: string,
 	runtime: string,
 	genres: string[],
-	cast: Array<{
+	credits: Array<{
 		name: string,
 		role: string,
 		photo: string,

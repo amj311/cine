@@ -126,7 +126,11 @@ app.get("/api/video", function (req, res) {
 app.post('/api/metadata', async (req, res) => {
 	try {
 		const { type, path, detailed } = req.body;
-		const metadata = await MediaMetadataService.getMetadata(type, path, detailed);
+		let mediaType = type;
+		if (!mediaType) {
+			mediaType = LibraryService.determineMediaTypeFromPath(path);
+		}
+		const metadata = await MediaMetadataService.getMetadata(mediaType, path, detailed);
 		res.json({
 			data: metadata,
 		})

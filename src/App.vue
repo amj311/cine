@@ -4,19 +4,34 @@
 >
 import { RouterView } from 'vue-router'
 import { useTvNavigationStore } from './stores/tvNavigation.store';
+import AppBackground from './components/AppBackground.vue';
 
 const tvNavigationStore = useTvNavigationStore();
+
+function fullscreen() {
+	if (document.fullscreenElement) {
+		document.exitFullscreen();
+	}
+	else {
+		document.documentElement.requestFullscreen();
+	}
+}
 
 </script>
 
 <template>
-	<RouterView />
-	<div v-if="tvNavigationStore.lastKeydownEvent">
+	<AppBackground />
+
+	<div :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
+		<RouterView />
+	</div>
+
+	<!-- <div v-if="tvNavigationStore.lastKeydownEvent">
 		Last keydown event: {{ tvNavigationStore.lastKeydownEvent }}
 	</div>
 	<div v-if="tvNavigationStore.lastMouseMoveEvent">
 		Last mouse event: {{ tvNavigationStore.lastMouseMoveEvent }}
-	</div>
+	</div> -->
 </template>
 
 <style>

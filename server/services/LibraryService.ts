@@ -216,6 +216,16 @@ export class LibraryService {
 			type: type || null,
 		};
 	}
+
+	public static determineMediaTypeFromPath(path: RelativePath) {
+		if (path.toLowerCase().includes('/season ')) {
+			return 'series';
+		}
+		if (path.match(/ \(\d{4}\)./g)) {
+			return 'movie';
+		}
+		return 'collection';
+	}
 }
 
 

@@ -41,7 +41,7 @@ export abstract class IMetadataProvider<T extends MetadataDefinition = MetadataD
 	protected abstract createSearchKeyFromPath(path: RelativePath): T['SearchKey'];
 
 	// Private operations for fetching data
-	protected abstract fetchMetadata(key: T['SearchKey']): Promise<T['Simple'] | null>;
+	protected abstract fetchMetadata(key: T['SearchKey']): Promise<EitherMetadata<T['Type']> | null>;
 
 
 	/***************|

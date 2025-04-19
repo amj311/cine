@@ -129,4 +129,10 @@ function playVideo() {
 		width: 100%;
 	}
 }
+
+.title, .subtitle {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
 </style>

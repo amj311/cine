@@ -16,17 +16,18 @@ const router = createRouter({
 			name: 'browse',
 			component: BrowseView,
 		},
-		// {
-		// 	path: '/library',
-		// 	name: 'library',
-		// component: BrowseView,
-		// }
 		{
 			path: '/play',
 			name: 'play',
 			component: MovieTheater,
 		}
 	],
+	scrollBehavior: (to, from) => {
+		if (to.path === from.path) {
+			return { top: window.scrollY };
+		}
+		return { top: 0 };
+	},
 })
 
 export default router
