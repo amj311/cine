@@ -164,27 +164,29 @@ const episodeToPlay = computed(() => {
 				</div>
 				<div class="season-details">
 					<p>{{ activeSeason.overview }}</p>
-					<div class="episodes-list">
-						<div class="episode-item" v-for="episode in activeSeason.episodes" :key="episode.relativePath">
-							<div class="episode-poster-wrapper">
-								<MediaCard
-									:imageUrl="episode.still_thumb"
-									:fallbackIcon="'📺'"
-									:progress="episode.watchProgress?.percentage"
-									:aspectRatio="'wide'"
-									:playSrc="episode.relativePath"
-								/>
-							</div>
-							<div class="episode-info">
-								<h3>{{ episode.episodeNumber }}: {{ episode.name }}</h3>
-								<div style="display: flex; gap: 10px; flex-wrap: wrap;">
-									<span v-if="episode.year">{{ episode.year }}</span>
-									<span v-if="episode.runtime">{{ formatRuntime(episode.runtime) }}</span>
-									<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
+					<div class="episodes-list flex flex-column gap-3">
+						<template v-for="(episode, i) in activeSeason.episodes" :key="episode.relativePath">
+							<div class="episode-item">
+								<div class="episode-poster-wrapper">
+									<MediaCard
+										:imageUrl="episode.still_thumb"
+										:fallbackIcon="'📺'"
+										:progress="episode.watchProgress?.percentage"
+										:aspectRatio="'wide'"
+										:playSrc="episode.relativePath"
+									/>
 								</div>
-								<p>{{ episode.overview }}</p>
+								<div class="episode-info">
+									<h3>{{ episode.name }}</h3>
+									<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+										<span>Episode {{ episode.episodeNumber }}</span>
+										<span v-if="episode.runtime">{{ formatRuntime(episode.runtime) }}</span>
+										<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
+									</div>
+									<p>{{ episode.overview }}</p>
+								</div>
 							</div>
-						</div>
+						</template>
 					</div>
 				</div>
 			</div>
@@ -274,6 +276,11 @@ const episodeToPlay = computed(() => {
 	width: min(250px, 30vw);
 }
 
+.divider {
+	height: 1px;
+	background-color: var(--color-border);
+	margin: 10px 0;
+}
 
 .episode-item {
 	display: flex;
