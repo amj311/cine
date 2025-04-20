@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
+import HideScrollbar from '@/components/HideScrollbar.vue';
 
 const router = useRouter();
 const props = defineProps<{
@@ -108,7 +109,7 @@ function formatRuntime(minutes: number) {
 
 		<div v-if="libraryItem.extras?.length > 0">	
 			<h2>Extras</h2>
-			<div class="hide-scrollbar">
+			<HideScrollbar>
 				<div class="extras-list">
 					<div class="extra-item" v-for="extra in libraryItem.extras" :key="extra.relativePath">
 						<div class="extra-poster-wrapper">
@@ -123,7 +124,7 @@ function formatRuntime(minutes: number) {
 						</div>
 					</div>
 				</div>
-			</div>
+			</HideScrollbar>
 		</div>
 	</div>
 </template>

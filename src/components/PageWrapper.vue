@@ -2,14 +2,15 @@
 	setup
 	lang="ts"
 >
+
 </script>
 
 <template>
-	<div class="hide-scrollbar" style="height: 100%; padding: 10px">
-		<div :style="{ height: '100%', maxHeight: '100%', overflowY: 'auto', padding: 20 }">
+	<HideScrollbar style="height: 100%;">
+		<div :style="{ height: '100%', maxHeight: '100%', overflowY: 'auto' }">
 			<slot></slot>
 		</div>
-	</div>
+	</HideScrollbar>
 </template>
 
 <style lang="scss">

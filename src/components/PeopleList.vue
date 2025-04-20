@@ -2,13 +2,14 @@
 	setup
 	lang="ts"
 >
+
 defineProps<{
 	people: any[]; // libraryItem
 }>();
 </script>
 
 <template>
-	<div class="hide-scrollbar">
+	<HideScrollbar>
 		<div class="people-list">
 			<div class="people-item" v-for="(person, index) in people" :key="index">
 				<div
@@ -23,7 +24,7 @@ defineProps<{
 				</div>
 			</div>
 		</div>
-	</div>
+	</HideScrollbar>
 </template>
 
 <style
@@ -33,7 +34,7 @@ defineProps<{
 .people-list {
 	display: flex;
 	gap: 20px;
-	padding: 10px;
+	padding: 10px 0;
 	width: 100%;
 	overflow-x: auto;
 	white-space: nowrap;

@@ -194,7 +194,7 @@ const episodeToPlay = computed(() => {
 
 		<div v-if="libraryItem.extras?.length > 0">	
 			<h2>Extras</h2>
-			<div class="hide-scrollbar">
+			<HideScrollbar>
 				<div class="extras-list">
 					<div class="extra-item" v-for="extra in libraryItem.extras" :key="extra.relativePath">
 						<div class="extra-poster-wrapper">
@@ -209,7 +209,7 @@ const episodeToPlay = computed(() => {
 						</div>
 					</div>
 				</div>
-			</div>
+			</HideScrollbar>
 		</div>
 	</div>
 </template>

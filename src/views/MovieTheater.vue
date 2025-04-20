@@ -60,10 +60,12 @@ onMounted(async () => {
 	// screen wake lock
 	if ('wakeLock' in navigator) {
 		wakeLock = await navigator.wakeLock.request('screen');
+		console.log("Screen wake lock active", wakeLock);
+	} else {
+		console.log("Screen wake lock not supported");
 	}
-
-
 })
+
 onBeforeUnmount(async () => {
 	document.exitFullscreen();
 	// release wake lock

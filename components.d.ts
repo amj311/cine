@@ -10,6 +10,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppBackground: typeof import('./src/components/AppBackground.vue')['default']
     Button: typeof import('primevue/button')['default']
+    HideScrollbar: typeof import('./src/components/HideScrollbar.vue')['default']
     MediaCard: typeof import('./src/components/MediaCard.vue')['default']
     MetadataLoader: typeof import('./src/components/MetadataLoader.vue')['default']
     PageWrapper: typeof import('./src/components/PageWrapper.vue')['default']

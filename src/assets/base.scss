@@ -4,6 +4,9 @@
 	--vt-c-white-soft: #f8f8f8;
 	--vt-c-white-mute: #f2f2f2;
 
+	--vt-c-gray-light: rgb(182, 185, 186);
+	--vt-c-gray-dark: rgb(101, 103, 103);
+
 	--vt-c-black: #181818;
 	--vt-c-black-soft: #222222;
 	--vt-c-black-mute: #282828;
@@ -34,7 +37,8 @@
 	--color-heading: var(--vt-c-text-light-1);
 	--color-text: var(--vt-c-text-light-1);
 
-	--color-accent: var(--vt-c-orange)
+	--color-accent: var(--vt-c-orange);
+	--color-contrast: var(--vt-c-gray-dark);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -48,6 +52,9 @@
 
 		--color-heading: var(--vt-c-text-dark-1);
 		--color-text: var(--vt-c-text-dark-2);
+
+
+		--color-contrast: var(--vt-c-gray-light);
 	}
 }
 
@@ -99,27 +106,3 @@ h1, h2, h3, h4, h5, h6 {
 	background-color: var(--color-accent);
 }
 
-
-.hide-scrollbar {
-
-	/* Make all scrollbars hidden initially, with transparent bg, with --color-background-muted bars  */
-	::-webkit-scrollbar {
-		width: 10px;
-		height: 10px;
-	}
-	::-webkit-scrollbar-track {
-		background-color: transparent;
-	}
-
-	::-webkit-scrollbar-thumb {
-		border-radius: 10px;
-		background-color: transparent;
-	}
-	&:hover > ::-webkit-scrollbar-thumb {
-		background-color: var(--color-background-mute);
-	}
-	
-	::-webkit-scrollbar-thumb:hover {
-		background-color: var(--color-background-soft) !important;
-	}
-}
