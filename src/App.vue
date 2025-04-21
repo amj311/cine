@@ -8,13 +8,46 @@ import AppBackground from './components/AppBackground.vue';
 
 const tvNavigationStore = useTvNavigationStore();
 
+
+
+import { onBeforeUnmount, watch } from 'vue';
+import { useRoute } from 'vue-router';
+
+let wakeLock: WakeLockSentinel | null = null;
+const route = useRoute();
+
+const handleWakeLock = async () => {
+	if (route.name === 'play') {
+		document.documentElement.requestFullscreen();
+		// screen wake lock
+		if ('wakeLock' in navigator) {
+			wakeLock = await navigator.wakeLock.request('screen');
+		}
+	} else {
+		document.exitFullscreen();
+		// release wake lock
+		if (wakeLock) {
+			await wakeLock.release();
+			wakeLock = null;
+		}
+	}
+};
+
+watch(() => route.name, handleWakeLock, { immediate: true });
+onBeforeUnmount(handleWakeLock);
+
+
 </script>
 
 <template>
 	<AppBackground />
 
 	<div :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
-		<RouterView />
+		<RouterView v-slot="{ Component }">
+			<KeepAlive>
+				<component :is="Component" />
+			</KeepAlive>
+		</RouterView>
 	</div>
 
 	<!-- <div v-if="tvNavigationStore.lastKeydownEvent">

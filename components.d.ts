@@ -10,7 +10,8 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppBackground: typeof import('./src/components/AppBackground.vue')['default']
     Button: typeof import('primevue/button')['default']
-    HideScrollbar: typeof import('./src/components/HideScrollbar.vue')['default']
+    copy: typeof import('./src/components/MoviePage copy.vue')['default']
+    ExtrasList: typeof import('./src/components/ExtrasList.vue')['default']
     MediaCard: typeof import('./src/components/MediaCard.vue')['default']
     MetadataLoader: typeof import('./src/components/MetadataLoader.vue')['default']
     PageWrapper: typeof import('./src/components/PageWrapper.vue')['default']
@@ -18,6 +19,7 @@ declare module 'vue' {
     ProgressBar: typeof import('./src/components/ProgressBar.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Scroll: typeof import('./src/components/Scroll.vue')['default']
     StarRating: typeof import('./src/components/StarRating.vue')['default']
     SwapView: typeof import('./src/components/SwapView.vue')['default']
     ToggleButton: typeof import('primevue/togglebutton')['default']

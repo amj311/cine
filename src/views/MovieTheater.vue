@@ -54,25 +54,6 @@ onBeforeMount(() => {
 	initialProgress();
 })
 
-let wakeLock: WakeLockSentinel | null = null;
-onMounted(async () => {
-	document.documentElement.requestFullscreen();
-	// screen wake lock
-	if ('wakeLock' in navigator) {
-		wakeLock = await navigator.wakeLock.request('screen');
-		console.log("Screen wake lock active", wakeLock);
-	} else {
-		console.log("Screen wake lock not supported");
-	}
-})
-
-onBeforeUnmount(async () => {
-	document.exitFullscreen();
-	// release wake lock
-	if (wakeLock) {
-		await wakeLock.release();
-	}
-})
 
 const PROGRESS_INTERVAL = 1000 * 60;
 const progressUpdateInterval = setInterval(async () => {

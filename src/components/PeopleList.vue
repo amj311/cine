@@ -9,7 +9,7 @@ defineProps<{
 </script>
 
 <template>
-	<HideScrollbar>
+	<Scroll>
 		<div class="people-list">
 			<div class="people-item" v-for="(person, index) in people" :key="index">
 				<div
@@ -24,7 +24,7 @@ defineProps<{
 				</div>
 			</div>
 		</div>
-	</HideScrollbar>
+	</Scroll>
 </template>
 
 <style
@@ -34,9 +34,8 @@ defineProps<{
 .people-list {
 	display: flex;
 	gap: 20px;
-	padding: 10px 0;
+	margin-top: 10px;
 	width: 100%;
-	overflow-x: auto;
 	white-space: nowrap;
 }
 
@@ -46,8 +45,8 @@ defineProps<{
 	align-items: center;
 
 	.image-wrapper {
-		width: 100px;
-		height: 100px;
+		width: 80px;
+		height: 80px;
 		background-color: var(--color-background-mute);
 		background-size: cover;
 		background-position: center;

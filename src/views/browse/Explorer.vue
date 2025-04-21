@@ -36,26 +36,7 @@ const items = computed(() => {
 
 <template>
 	<div>
-		<!-- Breadcrumb navigation -->
-		<div>
-			<span>
-				<Button icon="pi pi-user" @click="queryPathStore.goToRoot" style="cursor: pointer" variant="text" severity="secondary">🏠</Button>
-				/
-			</span>
-			<span v-if="queryPathStore.currentDir.length > 2">
-				...
-				/
-			</span>
-			<span v-if="queryPathStore.parentFile">
-				<Button @click="queryPathStore.goUp" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.parentFile }}</button>
-				/
-			</span>
-			<span v-if="queryPathStore.currentFile">
-				<Button variant="text" severity="secondary" class="font-bold">{{ queryPathStore.currentFile }}</Button>
-			</span>
-		</div>
-
-		<div class="p-3">
+		<div class="mt-3 pr-2">
 			<template v-if="exploreMode === 'library'">
 				<div class="folder-grid" v-if="collections.length">
 					<template v-for="folder in collections">
@@ -134,25 +115,16 @@ const items = computed(() => {
 </template>
 
 <style scoped lang="scss">
-ul {
-	list-style: none;
-	padding: 0;
-}
-
-li {
-	margin: 5px 0;
-}
-
 .folder-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-	gap: 20px;
+	gap: 15px;
 	margin-bottom: 30px;
 }
 .item-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-	gap: 20px;
+	gap: 15px;
 }
 .grid-tile {
 	width: 100%;

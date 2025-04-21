@@ -1,22 +1,20 @@
 <script setup lang="ts">
 import { baseURL } from '@/services/api';
-import { defineProps, ref, computed } from 'vue';
+import { defineProps, ref, computed, onMounted } from 'vue';
 
 // Define the `src` prop
 const props = defineProps<{
 	src: string;
-	mini?: boolean;
+	onEnd?: () => void;
 }>();
 
 const videoRef = ref<HTMLVideoElement>();
-
 const videoUrl = computed(() => baseURL + '/video?src=' + props.src.split('&').join('<amp>'))
 
 const supportedVideoTypes = [
 	'mp4',
 	'mkv',
 ];
-
 const goodType = computed(() => {
 	return supportedVideoTypes.find(type => videoUrl.value.endsWith(type));
 });
@@ -43,10 +41,18 @@ defineExpose({
 		videoRef.value?.play();
 	},
 })
+
+onMounted(() => {
+	videoRef.value?.addEventListener('ended', () => {
+		if (props.onEnd) {
+			props.onEnd();
+		}
+	});
+});
 </script>
 
 <template>
-	<video ref="videoRef" :key="src" class="video-player" :controls="!Boolean(mini)" autoplay v-if="goodType">
+	<video ref="videoRef" :key="src" class="video-player" controls autoplay v-if="goodType">
 		<source :src="videoUrl" :type="'video/mp4'" />
 	</video>
 </template>

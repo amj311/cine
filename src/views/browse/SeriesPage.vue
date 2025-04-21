@@ -107,7 +107,7 @@ const episodeToPlay = computed(() => {
 </script>
 
 <template>
-	<div class="movie-page">
+	<div class="series-page">
 		<div class="top-wrapper">
 			<div>
 			<div class="poster-wrapper">
@@ -194,22 +194,7 @@ const episodeToPlay = computed(() => {
 
 		<div v-if="libraryItem.extras?.length > 0">	
 			<h2>Extras</h2>
-			<HideScrollbar>
-				<div class="extras-list">
-					<div class="extra-item" v-for="extra in libraryItem.extras" :key="extra.relativePath">
-						<div class="extra-poster-wrapper">
-							<MediaCard
-								:fallbackIcon="'🎥'"
-								:progress="extra.watchProgress?.percentage"
-								:aspectRatio="'wide'"
-								:title="extra.name"
-								:subtitle="extraTypeLabels[extra.type]"
-								:playSrc="extra.relativePath"
-							/>
-						</div>
-					</div>
-				</div>
-			</HideScrollbar>
+			<ExtrasList :extras="libraryItem.extras" />
 		</div>
 	</div>
 </template>
@@ -244,11 +229,10 @@ const episodeToPlay = computed(() => {
 	}
 }
 
-.movie-page {
+.series-page {
 	display: flex;
 	flex-direction: column;
 	gap: 50px;
-	padding: 20px;
 }
 
 .top-wrapper {
@@ -260,20 +244,6 @@ const episodeToPlay = computed(() => {
 .poster-wrapper {
 	width: min(250px, 30vw);
 	min-width: min(250px, 30vw);
-}
-
-.extras-list {
-	display: flex;
-	gap: 20px;
-	padding: 10px;
-	margin: 0 -10px;
-	width: 100%;
-	overflow-x: auto;
-	white-space: nowrap;
-}
-
-.extra-poster-wrapper {
-	width: min(250px, 30vw);
 }
 
 .divider {

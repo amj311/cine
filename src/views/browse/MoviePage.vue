@@ -3,23 +3,17 @@
 	lang="ts"
 >
 import { useRouter } from 'vue-router';
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
-import HideScrollbar from '@/components/HideScrollbar.vue';
+import Scroll from '@/components/Scroll.vue';
+import ExtrasList from '@/components/ExtrasList.vue';
 
 const router = useRouter();
 const props = defineProps<{
 	libraryItem: any; // libraryItem
 }>();
 const backgroundStore = useBackgroundStore();
-
-const extraTypeLabels = {
-	'trailer': 'Trailer',
-	'featurette': 'Featurette',
-	'behindthescenes': 'Behind the Scenes',
-	'deleted': 'Deleted Content',
-}
 
 const metadata = ref<any>(null);
 const isLoadingMetadata = ref(false);
@@ -38,9 +32,12 @@ async function loadMetadata() {
 	}
 }
 
-loadMetadata();
 
+onBeforeMount(() => {
+	loadMetadata();
+});
 onBeforeUnmount(() => {
+	loadMetadata();
 	backgroundStore.clearBackgroundUrl();
 });
 
@@ -109,22 +106,7 @@ function formatRuntime(minutes: number) {
 
 		<div v-if="libraryItem.extras?.length > 0">	
 			<h2>Extras</h2>
-			<HideScrollbar>
-				<div class="extras-list">
-					<div class="extra-item" v-for="extra in libraryItem.extras" :key="extra.relativePath">
-						<div class="extra-poster-wrapper">
-							<MediaCard
-								:fallbackIcon="'🎬'"
-								:progress="extra.watchProgress?.percentage"
-								:aspectRatio="'wide'"
-								:title="extra.name"
-								:subtitle="extraTypeLabels[extra.type]"
-								:playSrc="extra.relativePath"
-							/>
-						</div>
-					</div>
-				</div>
-			</HideScrollbar>
+			<ExtrasList :extras="libraryItem.extras" />
 		</div>
 	</div>
 </template>
@@ -163,7 +145,6 @@ function formatRuntime(minutes: number) {
 	display: flex;
 	flex-direction: column;
 	gap: 50px;
-	padding: 20px;
 }
 
 .top-wrapper {
@@ -175,20 +156,6 @@ function formatRuntime(minutes: number) {
 .poster-wrapper {
 	width: min(300px, 30vw);
 	min-width: min(300px, 30vw);
-}
-
-.extras-list {
-	display: flex;
-	gap: 20px;
-	padding: 10px;
-	margin: 0 -10px;
-	width: 100%;
-	overflow-x: auto;
-	white-space: nowrap;
-}
-
-.extra-poster-wrapper {
-	width: min(250px, 30vw);
 }
 
 </style>
