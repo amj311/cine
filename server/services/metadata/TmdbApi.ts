@@ -27,7 +27,7 @@ export class TmdbApi {
 		const { data } = await api.get('/search/' + entity, {
 			params: {
 				query: searchParams.name,
-				primary_release_year: searchParams.year,
+				year: searchParams.year,
 			}
 		});
 		const result = data.results[0];
