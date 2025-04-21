@@ -20,8 +20,14 @@ const extraTypeLabels = {
 	'deleted': 'Deleted Content',
 }
 
-
-const router = useRouter();
+const sortedExtras = computed(() => {
+	return props.extras.sort((a, b) => {
+		if (a.type === b.type) {
+			return a.name.localeCompare(b.name);
+		}
+		return a.type.localeCompare(b.type);
+	});
+});
 
 </script>
 
@@ -29,7 +35,7 @@ const router = useRouter();
 	<div style="margin-left: -10px;">
 		<Scroll>
 			<div class="extras-list">
-				<div class="extra-item" v-for="extra in extras" :key="extra.relativePath">
+				<div class="extra-item" v-for="extra in sortedExtras" :key="extra.relativePath">
 					<div class="extra-poster-wrapper">
 						<MediaCard
 							:fallbackIcon="'🎬'"
