@@ -2,19 +2,24 @@
 	setup
 	lang="ts"
 >
+import { computed } from 'vue';
 
-defineProps<{
+const props = defineProps<{
 	rating: number,
 	votes?: number,
 }>()
+
+const roundedRating = computed(() => {
+	return Math.round(props.rating);
+});
 
 const NUM_STARS = 5;
 </script>
 
 <template>
 	<div class="star-rating">
-		<div v-for="i in NUM_STARS" class="star" :class="{ filled: i <= rating }" :key="i">
-			{{ i <= rating ? '★' : '☆' }}
+		<div v-for="i in NUM_STARS" class="star" :class="{ filled: i <= roundedRating }" :key="i">
+			{{ i <= roundedRating ? '★' : '☆' }}
 		</div>
 		<small v-if="votes" class="votes">
 			&nbsp;
@@ -33,9 +38,6 @@ const NUM_STARS = 5;
 
 	&.filled {
 		color: #FFD700; /* Gold color */
-	}
-	&.empty {
-		color: #ccc; /* Gray color */
 	}
 }
 </style>
