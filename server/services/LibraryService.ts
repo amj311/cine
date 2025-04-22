@@ -268,7 +268,7 @@ export class LibraryService {
 				type,
 				fileName: file,
 				relativePath: parentPath + '/' + file,
-				watchProgress: WatchProgressService.getWatchProgress(file),
+				watchProgress: WatchProgressService.getWatchProgress(parentPath + '/' + file),
 			}
 		});
 	}

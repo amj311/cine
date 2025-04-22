@@ -39,7 +39,7 @@ const sortedExtras = computed(() => {
 					<div class="extra-poster-wrapper">
 						<MediaCard
 							:fallbackIcon="'🎬'"
-							:progress="extra.watchProgress?.percentage"
+							:progress="extra.watchProgress"
 							:aspectRatio="'wide'"
 							:title="extra.name"
 							:subtitle="extraTypeLabels[extra.type]"
