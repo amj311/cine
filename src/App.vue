@@ -5,9 +5,10 @@
 import { RouterView } from 'vue-router'
 import { useTvNavigationStore } from './stores/tvNavigation.store';
 import AppBackground from './components/AppBackground.vue';
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 
 const tvNavigationStore = useTvNavigationStore();
+const showDebug = ref(false);
 
 onMounted(() => {
 	// tvNavigationStore.determineTvEnvironment();
@@ -19,12 +20,6 @@ onMounted(() => {
 	<AppBackground />
 
 	<div class="dark-app" :class="{ 'tv-nav': tvNavigationStore.enabled }" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
-		<div v-if="tvNavigationStore.enabled">
-			Last mouse move: {{ tvNavigationStore.lastMouseMove }}<br />
-			Last mouse position: {{ tvNavigationStore.lastMousePosition }}<br />
-			Last mouse move time: {{ tvNavigationStore.lastMouseMoveTime }}<br />
-			Last direction: {{ tvNavigationStore.lastDetectedDirection }}<br />
-		</div>
 		<RouterView v-slot="{ Component }">
 			<KeepAlive :include="['BrowseView']">
 				<component :is="Component" />
@@ -32,7 +27,14 @@ onMounted(() => {
 		</RouterView>
 	</div>
 
-	<div class="click-capture" v-if="tvNavigationStore.enabled" style="position: fixed; top: 0; bottom: 0; left: 0; right: 0;"></div>
+	<div v-if="showDebug" class="debug-info">
+		Last mouse move: {{ tvNavigationStore.lastMouseMove }}<br />
+		Last mouse position: {{ tvNavigationStore.lastMousePosition }}<br />
+		Last mouse move time: {{ tvNavigationStore.lastMouseMoveTime }}<br />
+		Last direction: {{ tvNavigationStore.lastDetectedDirection }}<br />
+	</div>
+
+	<div id="tvClickCapture" v-if="tvNavigationStore.enabled" style="position: fixed; top: 0; bottom: 0; left: 0; right: 0;"></div>
 </template>
 
 <style>
@@ -67,5 +69,15 @@ onMounted(() => {
 
 .tv-nav :focus {
 	outline: 1px solid var(--color-contrast) !important;
+}
+
+.debug-info {
+	position: fixed;
+	top: 0;
+	left: 0;
+	color: white;
+	padding: 1em;
+	z-index: 10000;
+	pointer-events: none;
 }
 </style>

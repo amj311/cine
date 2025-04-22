@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 type Direction = 'up' | 'down' | 'left' | 'right';
@@ -9,22 +9,26 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	const lastDetectedDirection = ref<Direction | null>(null);
 	const lastMouseMoveTime = ref(0);
 	const enabled = ref(false);
-	let preClickElement: HTMLElement | null = null;
+	let lastFocusedEl: HTMLElement | null = null;
 
 	function captureClick(event) {
-		preClickElement?.click();
+		lastFocusedEl?.click();
 	}
 
 	const mouseCooldown = 100;
 
 	function handleMouseMove(event) {
+
 		if (Date.now() - lastMouseMoveTime.value < mouseCooldown) {
 			return;
 		}
-		console.log('Mouse moved', event);
-		// determine greatest moved direction
+
 		const deltaX = event.clientX - lastMousePosition.value.x;
 		const deltaY = event.clientY - lastMousePosition.value.y;
+
+		lastMousePosition.value = { x: event.clientX, y: event.clientY };
+		lastMouseMove.value = { x: deltaX, y: deltaY };
+		lastMouseMoveTime.value = Date.now();
 
 		let direction: Direction | null = null;
 
@@ -52,9 +56,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			}
 		}
 
-		lastMousePosition.value = { x: event.clientX, y: event.clientY };
-		lastMouseMoveTime.value = Date.now();
-		lastMouseMove.value = { x: deltaX, y: deltaY };
 
 		if (Math.abs(deltaX) > Math.abs(deltaY)) {
 			direction = deltaX > 0 ? 'right' : 'left';
@@ -99,10 +100,14 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	}
 
 	function engageTvMode() {
-		document.addEventListener('click', captureClick);
-		document.addEventListener('mousemove', handleMouseMove);
-		document.addEventListener('keydown', handleKeyDown);
 		enabled.value = true;
+
+		nextTick(() => {
+			document.getElementById('tvClickCapture')!.addEventListener('click', captureClick);
+			document.addEventListener('mousemove', handleMouseMove);
+			document.addEventListener('keydown', handleKeyDown);
+			findFocus();
+		});
 	}
 	function disengageTvMode() {
 		document.removeEventListener('click', captureClick);
@@ -111,7 +116,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		enabled.value = false;
 	}
 
-	function moveFocus(direction: 'up' | 'down' | 'left' | 'right') {
+	function moveFocus(direction: Direction | null = null) {
 		lastDetectedDirection.value = direction;
 		const focusableElements = gatherFocusableElements(direction);
 
@@ -120,19 +125,26 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		}
 	}
 
+
+	function findFocus() {
+		const focusableElements = gatherFocusableElements();
+		if (focusableElements.length) {
+			setFocus(focusableElements[0]);
+		}
+	}
 	function setFocus(element: HTMLElement) {
 		if (element) {
-			preClickElement = element;
-			preClickElement.focus();
-			preClickElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+			lastFocusedEl = element;
+			lastFocusedEl.focus();
+			lastFocusedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 		}
 	}
 
-	function gatherFocusableElements(direction?: 'up' | 'down' | 'left' | 'right') {
+	function gatherFocusableElementsWithinElement(element: HTMLElement, direction: Direction | null) {
 		const focusElements = ['[href]', 'button', 'input', 'select', 'textarea', '[tabindex]', 'details', 'summary'];
 		const query = focusElements.map(el => el + ':not([disabled]):not([tabindex="-1"])').join(', ');
 
-		let elements = Array.from(document.body.querySelectorAll(query)) as Array<HTMLElement>;
+		let elements = Array.from(element.querySelectorAll(query)) as Array<HTMLElement>;
 
 		// If looking in a specific direction, filter the elements
 		const rowMarginOfError = 15;
@@ -146,33 +158,88 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			left: (active, other) => other.right < active.left && isSameRow(active, other),
 			right: (active, other) => active.right < other.left && isSameRow(active, other),
 		}
-		const sidesToCompareForDistance = {
+		const sidesToPrioritizeForDistance = {
 			// will compare how close these pairs of sides are in alignment
-			up: [['left', 'left'], ['right', 'right'], ['top', 'bottom']],
-			down: [['left', 'left'], ['right', 'right'], ['top', 'bottom']],
-			left: [['top', 'top'], ['bottom', 'bottom'], ['left', 'right']],
-			right: [['top', 'top'], ['bottom', 'bottom'], ['left', 'right']],
+			up: [['top', 'bottom'], ['left', 'lfet']],
+			down: [['bottom', 'top'], ['left', 'left']],
+			left: [['top', 'top'], ['left', 'right']],
+			right: [['top', 'top'], ['right', 'left']],
 		}
 
-		if (direction && preClickElement) {
-			const activeRect = preClickElement.getBoundingClientRect();
+		if (direction && lastFocusedEl) {
+			const activeRect = lastFocusedEl.getBoundingClientRect();
 
 			const options = elements.map((el) => {
 				const elRect = el.getBoundingClientRect();
 
-				if (el === preClickElement || !compareForInclusion[direction](activeRect, elRect)) {
+				if (el === lastFocusedEl || !compareForInclusion[direction](activeRect, elRect)) {
 					return null;
 				}
+
+				const distanceScores = sidesToPrioritizeForDistance[direction].reduce((acc, [activeSide, otherSide]) => {
+					const activeSideValue = activeRect[activeSide];
+					const otherSideValue = elRect[otherSide];
+					const distance = Math.abs(activeSideValue - otherSideValue);
+					acc[activeSide + otherSide] = distance;
+					return acc;
+				}, {} as any);
+
 				return {
 					element: el,
-					distanceScore: sidesToCompareForDistance[direction].reduce((acc, side) => {
-						return acc + Math.abs(activeRect[side[0]] - elRect[side[1]]);
-					}, 0)
+					distanceScores,
 				}
-			}).filter(el => el !== null).sort((a, b) => a.distanceScore - b.distanceScore);
+			}).filter(el => el !== null).sort((a, b) => {
+				for (const sides of sidesToPrioritizeForDistance[direction]) {
+					const [activeSide, otherSide] = sides;
+					const aDistance = a.distanceScores[activeSide + otherSide];
+					const bDistance = b.distanceScores[activeSide + otherSide];
+					if (aDistance < bDistance) {
+						return -1;
+					}
+					else if (aDistance > bDistance) {
+						return 1;
+					}
+				}
+				return 0;
+			});
 			elements = options.map((option) => option.element);
 		}
 
+		return elements;
+	}
+
+	function gatherFocusableElements(direction: Direction | null = null) {
+		// Determine if current el is within a scrollable container
+		// If so, only look for focusable elements within that container
+		// If it is not or there are no valid options left in the direction, then look for the next scrollable el, up to the root.
+		let elements: Array<HTMLElement> = [];
+		if (lastFocusedEl) {
+			// Create a stack of scrollable elements containing either other scrollable elements or the focused element
+			const scrollableStack: Array<HTMLElement> = [];
+			let currentElement: HTMLElement | null = lastFocusedEl;
+			while (currentElement) {
+				if (currentElement === document.body) {
+					break;
+				}
+				if (currentElement.scrollHeight > currentElement.clientHeight) {
+					scrollableStack.push(currentElement);
+				}
+				currentElement = currentElement.parentElement;
+			}
+
+			while (scrollableStack.length) {
+				const scrollableElement = scrollableStack.shift() as HTMLElement;
+				const focusableElements = gatherFocusableElementsWithinElement(scrollableElement, direction);
+				if (focusableElements.length) {
+					elements = focusableElements;
+					break;
+				}
+			}
+		}
+
+		if (!elements.length) {
+			elements = gatherFocusableElementsWithinElement(document.body, direction);
+		}
 		return elements;
 	}
 
@@ -223,7 +290,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	}
 
 	function determineTvEnvironment() {
-		console.log('determineTvEnvironment');
 		const isTv = window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
 		if (isTv) {
 			console.log('TV environment detected');
