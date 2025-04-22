@@ -15,20 +15,34 @@ queryPathStore.updatePathFromQuery();
 
 const mediaPath = computed(() => queryPathStore.currentPath || '')
 const playerRef = ref<InstanceType<typeof VideoPlayer>>();
+const theatreRef = ref<InstanceType<typeof HTMLElement>>();
 
-const isLoadingMetadata = ref(false);
-const metadata = ref<any>(null);
-
-async function loadMetadata() {
-	try {
-		isLoadingMetadata.value = true;
-		metadata.value = await MetadataService.getMetadata({ relativePath: mediaPath.value }, true);
-	} catch (error) {
-		console.error('Error loading metadata', error);
-	} finally {
-		isLoadingMetadata.value = false;
+const showControlsTime = 2500;
+const hideControlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+const showControls = ref(false);
+function updateShowControlsTimeout() {
+	if (hideControlsTimeout.value) {
+		clearTimeout(hideControlsTimeout.value);
 	}
-}
+	showControls.value = true;
+	hideControlsTimeout.value = setTimeout(() => {
+		showControls.value = false;
+	}, showControlsTime);
+} 
+
+// const isLoadingMetadata = ref(false);
+// const metadata = ref<any>(null);
+
+// async function loadMetadata() {
+// 	try {
+// 		isLoadingMetadata.value = true;
+// 		metadata.value = await MetadataService.getMetadata({ relativePath: mediaPath.value }, true);
+// 	} catch (error) {
+// 		console.error('Error loading metadata', error);
+// 	} finally {
+// 		isLoadingMetadata.value = false;
+// 	}
+// }
 
 const route = useRoute();
 
@@ -83,7 +97,7 @@ function resumeTvMode() {
 onMounted(async () => {
 	// Pause TV mode to allow interaction with VideoPlayer UI
 	pauseTvMode();
-	loadMetadata();
+	// loadMetadata();
 	initialProgress();
 	try {
 		await document.documentElement.requestFullscreen();
@@ -97,6 +111,12 @@ onMounted(async () => {
 			console.error("Failed to acquire wake lock", e);
 		}
 	}
+
+	// Setup control hiding
+	theatreRef.value?.addEventListener('mousemove', () => {
+		updateShowControlsTimeout();
+	});
+
 })
 
 onBeforeUnmount(async () => {
@@ -137,7 +157,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<div class="movie-theater">
+	<div ref="theatreRef" class="movie-theater" :class="{ 'show-controls': showControls }">
 		<VideoPlayer ref="playerRef" v-if="mediaPath" :src="mediaPath" />
 		<div class="top-left overlay">
 			<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="$router.back()" />
@@ -155,6 +175,14 @@ onBeforeUnmount(() => {
 
 		.overlay {
 			color: #fff !important;
+			opacity: 0;
+			transition: 500ms;
+			zoom: 1.5;
+		}
+		&.show-controls {
+			.overlay {
+				opacity: 1;
+			}
 		}
 
 		.top-left {
