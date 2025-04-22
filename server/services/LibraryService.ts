@@ -283,7 +283,6 @@ export class LibraryService {
 	 * Helper functions
 	 *********/
 
-
 	public static parseNamePieces(path) {
 		// MKae sure we're dealing with the folder/file name, not the full path
 		// Also remove anything after a .

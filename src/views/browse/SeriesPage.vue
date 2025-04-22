@@ -92,9 +92,6 @@ const mergedSeasons = computed(() => {
 		}
 		return a.seasonNumber - b.seasonNumber;
 	});
-
-	// Select the first season that is not specials
-	activeSeason.value = seasons.find((season: any) => season.seasonNumber !== 0) || seasons[0];
 	return seasons;
 });
 
@@ -116,7 +113,16 @@ const episodeToPlay = computed(() => {
 			score,
 		};
 	}).filter((episode: any) => episode.score > 0).reverse();
-	return scored[0] || mergedSeasons.value[0].episodes[0];
+	const episode = scored[0] || mergedSeasons.value[0].episodes[0];
+
+	// Use this opportunity to update the active season based on the last watched episode
+	activeSeason.value =
+		mergedSeasons.value.find((season: any) => season.seasonNumber === episode.seasonNumber)
+		// Or select the first season that is not specials
+		|| mergedSeasons.value.find((season: any) => season.seasonNumber !== 0)
+		|| mergedSeasons.value[0];
+
+	return episode;
 });
 
 const resumeTime = computed(() => {
