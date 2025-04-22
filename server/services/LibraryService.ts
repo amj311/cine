@@ -294,7 +294,6 @@ export class LibraryService {
 
 		const versionRegExp = RegExp(/.version(?<version>[^\.]{1,50})\./g);
 		const version = versionRegExp.exec(path)?.groups?.version?.replaceAll('_', ' ').trim() || null;
-		console.log('Version found in file', version);
 		return {
 			name: titleBeforeYear,
 			year,
