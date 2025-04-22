@@ -7,7 +7,7 @@ import VideoPlayer from '@/components/VideoPlayer.vue'
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import api from '@/services/api'
 import { MetadataService } from '@/services/metadataService';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useTvNavigationStore } from '@/stores/tvNavigation.store';
 
 const queryPathStore = useQueryPathStore();
@@ -16,6 +16,7 @@ queryPathStore.updatePathFromQuery();
 const mediaPath = computed(() => queryPathStore.currentPath || '')
 const playerRef = ref<InstanceType<typeof VideoPlayer>>();
 const theatreRef = ref<InstanceType<typeof HTMLElement>>();
+const didAutoFullscreen = ref(false);
 
 const showControlsTime = 2500;
 const hideControlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
@@ -93,17 +94,45 @@ function resumeTvMode() {
 	}
 }
 
+async function attemptAutoFullscreen() {
+	try {
+		const router = useRouter();
+		await document.documentElement.requestFullscreen();
+		didAutoFullscreen.value = true;
+
+		// If auto fullscreen was successful, we should leave this page when fullscreen exits
+		document.addEventListener('fullscreenchange', onFullScreenChange, false);
+		document.addEventListener('webkitfullscreenchange', onFullScreenChange, false);
+		document.addEventListener('mozfullscreenchange', onFullScreenChange, false);
+
+		function onFullScreenChange() {
+			var fullscreenElement =
+				document.fullscreenElement ||
+				(document as any).mozFullScreenElement ||
+				(document as any).webkitFullscreenElement;
+
+				// This fires when the first element goes fullscreen
+				// The Element will be null when exiting fullscreen
+				if (!fullscreenElement) {
+					document.removeEventListener('fullscreenchange', onFullScreenChange);
+					document.removeEventListener('webkitfullscreenchange', onFullScreenChange);
+					document.removeEventListener('mozfullscreenchange', onFullScreenChange);
+					router.back();
+				}
+		}
+	} catch (e) {
+	}
+}
+
 
 onMounted(async () => {
 	// Pause TV mode to allow interaction with VideoPlayer UI
 	pauseTvMode();
 	// loadMetadata();
+
+	attemptAutoFullscreen();
+	
 	initialProgress();
-	try {
-		await document.documentElement.requestFullscreen();
-	} catch (e) {
-		console.error("Failed to enter fullscreen", e);
-	}
 	if ('wakeLock' in navigator) {
 		try {
 			wakeLock = await navigator.wakeLock.request('screen');
@@ -115,7 +144,7 @@ onMounted(async () => {
 	// Setup control hiding
 	const events = ['mousemove', 'keydown', 'touchstart'];
 	events.forEach((event) => {
-		theatreRef.value?.addEventListener(event, updateShowControlsTimeout);
+		theatreRef.value?.addEventListener(event, updateShowControlsTimeout, { passive: true });
 	});
 
 })
@@ -124,7 +153,12 @@ onBeforeUnmount(async () => {
 	// Resume TV mode
 	resumeTvMode();
 	
-	document.exitFullscreen();
+	if (didAutoFullscreen.value) {
+		try {
+			document.exitFullscreen();
+		} catch (e) {}
+	}
+
 	// release wake lock
 	if (wakeLock) {
 		await wakeLock.release();
