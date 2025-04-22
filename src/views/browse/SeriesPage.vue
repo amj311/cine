@@ -118,13 +118,13 @@ const episodeToPlay = computed(() => {
 		</div>
 
 			<div class="left-side" :style="{ flexGrow: 1 }">
-
 				<h1 class="title">{{ libraryItem.name }}</h1>
 				<div style="display: flex; gap: 10px; flex-wrap: wrap;">
 					<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
 					<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
 					<span v-if="metadata?.content_rating">{{ metadata.content_rating }}</span>
 				</div>
+
 				<StarRating class="my-4" v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
 
 				<button
@@ -179,7 +179,7 @@ const episodeToPlay = computed(() => {
 								<div class="episode-info">
 									<h3>{{ episode.name }}</h3>
 									<div style="display: flex; gap: 10px; flex-wrap: wrap;">
-										<span>Episode {{ episode.episodeNumber }}</span>
+										<span>Ep. {{ episode.episodeNumber }}</span>
 										<span v-if="episode.runtime">{{ formatRuntime(episode.runtime) }}</span>
 										<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
 									</div>
@@ -244,12 +244,6 @@ const episodeToPlay = computed(() => {
 .poster-wrapper {
 	width: min(250px, 30vw);
 	min-width: min(250px, 30vw);
-}
-
-.divider {
-	height: 1px;
-	background-color: var(--color-border);
-	margin: 10px 0;
 }
 
 .episode-item {

@@ -28,7 +28,7 @@ defineExpose({
 		return {
 			time: videoRef.value.currentTime,
 			duration: videoRef.value.duration,
-			percentage: videoRef.value.currentTime / videoRef.value.duration * 100,
+			percentage: parseInt((videoRef.value.currentTime / videoRef.value.duration * 100).toFixed(5)),
 			watchedAt: new Date(),
 		};
 	},

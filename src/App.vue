@@ -13,7 +13,7 @@ const tvNavigationStore = useTvNavigationStore();
 <template>
 	<AppBackground />
 
-	<div :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
+	<div class="dark-app" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
 		<RouterView v-slot="{ Component }">
 			<KeepAlive :include="['BrowseView']">
 				<component :is="Component" />

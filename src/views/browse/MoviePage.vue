@@ -6,7 +6,6 @@ import { useRouter } from 'vue-router';
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
-import Scroll from '@/components/Scroll.vue';
 import ExtrasList from '@/components/ExtrasList.vue';
 
 const router = useRouter();
@@ -37,15 +36,16 @@ onBeforeMount(() => {
 	loadMetadata();
 });
 onBeforeUnmount(() => {
-	loadMetadata();
 	backgroundStore.clearBackgroundUrl();
 });
 
-function playVideo(path: string) {
+function playVideo(path: string, startTime?: number) {
+	console.log('playVideo', path, startTime);
 	router.push({
 		name: 'play',
 		query: {
-			path
+			path,
+			startTime,
 		},
 	})
 }
@@ -59,38 +59,57 @@ function formatRuntime(minutes: number) {
 	return `${hours}hr ${minutesOver}min`;
 }
 
+const resumeTime = computed(() => {
+	if (props.libraryItem.movie.watchProgress?.percentage < 90) {
+		return props.libraryItem.movie.watchProgress.time;
+	}
+	return 0;
+});
+
 </script>
 
 <template>
 	<div class="movie-page">
 		<div class="top-wrapper">
 			<div>
-			<div class="poster-wrapper">
-				<MediaCard
-					:imageUrl="metadata?.poster_full"
-					:progress="libraryItem.movie.watchProgress"
-				/>
+				<div class="poster-wrapper">
+					<MediaCard
+						:imageUrl="metadata?.poster_full"
+						:progress="libraryItem.movie.watchProgress"
+					/>
+				</div>
 			</div>
-		</div>
 
 			<div class="left-side" :style="{ flexGrow: 1 }">
 
 				<h1 class="title">{{ libraryItem.name }}</h1>
-				<p style="display: flex; gap: 10px; flex-wrap: wrap;">
+				<div style="display: flex; gap: 10px; flex-wrap: wrap;">
 					<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
 					<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
 					<span v-if="metadata?.content_rating">{{ metadata.content_rating }}</span>
-				</p>
-				<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
-				<br />
+				</div>
 
-				<Button
-					:size="'large'"
-					class="play-button"
-					@click="() => playVideo(libraryItem.movie.relativePath)"
-				>
-					Play
-				</Button>
+				<StarRating class="my-4" v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
+
+				<div class="flex gap-2">
+					<Button
+						:size="'large'"
+						class="play-button"
+						@click="() => playVideo(libraryItem.movie.relativePath, resumeTime)"
+					>
+						<i class="pi pi-play" />
+						{{ resumeTime ? 'Resume' : 'Play' }}
+					</Button>
+					<Button
+						v-if="resumeTime"
+						:size="'large'"
+						variant="text"
+						severity="contrast"
+						@click="() => playVideo(libraryItem.movie.relativePath, 0)"
+					>
+						<i class="pi pi-replay" />
+					</Button>
+				</div>
 
 				<p class="hide-md" style="max-width: 50em;"><br /><br />{{ metadata?.overview }}</p>
 			</div>
@@ -144,7 +163,8 @@ function formatRuntime(minutes: number) {
 .movie-page {
 	display: flex;
 	flex-direction: column;
-	gap: 50px;
+	gap: 30px;
+	padding-bottom: 20px;
 }
 
 .top-wrapper {

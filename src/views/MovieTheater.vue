@@ -91,7 +91,7 @@ onBeforeUnmount(async () => {
 	}
 });
 
-const PROGRESS_INTERVAL = 1000 * 5;
+const PROGRESS_INTERVAL = 1000 * 30;
 const progressUpdateInterval = setInterval(async () => {
 	try {
 		const progress = playerRef.value?.getProgress();
