@@ -10,16 +10,18 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	const lastMouseMoveTime = ref(0);
 	const enabled = ref(false);
 	let lastFocusedEl: HTMLElement | null = null;
+	let computingNewFocus = false;
 
 	function captureClick(event) {
+		event.stopPropagation();
+		event.preventDefault();
 		lastFocusedEl?.click();
 	}
 
 	const mouseCooldown = 100;
 
 	function handleMouseMove(event) {
-
-		if (Date.now() - lastMouseMoveTime.value < mouseCooldown) {
+		if (computingNewFocus || Date.now() - lastMouseMoveTime.value < mouseCooldown) {
 			return;
 		}
 
@@ -70,6 +72,10 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	}
 
 	function handleKeyDown(event) {
+		if (computingNewFocus) {
+			return;
+		}
+
 		if (event.key === 'Enter' || event.key === ' ') {
 			captureClick(event);
 			return;
@@ -116,18 +122,23 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		enabled.value = false;
 	}
 
-	function moveFocus(direction: Direction | null = null) {
+	async function moveFocus(direction: Direction | null = null) {
+		if (computingNewFocus) {
+			return;
+		}
+		computingNewFocus = true;
 		lastDetectedDirection.value = direction;
-		const focusableElements = gatherFocusableElements(direction);
+		const focusableElements = await gatherFocusableElements(direction);
 
 		if (focusableElements.length) {
 			setFocus(focusableElements[0]);
 		}
+		computingNewFocus = false;
 	}
 
 
-	function findFocus() {
-		const focusableElements = gatherFocusableElements();
+	async function findFocus() {
+		const focusableElements = await gatherFocusableElements();
 		if (focusableElements.length) {
 			setFocus(focusableElements[0]);
 		}
@@ -140,7 +151,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		}
 	}
 
-	function gatherFocusableElementsWithinElement(element: HTMLElement, direction: Direction | null) {
+	async function gatherFocusableElementsWithinElement(element: HTMLElement, direction: Direction | null) {
 		const focusElements = ['[href]', 'button', 'input', 'select', 'textarea', '[tabindex]', 'details', 'summary'];
 		const query = focusElements.map(el => el + ':not([disabled]):not([tabindex="-1"])').join(', ');
 
@@ -208,7 +219,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		return elements;
 	}
 
-	function gatherFocusableElements(direction: Direction | null = null) {
+	async function gatherFocusableElements(direction: Direction | null = null) {
 		// Determine if current el is within a scrollable container
 		// If so, only look for focusable elements within that container
 		// If it is not or there are no valid options left in the direction, then look for the next scrollable el, up to the root.
@@ -229,7 +240,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 			while (scrollableStack.length) {
 				const scrollableElement = scrollableStack.shift() as HTMLElement;
-				const focusableElements = gatherFocusableElementsWithinElement(scrollableElement, direction);
+				const focusableElements = await gatherFocusableElementsWithinElement(scrollableElement, direction);
 				if (focusableElements.length) {
 					elements = focusableElements;
 					break;
@@ -238,7 +249,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		}
 
 		if (!elements.length) {
-			elements = gatherFocusableElementsWithinElement(document.body, direction);
+			elements = await gatherFocusableElementsWithinElement(document.body, direction);
 		}
 		return elements;
 	}
