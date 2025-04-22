@@ -1,35 +1,71 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
-export const useTvNavigationStore = defineStore('TvNavigation', () => {
-	const enabled = ref(false);
+type Direction = 'up' | 'down' | 'left' | 'right';
 
+export const useTvNavigationStore = defineStore('TvNavigation', () => {
+	const lastMouseMove = ref({ x: 0, y: 0 });
+	const lastMousePosition = ref({ x: 0, y: 0 });
+	const lastDetectedDirection = ref<Direction | null>(null);
+	const lastMouseMoveTime = ref(0);
+	const enabled = ref(false);
 	let preClickElement: HTMLElement | null = null;
 
 	function captureClick(event) {
 		preClickElement?.click();
 	}
 
-	type Direction = 'up' | 'down' | 'left' | 'right';
-	const mouseCooldown = 200;
-	let lastMouseMoveTime = 0;
+	const mouseCooldown = 100;
 
 	function handleMouseMove(event) {
-		if (Date.now() - lastMouseMoveTime < mouseCooldown) {
+		if (Date.now() - lastMouseMoveTime.value < mouseCooldown) {
 			return;
 		}
-		lastMouseMoveTime = Date.now();
+		console.log('Mouse moved', event);
 		// determine greatest moved direction
-		const deltaX = event.movementX;
-		const deltaY = event.movementY;
-		let direction: Direction;
+		const deltaX = event.clientX - lastMousePosition.value.x;
+		const deltaY = event.clientY - lastMousePosition.value.y;
+
+		let direction: Direction | null = null;
+
+		if (deltaX === 0 && deltaY === 0) {
+			// Mouse may be stuck on edge of screen.
+			// If it is touching a boundary, go in that direction
+			console.log("Mouse did not move! Looking for edge detection!")
+			console.log(event.clientY, window.innerHeight, event.clientY >= window.innerHeight - 1);
+			if (event.clientX <= 1) {
+				direction = 'left';
+			} else if (event.clientX >= window.innerWidth - 1) {
+				direction = 'right';
+			} else if (event.clientY <= 1) {
+				direction = 'up';
+			} else if (event.clientY >= window.innerHeight - 1) {
+				direction = 'down';
+			}
+
+			if (direction) {
+				moveFocus(direction);
+				return;
+			} else {
+				console.log("Mouse is not touching any edge. Not moving focus.");
+				return;
+			}
+		}
+
+		lastMousePosition.value = { x: event.clientX, y: event.clientY };
+		lastMouseMoveTime.value = Date.now();
+		lastMouseMove.value = { x: deltaX, y: deltaY };
+
 		if (Math.abs(deltaX) > Math.abs(deltaY)) {
 			direction = deltaX > 0 ? 'right' : 'left';
 		}
-		else {
+		else if (Math.abs(deltaY) > Math.abs(deltaX)) {
 			direction = deltaY > 0 ? 'down' : 'up';
 		}
-		moveFocus(direction);
+
+		if (direction) {
+			moveFocus(direction);
+		}
 	}
 
 	function handleKeyDown(event) {
@@ -76,6 +112,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	}
 
 	function moveFocus(direction: 'up' | 'down' | 'left' | 'right') {
+		lastDetectedDirection.value = direction;
 		const focusableElements = gatherFocusableElements(direction);
 
 		if (focusableElements.length) {
@@ -197,7 +234,10 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	}
 
 	return {
-		gatherFocusableElements,
+		lastMouseMove,
+		lastMousePosition,
+		lastDetectedDirection,
+		lastMouseMoveTime,
 
 		determineTvEnvironment,
 		engageTvMode,

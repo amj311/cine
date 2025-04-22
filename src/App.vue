@@ -10,8 +10,8 @@ import { onMounted } from 'vue';
 const tvNavigationStore = useTvNavigationStore();
 
 onMounted(() => {
-	tvNavigationStore.determineTvEnvironment();
-	// tvNavigationStore.engageTvMode();
+	// tvNavigationStore.determineTvEnvironment();
+	tvNavigationStore.engageTvMode();
 });
 </script>
 
@@ -19,6 +19,12 @@ onMounted(() => {
 	<AppBackground />
 
 	<div class="dark-app" :class="{ 'tv-nav': tvNavigationStore.enabled }" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
+		<div v-if="tvNavigationStore.enabled">
+			Last mouse move: {{ tvNavigationStore.lastMouseMove }}<br />
+			Last mouse position: {{ tvNavigationStore.lastMousePosition }}<br />
+			Last mouse move time: {{ tvNavigationStore.lastMouseMoveTime }}<br />
+			Last direction: {{ tvNavigationStore.lastDetectedDirection }}<br />
+		</div>
 		<RouterView v-slot="{ Component }">
 			<KeepAlive :include="['BrowseView']">
 				<component :is="Component" />
