@@ -9,6 +9,7 @@ import { WatchProgress, WatchProgressService } from "./WatchProgressService";
 
 type Playable = {
 	name: string,
+	version?: string | null,
 	fileName: RelativePath,
 	relativePath: RelativePath,
 	watchProgress: WatchProgress | null,
@@ -80,7 +81,7 @@ type LibraryItem = Movie | Series | Collection;
 export class LibraryService {
 	public static async parseFolderToItem(path: RelativePath, detailed = false): Promise<LibraryItem | undefined> {
 		const folderName = path.split('/').pop() || path;
-		const { name, year } = LibraryService.parseNameAndYear(folderName);
+		const { name, year } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
 
 		if (!year) {
@@ -123,7 +124,7 @@ export class LibraryService {
 
 		// Identify movie when a child item has the same name and year
 		const movieFile = children.files.find((file) => {
-			const { name: folderName, year: fileYear } = LibraryService.parseNameAndYear(file);
+			const { name: folderName, year: fileYear } = LibraryService.parseNamePieces(file);
 			return file.endsWith('.mp4') && folderName === name && fileYear === year;
 		});
 		if (movieFile) {
@@ -133,6 +134,8 @@ export class LibraryService {
 				extras = LibraryService.prepareExtras(extraVideos, path)
 			}
 
+			const { version: movieVersion } = LibraryService.parseNamePieces(movieFile);
+
 			return {
 				type: 'movie',
 				name,
@@ -141,6 +144,7 @@ export class LibraryService {
 				folderName: folderName,
 				movie: {
 					name: LibraryService.removeExtensionsFromFileName(movieFile),
+					version: movieVersion,
 					fileName: movieFile,
 					relativePath: path + '/' + movieFile,
 					watchProgress: WatchProgressService.getWatchProgress(path + '/' + movieFile)
@@ -216,8 +220,10 @@ export class LibraryService {
 					...(extraEpisodeTimes || []),
 				]
 
+				const { name, version } = LibraryService.parseNamePieces(file);
 				const episodes: Episode[] = allEpisodeTimes.map(({ episodeNumber, startTime }, i) => ({
-					name: LibraryService.removeExtensionsFromFileName(file),
+					name,
+					version,
 					fileName: file,
 					relativePath: folder + '/' + file,
 
@@ -278,7 +284,7 @@ export class LibraryService {
 	 *********/
 
 
-	public static parseNameAndYear(path) {
+	public static parseNamePieces(path) {
 		// MKae sure we're dealing with the folder/file name, not the full path
 		// Also remove anything after a .
 		const folderName = LibraryService.removeExtensionsFromFileName(path.split('/').pop());
@@ -286,9 +292,13 @@ export class LibraryService {
 		const year = YearRegExp.exec(folderName)?.[1];
 		const titleBeforeYear = folderName.split(YearRegExp)[0].trim();
 
+		const versionRegExp = RegExp(/.version(?<version>[^\.]{1,50})\./g);
+		const version = versionRegExp.exec(path)?.groups?.version?.replaceAll('_', ' ').trim() || null;
+		console.log('Version found in file', version);
 		return {
 			name: titleBeforeYear,
 			year,
+			version,
 		}
 	}
 

@@ -210,7 +210,7 @@ const resumeTime = computed(() => {
 									/>
 								</div>
 								<div class="episode-info">
-									<h3>{{ episode.name }}</h3>
+									<h3>{{ episode.name }}{{ episode.version ? ` (${episode.version})` : '' }}</h3>
 									<div style="display: flex; gap: 10px; flex-wrap: wrap;">
 										<span>Ep. {{ episode.episodeNumber }}</span>
 										<span v-if="episode.runtime">{{ formatRuntime(episode.runtime) }}</span>
