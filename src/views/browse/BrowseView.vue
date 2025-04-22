@@ -105,8 +105,8 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) |
 			</span>
 		</div>
 		
-			<Scroll ref="scrollerRef">
-				<div class="pl-3">
+		<Scroll ref="scrollerRef">
+			<div class="pl-3">
 
 				<KeepAlive :include="['Explorer']">
 					<template v-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
@@ -125,6 +125,9 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) |
 					</template>
 				</KeepAlive>
 			</div>
+
+			<!-- Pad scroll bottom -->
+			 <br /><br />
 		</Scroll>
 		
 	</div>

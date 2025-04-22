@@ -8,6 +8,7 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import api from '@/services/api'
 import { MetadataService } from '@/services/metadataService';
 import { useRoute } from 'vue-router';
+import { useTvNavigationStore } from '@/stores/tvNavigation.store';
 
 const queryPathStore = useQueryPathStore();
 queryPathStore.updatePathFromQuery();
@@ -64,8 +65,24 @@ async function initialProgress() {
 
 let wakeLock: WakeLockSentinel | null = null;
 
+let wasTvMode = false;
+function pauseTvMode() {
+	if (useTvNavigationStore().enabled) {
+		wasTvMode = true;
+		useTvNavigationStore().disengageTvMode();
+	}
+}
+function resumeTvMode() {
+	if (wasTvMode) {
+		wasTvMode = false;
+		useTvNavigationStore().engageTvMode();
+	}
+}
+
 
 onMounted(async () => {
+	// Pause TV mode to allow interaction with VideoPlayer UI
+	pauseTvMode();
 	loadMetadata();
 	initialProgress();
 	try {
@@ -83,6 +100,9 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(async () => {
+	// Resume TV mode
+	resumeTvMode();
+	
 	document.exitFullscreen();
 	// release wake lock
 	if (wakeLock) {

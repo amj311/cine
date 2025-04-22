@@ -10,8 +10,8 @@ import { onMounted } from 'vue';
 const tvNavigationStore = useTvNavigationStore();
 
 onMounted(() => {
-	// tvNavigationStore.determineTvEnvironment();
-	tvNavigationStore.engageTvMode();
+	tvNavigationStore.determineTvEnvironment();
+	// tvNavigationStore.engageTvMode();
 });
 </script>
 

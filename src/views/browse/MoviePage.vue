@@ -163,7 +163,6 @@ const resumeTime = computed(() => {
 	display: flex;
 	flex-direction: column;
 	gap: 30px;
-	padding-bottom: 20px;
 }
 
 .top-wrapper {
@@ -173,8 +172,8 @@ const resumeTime = computed(() => {
 }
 
 .poster-wrapper {
-	width: min(300px, 30vw);
-	min-width: min(300px, 30vw);
+	width: min(250px, 30vw);
+	min-width: min(250px, 30vw);
 }
 
 </style>

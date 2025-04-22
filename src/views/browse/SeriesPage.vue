@@ -265,8 +265,7 @@ const resumeTime = computed(() => {
 .series-page {
 	display: flex;
 	flex-direction: column;
-	gap: 25px;
-	padding-bottom: 30px;
+	gap: 30px;
 }
 
 .top-wrapper {

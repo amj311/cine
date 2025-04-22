@@ -147,7 +147,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			return;
 		}
 
-		// Consider the environment as a TV is the mouse moves exactly linearly for a few consecutive events
+		// Consider the environment as a TV is the mouse moves exactly linearly for many consecutive events
 		const SIGNIFICANCE_THRESHOLD = 50;
 		const EVENTS_CAP = 100;
 
@@ -160,7 +160,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 		if (lastFewMouseMovements.length > SIGNIFICANCE_THRESHOLD) {
 			const lastFewMouseMovementsToConsider = lastFewMouseMovements.slice(-SIGNIFICANCE_THRESHOLD);
-			console.log('lastFewMouseMovementsToConsider', lastFewMouseMovementsToConsider);
 			const isTv = lastFewMouseMovementsToConsider.every((movement) => movement.x === 0)
 				|| lastFewMouseMovementsToConsider.every((movement) => movement.y === 0);
 
@@ -202,6 +201,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 		determineTvEnvironment,
 		engageTvMode,
+		disengageTvMode,
 		enabled,
 
 		setFocus,
