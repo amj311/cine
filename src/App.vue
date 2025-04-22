@@ -8,11 +8,11 @@ import AppBackground from './components/AppBackground.vue';
 import { onMounted, ref } from 'vue';
 
 const tvNavigationStore = useTvNavigationStore();
-const showDebug = ref(true);
+const showDebug = ref(false);
 
 onMounted(() => {
-	// tvNavigationStore.determineTvEnvironment();
-	tvNavigationStore.engageTvMode();
+	tvNavigationStore.determineTvEnvironment();
+	// tvNavigationStore.engageTvMode();
 });
 </script>
 
