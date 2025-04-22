@@ -15,7 +15,7 @@ function openMenu(event) {
 </script>
 
 <template>
-	<span @click="openMenu" v-bind="{ ...$props, ...$attrs }"><slot></slot></span>
+	<span @click="openMenu" v-bind="{ ...$props, ...$attrs }" tabindex="0"><slot></slot></span>
 	<TieredMenu ref="menu" id="overlay_menu" :popup="true" v-bind="$attrs">
 		<template #start><slot name="start"></slot></template>
 	</TieredMenu>

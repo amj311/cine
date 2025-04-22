@@ -5,15 +5,19 @@
 import { RouterView } from 'vue-router'
 import { useTvNavigationStore } from './stores/tvNavigation.store';
 import AppBackground from './components/AppBackground.vue';
+import { onMounted } from 'vue';
 
 const tvNavigationStore = useTvNavigationStore();
 
+onMounted(() => {
+	tvNavigationStore.engageTvMode();
+});
 </script>
 
 <template>
 	<AppBackground />
 
-	<div class="dark-app" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
+	<div class="dark-app" :class="{ 'tv-nav': tvNavigationStore.enabled }" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
 		<RouterView v-slot="{ Component }">
 			<KeepAlive :include="['BrowseView']">
 				<component :is="Component" />
@@ -27,6 +31,8 @@ const tvNavigationStore = useTvNavigationStore();
 	<div v-if="tvNavigationStore.lastMouseMoveEvent">
 		Last mouse event: {{ tvNavigationStore.lastMouseMoveEvent }}
 	</div> -->
+
+	<div class="click-capture" style="position: fixed; top: 0; bottom: 0; left: 0; right: 0;"></div>
 </template>
 
 <style>
@@ -57,5 +63,9 @@ const tvNavigationStore = useTvNavigationStore();
 	to {
 		transform: rotate(360deg);
 	}
+}
+
+.tv-nav :focus {
+	outline: 1px solid var(--color-contrast) !important;
 }
 </style>

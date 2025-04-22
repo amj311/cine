@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ProgressBar from '@/components/ProgressBar.vue'
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
 
@@ -15,6 +16,7 @@ const props = defineProps<{
 	overrideStartTime?: number;
 	playSrc?: string;
 	clickable?: boolean;
+	action?: () => void;
 }>();
 
 
@@ -31,11 +33,20 @@ function playVideo() {
 	})
 }
 
+const onClick = computed(() => {
+	if (props.action) {
+		return props.action;
+	}
+	if (props.playSrc) {
+		return playVideo;
+	}
+	return undefined;
+});
 
 </script>
 
 <template>
-	<div class="media-card" :class="{ clickable: clickable || playSrc }" @click="playVideo">
+	<div class="media-card" :class="{ clickable: clickable || playSrc }" @click="onClick" :tabindex="onClick ? 0 : -1">
 		<div
 			class="poster bg-soft"
 			:class="aspectRatio || 'tall'"
@@ -67,18 +78,18 @@ function playVideo() {
 	border-radius: 5px;
 	overflow: hidden;
 
-	&.clickable:hover {
+	&.clickable:hover, &:focus {
 		cursor: pointer;
 		background-color: var(--color-background-mute);
-		outline: 3px solid var(--color-background-mute);
-		transform: scale(1.05);
+		border: 8px solid var(--color-background-mute);
+		margin: -8px;
 	}
 
 	.overlay {
 		display: none;
 	}
 
-	&:hover {
+	&:hover, &:focus {
 		.overlay {
 			display: flex;
 			position: absolute;

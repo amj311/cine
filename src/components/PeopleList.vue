@@ -11,7 +11,7 @@ defineProps<{
 <template>
 	<Scroll>
 		<div class="people-list">
-			<div class="people-item" v-for="(person, index) in people" :key="index">
+			<div class="people-item" v-for="(person, index) in people" :key="index" tabindex="0">
 				<div
 					class="image-wrapper"
 					:style="{ backgroundImage: `url(${person.photo})` }"

@@ -101,7 +101,7 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) |
 				/
 			</span>
 			<span v-if="queryPathStore.currentFile">
-				<Button variant="text" severity="secondary" class="font-bold" style="pointer-events: none">{{ queryPathStore.currentFile }}</Button>
+				<Button variant="text" severity="secondary" class="font-bold" style="pointer-events: none" tabindex="-1">{{ queryPathStore.currentFile }}</Button>
 			</span>
 		</div>
 		
@@ -131,21 +131,4 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) |
 </template>
 
 <style scoped lang="scss">
-ul {
-	list-style: none;
-	padding: 0;
-}
-
-li {
-	margin: 5px 0;
-}
-
-.poster-tile {
-	display: inline-block;
-	width: 150px;
-	height: 200px;
-	margin: 10px;
-	cursor: pointer;
-	user-select: none;
-}
 </style>

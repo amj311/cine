@@ -46,13 +46,14 @@ const items = computed(() => {
 							:media="folder.libraryItem"
 						>
 							<template #default="{ metadata }">
-								<div class="grid-tile" @click="queryPathStore.enterDirectory(folder.folderName)">
+								<div class="grid-tile">
 									<MediaCard
 										clickable
 										aspectRatio="wide"
 										:fallbackIcon="'🗂️'"
 										:title="folder.libraryItem.name"
 										:subtitle="`${folder.libraryItem.children.length} items`"
+										:action="() => queryPathStore.enterDirectory(folder.folderName)"
 									/>
 								</div>
 							</template>
@@ -68,7 +69,7 @@ const items = computed(() => {
 							:media="folder.libraryItem"
 						>
 							<template #default="{ metadata }">
-								<div class="grid-tile" @click="queryPathStore.enterDirectory(folder.folderName)">
+								<div class="grid-tile">
 									<MediaCard
 										clickable
 										:imageUrl="metadata?.poster_thumb"
@@ -77,6 +78,7 @@ const items = computed(() => {
 										:title="folder.libraryItem.name"
 										:subtitle="folder.libraryItem.numSeasons ? `${folder.libraryItem.numSeasons} Season${folder.libraryItem.numSeasons.length ? 's' : ''}` : folder.libraryItem.year"
 										:progress="folder.libraryItem.movie?.watchProgress"
+										:action="() => queryPathStore.enterDirectory(folder.folderName)"
 									/>
 								</div>
 							</template>
