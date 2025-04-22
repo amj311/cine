@@ -11,8 +11,7 @@ const tvNavigationStore = useTvNavigationStore();
 const showDebug = ref(false);
 
 onMounted(() => {
-	// tvNavigationStore.determineTvEnvironment();
-	tvNavigationStore.engageTvMode();
+	tvNavigationStore.determineTvEnvironment();
 });
 </script>
 
