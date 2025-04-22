@@ -61,6 +61,16 @@ export const useQueryPathStore = defineStore('QueryPath', () => {
 			updateQuery();
 		},
 
+		goToAncestor(dir: string) {
+			// Find the index of the ancestor directory
+			const index = currentDir.value.indexOf(dir);
+			if (index !== -1) {
+				// Remove all directories after the ancestor
+				currentDir.value = currentDir.value.slice(0, index + 1);
+			}
+			updateQuery();
+		},
+
 		enterDirectory(dir: string) {
 			// Add the new folder to the current directory
 			currentDir.value.push(dir);
