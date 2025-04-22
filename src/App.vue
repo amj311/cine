@@ -6,13 +6,37 @@ import { RouterView } from 'vue-router'
 import { useTvNavigationStore } from './stores/tvNavigation.store';
 import AppBackground from './components/AppBackground.vue';
 import { onMounted, ref } from 'vue';
+import { useConfirm } from "primevue/useconfirm";
 
 const tvNavigationStore = useTvNavigationStore();
 const showDebug = ref(false);
 
+const confirm = useConfirm();
+
+function attemptDetermineTvMode() {
+	tvNavigationStore.determineTvEnvironment(() => {
+		return new Promise((resolve) => {
+			if (localStorage.getItem('tvNavigation') === 'false') {
+				resolve(false);
+				return;
+			}
+			confirm.require({
+				message: 'This looks like a TV environment. Do you want to enable TV navigation?',
+				accept: () => {
+					localStorage.setItem('tvNavigation', 'true');
+					resolve(true);
+				},
+				reject: () => {
+					localStorage.setItem('tvNavigation', 'false');
+					resolve(false);
+				},
+			});
+		});
+	});
+}
+
 onMounted(() => {
-	// tvNavigationStore.determineTvEnvironment();
-	// tvNavigationStore.engageTvMode();
+	attemptDetermineTvMode();
 });
 </script>
 
@@ -33,6 +57,8 @@ onMounted(() => {
 		Last mouse move time: {{ tvNavigationStore.lastMouseMoveTime }}<br />
 		Last direction: {{ tvNavigationStore.lastDetectedDirection }}<br />
 	</div>
+
+	<ConfirmDialog></ConfirmDialog>
 
 	<div id="tvClickCapture" v-if="tvNavigationStore.enabled" style="position: fixed; top: 0; bottom: 0; left: 0; right: 0;"></div>
 </template>

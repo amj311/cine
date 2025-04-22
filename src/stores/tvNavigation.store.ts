@@ -8,6 +8,8 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	const lastMousePosition = ref({ x: 0, y: 0 });
 	const lastDetectedDirection = ref<Direction | null>(null);
 	const lastMouseMoveTime = ref(0);
+	const detectedTv = ref(false);
+	const tvWasConfirmed = ref(false);
 	const enabled = ref(false);
 	let lastFocusedEl: HTMLElement | null = null;
 	let computingNewFocus = false;
@@ -167,7 +169,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		});
 	}
 	function disengageTvMode() {
-		document.getElementById('tvClickCapture')!.removeEventListener('click', captureClick);
+		document.getElementById('tvClickCapture')?.removeEventListener('click', captureClick);
 		window.removeEventListener('mousemove', handleMouseMove);
 		window.removeEventListener('mouseout', handleMouseOut);
 		window.removeEventListener('keydown', handleKeyDown);
@@ -338,6 +340,20 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		}
 	}
 
+
+	let tvConfirmationCb: (() => Promise<boolean>) | null = null;
+	function determineTvEnvironment(confirmationCb: () => Promise<boolean>) {
+		tvConfirmationCb = confirmationCb;
+		const isTv = window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
+		if (isTv) {
+			console.log('TV environment detected');
+			doTvConfirmation();
+			return;
+		}
+		startWatchingForTvMouseMove();
+	}
+
+
 	function startWatchingForTvMouseMove() {
 		console.log('Watching for TV mouse move');
 		window.addEventListener('mousemove', watchForTvMouseMove);
@@ -347,22 +363,35 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		console.log('Stopped watching for TV mouse move');
 		window.removeEventListener('mousemove', watchForTvMouseMove);
 		if (success) {
-			engageTvMode();
+			doTvConfirmation();
 		}
 		else {
 			disengageTvMode();
 		}
 	}
 
-	function determineTvEnvironment() {
-		const isTv = window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
-		if (isTv) {
-			console.log('TV environment detected');
-			engageTvMode();
+	function doTvConfirmation() {
+		detectedTv.value = true;
+		if (!tvConfirmationCb) {
+			console.error('No confirmation callback set');
 			return;
 		}
-		startWatchingForTvMouseMove();
+		tvConfirmationCb().then((confirmed) => {
+			console.log("RESOLVED!!!!", confirmed)
+			if (confirmed) {
+				console.log('Confirmed TV environment');
+				tvWasConfirmed.value = true;
+				engageTvMode();
+			} else {
+				tvWasConfirmed.value = false;
+				console.log('Declined TV environment');
+				disengageTvMode();
+			}
+		}).catch((err) => {
+			console.error('Error confirming TV environment:', err);
+		});
 	}
+
 
 	return {
 		lastMouseMove,
@@ -373,6 +402,9 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		determineTvEnvironment,
 		engageTvMode,
 		disengageTvMode,
+
+		detectedTv,
+		tvWasConfirmed,
 		enabled,
 
 		setFocus,
