@@ -119,7 +119,7 @@ onBeforeUnmount(() => {
 <template>
 	<div class="movie-theater">
 		<VideoPlayer ref="playerRef" v-if="mediaPath" :src="mediaPath" />
-		<div class="top-left">
+		<div class="top-left overlay">
 			<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="$router.back()" />
 		</div>
 	</div>
@@ -132,6 +132,10 @@ onBeforeUnmount(() => {
 	.movie-theater {
 		height: 100%;
 		position: relative;
+
+		.overlay {
+			color: #fff !important;
+		}
 
 		.top-left {
 			position: absolute;
