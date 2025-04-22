@@ -1,29 +1,24 @@
-import { computed, reactive, ref, watch } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { useRouter } from 'vue-router';
 
 export const useTvNavigationStore = defineStore('TvNavigation', () => {
-	const lastMouseMoveEvent = ref('');
-	const lastKeydownEvent = ref('');
 	const enabled = ref(false);
-
-	type Direction = 'up' | 'down' | 'left' | 'right';
-	const mouseCooldown = 200;
-	let lastMouseMoveTime = 0;
 
 	let preClickElement: HTMLElement | null = null;
 
 	function captureClick(event) {
-		console.log('click', event);
 		preClickElement?.click();
 	}
+
+	type Direction = 'up' | 'down' | 'left' | 'right';
+	const mouseCooldown = 200;
+	let lastMouseMoveTime = 0;
 
 	function handleMouseMove(event) {
 		if (Date.now() - lastMouseMoveTime < mouseCooldown) {
 			return;
 		}
 		lastMouseMoveTime = Date.now();
-		lastMouseMoveEvent.value = `Mouse moved to (${event.clientX}, ${event.clientY})`;
 		// determine greatest moved direction
 		const deltaX = event.movementX;
 		const deltaY = event.movementY;
@@ -34,38 +29,30 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		else {
 			direction = deltaY > 0 ? 'down' : 'up';
 		}
-		lastMouseMoveEvent.value += `, moved ${direction}`;
-		// console.log(lastMouseMoveEvent.value);
 		moveFocus(direction);
 	}
 
 	function handleKeyDown(event) {
 		if (event.key === 'Enter' || event.key === ' ') {
-			lastKeydownEvent.value = 'Enter or Space pressed';
 			captureClick(event);
 			return;
 		}
 		let direction = '';
 		switch (event.key) {
 			case 'ArrowUp':
-				lastKeydownEvent.value = 'Up arrow pressed';
 				direction = 'up';
 				break;
 			case 'ArrowDown':
-				lastKeydownEvent.value = 'Down arrow pressed';
 				direction = 'down';
 				break;
 			case 'ArrowLeft':
-				lastKeydownEvent.value = 'Left arrow pressed';
 				direction = 'left';
 				break;
 			case 'Tab':
 			case 'ArrowRight':
-				lastKeydownEvent.value = 'Right arrow pressed';
 				direction = 'right';
 				break;
 			default:
-				lastKeydownEvent.value = `Other key pressed: ${event.key}`;
 				break;
 		}
 		if (direction === '') {
@@ -81,24 +68,15 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		document.addEventListener('keydown', handleKeyDown);
 		enabled.value = true;
 	}
+	function disengageTvMode() {
+		document.removeEventListener('click', captureClick);
+		document.removeEventListener('mousemove', handleMouseMove);
+		document.removeEventListener('keydown', handleKeyDown);
+		enabled.value = false;
+	}
 
 	function moveFocus(direction: 'up' | 'down' | 'left' | 'right') {
 		const focusableElements = gatherFocusableElements(direction);
-
-		// switch (direction) {
-		// 	case 'up':
-		// 		nextIndex = currentIndex - 1;
-		// 		break;
-		// 	case 'down':
-		// 		nextIndex = currentIndex + 1;
-		// 		break;
-		// 	case 'left':
-		// 		nextIndex = currentIndex - 1;
-		// 		break;
-		// 	case 'right':
-		// 		nextIndex = currentIndex + 1;
-		// 		break;
-		// }
 
 		if (focusableElements.length) {
 			setFocus(focusableElements[0]);
@@ -139,8 +117,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			right: [['top', 'top'], ['bottom', 'bottom'], ['left', 'right']],
 		}
 
-		console.log('gatherFocusableElements', direction, elements.length);
-
 		if (direction && preClickElement) {
 			const activeRect = preClickElement.getBoundingClientRect();
 
@@ -157,19 +133,74 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 					}, 0)
 				}
 			}).filter(el => el !== null).sort((a, b) => a.distanceScore - b.distanceScore);
-			console.log('options', options);
 			elements = options.map((option) => option.element);
 		}
 
-		console.log('Focusable elements:', elements);
 		return elements;
 	}
 
+
+	const lastFewMouseMovements: Array<{ x: number, y: number }> = [];
+	function watchForTvMouseMove(event) {
+		// abort if neiter direction is moving
+		if (event.movementX === 0 && event.movementY === 0) {
+			return;
+		}
+
+		// Consider the environment as a TV is the mouse moves exactly linearly for a few consecutive events
+		const SIGNIFICANCE_THRESHOLD = 50;
+		const EVENTS_CAP = 100;
+
+		lastFewMouseMovements.push({ x: event.movementY, y: event.movementY });
+
+		if (lastFewMouseMovements.length > EVENTS_CAP) {
+			console.log('Too many non-linear mousemovents. Not a TV.');
+			return stopWatchingForTvMouseMove();
+		}
+
+		if (lastFewMouseMovements.length > SIGNIFICANCE_THRESHOLD) {
+			const lastFewMouseMovementsToConsider = lastFewMouseMovements.slice(-SIGNIFICANCE_THRESHOLD);
+			console.log('lastFewMouseMovementsToConsider', lastFewMouseMovementsToConsider);
+			const isTv = lastFewMouseMovementsToConsider.every((movement) => movement.x === 0)
+				|| lastFewMouseMovementsToConsider.every((movement) => movement.y === 0);
+
+			if (isTv) {
+				return stopWatchingForTvMouseMove(true);
+			}
+		}
+	}
+
+	function startWatchingForTvMouseMove() {
+		console.log('Watching for TV mouse move');
+		window.addEventListener('mousemove', watchForTvMouseMove);
+	};
+
+	function stopWatchingForTvMouseMove(success: boolean = false) {
+		console.log('Stopped watching for TV mouse move');
+		window.removeEventListener('mousemove', watchForTvMouseMove);
+		if (success) {
+			engageTvMode();
+		}
+		else {
+			disengageTvMode();
+		}
+	}
+
+	function determineTvEnvironment() {
+		console.log('determineTvEnvironment');
+		const isTv = window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
+		if (isTv) {
+			console.log('TV environment detected');
+			engageTvMode();
+			return;
+		}
+		startWatchingForTvMouseMove();
+	}
+
 	return {
-		lastMouseMoveEvent,
-		lastKeydownEvent,
 		gatherFocusableElements,
 
+		determineTvEnvironment,
 		engageTvMode,
 		enabled,
 

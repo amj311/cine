@@ -81,8 +81,10 @@ const onClick = computed(() => {
 	&.clickable:hover, &:focus {
 		cursor: pointer;
 		background-color: var(--color-background-mute);
-		border: 8px solid var(--color-background-mute);
-		margin: -8px;
+		border: 3px solid var(--color-background-mute);
+		margin: -3px;
+		outline: 1px solid var(--color-contrast);
+		transform: scale(1.03);
 	}
 
 	.overlay {

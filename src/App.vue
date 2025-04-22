@@ -10,6 +10,7 @@ import { onMounted } from 'vue';
 const tvNavigationStore = useTvNavigationStore();
 
 onMounted(() => {
+	// tvNavigationStore.determineTvEnvironment();
 	tvNavigationStore.engageTvMode();
 });
 </script>
@@ -25,14 +26,7 @@ onMounted(() => {
 		</RouterView>
 	</div>
 
-	<!-- <div v-if="tvNavigationStore.lastKeydownEvent">
-		Last keydown event: {{ tvNavigationStore.lastKeydownEvent }}
-	</div>
-	<div v-if="tvNavigationStore.lastMouseMoveEvent">
-		Last mouse event: {{ tvNavigationStore.lastMouseMoveEvent }}
-	</div> -->
-
-	<div class="click-capture" style="position: fixed; top: 0; bottom: 0; left: 0; right: 0;"></div>
+	<div class="click-capture" v-if="tvNavigationStore.enabled" style="position: fixed; top: 0; bottom: 0; left: 0; right: 0;"></div>
 </template>
 
 <style>
