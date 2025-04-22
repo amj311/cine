@@ -6,6 +6,7 @@ import { defineProps, ref, computed, onMounted } from 'vue';
 const props = defineProps<{
 	src: string;
 	onEnd?: () => void;
+	onLoadedData?: (data: any) => void;
 }>();
 
 const videoRef = ref<HTMLVideoElement>();
@@ -46,6 +47,11 @@ onMounted(() => {
 	videoRef.value?.addEventListener('ended', () => {
 		if (props.onEnd) {
 			props.onEnd();
+		}
+	});
+	videoRef.value?.addEventListener('loadeddata', () => {
+		if (props.onLoadedData) {
+			props.onLoadedData(videoRef.value);
 		}
 	});
 });

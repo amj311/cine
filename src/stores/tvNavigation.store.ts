@@ -319,7 +319,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		}
 
 		// Consider the environment as a TV is the mouse moves exactly linearly for many consecutive events
-		const SIGNIFICANCE_THRESHOLD = 50;
+		const SIGNIFICANCE_THRESHOLD = 25;
 		const EVENTS_CAP = 100;
 
 		lastFewMouseMovements.push({ x: event.movementY, y: event.movementY });

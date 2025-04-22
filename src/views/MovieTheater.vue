@@ -17,6 +17,7 @@ const mediaPath = computed(() => queryPathStore.currentPath || '')
 const playerRef = ref<InstanceType<typeof VideoPlayer>>();
 const theatreRef = ref<InstanceType<typeof HTMLElement>>();
 const didAutoFullscreen = ref(false);
+const hasLoaded = ref(false);
 
 const showControlsTime = 2500;
 const hideControlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
@@ -117,6 +118,11 @@ async function attemptAutoFullscreen() {
 					document.removeEventListener('fullscreenchange', onFullScreenChange);
 					document.removeEventListener('webkitfullscreenchange', onFullScreenChange);
 					document.removeEventListener('mozfullscreenchange', onFullScreenChange);
+
+					// make sure we're still on the play route before going back
+					if (router.currentRoute.value.name !== 'play') {
+						return;
+					}
 					router.back();
 				}
 		}
@@ -153,7 +159,7 @@ onBeforeUnmount(async () => {
 	// Resume TV mode
 	resumeTvMode();
 	
-	if (didAutoFullscreen.value) {
+	if (didAutoFullscreen.value && !useTvNavigationStore().detectedTv) {
 		try {
 			document.exitFullscreen();
 		} catch (e) {}
@@ -189,11 +195,18 @@ onBeforeUnmount(() => {
 	clearInterval(progressUpdateInterval);
 })
 
+function onloaded(data: any) {
+	hasLoaded.value = true;
+}
+
 </script>
 
 <template>
 	<div ref="theatreRef" class="movie-theater" :class="{ 'show-controls': showControls }">
-		<VideoPlayer ref="playerRef" v-if="mediaPath" :src="mediaPath" />
+		<VideoPlayer v-show="hasLoaded" ref="playerRef" v-if="mediaPath" :src="mediaPath" :onLoadedData="onloaded" />
+		<div class="loading" v-if="!hasLoaded">
+			<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
+		</div>
 		<div class="top-left overlay">
 			<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="$router.back()" />
 		</div>
@@ -207,6 +220,13 @@ onBeforeUnmount(() => {
 	.movie-theater {
 		height: 100%;
 		position: relative;
+
+
+		.loading {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+		}
 
 		.overlay {
 			color: #fff !important;

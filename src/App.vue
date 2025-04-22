@@ -13,24 +13,35 @@ const showDebug = ref(false);
 
 const confirm = useConfirm();
 
+function suggestFullscreen() {
+	confirm.require({
+		message: 'This looks like a TV environment. Would you lke to go fullscreen?',
+		accept: () => {
+			document.documentElement.requestFullscreen();
+		},
+	});
+}
+
 function attemptDetermineTvMode() {
 	tvNavigationStore.determineTvEnvironment(() => {
 		return new Promise((resolve) => {
-			if (localStorage.getItem('tvNavigation') === 'false') {
-				resolve(false);
-				return;
+			if (localStorage.getItem('tvNavigation') !== 'false') {
+				confirm.require({
+					message: 'This looks like a TV environment. Do you want to enable TV navigation?',
+					accept: () => {
+						localStorage.setItem('tvNavigation', 'true');
+						resolve(true);
+					},
+					reject: () => {
+						localStorage.setItem('tvNavigation', 'false');
+						resolve(false);
+					},
+				});
 			}
-			confirm.require({
-				message: 'This looks like a TV environment. Do you want to enable TV navigation?',
-				accept: () => {
-					localStorage.setItem('tvNavigation', 'true');
-					resolve(true);
-				},
-				reject: () => {
-					localStorage.setItem('tvNavigation', 'false');
-					resolve(false);
-				},
-			});
+			else {
+				resolve(false);
+			}
+			suggestFullscreen();
 		});
 	});
 }
