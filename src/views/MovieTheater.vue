@@ -113,8 +113,9 @@ onMounted(async () => {
 	}
 
 	// Setup control hiding
-	theatreRef.value?.addEventListener('mousemove', () => {
-		updateShowControlsTimeout();
+	const events = ['mousemove', 'keydown', 'touchstart'];
+	events.forEach((event) => {
+		theatreRef.value?.addEventListener(event, updateShowControlsTimeout);
 	});
 
 })
