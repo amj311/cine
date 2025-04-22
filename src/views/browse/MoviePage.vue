@@ -40,7 +40,6 @@ onBeforeUnmount(() => {
 });
 
 function playVideo(path: string, startTime?: number) {
-	console.log('playVideo', path, startTime);
 	router.push({
 		name: 'play',
 		query: {

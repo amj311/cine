@@ -22,7 +22,6 @@ function playVideo() {
 	if (!props.playSrc) {
 		return;
 	}
-	console.log(props.progress?.percentage, props.progress?.time, props.overrideStartTime)
 	router.push({
 		name: 'play',
 		query: {

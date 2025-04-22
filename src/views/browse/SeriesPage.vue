@@ -43,11 +43,12 @@ onBeforeUnmount(() => {
 	backgroundStore.clearBackgroundUrl();
 });
 
-function playVideo(path: string) {
+function playVideo(path: string, startTime?: number) {
 	router.push({
 		name: 'play',
 		query: {
-			path
+			path,
+			startTime,
 		},
 	})
 }
@@ -98,10 +99,31 @@ const mergedSeasons = computed(() => {
 });
 
 const episodeToPlay = computed(() => {
-	if (!activeSeason.value) {
-		return null;
+	// Find the episode with the most recent watch time
+	const scored = mergedSeasons.value.flatMap((season: any) => season.episodes).map((episode: any) => {
+		let score = 0;
+		if (!episode.watchProgress) {
+			score = 0;
+		}
+		else if (episode.watchProgress.percentage >= 90) {
+			score = 0;
+		}
+		else {
+			score = episode.watchProgress?.watchedAt
+		}
+		return {
+			...episode,
+			score,
+		};
+	}).filter((episode: any) => episode.score > 0).reverse();
+	return scored[0] || mergedSeasons.value[0].episodes[0];
+});
+
+const resumeTime = computed(() => {
+	if (episodeToPlay.value?.watchProgress?.percentage < 90) {
+		return episodeToPlay.value?.watchProgress.time;
 	}
-	return activeSeason.value.episodes[0];
+	return 0;
 });
 
 </script>
@@ -127,13 +149,24 @@ const episodeToPlay = computed(() => {
 
 				<StarRating class="my-4" v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
 
-				<button
-					style="zoom: 1.5"
-					class="play-button"
-					@click="() => playVideo(episodeToPlay?.relativePath)"
-				>
-					Play S{{ episodeToPlay?.seasonNumber }}:E{{ episodeToPlay?.episodeNumber }}
-				</button>
+				<div class="flex gap-2">
+					<Button
+						class="play-button"
+						@click="() => playVideo(episodeToPlay?.relativePath, resumeTime)"
+					>
+						<i class="pi pi-play" />
+						{{ resumeTime ? 'Resume' : 'Play' }} S{{ episodeToPlay?.seasonNumber }}:E{{ episodeToPlay?.episodeNumber }}
+					</Button>
+					<Button
+						v-if="resumeTime"
+						:size="'large'"
+						variant="text"
+						severity="contrast"
+						@click="() => playVideo(episodeToPlay.relativePath, episodeToPlay.startTime)"
+					>
+						<i class="pi pi-replay" />
+					</Button>
+				</div>
 
 				<p class="hide-md" style="max-width: 50em;"><br /><br />{{ metadata?.overview }}</p>
 			</div>
