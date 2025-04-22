@@ -31,9 +31,23 @@ type Movie = {
 	metadata: EitherMetadata<'movie'> | null,
 }
 
+/* A single file may span multiple episodes.
+ * For simplicity represent all as any array even if they have just one
+*/
+type EpisodeFile = {
+	seasonNumber: number,
+	firstEpisodeNumber: number,
+	hasMultipleEpisodes: boolean,
+	fileName: string,
+	relativePath: RelativePath,
+	watchProgress: WatchProgress | null,
+	episodes: Array<Episode>,
+}
+
 type Episode = Playable & {
 	seasonNumber: number,
 	episodeNumber: number,
+	startTime?: number,
 }
 
 type Series = {
@@ -46,7 +60,7 @@ type Series = {
 	// Seasons are a map because they may not be in order or all present
 	seasons?: Array<{
 		seasonNumber: number,
-		episodes: Array<Episode>,
+		episodeFiles: Array<EpisodeFile>,
 	}>,
 	metadata: EitherMetadata<'series'> | null,
 	extras?: Array<Extra>,
@@ -143,40 +157,106 @@ export class LibraryService {
 
 
 	private static async extractSeasons(seasonFolders) {
-		const episodes = await Promise.all(seasonFolders.map(async (folder) => {
+		const episodeFiles: EpisodeFile[] = await Promise.all(seasonFolders.map(async (folder) => {
 			const { files } = await DirectoryService.listDirectory(folder);
 			const videoFiles = files.filter((file) => file.endsWith('.mp4'));
+
 			return videoFiles.map((file) => {
-				const NumbersRegex = RegExp(/s(?<seasonNumber>\d{1,3})e(?<episodeNumber>\d{1,3})/g);
+				const overAllwatchProgress = WatchProgressService.getWatchProgress(folder + '/' + file);
+
+				const NumbersRegex = RegExp(/s(?<seasonNumber>\d{1,3})e(?<firstEpisodeNumber>\d{1,3})/g);
 				const numbersMatch = NumbersRegex.exec(file)?.groups;
 				if (!numbersMatch) {
 					console.warn(`File "${file}" does not match season/episode regex`);
 					return;
 				}
-				return {
-					seasonNumber: parseInt(numbersMatch.seasonNumber),
-					episodeNumber: parseInt(numbersMatch.episodeNumber),
+
+				const seasonNumber = parseInt(numbersMatch.seasonNumber);
+				const firstEpisodeNumber = parseInt(numbersMatch.firstEpisodeNumber);
+
+				const multipleEpisodesRegex = RegExp(/-e(?<episodeNumber>\d{1,3})/g);
+				const lastEspisodeNumber = multipleEpisodesRegex.exec(file)?.groups?.episodeNumber;
+
+				const episodeTimesRegex = RegExp(/.e(?<episodeNumber>\d{1,3})-(?<startTime>\d{1,50})/g);
+				const timesMatch = Array.from(file.matchAll(episodeTimesRegex));
+				const extraEpisodeTimes = timesMatch?.map((match) => ({
+					episodeNumber: parseInt(match.groups?.episodeNumber || '0'),
+					startTime: parseInt(match.groups?.startTime || '0'),
+				}))?.sort((a, b) => a.episodeNumber - b.episodeNumber);
+
+				const hasMultipleEpisodes = lastEspisodeNumber !== undefined;
+				const hasEpisodeTimes = extraEpisodeTimes?.length > 0;
+
+				function computeEpisodeWatchProgress(
+					episodeStartTime: number,
+					nextEpisodeStartTime: number | undefined,
+					watchProgress: WatchProgress | null
+				): WatchProgress | null {
+					if (!watchProgress) {
+						return null;
+					}
+					if (watchProgress.time < episodeStartTime) {
+						return null;
+					}
+
+					const watchTime = watchProgress.time - episodeStartTime;
+					const totalFileDuration = watchProgress.duration;
+					const epsiodeDuration = (nextEpisodeStartTime || totalFileDuration) - episodeStartTime;
+					const percentage = Math.min(watchTime / epsiodeDuration, 1) * 100;
+
+					// Remember that only the percentage is made relative to the episode
+					return {
+						...watchProgress,
+						percentage: Math.round(percentage),
+					};
+				}
+
+				const allEpisodeTimes = [
+					{ episodeNumber: firstEpisodeNumber, startTime: 0 },
+					...(extraEpisodeTimes || []),
+				]
+
+				const episodes: Episode[] = allEpisodeTimes.map(({ episodeNumber, startTime }, i) => ({
 					name: LibraryService.removeExtensionsFromFileName(file),
 					fileName: file,
 					relativePath: folder + '/' + file,
-					watchProgress: WatchProgressService.getWatchProgress(folder + '/' + file),
-				}
+
+					seasonNumber,
+					episodeNumber,
+					startTime,
+					watchProgress: computeEpisodeWatchProgress(
+						startTime,
+						allEpisodeTimes[i + 1]?.startTime,
+						overAllwatchProgress
+					),
+				}));
+
+				const episodeFile: EpisodeFile = {
+					hasMultipleEpisodes,
+					seasonNumber,
+					firstEpisodeNumber,
+					fileName: file,
+					relativePath: folder + '/' + file,
+					watchProgress: overAllwatchProgress,
+					episodes,
+				};
+				return episodeFile;
 			}).filter((episode) => episode !== undefined);
 		}));
 
-		const seasons = new Map();
-		episodes.flat().forEach((episode) => {
+		const seasons = new Map<number, Array<EpisodeFile>>();
+		episodeFiles.flat().forEach((episode) => {
 			if (!seasons.has(episode.seasonNumber)) {
 				seasons.set(episode.seasonNumber, []);
 			}
-			seasons.get(episode.seasonNumber).push(episode);
+			seasons.get(episode.seasonNumber)!.push(episode);
 		});
 
 
 		// Sort each season's episodes by episode number
 		return Array.from(seasons.entries()).map(([seasonNumber, seasonEpisodes]) => ({
 			seasonNumber,
-			episodes: seasonEpisodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+			episodeFiles: seasonEpisodes.sort((a, b) => a.firstEpisodeNumber - b.firstEpisodeNumber),
 		})).sort((a, b) => a.seasonNumber - b.seasonNumber);
 	}
 

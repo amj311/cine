@@ -41,7 +41,7 @@
 	--color-contrast: var(--vt-c-gray-dark);
 }
 
-@media (prefers-color-scheme: dark) {
+// @media (prefers-color-scheme: dark) {
 	:root {
 		--color-background: var(--vt-c-black);
 		--color-background-soft: var(--vt-c-black-soft);
@@ -56,7 +56,7 @@
 
 		--color-contrast: var(--vt-c-gray-light);
 	}
-}
+// }
 
 *,
 *::before,

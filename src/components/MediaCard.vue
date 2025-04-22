@@ -11,7 +11,8 @@ const props = defineProps<{
 	height?: number;
 	title?: string;
 	subtitle?: string;
-	progress?: number;
+	progress?: any; // Progress
+	overrideStartTime?: number;
 	playSrc?: string;
 	clickable?: boolean;
 }>();
@@ -21,11 +22,13 @@ function playVideo() {
 	if (!props.playSrc) {
 		return;
 	}
+	console.log(props.progress?.percentage, props.progress?.time, props.overrideStartTime)
 	router.push({
 		name: 'play',
 		query: {
-			path: props.playSrc
-		},
+			path: props.playSrc,
+			startTime: ((props.progress?.percentage < 90 && props.progress?.time) || props.overrideStartTime) ?? undefined,
+		}
 	})
 }
 
@@ -44,7 +47,7 @@ function playVideo() {
 			</div>
 
 			<div v-if="progress" class="progress-bar-wrapper">
-				<ProgressBar :progress="progress" />
+				<ProgressBar :progress="progress.percentage" />
 			</div>
 
 			<div v-if="playSrc" class="overlay">

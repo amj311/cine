@@ -53,7 +53,6 @@ const items = computed(() => {
 										:fallbackIcon="'🗂️'"
 										:title="folder.libraryItem.name"
 										:subtitle="`${folder.libraryItem.children.length} items`"
-										:progress="folder.libraryItem.movie?.watchProgress?.percentage"
 									/>
 								</div>
 							</template>
@@ -77,7 +76,7 @@ const items = computed(() => {
 										:aspectRatio="'tall'"
 										:title="folder.libraryItem.name"
 										:subtitle="folder.libraryItem.numSeasons ? `${folder.libraryItem.numSeasons} Season${folder.libraryItem.numSeasons.length ? 's' : ''}` : folder.libraryItem.year"
-										:progress="folder.libraryItem.movie?.watchProgress?.percentage"
+										:progress="folder.libraryItem.movie?.watchProgress"
 									/>
 								</div>
 							</template>

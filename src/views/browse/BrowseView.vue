@@ -7,6 +7,7 @@ import SeriesPage from '@/views/browse/SeriesPage.vue';
 import Explorer from '@/views/browse/Explorer.vue';
 import Scroll from '@/components/Scroll.vue';
 import { useRoute } from 'vue-router';
+import DropdownMenu from '@/components/utils/DropdownMenu.vue';
 
 const route = useRoute();
 
@@ -72,6 +73,14 @@ watch(
 		}
 	}
 );
+
+
+const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) || []).map((dir) => ({
+	label: dir,
+	command: () => {
+		queryPathStore.goToAncestor(dir);
+	},
+})));
 </script>
 
 <template>
@@ -84,7 +93,7 @@ watch(
 				/
 			</span>
 			<span v-if="queryPathStore.currentDir.length > 2">
-				...
+				<DropdownMenu :model="hiddenAncestors"><Button variant="text" severity="secondary">...</Button></DropdownMenu>
 				/
 			</span>
 			<span v-if="queryPathStore.parentFile">
@@ -92,7 +101,7 @@ watch(
 				/
 			</span>
 			<span v-if="queryPathStore.currentFile">
-				<Button variant="text" severity="secondary" class="font-bold">{{ queryPathStore.currentFile }}</Button>
+				<Button variant="text" severity="secondary" class="font-bold" style="pointer-events: none">{{ queryPathStore.currentFile }}</Button>
 			</span>
 		</div>
 		

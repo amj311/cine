@@ -4,9 +4,10 @@
 >
 import { useQueryPathStore } from '@/stores/queryPath.store'
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { ref, onBeforeMount, onBeforeUnmount, computed, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import api from '@/services/api'
 import { MetadataService } from '@/services/metadataService';
+import { useRoute } from 'vue-router';
 
 const queryPathStore = useQueryPathStore();
 queryPathStore.updatePathFromQuery();
@@ -28,15 +29,28 @@ async function loadMetadata() {
 	}
 }
 
+const route = useRoute();
 
 async function initialProgress() {
 	if (!mediaPath) {
 		return;
 	}
+	const query = route?.query;
+	if (query.startTime) {
+		playerRef.value!.setTime(Number(query.startTime));
+		// remove route start time
+		history.replaceState(
+			{},
+			'',
+			route.path + '?' + new URLSearchParams({ ...(route.query || {}), startTime: '' }).toString(),
+		)
+		return;
+	}
+
 	try {
 		const { data } = await api.get('/watchProgress', {
 			params: {
-				relativePath: mediaPath,
+				relativePath: mediaPath.value,
 			}
 		})
 		if (data.data) {
@@ -48,14 +62,36 @@ async function initialProgress() {
 	}
 }
 
+let wakeLock: WakeLockSentinel | null = null;
 
-onBeforeMount(() => {
+
+onMounted(async () => {
 	loadMetadata();
 	initialProgress();
+	try {
+		await document.documentElement.requestFullscreen();
+	} catch (e) {
+		console.error("Failed to enter fullscreen", e);
+	}
+	if ('wakeLock' in navigator) {
+		try {
+			wakeLock = await navigator.wakeLock.request('screen');
+		} catch (e) {
+			console.error("Failed to acquire wake lock", e);
+		}
+	}
 })
 
+onBeforeUnmount(async () => {
+	document.exitFullscreen();
+	// release wake lock
+	if (wakeLock) {
+		await wakeLock.release();
+		wakeLock = null;
+	}
+});
 
-const PROGRESS_INTERVAL = 1000 * 60;
+const PROGRESS_INTERVAL = 1000 * 5;
 const progressUpdateInterval = setInterval(async () => {
 	try {
 		const progress = playerRef.value?.getProgress();
@@ -83,6 +119,9 @@ onBeforeUnmount(() => {
 <template>
 	<div class="movie-theater">
 		<VideoPlayer ref="playerRef" v-if="mediaPath" :src="mediaPath" />
+		<div class="top-left">
+			<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="$router.back()" />
+		</div>
 	</div>
 </template>
 
@@ -92,5 +131,13 @@ onBeforeUnmount(() => {
 >
 	.movie-theater {
 		height: 100%;
+		position: relative;
+
+		.top-left {
+			position: absolute;
+			top: 10px;
+			left: 10px;
+			z-index: 1000;
+		}
 	}
 </style>

@@ -21,10 +21,10 @@ export class WatchProgressService {
 	 * @param percentage The percentage of the media that has been watched.
 	 */
 	public static updateWatchProgress(relativePath: RelativePath, progress: WatchProgress): void {
-		if (progress.percentage >= 90) {
-			watching.delete(relativePath);
-			return;
-		}
+		// if (progress.percentage >= 90) {
+		// 	watching.delete(relativePath);
+		// 	return;
+		// }
 		watching.set(relativePath, progress);
 	}
 

@@ -29,6 +29,15 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		}
 	});
 
+	// const updateHandles = () => {
+	// 	const elements = document.querySelectorAll('.tv-navigation');
+
+	// const mutationObserver = new MutationObserver(updateHandles);
+	// mutationObserver.observe(document.body, {
+	// 	childList: true,
+	// 	subtree: true,
+	// });
+
 	return {
 		lastMouseMoveEvent,
 		lastKeydownEvent,

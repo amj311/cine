@@ -72,7 +72,7 @@ const mergedSeasons = computed(() => {
 			...season,
 			...metadataSeason,
 			name: season.seasonNumber === 0 ? 'Specials' : season.name,
-			episodes: season.episodes.map((episode: any) => {
+			episodes: season.episodeFiles.flatMap((file: any) => file.episodes).map(episode => {
 				const metadataEpisode = metadataSeason?.episodes.find((e: any) => e.episodeNumber === episode.episodeNumber);
 				return {
 					...episode,
@@ -120,13 +120,12 @@ const episodeToPlay = computed(() => {
 			<div class="left-side" :style="{ flexGrow: 1 }">
 
 				<h1 class="title">{{ libraryItem.name }}</h1>
-				<p style="display: flex; gap: 10px; flex-wrap: wrap;">
+				<div style="display: flex; gap: 10px; flex-wrap: wrap;">
 					<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
 					<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
 					<span v-if="metadata?.content_rating">{{ metadata.content_rating }}</span>
-				</p>
-				<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
-				<br />
+				</div>
+				<StarRating class="my-4" v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
 
 				<button
 					style="zoom: 1.5"
@@ -171,9 +170,10 @@ const episodeToPlay = computed(() => {
 									<MediaCard
 										:imageUrl="episode.still_thumb"
 										:fallbackIcon="'📺'"
-										:progress="episode.watchProgress?.percentage"
 										:aspectRatio="'wide'"
 										:playSrc="episode.relativePath"
+										:overrideStartTime="episode.startTime"
+										:progress="episode.watchProgress"
 									/>
 								</div>
 								<div class="episode-info">

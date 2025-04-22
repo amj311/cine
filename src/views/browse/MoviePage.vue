@@ -68,7 +68,7 @@ function formatRuntime(minutes: number) {
 			<div class="poster-wrapper">
 				<MediaCard
 					:imageUrl="metadata?.poster_full"
-					:progress="libraryItem.movie.watchProgress?.percentage"
+					:progress="libraryItem.movie.watchProgress"
 				/>
 			</div>
 		</div>
