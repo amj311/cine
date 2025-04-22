@@ -51,7 +51,7 @@ function playVideo(path: string, startTime?: number) {
 
 function formatRuntime(minutes: number) {
 	const hours = Math.floor(minutes / 60);
-	const minutesOver = minutes % 60;
+	const minutesOver = Math.floor(minutes % 60);
 	if (hours === 0) {
 		return `${minutesOver}min`;
 	}
@@ -97,7 +97,7 @@ const resumeTime = computed(() => {
 						@click="() => playVideo(libraryItem.movie.relativePath, resumeTime)"
 					>
 						<i class="pi pi-play" />
-						{{ resumeTime ? 'Resume' : 'Play' }}
+						{{ resumeTime ? `Resume (${formatRuntime(resumeTime / 60)})` : 'Play' }}
 					</Button>
 					<Button
 						v-if="resumeTime"
