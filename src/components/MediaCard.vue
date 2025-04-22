@@ -56,7 +56,7 @@ const onClick = computed(() => {
 				{{ fallbackIcon }}
 			</div>
 
-			<div v-if="progress" class="progress-bar-wrapper">
+			<div v-if="progress?.percentage" class="progress-bar-wrapper">
 				<ProgressBar :progress="progress.percentage" />
 			</div>
 
