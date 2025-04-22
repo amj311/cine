@@ -9,6 +9,7 @@ import api from '@/services/api'
 import { MetadataService } from '@/services/metadataService';
 import { useRoute, useRouter } from 'vue-router';
 import { useTvNavigationStore } from '@/stores/tvNavigation.store';
+import { useBackgroundStore } from '@/stores/background.store';
 
 const queryPathStore = useQueryPathStore();
 queryPathStore.updatePathFromQuery();
@@ -21,7 +22,7 @@ const hasLoaded = ref(false);
 
 const showControlsTime = 2500;
 const hideControlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const showControls = ref(false);
+const showControls = ref(true);
 function updateShowControlsTimeout() {
 	if (hideControlsTimeout.value) {
 		clearTimeout(hideControlsTimeout.value);
@@ -32,19 +33,28 @@ function updateShowControlsTimeout() {
 	}, showControlsTime);
 } 
 
-// const isLoadingMetadata = ref(false);
-// const metadata = ref<any>(null);
+const isLoadingLibrary = ref(false);
+const parentLibrary = ref<any>(null);
+const playable = ref<any>(null);
 
-// async function loadMetadata() {
-// 	try {
-// 		isLoadingMetadata.value = true;
-// 		metadata.value = await MetadataService.getMetadata({ relativePath: mediaPath.value }, true);
-// 	} catch (error) {
-// 		console.error('Error loading metadata', error);
-// 	} finally {
-// 		isLoadingMetadata.value = false;
-// 	}
-// }
+async function loadMediaData() {
+	try {
+		isLoadingLibrary.value = true;
+		const { data } = await api.get('/theaterData', {
+			params: {
+				relativePath: mediaPath.value,
+			}
+		});
+		parentLibrary.value = data.data.parentLibrary;
+		playable.value = data.data.playable;
+
+		await initialProgress();
+	} catch (error) {
+		console.error('Error loading media data', error);
+	} finally {
+		isLoadingLibrary.value = false;
+	}
+}
 
 const route = useRoute();
 
@@ -61,6 +71,12 @@ async function initialProgress() {
 			'',
 			route.path + '?' + new URLSearchParams({ ...(route.query || {}), startTime: '' }).toString(),
 		)
+		return;
+	}
+
+	if (playable.value.watchProgress) {
+		console.log("Setting time from watch progress", playable.value.watchProgress.time);
+		playerRef.value?.setTime(playable.value.watchProgress.time);
 		return;
 	}
 
@@ -132,13 +148,13 @@ async function attemptAutoFullscreen() {
 
 
 onMounted(async () => {
+	loadMediaData();
+
 	// Pause TV mode to allow interaction with VideoPlayer UI
 	pauseTvMode();
-	// loadMetadata();
-
 	attemptAutoFullscreen();
+
 	
-	initialProgress();
 	if ('wakeLock' in navigator) {
 		try {
 			wakeLock = await navigator.wakeLock.request('screen');
@@ -209,6 +225,7 @@ function onloaded(data: any) {
 		</div>
 		<div class="top-left overlay">
 			<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="$router.back()" />
+			<div>{{ playable?.name }}</div>
 		</div>
 	</div>
 </template>
@@ -245,6 +262,9 @@ function onloaded(data: any) {
 			top: 10px;
 			left: 10px;
 			z-index: 1000;
+			display: flex;
+			gap: .5em;
+			align-items: center;
 		}
 	}
 </style>

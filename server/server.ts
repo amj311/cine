@@ -156,14 +156,31 @@ app.get('/api/watchProgress', async (req, res) => {
 		res.send(500)
 	}
 });
-
-
 app.post('/api/watchProgress', async (req, res) => {
 	try {
 		const { relativePath, progress } = req.body;
 		await WatchProgressService.updateWatchProgress(relativePath, progress);
 		res.json({
 			success: true,
+		})
+	}
+	catch (err) {
+		console.error(err)
+		res.send(500)
+	}
+});
+
+
+
+
+
+
+app.get('/api/theaterData', async (req, res) => {
+	try {
+		const { relativePath } = req.query;
+		const data = await LibraryService.getLibraryForPlayable(relativePath);
+		res.json({
+			data,
 		})
 	}
 	catch (err) {

@@ -279,6 +279,41 @@ export class LibraryService {
 		});
 	}
 
+
+	public static async getLibraryForPlayable(relativePath: RelativePath) {
+		// find the parent which contains a name and year
+		const ancestors = relativePath.split('/').slice(0, -1);
+		const parentFolder = ancestors.reverse().find((folder) => {
+			const { name, year } = LibraryService.parseNamePieces(folder);
+			return !!name && !!year;
+		});
+		if (!parentFolder) {
+			console.warn(`No parent found for ${relativePath}`);
+			return {};
+		}
+		const parentPath = relativePath.split(parentFolder)[0] + parentFolder;
+		const parentLibrary = await LibraryService.parseFolderToItem(parentPath, true) as LibraryItem;
+		if (!parentLibrary) {
+			console.warn(`No parent library found for ${relativePath}`);
+			return {};
+		}
+		// Identify playable within the parent library
+		const playable = (parentLibrary as Movie).extras?.find((extra) => extra.relativePath === relativePath)
+			|| ((parentLibrary as Movie).movie?.relativePath === relativePath ? (parentLibrary as Movie).movie : null)
+			|| (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).flatMap((episodeFile) => episodeFile.episodes).find((episode) => episode.relativePath === relativePath);
+
+		if (!playable) {
+			console.warn(`No playable found for ${relativePath}`);
+			return {
+				parentLibrary,
+			};
+		}
+		return {
+			parentLibrary,
+			playable,
+		}
+	}
+
 	/*********
 	 * Helper functions
 	 *********/
