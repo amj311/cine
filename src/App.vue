@@ -80,8 +80,4 @@ onMounted(() => {
 	pointer-events: none;
 }
 
-#tvClickCapture {
-	pointer-events: all;
-	cursor: none !important;
-}
 </style>
