@@ -20,7 +20,9 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 	const mouseCooldown = 100;
 
-	function handleMouseMove(event) {
+	async function handleMouseMove(event) {
+		stopScreenEdgeScroll();
+
 		if (computingNewFocus || Date.now() - lastMouseMoveTime.value < mouseCooldown) {
 			return;
 		}
@@ -46,10 +48,12 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			} else if (event.clientY <= 1) {
 				direction = 'up';
 			} else if (event.clientY >= window.innerHeight - 1) {
+				console.log("GOING DOWN!!!!")
 				direction = 'down';
 			}
 
 			if (direction) {
+				console.log("Mouse is touching edge of screen. Moving focus.", direction);
 				moveFocus(direction);
 				return;
 			} else {
@@ -67,11 +71,57 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		}
 
 		if (direction) {
-			moveFocus(direction);
+			console.log("MOVING FOCUS DOWN HERE")
+			await moveFocus(direction);
+		}
+	}
+	function handleMouseOut(event) {
+		// Assume user is pushing mouse to edge of screen to conitune scrolling
+		// Since no events will be triggered until the mouse is back in the window,
+		// We will need to continue moving focus in the last direction until a different event is fired.
+		let direction: Direction | null = null;
+		if (event.clientX <= 1) {
+			direction = 'left';
+		} else if (event.clientX >= window.innerWidth - 1) {
+			direction = 'right';
+		} else if (event.clientY <= 1) {
+			direction = 'up';
+		} else if (event.clientY >= window.innerHeight - 1) {
+			console.log("GOING DOWN!!!!")
+			direction = 'down';
+		}
+		if (!direction) {
+			return;
+		}
+		console.log("Mouse is out of window. Will continue scrolling:", direction);
+		doScreenEdgeScroll(direction);
+	}
+
+	let edgeScrollTime = 500;
+	let edgeScrollInterval: ReturnType<typeof setInterval> | null = null;
+
+	function doScreenEdgeScroll(direction: Direction) {
+		if (edgeScrollInterval) {
+			clearInterval(edgeScrollInterval);
+		}
+		edgeScrollInterval = setInterval(async () => {
+			const newEl = await moveFocus(direction);
+			if (!newEl) {
+				stopScreenEdgeScroll();
+			}
+		}, edgeScrollTime);
+	}
+
+	function stopScreenEdgeScroll() {
+		if (edgeScrollInterval) {
+			clearInterval(edgeScrollInterval);
+			edgeScrollInterval = null;
 		}
 	}
 
-	function handleKeyDown(event) {
+
+	async function handleKeyDown(event) {
+		stopScreenEdgeScroll();
 		if (computingNewFocus) {
 			return;
 		}
@@ -102,7 +152,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			return;
 		}
 		event.preventDefault();
-		moveFocus(direction as Direction);
+		await moveFocus(direction as Direction);
 	}
 
 	function engageTvMode() {
@@ -110,15 +160,17 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 		nextTick(() => {
 			document.getElementById('tvClickCapture')!.addEventListener('click', captureClick);
-			document.addEventListener('mousemove', handleMouseMove);
-			document.addEventListener('keydown', handleKeyDown);
+			window.addEventListener('mousemove', handleMouseMove);
+			window.addEventListener('mouseout', handleMouseOut);
+			window.addEventListener('keydown', handleKeyDown);
 			findFocus();
 		});
 	}
 	function disengageTvMode() {
-		document.removeEventListener('click', captureClick);
-		document.removeEventListener('mousemove', handleMouseMove);
-		document.removeEventListener('keydown', handleKeyDown);
+		document.getElementById('tvClickCapture')!.removeEventListener('click', captureClick);
+		window.removeEventListener('mousemove', handleMouseMove);
+		window.removeEventListener('mouseout', handleMouseOut);
+		window.removeEventListener('keydown', handleKeyDown);
 		enabled.value = false;
 	}
 
@@ -130,10 +182,12 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		lastDetectedDirection.value = direction;
 		const focusableElements = await gatherFocusableElements(direction);
 
-		if (focusableElements.length) {
-			setFocus(focusableElements[0]);
+		const elementToFocus = focusableElements[0];
+		if (elementToFocus) {
+			setFocus(elementToFocus);
 		}
 		computingNewFocus = false;
+		return elementToFocus;
 	}
 
 
