@@ -127,7 +127,11 @@ app.post('/api/metadata', async (req, res) => {
 	try {
 		const { type, path, detailed } = req.body;
 		if (!path) {
-			res.status(400).send("Requires path");
+			res.json({
+				error: 'No path provided',
+				success: false,
+				data: null,
+			});
 			return;
 		}
 		let mediaType = type;

@@ -178,7 +178,10 @@ const resumeTime = computed(() => {
 			</div>
 		</div>
 	
-		<p class="show-lg">{{ metadata?.overview }}</p>
+		<div>
+			<p class="show-lg">{{ metadata?.overview }}</p>
+			<p><i>Genres: {{ metadata?.genres.join(', ') }}</i></p>
+		</div>
 
 		<div v-if="metadata?.credits">
 			<h2>Cast & Crew</h2>
