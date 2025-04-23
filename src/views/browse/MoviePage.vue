@@ -82,45 +82,45 @@ const resumeTime = computed(() => {
 			<div class="left-side" :style="{ flexGrow: 1 }">
 
 				<h1 class="title line-clamp-3">{{ libraryItem.name }}</h1>
-				<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+				<div style="display: flex; column-gap: 10px; flex-wrap: wrap; align-items: center;">
 					<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
 					<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
 					<span v-if="metadata?.content_rating">{{ metadata.content_rating }}</span>
 				</div>
 
-				<StarRating class="my-4" v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
+				<br />
+				<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
 
-				<div class="flex gap-2">
-					<Button
-						:size="'large'"
-						class="play-button"
-						@click="() => playVideo(libraryItem.movie.relativePath, resumeTime)"
-					>
-						<i class="pi pi-play" />
-						{{ resumeTime ? `Resume (${formatRuntime(resumeTime / 60)})` : 'Play' }}
-					</Button>
-					<Button
-						v-if="resumeTime"
-						:size="'large'"
-						variant="text"
-						severity="contrast"
-						@click="() => playVideo(libraryItem.movie.relativePath, 0)"
-					>
-						<i class="pi pi-replay" />
-					</Button>
-				</div>
+				<br />
+				<Button
+					:size="'large'"
+					class="play-button"
+					@click="() => playVideo(libraryItem.movie.relativePath, resumeTime)"
+				>
+					<i class="pi pi-play" />
+					{{ resumeTime ? `Resume (${formatRuntime(resumeTime / 60)})` : 'Play' }}
+				</Button>
+				<Button
+					v-if="resumeTime"
+					:size="'large'"
+					variant="text"
+					severity="contrast"
+					@click="() => playVideo(libraryItem.movie.relativePath, 0)"
+				>
+					<i class="pi pi-replay" />
+				</Button>
 
 				<div class="hide-md" style="max-width: 50em;">
 					<br />
-					<p class="line-clamp-3">{{ metadata?.overview }}</p>
-					<i v-if="metadata?.genres.length">Genres: {{ metadata?.genres.join(', ') }}</i>
+					<p class="line-clamp-4">{{ metadata?.overview }}</p>
+					<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
 				</div>
 			</div>
 		</div>
 	
 		<div class="show-lg">
 			<p>{{ metadata?.overview }}</p>
-			<i v-if="metadata?.genres.length">Genres: {{ metadata?.genres.join(', ') }}</i>
+			<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
 		</div>
 
 		<div v-if="metadata?.credits">
@@ -158,7 +158,7 @@ const resumeTime = computed(() => {
 		display: none;
 	}
 	.title {
-		font-size: 1.5rem;
+		font-size: 1.5em;
 	}
 }
 
@@ -175,8 +175,8 @@ const resumeTime = computed(() => {
 }
 
 .poster-wrapper {
-	width: min(250px, 30vw);
-	min-width: min(250px, 30vw);
+	width: min(225px, 30vw);
+	min-width: min(225px, 30vw);
 }
 
 </style>
