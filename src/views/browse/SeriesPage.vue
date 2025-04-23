@@ -177,15 +177,14 @@ const resumeTime = computed(() => {
 				<div class="hide-md" style="max-width: 50em;">
 					<br /><br />
 					<p class="line-clamp-3">{{ metadata?.overview }}</p>
-					<p><i>Genres: {{ metadata?.genres.join(', ') }}</i></p>
-
+					<i v-if="metadata?.genres.length">Genres: {{ metadata?.genres.join(', ') }}</i>
 				</div>
 			</div>
 		</div>
 	
 		<div class="show-lg">
 			<p>{{ metadata?.overview }}</p>
-			<p><i>Genres: {{ metadata?.genres.join(', ') }}</i></p>
+			<i v-if="metadata?.genres.length">Genres: {{ metadata?.genres.join(', ') }}</i>
 		</div>
 
 		<div v-if="metadata?.credits">
