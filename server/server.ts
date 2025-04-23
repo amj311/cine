@@ -43,13 +43,13 @@ app.get("/api/dir/", async function (req, res) {
 			libraryItem,
 			directory: {
 				files,
-				folders: await Promise.all(folders.map(async (folder) => {
+				folders: (await Promise.all(folders.map(async (folder) => {
 					const libraryItem = await LibraryService.parseFolderToItem(path.join(dir as string, folder), true);
 					return {
 						folderName: folder,
 						libraryItem,
 					};
-				})),
+				}))).sort((a, b) => a.libraryItem?.sortKey.localeCompare(b.libraryItem?.sortKey || '') || 0),
 			},
 		});
 	}

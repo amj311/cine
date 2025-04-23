@@ -7,6 +7,15 @@ import { MediaMetadataService } from "./metadata/MetadataService";
 import { EitherMetadata } from "./metadata/MetadataTypes";
 import { WatchProgress, WatchProgressService } from "./WatchProgressService";
 
+type LibraryItemData = {
+	type: 'movie' | 'series' | 'collection',
+	folderName: string,
+	relativePath: RelativePath,
+	listName: string,
+	sortKey: string,
+	metadata: EitherMetadata | null,
+}
+
 type Playable = {
 	type: 'movie' | 'episode' | 'extra',
 	name: string,
@@ -22,12 +31,10 @@ type Extra = Playable & {
 	extraType: ExtraType | null,
 }
 
-type Movie = {
+type Movie = LibraryItemData & {
 	type: 'movie',
 	name: string,
 	year: string,
-	folderName: string,
-	relativePath: RelativePath,
 	movie: Playable,
 	extras?: Array<Extra>,
 	metadata: EitherMetadata<'movie'> | null,
@@ -52,12 +59,10 @@ type Episode = Playable & {
 	startTime?: number,
 }
 
-type Series = {
+type Series = LibraryItemData & {
 	type: 'series',
 	name: string,
 	year: string,
-	folderName: string,
-	relativePath: RelativePath,
 	numSeasons: number,
 	// Seasons are a map because they may not be in order or all present
 	seasons?: Array<{
@@ -68,12 +73,10 @@ type Series = {
 	extras?: Array<Extra>,
 }
 
-type Collection = {
+type Collection = LibraryItemData & {
 	type: 'collection',
 	feedOrder: number | null,
 	name: string,
-	folderName: string,
-	relativePath: RelativePath,
 	children: Array<RelativePath>,
 }
 
@@ -96,6 +99,9 @@ export class LibraryService {
 				folderName: folderName,
 				children: children.folders.map((folder) => path + '/' + folder),
 				feedOrder,
+				listName: name,
+				sortKey: LibraryService.createSortKey(folderName),
+				metadata: null,
 			};
 		}
 
@@ -120,6 +126,8 @@ export class LibraryService {
 				numSeasons: allSeasonFolders.length,
 				metadata: await MediaMetadataService.getMetadata('series', path, false, true),
 				extras,
+				sortKey: LibraryService.createSortKey(folderName),
+				listName: name,
 			};
 		}
 
@@ -153,6 +161,8 @@ export class LibraryService {
 				},
 				extras,
 				metadata: await MediaMetadataService.getMetadata('movie', path, false, true),
+				sortKey: LibraryService.createSortKey(folderName),
+				listName: name,
 			};
 		}
 
@@ -364,6 +374,29 @@ export class LibraryService {
 			return 'movie';
 		}
 		return 'collection';
+	}
+
+	public static removeArticlesFromName(name: string) {
+		// Remove "The ", "A ", "An " from the beginning of the name
+		return name.replace(/^(the|a|an)\s+/i, '');
+	}
+
+	public static createSortKey(folderName: string) {
+		const { name, year } = LibraryService.parseNamePieces(folderName);
+		const withoutArticles = LibraryService.removeArticlesFromName(name);
+		let collectionName = '';
+		let featureName = withoutArticles;
+		const collectionNameRegexp = RegExp(/(^[^:]{1,100}):(.{1,100})/g);
+		const collectionNameMatch = collectionNameRegexp.exec(withoutArticles);
+		if (collectionNameMatch) {
+			collectionName = collectionNameMatch[1].trim();
+			featureName = collectionNameMatch[2].trim();
+		}
+		const keyParts = [featureName, year];
+		if (collectionName) {
+			keyParts.unshift(collectionName, year);
+		}
+		return keyParts.join('_');
 	}
 }
 

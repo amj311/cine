@@ -10,7 +10,6 @@ import { MetadataService } from '@/services/metadataService';
 import { useRoute, useRouter } from 'vue-router';
 import { useTvNavigationStore } from '@/stores/tvNavigation.store';
 import { useBackgroundStore } from '@/stores/background.store';
-import MetadataLoader from '@/components/MetadataLoader.vue';
 import { usePageTitleStore } from '@/stores/pageTitle.store';
 
 const queryPathStore = useQueryPathStore();
