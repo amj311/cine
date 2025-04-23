@@ -24,7 +24,7 @@ const hasLoaded = ref(false);
 
 const showControlsTime = 2500;
 const hideControlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const showControls = ref(true);
+const showControls = ref(false);
 function updateShowControlsTimeout() {
 	if (hideControlsTimeout.value) {
 		clearTimeout(hideControlsTimeout.value);
@@ -157,6 +157,7 @@ async function attemptAutoFullscreen() {
 
 
 onMounted(async () => {
+	updateShowControlsTimeout();
 	loadMediaData();
 
 	// Pause TV mode to allow interaction with VideoPlayer UI
