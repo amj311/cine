@@ -21,7 +21,7 @@ async function loadMetadata() {
 	}
 	isLoading.value = true;
 	try {
-		metadata.value = await MetadataService.getMetadata(media, props.detailed);
+		metadata.value = await MetadataService.getMetadata(media.value, props.detailed);
 		if (metadata.value) {
 			media.value.metadata = metadata.value;
 		}
