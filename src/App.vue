@@ -7,7 +7,9 @@ import { useTvNavigationStore } from './stores/tvNavigation.store';
 import AppBackground from './components/AppBackground.vue';
 import { onMounted, ref } from 'vue';
 import { useConfirm } from "primevue/useconfirm";
+import { usePageTitleStore } from './stores/pageTitle.store';
 
+usePageTitleStore();
 const tvNavigationStore = useTvNavigationStore();
 const showDebug = ref(false);
 

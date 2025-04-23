@@ -4,19 +4,21 @@
 >
 import { useQueryPathStore } from '@/stores/queryPath.store'
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import api from '@/services/api'
 import { MetadataService } from '@/services/metadataService';
 import { useRoute, useRouter } from 'vue-router';
 import { useTvNavigationStore } from '@/stores/tvNavigation.store';
 import { useBackgroundStore } from '@/stores/background.store';
+import MetadataLoader from '@/components/MetadataLoader.vue';
+import { usePageTitleStore } from '@/stores/pageTitle.store';
 
 const queryPathStore = useQueryPathStore();
 queryPathStore.updatePathFromQuery();
 
 const mediaPath = computed(() => queryPathStore.currentPath || '')
 const playerRef = ref<InstanceType<typeof VideoPlayer>>();
-const theatreRef = ref<InstanceType<typeof HTMLElement>>();
+const theaterRef = ref<InstanceType<typeof HTMLElement>>();
 const didAutoFullscreen = ref(false);
 const hasLoaded = ref(false);
 
@@ -48,6 +50,14 @@ async function loadMediaData() {
 		parentLibrary.value = data.data.parentLibrary;
 		playable.value = data.data.playable;
 
+		if (!parentLibrary.value.metadata) {
+			parentLibrary.value.metadata = await MetadataService.getMetadata(parentLibrary.value, true);
+		}
+
+		if (parentLibrary.value.metadata?.background) {
+			useBackgroundStore().setBackgroundUrl(parentLibrary.value.metadata.background);
+		}
+
 		await initialProgress();
 	} catch (error) {
 		console.error('Error loading media data', error);
@@ -75,7 +85,6 @@ async function initialProgress() {
 	}
 
 	if (playable.value.watchProgress) {
-		console.log("Setting time from watch progress", playable.value.watchProgress.time);
 		playerRef.value?.setTime(playable.value.watchProgress.time);
 		return;
 	}
@@ -166,7 +175,7 @@ onMounted(async () => {
 	// Setup control hiding
 	const events = ['mousemove', 'keydown', 'touchstart'];
 	events.forEach((event) => {
-		theatreRef.value?.addEventListener(event, updateShowControlsTimeout, { passive: true });
+		theaterRef.value?.addEventListener(event, updateShowControlsTimeout, { passive: true });
 	});
 
 })
@@ -215,17 +224,45 @@ function onloaded(data: any) {
 	hasLoaded.value = true;
 }
 
+const episodeMetadata = computed(() => {
+	if (playable.value?.type !== 'episode') {
+		return null;
+	}
+	return parentLibrary.value.metadata?.seasons
+		.find((season: any) => season.seasonNumber === playable.value.seasonNumber)?.episodes
+		.find((episode: any) => episode.episodeNumber === playable.value.episodeNumber);
+});
+
+const title = computed(() => {
+	if (!playable.value) {
+		return '';
+	}
+	if (playable.value?.type === 'extra') {
+		return playable.value.name + " - " + parentLibrary.value.folderName;
+	}
+	if (playable.value?.type === 'movie') {
+		return playable.value.name;
+	}
+	if (playable.value?.type === 'episode') {
+		return `${parentLibrary.value.name} S${playable.value.seasonNumber}:E${playable.value.episodeNumber}` + (episodeMetadata.value?.name ? ` "${episodeMetadata.value.name}"` : '');
+	}
+	return playable.value.name;
+});
+watch(title, (newTitle) => {
+	usePageTitleStore().setTitle(newTitle);
+});
+
 </script>
 
 <template>
-	<div ref="theatreRef" class="movie-theater" :class="{ 'show-controls': showControls }">
+	<div ref="theaterRef" class="movie-theater" :class="{ 'show-controls': showControls }">
 		<VideoPlayer v-show="hasLoaded" ref="playerRef" v-if="mediaPath" :src="mediaPath" :onLoadedData="onloaded" />
 		<div class="loading" v-if="!hasLoaded">
 			<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
 		</div>
 		<div class="top-left overlay">
 			<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="$router.back()" />
-			<div>{{ playable?.name }}</div>
+			<div>{{ title }}</div>
 		</div>
 	</div>
 </template>

@@ -17,7 +17,7 @@ const extraTypeLabels = {
 	'trailer': 'Trailer',
 	'featurette': 'Featurette',
 	'behindthescenes': 'Behind the Scenes',
-	'deleted': 'Deleted Content',
+	'deleted': 'Deleted',
 }
 
 const sortedExtras = computed(() => {
@@ -42,7 +42,7 @@ const sortedExtras = computed(() => {
 							:progress="extra.watchProgress"
 							:aspectRatio="'wide'"
 							:title="extra.name"
-							:subtitle="extraTypeLabels[extra.type]"
+							:subtitle="extraTypeLabels[extra.extraType]"
 							:playSrc="extra.relativePath"
 						/>
 					</div>

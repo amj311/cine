@@ -8,6 +8,7 @@ import { EitherMetadata } from "./metadata/MetadataTypes";
 import { WatchProgress, WatchProgressService } from "./WatchProgressService";
 
 type Playable = {
+	type: 'movie' | 'episode' | 'extra',
 	name: string,
 	version?: string | null,
 	fileName: RelativePath,
@@ -18,7 +19,7 @@ type Playable = {
 const ExtraTypes = ['behindthescenes', 'deleted', 'featurette', 'trailer'] as const;
 type ExtraType = typeof ExtraTypes[number];
 type Extra = Playable & {
-	type: ExtraType | null,
+	extraType: ExtraType | null,
 }
 
 type Movie = {
@@ -143,6 +144,7 @@ export class LibraryService {
 				relativePath: path,
 				folderName: folderName,
 				movie: {
+					type: 'movie',
 					name: LibraryService.removeExtensionsFromFileName(movieFile),
 					version: movieVersion,
 					fileName: movieFile,
@@ -223,6 +225,7 @@ export class LibraryService {
 				const { name, version } = LibraryService.parseNamePieces(file);
 				const episodes: Episode[] = allEpisodeTimes.map(({ episodeNumber, startTime }, i) => ({
 					name,
+					type: 'episode',
 					version,
 					fileName: file,
 					relativePath: folder + '/' + file,
@@ -268,10 +271,11 @@ export class LibraryService {
 
 	private static prepareExtras(extraPaths: string[], parentPath: string): Extra[] {
 		return extraPaths.filter(p => p.endsWith('.mp4')).map((file) => {
-			const { name: extraName, type } = LibraryService.getExtraNameAndType(file);
+			const { name: extraName, type: extraType } = LibraryService.getExtraNameAndType(file);
 			return {
+				type: 'extra',
 				name: extraName,
-				type,
+				extraType,
 				fileName: file,
 				relativePath: parentPath + '/' + file,
 				watchProgress: WatchProgressService.getWatchProgress(parentPath + '/' + file),

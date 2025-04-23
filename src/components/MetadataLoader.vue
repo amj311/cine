@@ -6,20 +6,25 @@ import { ref } from 'vue';
  * A simple component wrapper that passes to its slot the metadata or if the metadata is loading
  */
 const props = defineProps<{
-	media;
 	detailed?: boolean;
 }>();
+
+const media = defineModel<any>('media');
 
 const isLoading = ref(false);
 const metadata = ref<any>(null);
 
 async function loadMetadata() {
-	if (props.media.metadata) {
-		metadata.value = props.media.metadata;
+	if (media.value.metadata) {
+		metadata.value = media.value.metadata;
+		return
 	}
 	isLoading.value = true;
 	try {
-		metadata.value = await MetadataService.getMetadata(props.media, props.detailed);
+		metadata.value = await MetadataService.getMetadata(media, props.detailed);
+		if (metadata.value) {
+			media.value.metadata = metadata.value;
+		}
 	} catch {
 		console.error('Error loading metadata');
 	} finally {

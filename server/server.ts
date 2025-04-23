@@ -126,6 +126,10 @@ app.get("/api/video", function (req, res) {
 app.post('/api/metadata', async (req, res) => {
 	try {
 		const { type, path, detailed } = req.body;
+		if (!path) {
+			res.status(400).send("Requires path");
+			return;
+		}
 		let mediaType = type;
 		if (!mediaType) {
 			mediaType = LibraryService.determineMediaTypeFromPath(path);
