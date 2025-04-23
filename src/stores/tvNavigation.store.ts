@@ -325,15 +325,13 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		lastFewMouseMovements.push({ x: event.movementY, y: event.movementY });
 
 		if (lastFewMouseMovements.length > EVENTS_CAP) {
-			console.log('Too many non-linear mousemovents. Not a TV.');
+			console.log('Too many non-linear mouse movements. Not a TV.');
 			return stopWatchingForTvMouseMove();
 		}
 
 		if (lastFewMouseMovements.length > SIGNIFICANCE_THRESHOLD) {
 			const lastFewMouseMovementsToConsider = lastFewMouseMovements.slice(-SIGNIFICANCE_THRESHOLD);
-			const isTv = lastFewMouseMovementsToConsider.every((movement) => movement.x === 0)
-				|| lastFewMouseMovementsToConsider.every((movement) => movement.y === 0);
-
+			const isTv = lastFewMouseMovementsToConsider.every((movement) => movement.x === 0 || movement.y === 0);
 			if (isTv) {
 				return stopWatchingForTvMouseMove(true);
 			}
