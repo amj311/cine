@@ -106,3 +106,13 @@ h1, h2, h3, h4, h5, h6 {
 	background-color: var(--color-accent);
 }
 
+// make a few options for line clamp with different line numbers. iterate with scss
+@for $i from 1 through 5 {
+	.line-clamp-#{$i} {
+		-webkit-line-clamp: $i;
+		line-clamp: $i;
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+}

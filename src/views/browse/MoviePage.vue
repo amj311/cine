@@ -81,7 +81,7 @@ const resumeTime = computed(() => {
 
 			<div class="left-side" :style="{ flexGrow: 1 }">
 
-				<h1 class="title">{{ libraryItem.name }}</h1>
+				<h1 class="title line-clamp-3">{{ libraryItem.name }}</h1>
 				<div style="display: flex; gap: 10px; flex-wrap: wrap;">
 					<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
 					<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
@@ -110,12 +110,17 @@ const resumeTime = computed(() => {
 					</Button>
 				</div>
 
-				<p class="hide-md" style="max-width: 50em;"><br /><br />{{ metadata?.overview }}</p>
+				<div class="hide-md" style="max-width: 50em;">
+					<br /><br />
+					<p class="line-clamp-3">{{ metadata?.overview }}</p>
+					<p><i>Genres: {{ metadata?.genres.join(', ') }}</i></p>
+
+				</div>
 			</div>
 		</div>
 	
-		<div>
-			<p class="show-lg">{{ metadata?.overview }}</p>
+		<div class="show-lg">
+			<p>{{ metadata?.overview }}</p>
 			<p><i>Genres: {{ metadata?.genres.join(', ') }}</i></p>
 		</div>
 
@@ -145,10 +150,7 @@ const resumeTime = computed(() => {
 		display: none;
 	}
 	.show-lg {
-		display: inherit;
-	}
-	.title {
-		font-size: 1.5rem;
+		display: block;
 	}
 }
 
