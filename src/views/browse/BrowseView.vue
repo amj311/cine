@@ -87,7 +87,7 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) |
 	<div style="height: 100%; display: grid; grid-template-rows: auto 1fr;">
 			
 		<!-- Breadcrumb navigation -->
-		<div class="breadcrumbs p-2">
+		<div class="breadcrumbs p-2 pb-0">
 			<span>
 				<Button icon="pi pi-user" @click="queryPathStore.goToRoot" style="cursor: pointer" variant="text" severity="secondary">🏠</Button>
 				/
