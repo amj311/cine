@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import bodyParser from 'body-parser';
-const { json, urlencoded } = bodyParser;
+const { json, urlencoded } = bodyParser as any;
 import path from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
