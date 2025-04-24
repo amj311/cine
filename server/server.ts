@@ -202,8 +202,8 @@ app.get('/api/theaterData', async (req, res) => {
 app.use('/assets', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/assets/' + req.path));
 });
-app.use('/serviceworker.js', (req, res) => {
-	res.sendFile(path.join(__dirname, '../dist/serviceworker.js'));
+app.use('/public', (req, res) => {
+	res.sendFile(path.join(__dirname, '../dist/public/' + req.path));
 });
 app.get('*', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/index.html'));
