@@ -293,13 +293,14 @@ watch(title, (newTitle) => {
 			position: absolute;
 			top: 50%;
 			left: 50%;
+			translate: -50% -50%;
 		}
 
 		.overlay {
 			color: #fff !important;
 			opacity: 0;
 			transition: 500ms;
-			zoom: 1.5;
+			zoom: 1.3;
 		}
 		&.show-controls {
 			.overlay {
