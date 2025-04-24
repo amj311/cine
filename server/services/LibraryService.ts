@@ -229,9 +229,10 @@ export class LibraryService {
 					...(extraEpisodeTimes || []),
 				]
 
-				const { name, version } = LibraryService.parseNamePieces(file);
+				const { version } = LibraryService.parseNamePieces(file);
+				const episodeName = `S${seasonNumber}:E${firstEpisodeNumber}`;
 				const episodes: Episode[] = allEpisodeTimes.map(({ episodeNumber, startTime }, i) => ({
-					name,
+					name: episodeName,
 					type: 'episode',
 					version,
 					fileName: file,
@@ -256,7 +257,7 @@ export class LibraryService {
 					relativePath: folder + '/' + file,
 					watchProgress: overAllwatchProgress,
 					episodes,
-					name: lastEspisodeNumber ? `Episodes ${firstEpisodeNumber} - ${Number(lastEspisodeNumber)}` : "Episode " + firstEpisodeNumber,
+					name: lastEspisodeNumber ? `Episodes ${firstEpisodeNumber} - ${Number(lastEspisodeNumber)}` : episodeName,
 				};
 				return episodeFile;
 			}).filter((episode) => episode !== undefined);

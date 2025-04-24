@@ -306,13 +306,33 @@ const title = computed(() => {
 	}
 	if (playable.value?.type === 'episodeFile') {
 		const metadataName = currentEpisodeMetadata.value?.name;
-		const nameIsNotEpisodeNubmer = metadataName && !metadataName.toLowerCase().match(/episode \d{1,3}/);
-		return `${parentLibrary.value?.name}: ${playable.value?.name}` + (nameIsNotEpisodeNubmer ? ` "${metadataName}"` : '');
+		const nameIsNotEpisodeNumber = metadataName && !metadataName.toLowerCase().match(/episode \d{1,3}/);
+		return `${parentLibrary.value?.name} ${playable.value?.name}` + (nameIsNotEpisodeNumber ? ` "${metadataName}"` : '');
 	}
 	return playable.value.name;
 });
+
 watch(title, (newTitle) => {
 	usePageTitleStore().setTitle(newTitle);
+});
+
+const nextEpisodeMetadata = computed(() => {
+	if (nextEpisodeFile.value?.type !== 'episodeFile') {
+		return null;
+	}
+	const episode = parentLibrary.value?.metadata?.seasons
+		.find((season: any) => season.seasonNumber === nextEpisodeFile.value.seasonNumber)?.episodes
+		.find((episode: any) => episode.episodeNumber === nextEpisodeFile.value?.firstEpisodeNumber);
+	console.log("Next episode metadata", episode);
+	return episode;
+});
+const nextEpisodeTitle = computed(() => {
+	if (!nextEpisodeFile.value) {
+		return '';
+	}
+	const metadataName = nextEpisodeMetadata.value?.name;
+	const nameIsNotEpisodeNumber = metadataName && !metadataName.toLowerCase().match(/episode \d{1,3}/);
+	return nameIsNotEpisodeNumber ? ` "${metadataName}"` : nextEpisodeFile.value.name;
 });
 
 const loadingBackground = computed(() => {
@@ -348,7 +368,7 @@ const loadingBackground = computed(() => {
 			</div>
 			<div>
 				<div>Play Next</div>
-				<div style="opacity: .7">{{ nextEpisodeFile?.name }}</div>
+				<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
 			</div>
 		</div>
 	</div>
