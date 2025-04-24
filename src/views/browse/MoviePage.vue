@@ -23,6 +23,7 @@ async function loadMetadata() {
 		metadata.value = await MetadataService.getMetadata(props.libraryItem, true);
 		if (metadata.value) {
 			backgroundStore.setBackgroundUrl(metadata.value.background);
+			backgroundStore.setPosterUrl(metadata.value.background);
 		}
 	} catch (error) {
 		console.error('Error loading metadata', error);
@@ -37,6 +38,7 @@ onBeforeMount(() => {
 });
 onBeforeUnmount(() => {
 	backgroundStore.clearBackgroundUrl();
+	backgroundStore.clearPosterUrl();
 });
 
 function playVideo(path: string, startTime?: number) {

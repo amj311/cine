@@ -13,13 +13,6 @@ const props = defineProps<{
 }>();
 const backgroundStore = useBackgroundStore();
 
-const extraTypeLabels = {
-	'trailer': 'Trailer',
-	'featurette': 'Featurette',
-	'behindthescenes': 'Behind the Scenes',
-	'deleted': 'Deleted Content',
-}
-
 const metadata = ref<any>(null);
 const isLoadingMetadata = ref(false);
 
@@ -29,6 +22,7 @@ async function loadMetadata() {
 		metadata.value = await MetadataService.getMetadata(props.libraryItem, true);
 		if (metadata.value) {
 			backgroundStore.setBackgroundUrl(metadata.value.background);
+			backgroundStore.setPosterUrl(metadata.value.background);
 		}
 	} catch (error) {
 		console.error('Error loading metadata', error);
@@ -41,6 +35,7 @@ loadMetadata();
 
 onBeforeUnmount(() => {
 	backgroundStore.clearBackgroundUrl();
+	backgroundStore.clearPosterUrl();
 });
 
 function playVideo(path: string, startTime?: number) {
@@ -155,7 +150,7 @@ const resumeTime = computed(() => {
 
 
 				<br />
-				<StarRating class="my-4" v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
+				<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
 
 				<br />
 				<Button

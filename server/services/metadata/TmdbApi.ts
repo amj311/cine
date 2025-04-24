@@ -49,7 +49,7 @@ export class TmdbApi {
 			overview: result.overview,
 			poster_thumb: this.getImageUrl(result.poster_path, 'poster', 'small'),
 			poster_full: this.getImageUrl(result.poster_path, 'poster', 'large'),
-			background: this.getImageUrl(result.backdrop_path, 'backdrop', 'small'),
+			background: this.getImageUrl(result.backdrop_path, 'backdrop', 'large'),
 			logo: this.getImageUrl(
 				result.images?.logos?.find(i => i.iso_639_1 === 'en')?.file_path,
 				'logo',

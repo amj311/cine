@@ -136,5 +136,6 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) |
 <style scoped lang="scss">
 .breadcrumbs button.p-button {
 	text-align: left;
+	text-shadow: 0 0 1px #000000;
 }
 </style>

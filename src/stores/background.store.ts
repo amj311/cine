@@ -5,6 +5,15 @@ const DEFAULT_BG = "https://wallpapercave.com/wp/wp2633733.jpg";
 
 export const useBackgroundStore = defineStore('Background', () => {
 	const backgroundUrl = ref(DEFAULT_BG);
+	const posterUrl = ref<string | null>(null);
+
+	function setPosterUrl(url: string) {
+		if (!url) {
+			posterUrl.value = null;
+			return;
+		}
+		posterUrl.value = url;
+	}
 
 	return {
 		backgroundUrl,
@@ -13,6 +22,12 @@ export const useBackgroundStore = defineStore('Background', () => {
 		},
 		clearBackgroundUrl() {
 			backgroundUrl.value = DEFAULT_BG;
+		},
+
+		posterUrl,
+		setPosterUrl,
+		clearPosterUrl() {
+			setPosterUrl('');
 		}
 	}
 })
