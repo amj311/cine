@@ -232,9 +232,19 @@ onMounted(async () => {
 	// Setup fullscreen exit handling
 	useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
 
+	// Attempt rotate screen
+	if ((screen.orientation as any)?.lock) {
+		try {
+			await (screen.orientation as any).lock('landscape');
+		} catch (e) {
+			console.error("Failed to lock screen orientation", e);
+		}
+	}
 })
 
 onBeforeUnmount(async () => {
+	clearInterval(progressUpdateInterval);
+
 	// Resume TV mode
 	resumeTvMode();
 	
@@ -251,6 +261,14 @@ onBeforeUnmount(async () => {
 	}
 
 	useFullscreenStore().removeFullscreenChangeListener(navigateBackOnFullscreenExit);
+	// unlock screen orientation
+	if ((screen.orientation as any)?.unlock) {
+		try {
+			await (screen.orientation as any).unlock();
+		} catch (e) {
+			console.error("Failed to unlock screen orientation", e);
+		}
+	}
 });
 
 function onEnd() {
@@ -290,10 +308,6 @@ const progressUpdateInterval = setInterval(async () => {
 	}
 }, PROGRESS_INTERVAL);
 
-
-onBeforeUnmount(() => {
-	clearInterval(progressUpdateInterval);
-})
 
 const currentEpisodeMetadata = computed(() => {
 	if (playable.value?.type !== 'episodeFile') {
