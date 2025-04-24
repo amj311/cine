@@ -22,10 +22,10 @@ const extraTypeLabels = {
 
 const sortedExtras = computed(() => {
 	return props.extras.sort((a, b) => {
-		if (a.type === b.type) {
+		if (a.extraType === b.extraType) {
 			return a.name.localeCompare(b.name);
 		}
-		return a.type.localeCompare(b.type);
+		return a.extraType.localeCompare(b.extraType);
 	});
 });
 
@@ -38,13 +38,14 @@ const sortedExtras = computed(() => {
 				<div class="extra-item" v-for="extra in sortedExtras" :key="extra.relativePath">
 					<div class="extra-poster-wrapper">
 						<MediaCard
-							:fallbackIcon="'🎬'"
 							:progress="extra.watchProgress"
 							:aspectRatio="'wide'"
 							:title="extra.name"
 							:subtitle="extraTypeLabels[extra.extraType]"
 							:playSrc="extra.relativePath"
-						/>
+						>
+							<template #fallbackIcon>🎬</template>
+						</MediaCard>
 					</div>
 				</div>
 			</div>

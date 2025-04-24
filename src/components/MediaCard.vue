@@ -60,7 +60,7 @@ const onClick = computed(() => {
 			</div>
 
 			<div v-if="playSrc" class="overlay">
-				<div class="play-button">▶︎</div>
+				<div class="play-button"><i class="pi pi-play" /></div>
 			</div>
 		</div>
 		<div v-if="title || subtitle" class="mt-1 p-1">
@@ -98,12 +98,12 @@ const onClick = computed(() => {
 			left: 0;
 			width: 100%;
 			height: 100%;
-			background: rgba(0, 0, 0, 0.2);
+			background: rgba(0, 0, 0, 0.3);
 
 			.play-button {
 				margin: auto auto;
-				font-size: 2rem;
 				color: white;
+				zoom: 2;
 			}
 		}
 
