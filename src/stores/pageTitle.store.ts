@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 
-const DEFAULT_TITLE = "OlivePlex Cinemas";
+const DEFAULT_TITLE = "OlivePlex Media";
 
 export const usePageTitleStore = defineStore('PageTitle', () => {
 	const title = ref(DEFAULT_TITLE);
