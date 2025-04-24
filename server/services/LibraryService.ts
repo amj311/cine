@@ -17,7 +17,7 @@ type LibraryItemData = {
 }
 
 type Playable = {
-	type: 'movie' | 'episode' | 'extra',
+	type: 'movie' | 'episodeFile' | 'episode' | 'extra',
 	name: string,
 	version?: string | null,
 	fileName: RelativePath,
@@ -43,13 +43,10 @@ type Movie = LibraryItemData & {
 /* A single file may span multiple episodes.
  * For simplicity represent all as any array even if they have just one
 */
-type EpisodeFile = {
+type EpisodeFile = Playable & {
 	seasonNumber: number,
 	firstEpisodeNumber: number,
 	hasMultipleEpisodes: boolean,
-	fileName: string,
-	relativePath: RelativePath,
-	watchProgress: WatchProgress | null,
 	episodes: Array<Episode>,
 }
 
@@ -251,6 +248,7 @@ export class LibraryService {
 				}));
 
 				const episodeFile: EpisodeFile = {
+					type: 'episodeFile',
 					hasMultipleEpisodes,
 					seasonNumber,
 					firstEpisodeNumber,
@@ -258,6 +256,7 @@ export class LibraryService {
 					relativePath: folder + '/' + file,
 					watchProgress: overAllwatchProgress,
 					episodes,
+					name: lastEspisodeNumber ? `Episodes ${firstEpisodeNumber} - ${Number(lastEspisodeNumber)}` : "Episode " + firstEpisodeNumber,
 				};
 				return episodeFile;
 			}).filter((episode) => episode !== undefined);
@@ -314,7 +313,7 @@ export class LibraryService {
 		// Identify playable within the parent library
 		const playable = (parentLibrary as Movie).extras?.find((extra) => extra.relativePath === relativePath)
 			|| ((parentLibrary as Movie).movie?.relativePath === relativePath ? (parentLibrary as Movie).movie : null)
-			|| (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).flatMap((episodeFile) => episodeFile.episodes).find((episode) => episode.relativePath === relativePath);
+			|| (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => episodeFile.relativePath === relativePath);
 
 		if (!playable) {
 			console.warn(`No playable found for ${relativePath}`);

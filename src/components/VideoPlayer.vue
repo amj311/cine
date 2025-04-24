@@ -58,7 +58,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<video ref="videoRef" :key="src" class="video-player" controls autoplay v-if="goodType">
+	<video ref="videoRef" :key="videoUrl" class="video-player" controls autoplay v-if="goodType">
 		<source :src="videoUrl" :type="'video/mp4'" />
 	</video>
 </template>

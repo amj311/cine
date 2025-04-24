@@ -18,11 +18,38 @@ const router = useRouter();
 const queryPathStore = useQueryPathStore();
 queryPathStore.updatePathFromQuery();
 
-const mediaPath = computed(() => queryPathStore.currentPath || '')
+const mediaPath = ref(queryPathStore.currentPath || '')
 const playerRef = ref<InstanceType<typeof VideoPlayer>>();
 const theaterRef = ref<InstanceType<typeof HTMLElement>>();
 const didAutoFullscreen = ref(false);
 const hasLoaded = ref(false);
+const hasEnded = ref(false);
+const playerProgress = ref<any>(null); // WatchProgress type
+
+const nextEpisodeFile = computed(() => {
+	if (playable.value?.type !== 'episodeFile') {
+		return null;
+	}
+	const allEpisdoes = parentLibrary.value?.seasons
+		.flatMap((season: any) => season.episodeFiles);
+	const currentIndex = allEpisdoes?.findIndex((episode: any) => episode.name === playable.value.name);
+	if (currentIndex === undefined || currentIndex === -1) {
+		return null;
+	}
+	const nextIndex = currentIndex + 1;
+	if (nextIndex >= allEpisdoes?.length) {
+		return null;
+	}
+	return allEpisdoes?.[nextIndex];
+});
+
+const showNextEpisodeCard = computed(() => {
+	return Boolean(nextEpisodeFile.value && (playerProgress.value?.duration - playerProgress.value?.time < 30));
+});
+
+const showPlayer = computed(() => {
+	return Boolean(mediaPath.value && hasLoaded.value && !hasEnded.value);
+});
 
 const showControlsTime = 2500;
 const hideControlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
@@ -41,12 +68,12 @@ const isLoadingLibrary = ref(false);
 const parentLibrary = ref<any>(null);
 const playable = ref<any>(null);
 
-async function loadMediaData() {
+async function loadMediaData(pathToLoad: string) {
 	try {
 		isLoadingLibrary.value = true;
 		const { data } = await api.get('/theaterData', {
 			params: {
-				relativePath: mediaPath.value,
+				relativePath: pathToLoad,
 			}
 		});
 		parentLibrary.value = data.data.parentLibrary;
@@ -56,13 +83,9 @@ async function loadMediaData() {
 			parentLibrary.value.metadata = await MetadataService.getMetadata(parentLibrary.value, true);
 		}
 
-		console.log('Parent Library', parentLibrary.value);
-
 		if (parentLibrary.value.metadata?.background) {
 			useBackgroundStore().setBackgroundUrl(parentLibrary.value.metadata.background);
 		}
-
-		await initialProgress();
 	} catch (error) {
 		console.error('Error loading media data', error);
 	} finally {
@@ -163,15 +186,32 @@ async function attemptAutoFullscreen() {
 }
 
 
-onMounted(async () => {
-	updateShowControlsTimeout();
-	loadMediaData();
+async function playMedia(pathToLoad: string, restart = false) {
+	if (!mediaPath) {
+		return;
+	}
+	history.replaceState(
+		{},
+		'',
+		router.currentRoute.value.path + '?' + new URLSearchParams({ ...(router.currentRoute.value.query || {}), path: pathToLoad }).toString(),
+	);
+	mediaPath.value = pathToLoad;
+	playerRef.value?.setTime(0);
+	playerProgress.value = playerRef.value?.getProgress();
+	await loadMediaData(pathToLoad);
+	if (!restart) {
+		await initialProgress();
+	}
+}
 
-	// Pause TV mode to allow interaction with VideoPlayer UI
+onMounted(async () => {
+	playMedia(mediaPath.value).catch((e) => {
+		console.error("Failed to load media data", e);
+	});
+	updateShowControlsTimeout();
 	pauseTvMode();
 	attemptAutoFullscreen();
 
-	
 	if ('wakeLock' in navigator) {
 		try {
 			wakeLock = await navigator.wakeLock.request('screen');
@@ -210,21 +250,33 @@ onBeforeUnmount(async () => {
 	useFullscreenStore().removeFullscreenChangeListener(navigateBackOnFullscreenExit);
 });
 
-const PROGRESS_INTERVAL = 1000 * 30;
+const PROGRESS_INTERVAL = 1000 * 5;
 const progressUpdateInterval = setInterval(async () => {
-	try {
-		const progress = playerRef.value?.getProgress();
-		if (!progress) {
-			return;
-		}
-		await api.post('/watchProgress', {
-			relativePath: mediaPath.value,
-			progress,
-		});
+	const lastProgressTime = playerProgress.value?.time;
+	playerProgress.value = playerRef.value?.getProgress();
+	if (!playerProgress.value) {
+		return;
 	}
-	catch (e) {
-		console.error("Failed to update progress")
-		console.error(e);
+	if (lastProgressTime === playerProgress.value?.time) {
+		return;
+	}
+
+	// Only post to server for certain intervals
+	const POST_INTERVAL = 30; // Progress time is in seconds
+	if (Math.abs(playerProgress.value?.time - lastProgressTime) > POST_INTERVAL) {
+		try {
+			if (!playerProgress.value) {
+				return;
+			}
+			await api.post('/watchProgress', {
+				relativePath: mediaPath.value,
+				progress: playerProgress.value,
+			});
+		}
+		catch (e) {
+			console.error("Failed to update progress")
+			console.error(e);
+		}
 	}
 }, PROGRESS_INTERVAL);
 
@@ -233,11 +285,7 @@ onBeforeUnmount(() => {
 	clearInterval(progressUpdateInterval);
 })
 
-function onloaded(data: any) {
-	hasLoaded.value = true;
-}
-
-const episodeMetadata = computed(() => {
+const currentPlayableMetadata = computed(() => {
 	if (playable.value?.type !== 'episode') {
 		return null;
 	}
@@ -256,8 +304,8 @@ const title = computed(() => {
 	if (playable.value?.type === 'movie') {
 		return playable.value.name;
 	}
-	if (playable.value?.type === 'episode') {
-		return `${parentLibrary.value.name} S${playable.value.seasonNumber}:E${playable.value.episodeNumber}` + (episodeMetadata.value?.name ? ` "${episodeMetadata.value.name}"` : '');
+	if (playable.value?.type === 'episodeFile') {
+		return `${parentLibrary.value.name}: ${playable.value.name}`;
 	}
 	return playable.value.name;
 });
@@ -265,17 +313,42 @@ watch(title, (newTitle) => {
 	usePageTitleStore().setTitle(newTitle);
 });
 
+const loadingBackground = computed(() => {
+	if (hasLoaded.value) {
+		return '';
+	}
+	return currentPlayableMetadata.value?.still_full || parentLibrary.value?.metadata?.background;
+});
+
 </script>
 
 <template>
-	<div ref="theaterRef" class="movie-theater" :class="{ 'show-controls': showControls }">
-		<VideoPlayer v-show="hasLoaded" ref="playerRef" v-if="mediaPath" :src="mediaPath" :onLoadedData="onloaded" />
+	<div ref="theaterRef" class="movie-theater" :class="{ 'show-controls': showControls }" :style="{ backgroundImage: `url(${loadingBackground})` }">
+		<VideoPlayer
+			v-if="mediaPath"
+			v-show="showPlayer"
+			ref="playerRef"
+			:src="mediaPath"
+			:onLoadedData="() => hasLoaded = true"
+			:onEnd="() => hasEnded = true"
+		/>
 		<div class="loading" v-if="!hasLoaded">
 			<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
 		</div>
+		<div class="overlay top-fade"></div>
 		<div class="top-left overlay">
 			<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="carefulBackNav" />
 			<div>{{ title }}</div>
+		</div>
+		<div v-if="showNextEpisodeCard" class="next-episode-card" :class="{ full: hasEnded }" @click="() => playMedia(nextEpisodeFile?.relativePath, true)">
+			<div class="play-icon">
+				<i class="pi pi-play" />
+			</div>
+			<div>
+				<div>Play Next</div>
+				<div style="opacity: .7">{{ nextEpisodeFile?.name }}</div>
+				{{  String(showNextEpisodeCard) }}
+			</div>
 		</div>
 	</div>
 </template>
@@ -284,38 +357,80 @@ watch(title, (newTitle) => {
 	lang="scss"
 	scoped
 >
-	.movie-theater {
-		height: 100%;
-		position: relative;
+.movie-theater {
+	height: 100%;
+	position: relative;
+	background-image: none;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	transition: background-image 500ms;
+	
 
+	.loading {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		translate: -50% -50%;
+		filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
+	}
 
-		.loading {
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			translate: -50% -50%;
-		}
-
+	.overlay {
+		color: #fff !important;
+		opacity: 0;
+		transition: 500ms;
+		zoom: 1.3;
+	}
+	&.show-controls {
 		.overlay {
-			color: #fff !important;
-			opacity: 0;
-			transition: 500ms;
-			zoom: 1.3;
-		}
-		&.show-controls {
-			.overlay {
-				opacity: 1;
-			}
-		}
-
-		.top-left {
-			position: absolute;
-			top: 10px;
-			left: 10px;
-			z-index: 1000;
-			display: flex;
-			gap: .5em;
-			align-items: center;
+			opacity: 1;
 		}
 	}
+	
+	.top-fade {
+		background: linear-gradient(to bottom, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0));
+		height: 4rem;
+		width: 100%;
+		position: absolute;
+		top: 0;
+		left: 0;
+	}
+
+	.top-left {
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		z-index: 1000;
+		display: flex;
+		gap: .5em;
+		align-items: center;
+	}
+
+	.next-episode-card {
+		position: absolute;
+		bottom: 6rem;
+		right: 1rem;
+		border-radius: .5rem;
+		padding: .6rem;
+		background-color: var(--color-background-mute);
+		cursor: pointer;
+		user-select: none;
+		display: flex;
+		gap: .5em;
+
+		&:hover, &:focus {
+			box-shadow: 0 0 10px rgba(0, 0, 0, .3);
+		}
+
+		.play-icon {
+			width: 2.5rem;
+			height: 2.5rem;
+			color: var(--color-contrast);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			background-color: var(--color-background);
+		}
+	}
+}
 </style>
