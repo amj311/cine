@@ -1,11 +1,9 @@
 {
     "lang": "en-us",
     "name": "OlivePlex Media",
-    "short_name": "Judd media server",
+    "short_name": "OlivePlex",
     "description": "Personal media server for private Judd family media.",
-    "start_url": "/",
-    "background_color": "#2f3d58",
-    "theme_color": "#2f3d58",
+    "start_url": "/browse",
     "orientation": "any",
     "display": "standalone",
     "icons": [
