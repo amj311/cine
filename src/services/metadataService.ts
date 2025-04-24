@@ -2,7 +2,7 @@ import api from "./api";
 
 export class MetadataService {
 	static async getMetadata(media, detailed = false) {
-		if (media.metadata) {
+		if (media.metadata && media.metadata.details === detailed) {
 			return media.metadata;
 		}
 
