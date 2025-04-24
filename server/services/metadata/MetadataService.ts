@@ -29,7 +29,6 @@ export class MediaMetadataService {
 	): Promise<EitherMetadata<T> | null> {
 		const provider = Providers[type];
 		if (!provider) {
-			console.warn('No provider found for type', type);
 			return null;
 		}
 		return await provider.getMetadata(path, detailed, noFetch);
