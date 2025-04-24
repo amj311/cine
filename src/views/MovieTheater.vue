@@ -285,13 +285,17 @@ onBeforeUnmount(() => {
 	clearInterval(progressUpdateInterval);
 })
 
-const currentPlayableMetadata = computed(() => {
-	if (playable.value?.type !== 'episode') {
+const currentEpisodeMetadata = computed(() => {
+	if (playable.value?.type !== 'episodeFile') {
 		return null;
 	}
-	return parentLibrary.value.metadata?.seasons
+	console.log(playable.value?.firstEpisodeNumber,
+		parentLibrary.value?.metadata?.seasons.find((season: any) => season.seasonNumber === playable.value.seasonNumber)?.episodes
+			.find((episode: any) => episode.episodeNumber === playable.value?.firstEpisodeNumber)
+	);
+	return parentLibrary.value?.metadata?.seasons
 		.find((season: any) => season.seasonNumber === playable.value.seasonNumber)?.episodes
-		.find((episode: any) => episode.episodeNumber === playable.value.episodeNumber);
+		.find((episode: any) => episode.episodeNumber === playable.value?.firstEpisodeNumber);
 });
 
 const title = computed(() => {
@@ -305,7 +309,9 @@ const title = computed(() => {
 		return playable.value.name;
 	}
 	if (playable.value?.type === 'episodeFile') {
-		return `${parentLibrary.value.name}: ${playable.value.name}`;
+		const metadataName = currentEpisodeMetadata.value?.name;
+		const nameIsNotEpisodeNubmer = metadataName && !metadataName.toLowerCase().match(/episode \d{1,3}/);
+		return `${parentLibrary.value?.name}: ${playable.value?.name}` + (nameIsNotEpisodeNubmer ? ` "${metadataName}"` : '');
 	}
 	return playable.value.name;
 });
@@ -317,7 +323,7 @@ const loadingBackground = computed(() => {
 	if (hasLoaded.value) {
 		return '';
 	}
-	return currentPlayableMetadata.value?.still_full || parentLibrary.value?.metadata?.background;
+	return currentEpisodeMetadata.value?.still_full || parentLibrary.value?.metadata?.background;
 });
 
 </script>
@@ -347,7 +353,6 @@ const loadingBackground = computed(() => {
 			<div>
 				<div>Play Next</div>
 				<div style="opacity: .7">{{ nextEpisodeFile?.name }}</div>
-				{{  String(showNextEpisodeCard) }}
 			</div>
 		</div>
 	</div>
