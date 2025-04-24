@@ -198,6 +198,8 @@ async function playMedia(pathToLoad: string, restart = false) {
 	mediaPath.value = pathToLoad;
 	playerRef.value?.setTime(0);
 	playerProgress.value = playerRef.value?.getProgress();
+	hasEnded.value = false;
+	hasLoaded.value = false;
 	await loadMediaData(pathToLoad);
 	if (!restart) {
 		await initialProgress();
