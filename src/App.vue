@@ -8,6 +8,7 @@ import AppBackground from './components/AppBackground.vue';
 import { onMounted, ref } from 'vue';
 import { useConfirm } from "primevue/useconfirm";
 import { usePageTitleStore } from './stores/pageTitle.store';
+import { useFullscreenStore } from './stores/fullscreenStore.store';
 
 usePageTitleStore();
 const tvNavigationStore = useTvNavigationStore();
@@ -15,12 +16,26 @@ const showDebug = ref(false);
 
 const confirm = useConfirm();
 
-function suggestFullscreen() {
+function suggestTvFullscreen() {
 	confirm.require({
 		message: 'This looks like a TV environment. Would you lke to go fullscreen?',
 		accept: () => {
-			document.documentElement.requestFullscreen();
+			useFullscreenStore().userFullscreenRequest();
 		},
+	});
+}
+
+async function handleExitFullscreen() {
+	return new Promise<boolean>((resolve) => {
+		confirm.require({
+			message: 'Oops - would you lke to go fullscreen again?',
+			accept: () => {
+				resolve(true);
+			},
+			reject: () => {
+				resolve(false);
+			},
+		});
 	});
 }
 
@@ -43,13 +58,14 @@ function attemptDetermineTvMode() {
 			else {
 				resolve(false);
 			}
-			suggestFullscreen();
+			suggestTvFullscreen();
 		});
 	});
 }
 
 onMounted(() => {
 	attemptDetermineTvMode();
+	useFullscreenStore().setAccidentalExitHandler(handleExitFullscreen);
 });
 </script>
 

@@ -11,6 +11,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { useTvNavigationStore } from '@/stores/tvNavigation.store';
 import { useBackgroundStore } from '@/stores/background.store';
 import { usePageTitleStore } from '@/stores/pageTitle.store';
+import { useFullscreenStore } from '@/stores/fullscreenStore.store';
+
+const router = useRouter();
 
 const queryPathStore = useQueryPathStore();
 queryPathStore.updatePathFromQuery();
@@ -119,37 +122,39 @@ function resumeTvMode() {
 	}
 }
 
+function carefulBackNav() {
+	// TODO: Use router to go back if there is history. Otherwise go to the parent library
+	// if (window.history.state && window.history.state.back) {
+	// 	router.back();
+	// } else {
+	// 	router.push({
+	// 		name: 'library',
+	// 		params: {
+	// 			libraryId: parentLibrary.value.id,
+	// 		}
+	// 	});
+	// }
+	router.back();
+}
+
+function navigateBackOnFullscreenExit() {
+	// If we are still in the movie theater but fullscreen has exited, we should navigate backward
+	// make sure we're still on the play route before going back
+	if (router.currentRoute.value.name !== 'play') {
+		return;
+	}
+	carefulBackNav();
+}
+
 async function attemptAutoFullscreen() {
 	try {
-		const router = useRouter();
-		await document.documentElement.requestFullscreen();
-		didAutoFullscreen.value = true;
-
-		// If auto fullscreen was successful, we should leave this page when fullscreen exits
-		document.addEventListener('fullscreenchange', onFullScreenChange, false);
-		document.addEventListener('webkitfullscreenchange', onFullScreenChange, false);
-		document.addEventListener('mozfullscreenchange', onFullScreenChange, false);
-
-		function onFullScreenChange() {
-			var fullscreenElement =
-				document.fullscreenElement ||
-				(document as any).mozFullScreenElement ||
-				(document as any).webkitFullscreenElement;
-
-				// This fires when the first element goes fullscreen
-				// The Element will be null when exiting fullscreen
-				if (!fullscreenElement) {
-					document.removeEventListener('fullscreenchange', onFullScreenChange);
-					document.removeEventListener('webkitfullscreenchange', onFullScreenChange);
-					document.removeEventListener('mozfullscreenchange', onFullScreenChange);
-
-					// make sure we're still on the play route before going back
-					if (router.currentRoute.value.name !== 'play') {
-						return;
-					}
-					router.back();
-				}
+		if (useFullscreenStore().isAppInFullscreenMode) {
+			console.log("Already in fullscreen mode");
+			return;
 		}
+
+		useFullscreenStore().tempFullscreen('movie-theater');
+		didAutoFullscreen.value = true;
 	} catch (e) {
 	}
 }
@@ -178,13 +183,20 @@ onMounted(async () => {
 		theaterRef.value?.addEventListener(event, updateShowControlsTimeout, { passive: true });
 	});
 
+	// Setup fullscreen exit handling
+	useFullscreenStore().addFullscreenChangeListener((isFullscreen) => {
+		if (!isFullscreen) {
+			navigateBackOnFullscreenExit();
+		}
+	});
+
 })
 
 onBeforeUnmount(async () => {
 	// Resume TV mode
 	resumeTvMode();
 	
-	if (didAutoFullscreen.value && !useTvNavigationStore().detectedTv) {
+	if (didAutoFullscreen.value) {
 		try {
 			document.exitFullscreen();
 		} catch (e) {}
@@ -261,7 +273,7 @@ watch(title, (newTitle) => {
 			<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
 		</div>
 		<div class="top-left overlay">
-			<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="$router.back()" />
+			<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="carefulBackNav" />
 			<div>{{ title }}</div>
 		</div>
 	</div>
