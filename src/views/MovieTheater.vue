@@ -289,10 +289,6 @@ const currentEpisodeMetadata = computed(() => {
 	if (playable.value?.type !== 'episodeFile') {
 		return null;
 	}
-	console.log(playable.value?.firstEpisodeNumber,
-		parentLibrary.value?.metadata?.seasons.find((season: any) => season.seasonNumber === playable.value.seasonNumber)?.episodes
-			.find((episode: any) => episode.episodeNumber === playable.value?.firstEpisodeNumber)
-	);
 	return parentLibrary.value?.metadata?.seasons
 		.find((season: any) => season.seasonNumber === playable.value.seasonNumber)?.episodes
 		.find((episode: any) => episode.episodeNumber === playable.value?.firstEpisodeNumber);
