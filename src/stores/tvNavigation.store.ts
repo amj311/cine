@@ -7,6 +7,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	const lastMouseMove = ref({ x: 0, y: 0 });
 	const lastMousePosition = ref({ x: 0, y: 0 });
 	const lastDetectedDirection = ref<Direction | null>(null);
+	const lastKeyDown = ref<string | null>(null);
 	const lastMouseMoveTime = ref(0);
 	const detectedTv = ref(false);
 	const tvWasConfirmed = ref(false);
@@ -128,6 +129,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			return;
 		}
 
+		lastKeyDown.value = event.key;
 		if (event.key === 'Enter' || event.key === ' ') {
 			captureClick(event);
 			return;
@@ -396,6 +398,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		lastMousePosition,
 		lastDetectedDirection,
 		lastMouseMoveTime,
+		lastKeyDown,
 
 		determineTvEnvironment,
 		engageTvMode,

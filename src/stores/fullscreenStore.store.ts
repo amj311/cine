@@ -88,7 +88,6 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 
 	let accidentalExitHandler = async () => await Promise.resolve(false);
 	watch(isAppInFullscreenMode, async (newValue) => {
-		console.log('Fullscreen mode changed:', newValue);
 		let shouldDoListeners = true;
 		if (!newValue && userWantsFullscreen.value) {
 			// If the user wants fullscreen but we are not in fullscreen mode, go fullscreen
@@ -108,9 +107,7 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 				}
 			}
 		}
-		console.log(shouldDoListeners)
 		if (shouldDoListeners) {
-			console.log('Fullscreen change - notifying listeners', newValue, fullscreenChangeListeners);
 			fullscreenChangeListeners.forEach((listener) => {
 				listener(newValue);
 			});
