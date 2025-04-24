@@ -6,7 +6,6 @@ const router = useRouter();
 
 const props = defineProps<{
 	imageUrl?: string;
-	fallbackIcon?: string;
 	aspectRatio?: 'tall' | 'wide';
 	width?: number;
 	height?: number;
@@ -52,8 +51,8 @@ const onClick = computed(() => {
 			:class="aspectRatio || 'tall'"
 			:style="{ backgroundImage: `url(${imageUrl})` }"
 		>
-			<div v-if="!imageUrl && fallbackIcon" class="fallback-icon">
-				{{ fallbackIcon }}
+			<div v-if="!imageUrl && $slots.fallbackIcon" class="fallback-icon">
+				<slot name="fallbackIcon" />
 			</div>
 
 			<div v-if="progress?.percentage" class="progress-bar-wrapper">

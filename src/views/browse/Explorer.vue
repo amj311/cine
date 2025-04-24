@@ -50,11 +50,12 @@ const items = computed(() => {
 									<MediaCard
 										clickable
 										aspectRatio="wide"
-										:fallbackIcon="'🗂️'"
 										:title="folder.libraryItem.name"
 										:subtitle="`${folder.libraryItem.children.length} items`"
 										:action="() => queryPathStore.enterDirectory(folder.folderName)"
-									/>
+									>
+										<template #fallbackIcon>🗂️</template>
+									</MediaCard>
 								</div>
 							</template>
 						</MetadataLoader>
@@ -73,13 +74,14 @@ const items = computed(() => {
 									<MediaCard
 										clickable
 										:imageUrl="metadata?.poster_thumb"
-										:fallbackIcon="folder.libraryItem.type === 'movie' ? '🎞️' : '📺'"
 										:aspectRatio="'tall'"
 										:title="folder.libraryItem.name"
 										:subtitle="folder.libraryItem.numSeasons ? `${folder.libraryItem.numSeasons} Season${folder.libraryItem.numSeasons.length ? 's' : ''}` : folder.libraryItem.year"
 										:progress="folder.libraryItem.movie?.watchProgress"
 										:action="() => queryPathStore.enterDirectory(folder.folderName)"
-									/>
+									>
+										<template #fallbackIcon>{{ folder.libraryItem.type === 'movie' ? '🎞️' : '📺' }}</template>
+									</MediaCard>
 								</div>
 							</template>
 						</MetadataLoader>

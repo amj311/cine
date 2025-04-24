@@ -12,6 +12,7 @@ import { useTvNavigationStore } from '@/stores/tvNavigation.store';
 import { useBackgroundStore } from '@/stores/background.store';
 import { usePageTitleStore } from '@/stores/pageTitle.store';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
+import MediaCard from '@/components/MediaCard.vue';
 
 const router = useRouter();
 
@@ -374,7 +375,14 @@ const loadingBackground = computed(() => {
 		</div>
 		<div v-if="showNextEpisodeCard" class="next-episode-card" :class="{ full: hasEnded }" @click="() => playMedia(nextEpisodeFile?.relativePath, true)">
 			<div class="play-icon">
-				<i class="pi pi-play" />
+				<div class="w-full">
+					<MediaCard
+						:imageUrl="nextEpisodeMetadata.still_full"
+						:aspectRatio="'wide'"
+					>
+						<template #fallbackIcon><i class="pi pi-play" /></template>
+					</MediaCard>
+				</div>
 			</div>
 			<div>
 				<div>Play Next</div>
@@ -447,6 +455,7 @@ const loadingBackground = computed(() => {
 		cursor: pointer;
 		user-select: none;
 		display: flex;
+		align-items: center;
 		gap: .5em;
 
 		&:hover, &:focus {
@@ -454,13 +463,11 @@ const loadingBackground = computed(() => {
 		}
 
 		.play-icon {
-			width: 2.5rem;
-			height: 2.5rem;
+			width: 5rem;
 			color: var(--color-contrast);
 			display: flex;
 			justify-content: center;
 			align-items: center;
-			background-color: var(--color-background);
 		}
 	}
 }
