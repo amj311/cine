@@ -48,7 +48,7 @@ const showNextEpisodeCard = computed(() => {
 });
 
 const showPlayer = computed(() => {
-	return Boolean(mediaPath.value && hasLoaded.value && !hasEnded.value);
+	return Boolean(mediaPath.value && hasLoaded.value);
 });
 
 const showControlsTime = 2500;
@@ -252,6 +252,13 @@ onBeforeUnmount(async () => {
 	useFullscreenStore().removeFullscreenChangeListener(navigateBackOnFullscreenExit);
 });
 
+function onEnd() {
+	hasEnded.value = true;
+	if (playable.value?.type !== 'episodeFile' || !nextEpisodeFile.value) {
+		carefulBackNav();
+	}
+}
+
 const PROGRESS_INTERVAL = 1000 * 5;
 const progressUpdateInterval = setInterval(async () => {
 	const lastProgressTime = playerProgress.value?.time;
@@ -351,10 +358,11 @@ const loadingBackground = computed(() => {
 		<VideoPlayer
 			v-if="mediaPath"
 			v-show="showPlayer"
+			:key="mediaPath"
 			ref="playerRef"
 			:src="mediaPath"
 			:onLoadedData="() => hasLoaded = true"
-			:onEnd="() => hasEnded = true"
+			:onEnd="onEnd"
 		/>
 		<div class="loading" v-if="!hasLoaded">
 			<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
