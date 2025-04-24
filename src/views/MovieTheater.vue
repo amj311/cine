@@ -236,9 +236,7 @@ onMounted(async () => {
 	if ((screen.orientation as any)?.lock) {
 		try {
 			await (screen.orientation as any).lock('landscape');
-		} catch (e) {
-			console.error("Failed to lock screen orientation", e);
-		}
+		} catch (e) {}
 	}
 })
 
@@ -265,9 +263,7 @@ onBeforeUnmount(async () => {
 	if ((screen.orientation as any)?.unlock) {
 		try {
 			await (screen.orientation as any).unlock();
-		} catch (e) {
-			console.error("Failed to unlock screen orientation", e);
-		}
+		} catch (e) {}
 	}
 });
 
