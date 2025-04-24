@@ -1,9 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import BrowseView from '@/views/browse/BrowseView.vue'
-import MovieTheater from '@/views/MovieTheater.vue'
-import MoviePage from '@/views/browse/MoviePage.vue'
-import SeriesPage from '@/views/browse/SeriesPage.vue'
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,12 +12,12 @@ const router = createRouter({
 		{
 			path: '/browse',
 			name: 'browse',
-			component: BrowseView,
+			component: () => import('@/views/browse/BrowseView.vue'),
 		},
 		{
 			path: '/play',
 			name: 'play',
-			component: MovieTheater,
+			component: () => import('@/views/MovieTheater.vue'),
 		}
 	],
 	scrollBehavior: (to, from) => {
