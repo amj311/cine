@@ -88,6 +88,8 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 
 	let accidentalExitHandler = async () => await Promise.resolve(false);
 	watch(isAppInFullscreenMode, async (newValue) => {
+		console.log('Fullscreen mode changed:', newValue);
+		let shouldDoListeners = true;
 		if (!newValue && userWantsFullscreen.value) {
 			// If the user wants fullscreen but we are not in fullscreen mode, go fullscreen
 			console.log('User wants fullscreen, but we are not in fullscreen mode - calling handler');
@@ -96,16 +98,22 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 				if (returnToFullscreen) {
 					console.log('Accidental exit handler returned true - going fullscreen. Skipping listeners.');
 					userWantsFullscreen.value = true;
+					shouldDoListeners = false;
+					console.log(shouldDoListeners)
 					goFullscreen();
 				}
 				else {
 					userWantsFullscreen.value = false;
-					console.log('User chose to leave fullscreen. Trigerring listeners.')
-					for (const listener of fullscreenChangeListeners.values()) {
-						listener(newValue);
-					}
+					console.log('User chose to leave fullscreen.')
 				}
 			}
+		}
+		console.log(shouldDoListeners)
+		if (shouldDoListeners) {
+			console.log('Fullscreen change - notifying listeners', newValue, fullscreenChangeListeners);
+			fullscreenChangeListeners.forEach((listener) => {
+				listener(newValue);
+			});
 		}
 	});
 

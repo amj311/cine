@@ -56,6 +56,8 @@ async function loadMediaData() {
 			parentLibrary.value.metadata = await MetadataService.getMetadata(parentLibrary.value, true);
 		}
 
+		console.log('Parent Library', parentLibrary.value);
+
 		if (parentLibrary.value.metadata?.background) {
 			useBackgroundStore().setBackgroundUrl(parentLibrary.value.metadata.background);
 		}
@@ -123,21 +125,22 @@ function resumeTvMode() {
 }
 
 function carefulBackNav() {
-	// TODO: Use router to go back if there is history. Otherwise go to the parent library
-	// if (window.history.state && window.history.state.back) {
-	// 	router.back();
-	// } else {
-	// 	router.push({
-	// 		name: 'library',
-	// 		params: {
-	// 			libraryId: parentLibrary.value.id,
-	// 		}
-	// 	});
-	// }
-	router.back();
+	if (router.options?.history?.state?.back) {
+		router.back();
+	} else {
+		router.push({
+			name: 'browse',
+			query: {
+				path: parentLibrary.value?.relativePath || '',
+			}
+		});
+	}
 }
 
-function navigateBackOnFullscreenExit() {
+function navigateBackOnFullscreenExit(isFullscreen: boolean) {
+	if (isFullscreen) {
+		return;
+	}
 	// If we are still in the movie theater but fullscreen has exited, we should navigate backward
 	// make sure we're still on the play route before going back
 	if (router.currentRoute.value.name !== 'play') {
@@ -184,11 +187,7 @@ onMounted(async () => {
 	});
 
 	// Setup fullscreen exit handling
-	useFullscreenStore().addFullscreenChangeListener((isFullscreen) => {
-		if (!isFullscreen) {
-			navigateBackOnFullscreenExit();
-		}
-	});
+	useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
 
 })
 
@@ -207,6 +206,8 @@ onBeforeUnmount(async () => {
 		await wakeLock.release();
 		wakeLock = null;
 	}
+
+	useFullscreenStore().removeFullscreenChangeListener(navigateBackOnFullscreenExit);
 });
 
 const PROGRESS_INTERVAL = 1000 * 30;
