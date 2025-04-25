@@ -8,7 +8,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 const backgroundStore = useBackgroundStore();
-const backgroundImage = computed(() => `url(${backgroundStore.backgroundUrl})`);
+const backgroundImage = computed(() => backgroundStore.backgroundUrl ? `url(${backgroundStore.backgroundUrl})` : undefined);
 
 function getCanvasCtx() {
 	if (!canvasRef.value) {
@@ -107,6 +107,8 @@ async function drawPoster(url) {
 		bottom: 0;
 		background-size: cover;
 		background-position: center;
+		background-repeat: no-repeat;
+		background-image: url(@/assets/bg.jpg);
 		filter: blur(40px);
 		z-index: -1;
 		transition: all 600ms;

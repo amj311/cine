@@ -81,9 +81,7 @@ async function loadMediaData(pathToLoad: string) {
 		parentLibrary.value = data.data.parentLibrary;
 		playable.value = data.data.playable;
 
-		if (!parentLibrary.value.metadata) {
-			parentLibrary.value.metadata = await MetadataService.getMetadata(parentLibrary.value, true);
-		}
+		parentLibrary.value.metadata = await MetadataService.getMetadata(parentLibrary.value, true);
 
 		if (parentLibrary.value.metadata?.background) {
 			useBackgroundStore().setBackgroundUrl(parentLibrary.value.metadata.background);
@@ -359,7 +357,7 @@ const nextEpisodeTitle = computed(() => {
 
 const loadingBackground = computed(() => {
 	if (hasLoaded.value) {
-		return '';
+		// return '';
 	}
 	return currentEpisodeMetadata.value?.still_full || parentLibrary.value?.metadata?.background;
 });
@@ -367,7 +365,7 @@ const loadingBackground = computed(() => {
 </script>
 
 <template>
-	<div ref="theaterRef" class="movie-theater" :class="{ 'show-controls': showControls }" :style="{ backgroundImage: `url(${loadingBackground})` }">
+	<div ref="theaterRef" class="movie-theater" :class="{ 'show-controls': showControls }" :style="{ backgroundImage: loadingBackground ? `url(${loadingBackground})` : undefined }">
 		<VideoPlayer
 			v-if="mediaPath"
 			v-show="showPlayer"
@@ -415,6 +413,8 @@ const loadingBackground = computed(() => {
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;
+	/* single transparent image to allow transition effect on bg load */
+	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC);
 	transition: background-image 500ms;
 	
 

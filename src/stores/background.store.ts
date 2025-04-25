@@ -1,10 +1,11 @@
 import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 
-const DEFAULT_BG = "https://wallpaperaccess.com/full/4477509.jpg";
+// const DEFAULT_BG = "https://wallpaperaccess.com/full/4477509.jpg";
+// const DEFAULT_BG = '/assets/bg.jpg';
 
 export const useBackgroundStore = defineStore('Background', () => {
-	const backgroundUrl = ref(DEFAULT_BG);
+	const backgroundUrl = ref<null | string>(null);
 	const posterUrl = ref<string | null>(null);
 
 	function setPosterUrl(url: string) {
@@ -18,10 +19,10 @@ export const useBackgroundStore = defineStore('Background', () => {
 	return {
 		backgroundUrl,
 		setBackgroundUrl(url: string) {
-			backgroundUrl.value = url || DEFAULT_BG;
+			backgroundUrl.value = url || null;
 		},
 		clearBackgroundUrl() {
-			backgroundUrl.value = DEFAULT_BG;
+			backgroundUrl.value = null;
 		},
 
 		posterUrl,
