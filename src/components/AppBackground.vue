@@ -74,8 +74,6 @@ async function drawPoster(url) {
 	ctx.fillStyle = gradient;
 	ctx.globalCompositeOperation = 'destination-out';
 	ctx.fillRect(0, 0, width, height);
-
-	console.log('Poster drawn');
 };
 
 /**

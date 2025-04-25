@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 
-const DEFAULT_BG = "https://wallpapercave.com/wp/wp2633733.jpg";
+const DEFAULT_BG = "https://wallpaperaccess.com/full/4477509.jpg";
 
 export const useBackgroundStore = defineStore('Background', () => {
 	const backgroundUrl = ref(DEFAULT_BG);
