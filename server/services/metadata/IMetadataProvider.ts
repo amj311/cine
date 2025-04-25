@@ -53,7 +53,6 @@ export abstract class IMetadataProvider<T extends MetadataDefinition = MetadataD
 			details,
 		};
 		const cached = this.getFromCache(key) as T;
-		console.log('getMetadata', path, key, cached);
 		if (cached || noFetch) {
 			return cached;
 		}
