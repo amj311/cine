@@ -3,10 +3,11 @@
 	lang="ts"
 >
 import { useRouter } from 'vue-router';
-import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
 import ExtrasList from '@/components/ExtrasList.vue';
+import { useWatchProgressStore } from '@/stores/watchProgress.store';
 
 const router = useRouter();
 const props = defineProps<{
@@ -67,6 +68,15 @@ const resumeTime = computed(() => {
 	return 0;
 });
 
+watch(
+	() => useWatchProgressStore().lastWatchProgress,
+	(lastProgress) => {
+		if (lastProgress?.relativePath === props.libraryItem.movie.relativePath) {
+			props.libraryItem.movie.watchProgress = lastProgress.progress;
+		}
+	}
+)
+
 </script>
 
 <template>
@@ -100,7 +110,7 @@ const resumeTime = computed(() => {
 					@click="() => playVideo(libraryItem.movie.relativePath, resumeTime)"
 				>
 					<i class="pi pi-play" />
-					{{ resumeTime ? `Resume (${formatRuntime(resumeTime / 60)})` : 'Play' }}
+					{{ resumeTime ? `Resume (${libraryItem.movie.watchProgress.percentage}%)` : 'Play' }}
 				</Button>
 				<Button
 					v-if="resumeTime"

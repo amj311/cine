@@ -3,9 +3,10 @@
 	lang="ts"
 >
 import { useRouter } from 'vue-router';
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
+import { useWatchProgressStore } from '@/stores/watchProgress.store';
 
 const router = useRouter();
 const props = defineProps<{
@@ -90,7 +91,11 @@ const mergedSeasons = computed(() => {
 	return seasons;
 });
 
-const episodeToPlay = computed(() => {
+const episodeToPlay = ref<any>(null);
+
+watch(() => mergedSeasons.value, determineEpisodeToPlay, { immediate: true, deep: true });
+
+function determineEpisodeToPlay() {
 	// Find the episode with the most recent watch time
 	const scored = mergedSeasons.value.flatMap((season: any) => season.episodes).map((episode: any) => {
 		let score = 0;
@@ -117,8 +122,8 @@ const episodeToPlay = computed(() => {
 		|| mergedSeasons.value.find((season: any) => season.seasonNumber !== 0)
 		|| mergedSeasons.value[0];
 
-	return episode;
-});
+	episodeToPlay.value = episode;
+};
 
 const resumeTime = computed(() => {
 	if (episodeToPlay.value?.watchProgress?.percentage < 90) {
@@ -126,6 +131,20 @@ const resumeTime = computed(() => {
 	}
 	return 0;
 });
+
+
+watch(
+	() => useWatchProgressStore().lastWatchProgress,
+	(lastProgress) => {
+		// find matching episode in mergedSeasons
+		const episode = mergedSeasons.value.flatMap((season: any) => season.episodes).find((episode: any) => episode.relativePath === lastProgress?.relativePath);
+		if (episode) {
+			episode.watchProgress = lastProgress.progress;
+			episodeToPlay.value = episode;
+		}
+	}
+)
+
 
 </script>
 

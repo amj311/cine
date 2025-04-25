@@ -13,6 +13,7 @@ import { useBackgroundStore } from '@/stores/background.store';
 import { usePageTitleStore } from '@/stores/pageTitle.store';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
 import MediaCard from '@/components/MediaCard.vue';
+import { useWatchProgressStore } from '@/stores/watchProgress.store';
 
 const router = useRouter();
 
@@ -275,6 +276,7 @@ function onEnd() {
 }
 
 const PROGRESS_INTERVAL = 1000 * 5;
+let lastPostTime = 0;
 const progressUpdateInterval = setInterval(async () => {
 	const lastProgressTime = playerProgress.value?.time;
 	playerProgress.value = playerRef.value?.getProgress();
@@ -287,15 +289,16 @@ const progressUpdateInterval = setInterval(async () => {
 
 	// Only post to server for certain intervals
 	const POST_INTERVAL = 30; // Progress time is in seconds
-	if (Math.abs(playerProgress.value?.time - lastProgressTime) > POST_INTERVAL) {
+	if (!lastPostTime || Math.abs(playerProgress.value?.time - lastPostTime) > POST_INTERVAL) {
 		try {
 			if (!playerProgress.value) {
 				return;
 			}
-			await api.post('/watchProgress', {
-				relativePath: mediaPath.value,
-				progress: playerProgress.value,
-			});
+			await useWatchProgressStore().postprogress(
+				mediaPath.value,
+				playerProgress.value,
+			);
+			lastPostTime = playerProgress.value?.time;
 		}
 		catch (e) {
 			console.error("Failed to update progress")
@@ -309,8 +312,7 @@ const currentEpisodeMetadata = computed(() => {
 	if (playable.value?.type !== 'episodeFile') {
 		return null;
 	}
-	return parentLibrary.value?.metadata?.seasons
-		.find((season: any) => season.seasonNumber === playable.value.seasonNumber)?.episodes
+	return parentLibrary.value?.metadata?.seasons?.find((season: any) => season.seasonNumber === playable.value.seasonNumber)?.episodes
 		.find((episode: any) => episode.episodeNumber === playable.value?.firstEpisodeNumber);
 });
 
