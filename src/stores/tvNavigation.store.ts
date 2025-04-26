@@ -1,4 +1,4 @@
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 type Direction = 'up' | 'down' | 'left' | 'right';
@@ -20,12 +20,11 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		lastFocusedEl?.click();
 	}
 
-	const mouseCooldown = 300;
 
 	async function handleMouseMove(event) {
 		stopScreenEdgeScroll();
 
-		if (computingNewFocus || Date.now() - lastMouseMoveTime.value < mouseCooldown) {
+		if (computingNewFocus) {
 			return;
 		}
 
@@ -65,7 +64,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		} else if (event.clientY <= 1) {
 			direction = 'up';
 		} else if (event.clientY >= window.innerHeight - 1) {
-			console.log("GOING DOWN!!!!")
 			direction = 'down';
 		}
 		if (!direction) {
@@ -134,91 +132,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		await moveFocus(direction as Direction);
 	}
 
-	const lastFewMouseMovements: Array<{ x: number, y: number }> = [];
-	function watchForTvMouseMove(event) {
-		// abort if neiter direction is moving
-		if (event.movementX === 0 && event.movementY === 0) {
-			return;
-		}
-
-		// Consider the environment as a TV is the mouse moves exactly linearly for many consecutive events
-		const SIGNIFICANCE_THRESHOLD = 25;
-		const EVENTS_CAP = 100;
-
-		lastFewMouseMovements.push({ x: event.movementY, y: event.movementY });
-
-		if (lastFewMouseMovements.length > EVENTS_CAP) {
-			console.log('Too many non-linear mouse movements. Not a TV.');
-			return stopWatchingForTvMouseMove();
-		}
-
-		if (lastFewMouseMovements.length > SIGNIFICANCE_THRESHOLD) {
-			const lastFewMouseMovementsToConsider = lastFewMouseMovements.slice(-SIGNIFICANCE_THRESHOLD);
-			const isTv = lastFewMouseMovementsToConsider.every((movement) => movement.x === 0 || movement.y === 0);
-			if (isTv) {
-				return stopWatchingForTvMouseMove(true);
-			}
-		}
-	}
-
-
-	let tvConfirmationCb: (() => Promise<boolean>) | null = null;
-	function determineTvEnvironment(confirmationCb: () => Promise<boolean>) {
-		tvConfirmationCb = confirmationCb;
-		const isTv = window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
-		if (isTv) {
-			console.log('TV environment detected');
-			doTvConfirmation();
-			return;
-		}
-		startWatchingForTvMouseMove();
-	}
-
-
-	function startWatchingForTvMouseMove() {
-		console.log('Watching for TV mouse move');
-		window.addEventListener('mousemove', watchForTvMouseMove);
-	};
-
-	function stopWatchingForTvMouseMove(success: boolean = false) {
-		console.log('Stopped watching for TV mouse move');
-		window.removeEventListener('mousemove', watchForTvMouseMove);
-		if (success) {
-			doTvConfirmation();
-		}
-		else {
-			disengageTvMode();
-		}
-	}
-
-	function doTvConfirmation() {
-		detectedTv.value = true;
-		const localStorageKey = 'tvNavigationPreference.2';
-		if (localStorage.getItem(localStorageKey) === 'false') {
-			console.log('TV environment was previously declined');
-			disengageTvMode();
-			return;
-		}
-		if (!tvConfirmationCb) {
-			console.error('No confirmation callback set');
-			return;
-		}
-		tvConfirmationCb().then((confirmed) => {
-			localStorage.setItem(localStorageKey, confirmed ? 'true' : 'false');
-			if (confirmed) {
-				console.log('Confirmed TV environment');
-				tvWasConfirmed.value = true;
-				engageTvMode();
-			} else {
-				tvWasConfirmed.value = false;
-				console.log('Declined TV environment');
-				disengageTvMode();
-			}
-		}).catch((err) => {
-			console.error('Error confirming TV environment:', err);
-		});
-	}
-
 	type ScrollElement = HTMLElement;
 	type FocusableElement = HTMLElement;
 	type FocusTarget = {
@@ -230,10 +143,19 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	let lastFocusedEl: HTMLElement | null = null;
 
 
+	const FOCUS_COOLDOWN = 200;
+	let lastFocusTime = 0;
 	async function moveFocus(direction: Direction = 'left') {
+		if (lastFocusTime && Date.now() - lastFocusTime < FOCUS_COOLDOWN) {
+			return;
+		}
+
 		if (computingNewFocus) {
 			return;
 		}
+
+		lastFocusTime = Date.now();
+
 		if (!lastFocusedEl) {
 			findFocus();
 			return;
@@ -353,7 +275,9 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		const focusElements = ['[href]', 'button', 'input', 'select', 'textarea', '[tabindex]', 'details', 'summary'];
 		const query = focusElements.map(el => el + ':not([disabled]:not([disabled="false"])):not([tabindex="-1"])').join(', ');
 
-		let elements = Array.from(document.body.querySelectorAll(query)) as Array<HTMLElement>;
+		const focusAreaClass = 'tvNavigationFocusArea';
+		const focusArea = document.getElementsByClassName(focusAreaClass)[0] || document.body;
+		let elements = Array.from(focusArea.querySelectorAll(query)) as Array<HTMLElement>;
 
 		// Gather the focusGroup for each element
 		for (const el of elements) {
@@ -361,7 +285,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			const scrollableStack: Array<HTMLElement> = [];
 			let currentElement: HTMLElement | null = el;
 			do {
-				if (currentElement.scrollHeight > currentElement.clientHeight || currentElement.scrollWidth > currentElement.clientWidth || currentElement === document.body) {
+				if (currentElement.scrollHeight > currentElement.clientHeight || currentElement.scrollWidth > currentElement.clientWidth || currentElement === focusArea) {
 					scrollableStack.push(currentElement);
 					// Add focus target to element focusGroups
 					const newGroupEl = currentElement as ScrollElement;
@@ -370,7 +294,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 					}
 					focusGroups.get(newGroupEl)?.push(el);
 				}
-				if (currentElement === document.body) {
+				if (currentElement === focusArea) {
 					break;
 				}
 				currentElement = currentElement.parentElement;
@@ -394,19 +318,126 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 
 
+	const lastFewMouseMovements: Array<{ x: number, y: number }> = [];
+	function watchForTvMouseMove(event) {
+		// abort if neiter direction is moving
+		if (event.movementX === 0 && event.movementY === 0) {
+			return;
+		}
+
+		// Consider the environment as a TV is the mouse moves exactly linearly for many consecutive events
+		const SIGNIFICANCE_THRESHOLD = 25;
+		const EVENTS_CAP = 100;
+
+		lastFewMouseMovements.push({ x: event.movementY, y: event.movementY });
+
+		if (lastFewMouseMovements.length > EVENTS_CAP) {
+			console.log('Too many non-linear mouse movements. Not a TV.');
+			return finalizeTvDetection(false);
+		}
+
+		if (lastFewMouseMovements.length > SIGNIFICANCE_THRESHOLD) {
+			const lastFewMouseMovementsToConsider = lastFewMouseMovements.slice(-SIGNIFICANCE_THRESHOLD);
+			const isTv = lastFewMouseMovementsToConsider.every((movement) => movement.x === 0 || movement.y === 0);
+			if (isTv) {
+				console.log('TV environment detected from mouse movements');
+				return finalizeTvDetection(true);
+			}
+		}
+	}
+
+
+	let suggestTvModeHandler: (() => Promise<boolean>) | null = null;
+	let onTvDetected: (() => Promise<boolean>) | null = null;
+
+	function determineTvEnvironment(confirmationCb: () => Promise<boolean>) {
+		suggestTvModeHandler = confirmationCb;
+		console.log('Determining TV environment...');
+		const isTv = window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
+		if (isTv) {
+			console.log('TV environment detected');
+			finalizeTvDetection(true);
+			return;
+		}
+		window.addEventListener('mousemove', watchForTvMouseMove);
+		window.addEventListener('touchstart', onScreenTouch);
+	}
+
+	function onScreenTouch() {
+		console.log('Screen touch detected. Not a TV environment.');
+		finalizeTvDetection(false);
+	}
+
+	async function finalizeTvDetection(isTv: boolean) {
+		window.removeEventListener('mousemove', watchForTvMouseMove);
+		window.removeEventListener('touchstart', onScreenTouch);
+
+		if (!isTv) {
+			console.log('TV environment not detected');
+			detectedTv.value = false;
+			disengageTvMode();
+			return;
+		}
+
+		detectedTv.value = true;
+
+		let shouldDoTvNav = true;
+
+		const localStorageKey = 'tvNavigationPreference.2';
+		// if (localStorage.getItem(localStorageKey) === 'false') {
+		// 	console.log('TV environment was previously declined');
+		// 	shouldDoTvNav = false;
+		// }
+
+		if (shouldDoTvNav && suggestTvModeHandler) {
+			shouldDoTvNav = await suggestTvModeHandler();
+			if (!shouldDoTvNav) {
+				localStorage.setItem(localStorageKey, 'false');
+				console.log('TV environment was declined');
+			}
+		}
+
+		if (!shouldDoTvNav) {
+			tvWasConfirmed.value = false;
+			disengageTvMode();
+		} else {
+			tvWasConfirmed.value = true;
+			engageTvMode();
+		}
+
+		if (onTvDetected) {
+			onTvDetected();
+		}
+	}
+
+
+
+
 	function engageTvMode() {
 		enabled.value = true;
-		nextTick(() => {
-			document.getElementById('tvClickCapture')!.addEventListener('click', captureClick);
-			window.addEventListener('mousemove', handleMouseMove);
-			window.addEventListener('mouseout', handleMouseOut);
-			window.addEventListener('keydown', handleKeyDown);
 
-			findFocus();
-		});
+		// create click capture element
+		const clickCapture = document.createElement('div');
+		clickCapture.id = 'tvClickCapture';
+		clickCapture.style.position = 'fixed';
+		clickCapture.style.top = '0';
+		clickCapture.style.left = '0';
+		clickCapture.style.width = '100%';
+		clickCapture.style.height = '100%';
+		clickCapture.style.zIndex = '9999';
+		clickCapture.style.opacity = '0';
+		clickCapture.style.cursor = 'none';
+		clickCapture.addEventListener('click', captureClick);
+		document.body.appendChild(clickCapture);
+
+		window.addEventListener('mousemove', handleMouseMove);
+		window.addEventListener('mouseout', handleMouseOut);
+		window.addEventListener('keydown', handleKeyDown);
+
+		findFocus();
 	}
 	function disengageTvMode() {
-		document.getElementById('tvClickCapture')?.removeEventListener('click', captureClick);
+		document.getElementById('tvClickCapture')?.remove();
 		window.removeEventListener('mousemove', handleMouseMove);
 		window.removeEventListener('mouseout', handleMouseOut);
 		window.removeEventListener('keydown', handleKeyDown);
@@ -427,6 +458,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		disengageTvMode,
 
 		detectedTv,
+		onTvDetected: (cb) => onTvDetected = cb,
 		tvWasConfirmed,
 		enabled,
 

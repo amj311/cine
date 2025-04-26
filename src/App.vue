@@ -16,15 +16,6 @@ const showDebug = ref(false);
 
 const confirm = useConfirm();
 
-function suggestTvFullscreen() {
-	confirm.require({
-		message: 'This looks like a TV environment. Would you lke to go fullscreen?',
-		accept: () => {
-			useFullscreenStore().userFullscreenRequest();
-		},
-	});
-}
-
 async function handleExitFullscreen() {
 	return new Promise<boolean>((resolve) => {
 		confirm.require({
@@ -35,21 +26,28 @@ async function handleExitFullscreen() {
 	});
 }
 
-function attemptDetermineTvMode() {
-	tvNavigationStore.determineTvEnvironment(() => {
-		suggestTvFullscreen();
-		return new Promise((resolve) => {
-			confirm.require({
-				message: 'This looks like a TV environment. Do you want to enable TV navigation?',
-				accept: () => resolve(true),
-				reject: () => resolve(false),
-			});
+function suggestTvMode() {
+	return new Promise<boolean>((resolve) => {
+		confirm.require({
+			message: 'This looks like a TV environment. Do you want to enable TV navigation?',
+			accept: () => resolve(true),
+			reject: () => resolve(false),
 		});
 	});
 }
 
+async function suggestFullscreen() {
+	confirm.require({
+		message: 'This looks like a TV environment. Would you lke to go fullscreen?',
+		accept: () => {
+			useFullscreenStore().userFullscreenRequest();
+		},
+	});
+}
+
 onMounted(() => {
-	attemptDetermineTvMode();
+	tvNavigationStore.determineTvEnvironment(suggestTvMode);
+	tvNavigationStore.onTvDetected(suggestFullscreen);
 	useFullscreenStore().setAccidentalExitHandler(handleExitFullscreen);
 });
 </script>
@@ -72,9 +70,9 @@ onMounted(() => {
 		Last direction: {{ tvNavigationStore.lastDetectedDirection }}<br />
 	</div>
 
-	<ConfirmDialog></ConfirmDialog>
-
-	<div id="tvClickCapture" v-if="tvNavigationStore.enabled" style="position: fixed; top: 0; bottom: 0; left: 0; right: 0;"></div>
+	<ConfirmDialog
+		class="tvNavigationFocusArea"
+	/>
 </template>
 
 <style>
@@ -108,7 +106,7 @@ onMounted(() => {
 }
 
 .tv-nav :focus {
-	outline: 1px solid var(--color-contrast) !important;
+	outline: 2px solid var(--color-contrast) !important;
 }
 
 .debug-info {
