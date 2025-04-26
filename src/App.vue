@@ -29,36 +29,21 @@ async function handleExitFullscreen() {
 	return new Promise<boolean>((resolve) => {
 		confirm.require({
 			message: 'Oops - would you lke to go fullscreen again?',
-			accept: () => {
-				resolve(true);
-			},
-			reject: () => {
-				resolve(false);
-			},
+			accept: () => resolve(true),
+			reject: () => resolve(false),
 		});
 	});
 }
 
 function attemptDetermineTvMode() {
 	tvNavigationStore.determineTvEnvironment(() => {
+		suggestTvFullscreen();
 		return new Promise((resolve) => {
-			if (localStorage.getItem('tvNavigation') !== 'false') {
-				confirm.require({
-					message: 'This looks like a TV environment. Do you want to enable TV navigation?',
-					accept: () => {
-						localStorage.setItem('tvNavigation', 'true');
-						resolve(true);
-					},
-					reject: () => {
-						localStorage.setItem('tvNavigation', 'false');
-						resolve(false);
-					},
-				});
-			}
-			else {
-				resolve(false);
-			}
-			suggestTvFullscreen();
+			confirm.require({
+				message: 'This looks like a TV environment. Do you want to enable TV navigation?',
+				accept: () => resolve(true),
+				reject: () => resolve(false),
+			});
 		});
 	});
 }
