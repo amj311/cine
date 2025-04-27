@@ -15,8 +15,9 @@ import fs, { readdirSync } from 'fs';
 import { DirectoryService } from './services/DirectoryService';
 import { LibraryService } from './services/LibraryService';
 import { MediaMetadataService } from './services/metadata/MetadataService';
-import { WatchProgressService } from './services/WatchProgressService';
+import { WatchProgress, WatchProgressService } from './services/WatchProgressService';
 import mime from 'mime-types';
+import { EitherMetadata } from './services/metadata/MetadataTypes';
 
 const corsOptions = {};
 
@@ -196,6 +197,67 @@ app.get('/api/theaterData', async (req, res) => {
 		res.send(500)
 	}
 });
+
+
+
+
+app.get('/api/feed', async (req, res) => {
+	try {
+		const feedLists = [] as Array<{
+			title: string;
+			type: string;
+			items: Array<{
+				title?: string;
+				subtitle?: string;
+				relativePath: string;
+				metadata?: EitherMetadata;
+				watchProgress?: WatchProgress;
+				libraryItem?: any;
+				isUpNext?: boolean;
+			}>;
+		}>;
+
+		const watchItems = await WatchProgressService.getContinueWatchingList();
+		const lastFinishedEpisode = await WatchProgressService.getLastFinishedEpisode();
+		let nextEpisode: any = null;
+		if (lastFinishedEpisode) {
+			nextEpisode = await LibraryService.getNextEpisode(lastFinishedEpisode.relativePath);
+		}
+		if (nextEpisode) {
+			watchItems.push({ ...nextEpisode, isUpNext: true });
+		}
+		if (watchItems.length > 0) {
+			feedLists.push({
+				title: "Continue Watching",
+				type: "continue-watching",
+				items: await Promise.all(watchItems.map(async (item) => ({
+					title: LibraryService.parseNamePieces(item.relativePath).name,
+					relativePath: item.relativePath,
+					watchProgress: item,
+					metadata: MediaMetadataService.getMetadata(
+						LibraryService.determineMediaTypeFromPath(item.relativePath) as any,
+						item.relativePath,
+					),
+					libraryItem: await LibraryService.getLibraryForPlayable(item.relativePath),
+					isUpNext: item.isUpNext,
+				}))),
+			});
+		}
+
+		res.json({
+			success: true,
+			data: feedLists,
+		})
+	}
+	catch (err) {
+		console.error(err)
+		res.send(500)
+	}
+
+});
+
+
+
 
 
 // STATIC SITE

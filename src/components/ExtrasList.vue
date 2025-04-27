@@ -19,13 +19,12 @@ const extraTypeLabels = {
 	'behindthescenes': 'Behind the Scenes',
 	'deleted': 'Deleted',
 }
-
 const sortedExtras = computed(() => {
 	return props.extras.sort((a, b) => {
 		if (a.extraType === b.extraType) {
-			return a.name.localeCompare(b.name);
+			return a.name?.localeCompare(b.name);
 		}
-		return a.extraType.localeCompare(b.extraType);
+		return a.extraType?.localeCompare(b?.extraType);
 	});
 });
 

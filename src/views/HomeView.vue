@@ -1,32 +1,110 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 import api from '@/services/api';
-import VideoPlayer from '@/components/VideoPlayer.vue'; // Import the VideoPlayer component
 import MetadataLoader from '@/components/MetadataLoader.vue';
 import MediaCard from '@/components/MediaCard.vue';
+
+const feed = ref<any[]>([]);
+
+async function loadFeed() {
+	try {
+		const { data } = await api.get('/feed');
+		feed.value = data.data;
+	}
+	catch (error) {
+		console.error('Error loading feed:', error);
+	}
+}
+
+onBeforeMount(() => {
+	loadFeed();
+});
+
+function playableName(item: any, parentLibraryItem: any) {
+	if (item.type === 'movie') {
+		return item.title;
+	}
+	else if (item.type === 'episodeFile') {
+		return parentLibraryItem.name + ' ' + item.name;
+	}
+	else {
+		return item.title;
+	}
+}
+
+/**
+ * "xhr ymin" format
+ * @param watchProgress 
+ */
+function timeRemaining(watchProgress: any) {
+	const time = watchProgress.time;
+	const duration = watchProgress.duration;
+	const remainingTime = duration - time;
+	const hours = Math.floor(remainingTime / 3600);
+	const minutes = Math.floor((remainingTime % 3600) / 60);
+
+	return `${hours ? (hours + 'hr ') : '' }${minutes}min`;
+}
 
 </script>
 
 <template>
-	<div>
-		<h1>🍿 Simply Olives Cine</h1>
+	<div class="home-view">
+		<div class="m-3 flex align-items-center gap-3">
+			<Logo :width="150" />
+		</div>
+
+		<div class="feed">
+			<Scroll>
+				<div class="feed-row" v-for="feedRow in feed" :class="feedRow.type" :key="feedRow.type">
+					<h2>{{ feedRow.title }}</h2>
+					<div class="feed-scroll-wrapper">
+						<Scroll class="feed-scroll">
+							<div class="feed-row-items-list">
+								<div class="feed-row-card-wrapper">
+									<MediaCard
+										v-for="item in feedRow.items"
+										:key="item.relativePath"
+										:posterSrc="item.posterUrl"
+										:playSrc="item.relativePath"
+										:progress="item.watchProgress"
+										:aspectRatio="'wide'"
+										:title="playableName(item.libraryItem.playable, item.libraryItem.parentLibrary)"
+										:subtitle="item.isUpNext ? 'Up Next' : `${timeRemaining(item.watchProgress)} left`"
+									>
+										<template #fallbackIcon>🎬</template>
+									</MediaCard>
+								</div>
+							</div>
+						</Scroll>
+					</div>
+				</div>
+			</Scroll>
+		</div>
 	</div>
 </template>
 
 <style scoped lang="scss">
-ul {
-	list-style: none;
-	padding: 0;
+.feed-row {
+	--padding: 15px;
+	padding: var(--padding);
+
+	h2 {
+		// margin-bottom: 10px;
+	}
+
+	.feed-scroll-wrapper {
+		margin: 0 calc(-1 * var(--padding));
+	}
+
+	.feed-row-items-list {
+		padding: 10px var(--padding);
+	}
+
+	&.continue-watching .feed-row-card-wrapper {
+		width: min(225px, 30vw);
+		min-width: min(225px, 30vw);
+	}
 }
 
-li {
-	margin: 5px 0;
-}
-
-.poster-tile {
-	display: inline-block;
-	width: 150px;
-	height: 200px;
-	margin: 10px;
-}
 </style>

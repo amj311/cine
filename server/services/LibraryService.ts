@@ -328,6 +328,20 @@ export class LibraryService {
 		}
 	}
 
+	public static async getNextEpisode(relativePath: RelativePath) {
+		const { parentLibrary, playable } = await LibraryService.getLibraryForPlayable(relativePath);
+		if (!parentLibrary || !playable || playable.type !== 'episodeFile') {
+			return null;
+		}
+		const allEpisodes = (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).flatMap((episodeFile) => episodeFile.episodes);
+		const currentEpisodeIndex = allEpisodes?.findIndex((episode) => episode.relativePath === playable.relativePath);
+		if (currentEpisodeIndex === undefined || currentEpisodeIndex === -1) {
+			return null;
+		}
+		const nextEpisode = allEpisodes?.[currentEpisodeIndex + 1];
+		return nextEpisode || null;
+	}
+
 	/*********
 	 * Helper functions
 	 *********/

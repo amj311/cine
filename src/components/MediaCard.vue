@@ -45,7 +45,7 @@ const onClick = computed(() => {
 </script>
 
 <template>
-	<div class="media-card" :class="{ clickable: clickable || playSrc }" @click="onClick" :tabindex="onClick ? 0 : -1">
+	<div class="media-card" :class="{ clickable: onClick }" @click="onClick" :tabindex="onClick ? 0 : -1">
 		<div
 			class="poster bg-soft"
 			:class="aspectRatio || 'tall'"
@@ -84,6 +84,11 @@ const onClick = computed(() => {
 		margin: -3px;
 		outline: 1px solid var(--color-contrast);
 		transform: scale(1.03);
+	}
+
+	&:not(.clickable) {
+		cursor: default;
+		pointer-events: none;
 	}
 
 	.overlay {

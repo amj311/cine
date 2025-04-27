@@ -107,6 +107,7 @@ onMounted(() => {
 
 .tv-nav :focus {
 	outline: 2px solid var(--color-contrast) !important;
+	outline-offset: 2px !important;
 }
 
 .debug-info {

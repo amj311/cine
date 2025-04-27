@@ -40,6 +40,7 @@ function clearPoster() {
 	}
 	if (ctx) {
 		ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height);
+		canvasRef.value.classList.remove('drawn');
 	}
 }
 
@@ -74,6 +75,7 @@ async function drawPoster(url) {
 	ctx.fillStyle = gradient;
 	ctx.globalCompositeOperation = 'destination-out';
 	ctx.fillRect(0, 0, width, height);
+	canvasRef.value.classList.add('drawn');
 };
 
 /**
@@ -109,7 +111,7 @@ async function drawPoster(url) {
 		background-position: center;
 		background-repeat: no-repeat;
 		background-image: url(@/assets/bg.jpg);
-		filter: blur(40px);
+		filter: blur(50px);
 		z-index: -1;
 		transition: all 600ms;
 	}
@@ -129,8 +131,13 @@ async function drawPoster(url) {
 		top: 0;
 		right: 0;
 		bottom: 0;
-		width: 100%;
+		width: 90%;
 		z-index: -1;
-		opacity: .8;
+		opacity: 0;
+		transition: all 600ms;
+
+		&.drawn {
+			opacity: .7;
+		}
 	}
 </style>
