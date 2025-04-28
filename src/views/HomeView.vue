@@ -50,10 +50,6 @@ function timeRemaining(watchProgress: any) {
 
 <template>
 	<div class="home-view">
-		<div class="m-3 flex align-items-center gap-3">
-			<Logo :width="150" />
-		</div>
-
 		<div class="feed">
 			<Scroll>
 				<div class="feed-row" v-for="feedRow in feed" :class="feedRow.type" :key="feedRow.type">

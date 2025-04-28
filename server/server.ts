@@ -230,7 +230,7 @@ app.get('/api/feed', async (req, res) => {
 			feedLists.push({
 				title: "Continue Watching",
 				type: "continue-watching",
-				items: await Promise.all(watchItems.map(async (item) => ({
+				items: await Promise.all(watchItems.map(async (item: any) => ({
 					title: LibraryService.parseNamePieces(item.relativePath).name,
 					relativePath: item.relativePath,
 					watchProgress: item,
@@ -253,9 +253,29 @@ app.get('/api/feed', async (req, res) => {
 		console.error(err)
 		res.send(500)
 	}
-
 });
 
+
+
+app.get('/api/rootLibraries', async (req, res) => {
+	try {
+		const rootLibraries = await DirectoryService.listDirectory('/');
+		const libraries = rootLibraries.folders.map((folder) => {
+			return {
+				name: folder,
+				relativePath: folder,
+			};
+		});
+		res.json({
+			success: true,
+			data: libraries,
+		})
+	}
+	catch (err) {
+		console.error(err)
+		res.send(500)
+	}
+});
 
 
 

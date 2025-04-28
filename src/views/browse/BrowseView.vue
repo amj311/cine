@@ -86,25 +86,6 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) |
 <template>
 	<div style="height: 100%; display: grid; grid-template-rows: auto 1fr;">
 			
-		<!-- Breadcrumb navigation -->
-		<div class="breadcrumbs p-2">
-			<span>
-				<Button icon="pi pi-user" @click="queryPathStore.goToRoot" style="cursor: pointer" variant="text" severity="secondary">🏠</Button>
-				/
-			</span>
-			<span v-if="queryPathStore.currentDir.length > 2">
-				<DropdownMenu :model="hiddenAncestors"><Button variant="text" severity="secondary">...</Button></DropdownMenu>
-				/
-			</span>
-			<span v-if="queryPathStore.parentFile">
-				<Button @click="queryPathStore.goUp" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.parentFile }}</button>
-				/
-			</span>
-			<span v-if="queryPathStore.currentFile">
-				<Button variant="text" severity="secondary" class="font-bold" style="pointer-events: none" tabindex="-1">{{ queryPathStore.currentFile }}</Button>
-			</span>
-		</div>
-		
 		<Scroll ref="scrollerRef">
 			<div class="pl-3">
 
@@ -134,8 +115,5 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) |
 </template>
 
 <style scoped lang="scss">
-.breadcrumbs button.p-button {
-	text-align: left;
-	text-shadow: 0 0 1px #000000;
-}
+
 </style>

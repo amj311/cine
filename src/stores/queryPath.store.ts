@@ -7,6 +7,12 @@ export const useQueryPathStore = defineStore('QueryPath', () => {
 	const currentDir = ref<string[]>([]);
 	const currentPath = computed(() => currentDir.value.join('/'));
 
+	const rootLibrary = computed(() => {
+		if (currentDir.value.length === 0) {
+			return null;
+		}
+		return currentDir.value[0];
+	});
 	const parentFile = computed(() => {
 		if (currentDir.value.length === 0) {
 			return null;
@@ -44,6 +50,7 @@ export const useQueryPathStore = defineStore('QueryPath', () => {
 		currentPath,
 		parentFile,
 		currentFile,
+		rootLibrary,
 
 		updatePathFromQuery,
 

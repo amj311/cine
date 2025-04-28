@@ -2,13 +2,14 @@
 	setup
 	lang="ts"
 >
-import { RouterView } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router'
 import { useTvNavigationStore } from './stores/tvNavigation.store';
 import AppBackground from './components/AppBackground.vue';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useConfirm } from "primevue/useconfirm";
 import { usePageTitleStore } from './stores/pageTitle.store';
 import { useFullscreenStore } from './stores/fullscreenStore.store';
+import { useQueryPathStore } from './stores/queryPath.store';
 
 usePageTitleStore();
 const tvNavigationStore = useTvNavigationStore();
@@ -50,12 +51,20 @@ onMounted(() => {
 	tvNavigationStore.onTvDetected(suggestFullscreen);
 	useFullscreenStore().setAccidentalExitHandler(handleExitFullscreen);
 });
+
+const route = useRoute();
+const showNavbar = computed(() => {
+	return !route?.path.startsWith('/play')
+})
 </script>
 
 <template>
 	<AppBackground />
 
 	<div class="dark-app" :class="{ 'tv-nav': tvNavigationStore.enabled }" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
+		<div class="nav-wrapper" v-if="showNavbar">
+			<NavBar />
+		</div>
 		<RouterView v-slot="{ Component }">
 			<KeepAlive :include="['BrowseView']">
 				<component :is="Component" />
