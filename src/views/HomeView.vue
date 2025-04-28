@@ -57,11 +57,13 @@ function timeRemaining(watchProgress: any) {
 					<div class="feed-scroll-wrapper">
 						<Scroll class="feed-scroll">
 							<div class="feed-row-items-list">
-								<div class="feed-row-card-wrapper">
+								<div
+									class="feed-row-card-wrapper"
+									v-for="item in feedRow.items"
+								>
 									<MediaCard
-										v-for="item in feedRow.items"
 										:key="item.relativePath"
-										:posterSrc="item.posterUrl"
+										:imageUrl="item.libraryItem.parentLibrary.metadata.poster_thumb"
 										:playSrc="item.relativePath"
 										:progress="item.watchProgress"
 										:aspectRatio="'wide'"
@@ -95,6 +97,8 @@ function timeRemaining(watchProgress: any) {
 
 	.feed-row-items-list {
 		padding: 10px var(--padding);
+		display: flex;
+		gap: 15px;
 	}
 
 	&.continue-watching .feed-row-card-wrapper {
