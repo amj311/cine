@@ -4,6 +4,7 @@
 >
 import { useBackgroundStore } from '@/stores/background.store';
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
@@ -92,12 +93,17 @@ async function drawPoster(url) {
 	});
 };
 
+const route = useRoute();
+const showCustomBackgrounds = computed(() => {
+	return route?.name === 'browse';
+});
+
 </script>
 
 <template>
-	<div :style="{ backgroundImage }" class="app-background"></div>
+	<div :style="{ backgroundImage: showCustomBackgrounds ? backgroundImage : undefined }" class="app-background"></div>
 	<div class="app-background-overlay"></div>
-	<canvas ref="canvasRef" id="app-background-canvas"></canvas>
+	<canvas ref="canvasRef" id="app-background-canvas" :class="{ show: showCustomBackgrounds }"></canvas>
 </template>
 
 <style lang="scss">
@@ -136,7 +142,7 @@ async function drawPoster(url) {
 		opacity: 0;
 		transition: all 600ms;
 
-		&.drawn {
+		&.drawn.show {
 			opacity: .7;
 		}
 	}
