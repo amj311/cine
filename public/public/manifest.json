@@ -3,7 +3,7 @@
     "name": "OlivePlex Media",
     "short_name": "OlivePlex",
     "description": "Personal media server for private Judd family media.",
-    "start_url": "/browse",
+    "start_url": "/",
     "orientation": "any",
     "display": "standalone",
     "icons": [
