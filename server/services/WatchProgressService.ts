@@ -43,7 +43,7 @@ export class WatchProgressService {
 
 	public static getAllRecentlyWatched(): WatchProgress[] {
 		return Array.from(watching.values()).sort((a, b) => {
-			return b[1].watchedAt - a[1].watchedAt;
+			return b.watchedAt - a.watchedAt;
 		}).slice(0, 50);
 	}
 
