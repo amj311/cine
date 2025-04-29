@@ -430,11 +430,21 @@ export class LibraryService {
 			collectionName = collectionNameMatch[1].trim();
 			featureName = collectionNameMatch[2].trim();
 		}
+
+		// exrtact series order numbers, m indful of foirsts with no number. Eg "The Movie" and "The Move 2: Subtitle"
+		const seriesOrderMatch = RegExp(/ (?<number>{\d}+)/g).exec(featureName)?.groups?.number;
+
+		// Remove everything after the series order (assuming we've identified it correctly)
+		// This should maintain proper series sorting based on the year like "the_movie_2001" and "the_movie_2002"
+		if (seriesOrderMatch) {
+			featureName = featureName.split(seriesOrderMatch)[0].trim();
+		}
+
 		const keyParts = [featureName, year];
 		if (collectionName) {
 			keyParts.unshift(collectionName, year);
 		}
-		return keyParts.join('_');
+		return keyParts.join('_').toLowerCase();
 	}
 }
 
