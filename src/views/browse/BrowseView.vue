@@ -8,6 +8,7 @@ import Explorer from '@/views/browse/Explorer.vue';
 import Scroll from '@/components/Scroll.vue';
 import { useRoute } from 'vue-router';
 import DropdownMenu from '@/components/utils/DropdownMenu.vue';
+import MovieLibraryPage from './MovieLibraryPage.vue';
 
 const route = useRoute();
 
@@ -74,13 +75,6 @@ watch(
 	}
 );
 
-
-const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) || []).map((dir) => ({
-	label: dir,
-	command: () => {
-		queryPathStore.goToAncestor(dir);
-	},
-})));
 </script>
 
 <template>
@@ -88,9 +82,12 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(0, -2) |
 			
 		<Scroll ref="scrollerRef">
 			<div class="pl-3">
-
 				<KeepAlive :include="['Explorer']">
-					<template v-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
+					<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'movies'">
+						<MovieLibraryPage :libraryItem="libraryItem" :folders="directory!.folders" />
+					</template>
+
+					<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
 						<MoviePage :libraryItem="libraryItem" />
 					</template>
 

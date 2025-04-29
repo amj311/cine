@@ -8,7 +8,6 @@ import { EitherMetadata } from "./metadata/MetadataTypes";
 import { WatchProgress, WatchProgressService } from "./WatchProgressService";
 
 type LibraryItemData = {
-	type: 'movie' | 'series' | 'collection' | 'folder',
 	folderName: string,
 	relativePath: RelativePath,
 	listName: string,
@@ -85,10 +84,18 @@ type Folder = LibraryItemData & {
 	children: Array<RelativePath>,
 }
 
-type LibraryItem = Movie | Series | Collection | Folder;
+/** A library is a root-level entity containing all of one type of media */
+type Library = LibraryItemData & {
+	type: 'library',
+	libraryType: 'tv' | 'movies' | 'photos',
+	name: string,
+	children: Array<RelativePath>,
+}
+
+type LibraryItem = Movie | Series | Collection | Folder | Library;
 
 export class LibraryService {
-	public static async parseFolderToItem(path: RelativePath, detailed = false): Promise<LibraryItem | undefined> {
+	public static async parseFolderToItem(path: RelativePath, detailed = false, withMetadata = false): Promise<LibraryItem | undefined> {
 		const folderName = path.split('/').pop() || path;
 		const { name, year } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
@@ -115,7 +122,7 @@ export class LibraryService {
 					folderName: folderName,
 					seasons,
 					numSeasons: allSeasonFolders.length,
-					metadata: await MediaMetadataService.getMetadata('series', path, false, true),
+					metadata: withMetadata ? await MediaMetadataService.getMetadata('series', path, detailed, true) : null,
 					extras,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
@@ -151,15 +158,35 @@ export class LibraryService {
 						watchProgress: WatchProgressService.getWatchProgress(path + '/' + movieFile)
 					},
 					extras,
-					metadata: await MediaMetadataService.getMetadata('movie', path, false, true),
+					metadata: withMetadata ? await MediaMetadataService.getMetadata('movie', path, detailed, true) : null,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
 				};
 			}
 		}
 
+		// Root Libraries
+		if (path.split('/').length === 1) {
+			// The library type will be determined by the type of files at its leaf nodes
+			const mediaType = await LibraryService.determineMediaTypeInLibrary(path);
+			if (mediaType) {
+				return {
+					type: 'library',
+					libraryType: mediaType,
+					name,
+					relativePath: path,
+					folderName: folderName,
+					children: children.folders.map((folder) => path + '/' + folder),
+					metadata: null,
+					sortKey: LibraryService.createSortKey(folderName),
+					listName: name,
+				}
+			}
+		}
+
+
 		// If all children are media, consider it a collection
-		const allChildrenAreMedia = children.folders.every((folderName) => LibraryService.parseNamePieces(folderName).year);
+		const allChildrenAreMedia = children.folders.length > 0 && children.folders.every((folderName) => Boolean(LibraryService.parseNamePieces(folderName).year));
 		if (allChildrenAreMedia) {
 			const childrenPaths = children.folders.map((folder) => path + '/' + folder);
 			return {
@@ -191,6 +218,21 @@ export class LibraryService {
 		};
 	}
 
+
+	public static async getFlatTree(path: RelativePath): Promise<Array<LibraryItem>> {
+		const items: Array<LibraryItem> = [];
+		async function parseDirectory(path: RelativePath) {
+			const { folders, files } = await DirectoryService.listDirectory(path);
+			const libraryItem = await LibraryService.parseFolderToItem(path, true);
+			if (libraryItem) {
+				items.push(libraryItem);
+			}
+			// Recursively parse all folders
+			await Promise.all(folders.map((folder) => parseDirectory(path + '/' + folder)));
+		}
+		await parseDirectory(path);
+		return items;
+	}
 
 
 	private static async extractSeasons(seasonFolders) {
@@ -414,6 +456,34 @@ export class LibraryService {
 		return 'folder';
 	}
 
+	private static async determineMediaTypeInLibrary(path: RelativePath) {
+		// recursivle search for first descendent that matches a media description
+		async function findMediaWithin(path: RelativePath) {
+			const { folders, files } = await DirectoryService.listDirectory(path);
+			if (folders.length === 0 && files.length === 0) {
+				return null;
+			}
+			// Not currently saving any images in library other than photos, so we can rely on that here
+			for (const file of files) {
+				if (file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.png')) {
+					return 'photos';
+				}
+			}
+			// Identify cinema folders by release-year folders
+			for (const folder of folders) {
+				if (LibraryService.parseNamePieces(folder).year) {
+					const { folders: cinemaFolders, files: cinemaFiles } = await DirectoryService.listDirectory(path + '/' + folder);
+					if (folders.find(folderName => folderName.toLowerCase().includes('season'))) {
+						return 'tv';
+					}
+					return 'movies'
+				}
+			}
+			return null;
+		}
+		return await findMediaWithin(path);
+	}
+
 	public static removeArticlesFromName(name: string) {
 		// Remove "The ", "A ", "An " from the beginning of the name
 		return name.replace(/^(the|a|an)\s+/i, '');
@@ -439,8 +509,6 @@ export class LibraryService {
 		return keyParts.join('_').toLowerCase();
 	}
 }
-
-console.log(LibraryService.createSortKey('Harry Potter and the Goblet of Fire (2005)'));
 
 // import ffmpeg from 'fluent-ffmpeg';
 // console.log(ffmpeg(DirectoryService.resolvePath('Movies/Funny Movies/Stranger Than Fiction (2006)/Stranger Than Fiction (2006).mp4')).ffprobe(console.log))

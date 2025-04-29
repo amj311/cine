@@ -81,7 +81,7 @@ const visibleBreadcrumbs = computed(() => (navPathItems.value.slice(numHiddenBre
 				<Button
 					v-for="library in navStore.libraries"
 					:key="library.relativePath"
-					:label="library.name"
+					:label="library.libraryItem?.name || library.folderName"
 					variant="text"
 					:severity="($route?.query?.path as any)?.startsWith(library.relativePath) ? 'contrast' : 'secondary'"
 					@click="$router.push({ name: 'browse', query: { path: library.relativePath } })"
@@ -131,7 +131,7 @@ const visibleBreadcrumbs = computed(() => (navPathItems.value.slice(numHiddenBre
 						:severity="($route?.query?.path as any)?.startsWith(library.relativePath) ? 'contrast' : 'secondary'"
 						@click="$router.push({ name: 'browse', query: { path: library.relativePath } })"
 					>
-						{{ library.name }}
+						{{ library.libraryItem?.name || library.folderName }}
 					</Button>
 					<template v-if="library.relativePath === queryPathStore.rootLibrary">
 						<Button

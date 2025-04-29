@@ -262,13 +262,29 @@ app.get('/api/rootLibraries', async (req, res) => {
 		const rootLibraries = await DirectoryService.listDirectory('/');
 		const libraries = rootLibraries.folders.map((folder) => {
 			return {
-				name: folder,
+				folderName: folder,
 				relativePath: folder,
+				libraryItem: LibraryService.parseFolderToItem(folder, true),
 			};
 		});
 		res.json({
 			success: true,
 			data: libraries,
+		})
+	}
+	catch (err) {
+		console.error(err)
+		res.send(500)
+	}
+});
+
+app.get('/api/rootLibrary/:name/flat', async (req, res) => {
+	try {
+		const { name } = req.params;
+		const items = await LibraryService.getFlatTree(name);
+		res.json({
+			success: true,
+			data: items,
 		})
 	}
 	catch (err) {
