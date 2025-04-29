@@ -8,7 +8,7 @@ import { EitherMetadata } from "./metadata/MetadataTypes";
 import { WatchProgress, WatchProgressService } from "./WatchProgressService";
 
 type LibraryItemData = {
-	type: 'movie' | 'series' | 'collection',
+	type: 'movie' | 'series' | 'collection' | 'folder',
 	folderName: string,
 	relativePath: RelativePath,
 	listName: string,
@@ -70,14 +70,22 @@ type Series = LibraryItemData & {
 	extras?: Array<Extra>,
 }
 
+/** A collection is a specific group of media, like a movie series i.e. Harry Potter */
 type Collection = LibraryItemData & {
 	type: 'collection',
+	name: string,
+	children: Array<RelativePath>,
+}
+
+/** A folder is more generic than a collection and could contain anything */
+type Folder = LibraryItemData & {
+	type: 'folder',
 	feedOrder: number | null,
 	name: string,
 	children: Array<RelativePath>,
 }
 
-type LibraryItem = Movie | Series | Collection;
+type LibraryItem = Movie | Series | Collection | Folder;
 
 export class LibraryService {
 	public static async parseFolderToItem(path: RelativePath, detailed = false): Promise<LibraryItem | undefined> {
@@ -85,86 +93,102 @@ export class LibraryService {
 		const { name, year } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
 
-		if (!year) {
-			// Find feedOrder if specified in the folder name like ".feedorder-1"
-			const feedOrderMatch = folderName.match(/\.feedorder-(\d{1,2})/);
-			const feedOrder = feedOrderMatch ? parseInt(feedOrderMatch[1]) : null;
+
+		// Take care of series and movies first
+		if (year) {
+			// Search for "Season" folders
+			const allSeasonFolders = children.folders.filter((folder) => folder.toLowerCase().includes('season'));
+			if (allSeasonFolders.length > 0) {
+				const seasons = detailed ? await LibraryService.extractSeasons(allSeasonFolders.map((folder) => path + '/' + folder)) : undefined;
+				// consider files that are not in a season folder as extras
+				let extras: Extra[] = [];
+				if (detailed) {
+					const extraVideos = children.files.filter((file) => !allSeasonFolders.some((folder) => file.startsWith(folder)));
+					extras = LibraryService.prepareExtras(extraVideos, path)
+				}
+
+				return {
+					type: 'series',
+					name,
+					year,
+					relativePath: path,
+					folderName: folderName,
+					seasons,
+					numSeasons: allSeasonFolders.length,
+					metadata: await MediaMetadataService.getMetadata('series', path, false, true),
+					extras,
+					sortKey: LibraryService.createSortKey(folderName),
+					listName: name,
+				};
+			}
+
+			// Identify movie when a child item has the same name and year
+			const movieFile = children.files.find((file) => {
+				const { name: folderName, year: fileYear } = LibraryService.parseNamePieces(file);
+				return file.endsWith('.mp4') && folderName === name && fileYear === year;
+			});
+			if (movieFile) {
+				let extras: Extra[] = [];
+				if (detailed) {
+					const extraVideos = children.files.filter((file) => file !== movieFile);
+					extras = LibraryService.prepareExtras(extraVideos, path)
+				}
+
+				const { version: movieVersion } = LibraryService.parseNamePieces(movieFile);
+
+				return {
+					type: 'movie',
+					name,
+					year,
+					relativePath: path,
+					folderName: folderName,
+					movie: {
+						type: 'movie',
+						name: LibraryService.removeExtensionsFromFileName(movieFile),
+						version: movieVersion,
+						fileName: movieFile,
+						relativePath: path + '/' + movieFile,
+						watchProgress: WatchProgressService.getWatchProgress(path + '/' + movieFile)
+					},
+					extras,
+					metadata: await MediaMetadataService.getMetadata('movie', path, false, true),
+					sortKey: LibraryService.createSortKey(folderName),
+					listName: name,
+				};
+			}
+		}
+
+		// If all children are media, consider it a collection
+		const allChildrenAreMedia = children.folders.every((folderName) => LibraryService.parseNamePieces(folderName).year);
+		if (allChildrenAreMedia) {
+			const childrenPaths = children.folders.map((folder) => path + '/' + folder);
 			return {
 				type: 'collection',
 				name,
 				relativePath: path,
 				folderName: folderName,
-				children: children.folders.map((folder) => path + '/' + folder),
-				feedOrder,
-				listName: name,
-				sortKey: LibraryService.createSortKey(folderName),
+				children: childrenPaths,
 				metadata: null,
-			};
-		}
-
-		// Search for "Season" folders
-		const allSeasonFolders = children.folders.filter((folder) => folder.toLowerCase().includes('season'));
-		if (allSeasonFolders.length > 0) {
-			const seasons = detailed ? await LibraryService.extractSeasons(allSeasonFolders.map((folder) => path + '/' + folder)) : undefined;
-			// consider files that are not in a season folder as extras
-			let extras: Extra[] = [];
-			if (detailed) {
-				const extraVideos = children.files.filter((file) => !allSeasonFolders.some((folder) => file.startsWith(folder)));
-				extras = LibraryService.prepareExtras(extraVideos, path)
-			}
-
-			return {
-				type: 'series',
-				name,
-				year,
-				relativePath: path,
-				folderName: folderName,
-				seasons,
-				numSeasons: allSeasonFolders.length,
-				metadata: await MediaMetadataService.getMetadata('series', path, false, true),
-				extras,
 				sortKey: LibraryService.createSortKey(folderName),
 				listName: name,
 			};
 		}
 
-		// Identify movie when a child item has the same name and year
-		const movieFile = children.files.find((file) => {
-			const { name: folderName, year: fileYear } = LibraryService.parseNamePieces(file);
-			return file.endsWith('.mp4') && folderName === name && fileYear === year;
-		});
-		if (movieFile) {
-			let extras: Extra[] = [];
-			if (detailed) {
-				const extraVideos = children.files.filter((file) => file !== movieFile);
-				extras = LibraryService.prepareExtras(extraVideos, path)
-			}
 
-			const { version: movieVersion } = LibraryService.parseNamePieces(movieFile);
-
-			return {
-				type: 'movie',
-				name,
-				year,
-				relativePath: path,
-				folderName: folderName,
-				movie: {
-					type: 'movie',
-					name: LibraryService.removeExtensionsFromFileName(movieFile),
-					version: movieVersion,
-					fileName: movieFile,
-					relativePath: path + '/' + movieFile,
-					watchProgress: WatchProgressService.getWatchProgress(path + '/' + movieFile)
-				},
-				extras,
-				metadata: await MediaMetadataService.getMetadata('movie', path, false, true),
-				sortKey: LibraryService.createSortKey(folderName),
-				listName: name,
-			};
-		}
-
-		console.warn(`No movie or series found in folder ${path}`);
-		return undefined;
+		// Find feedOrder if specified in the folder name like ".feedorder-1"
+		const feedOrderMatch = folderName.match(/\.feedorder-(\d{1,2})/);
+		const feedOrder = feedOrderMatch ? parseInt(feedOrderMatch[1]) : null;
+		return {
+			type: 'folder',
+			name,
+			relativePath: path,
+			folderName: folderName,
+			children: children.folders.map((folder) => path + '/' + folder),
+			feedOrder,
+			listName: name,
+			sortKey: LibraryService.createSortKey(folderName),
+			metadata: null,
+		};
 	}
 
 
@@ -384,10 +408,10 @@ export class LibraryService {
 		if (path.toLowerCase().includes('/season ')) {
 			return 'series';
 		}
-		if (path.match(/ \(\d{4}\)./g)) {
+		if (path.match(/ \(\d{4}\)/g)) {
 			return 'movie';
 		}
-		return 'collection';
+		return 'folder';
 	}
 
 	public static removeArticlesFromName(name: string) {

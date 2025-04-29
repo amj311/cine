@@ -48,11 +48,15 @@ const onClick = computed(() => {
 <template>
 	<div class="media-card" :class="{ clickable: onClick }" @click="onClick" :tabindex="onClick ? 0 : -1">
 		<div
-			class="poster bg-soft"
+			class="poster"
 			:class="aspectRatio || 'tall'"
 			:style="{ backgroundImage: `url(${imageUrl})`, backgroundPosition: imagePosition || 'center' }"
 		>
-			<div v-if="!imageUrl && $slots.fallbackIcon" class="fallback-icon">
+			<div v-if="$slots.poster" class="custom-poster">
+				<slot name="poster" />
+			</div>
+
+			<div v-if="!imageUrl && !$slots.poster && $slots.fallbackIcon" class="fallback-icon bg-soft">
 				<slot name="fallbackIcon" />
 			</div>
 
@@ -113,7 +117,7 @@ const onClick = computed(() => {
 			}
 		}
 
-		.poster {
+		.fallback-icon {
 			background-color: var(--color-background-mute);	
 		}
 	}
@@ -132,6 +136,14 @@ const onClick = computed(() => {
 	}
 	&.wide {
 		aspect-ratio: 3/2;
+	}
+
+	.custom-poster {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
 	}
 
 	.fallback-icon {

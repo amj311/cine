@@ -31,6 +31,7 @@ export class MediaMetadataService {
 		if (!provider) {
 			return null;
 		}
+		console.log("Fetching metadata for", path);
 		return await provider.getMetadata(path, detailed, noFetch);
 	}
 }
