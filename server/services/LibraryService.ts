@@ -425,7 +425,7 @@ export class LibraryService {
 		let collectionName = '';
 		let featureName = withoutArticles;
 
-		const collectionNameRegexp = RegExp(/(?<series>^[^\d:]{1,100})((?<number>\d{1,3})+|:):*(?<title>.{1,100})*/g);
+		const collectionNameRegexp = RegExp(/(?<series>^[^\d:]{1,100})((?<number>\d{1,3})+|:|and the):*(?<title>.{1,100})*/g);
 		const collectionNameMatch = collectionNameRegexp.exec(withoutArticles);
 		if (collectionNameMatch) {
 			collectionName = collectionNameMatch.groups?.series?.trim() || '';
@@ -439,6 +439,8 @@ export class LibraryService {
 		return keyParts.join('_').toLowerCase();
 	}
 }
+
+console.log(LibraryService.createSortKey('Harry Potter and the Goblet of Fire (2005)'));
 
 // import ffmpeg from 'fluent-ffmpeg';
 // console.log(ffmpeg(DirectoryService.resolvePath('Movies/Funny Movies/Stranger Than Fiction (2006)/Stranger Than Fiction (2006).mp4')).ffprobe(console.log))
