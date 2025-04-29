@@ -432,7 +432,7 @@ export class LibraryService {
 		}
 
 		// exrtact series order numbers, m indful of foirsts with no number. Eg "The Movie" and "The Move 2: Subtitle"
-		const seriesOrderMatch = RegExp(/ (?<number>{\d}+)/g).exec(featureName)?.groups?.number;
+		const seriesOrderMatch = RegExp(/ (?<number>\d+)/g).exec(featureName)?.groups?.number;
 
 		// Remove everything after the series order (assuming we've identified it correctly)
 		// This should maintain proper series sorting based on the year like "the_movie_2001" and "the_movie_2002"
@@ -447,7 +447,6 @@ export class LibraryService {
 		return keyParts.join('_').toLowerCase();
 	}
 }
-
 
 // import ffmpeg from 'fluent-ffmpeg';
 // console.log(ffmpeg(DirectoryService.resolvePath('Movies/Funny Movies/Stranger Than Fiction (2006)/Stranger Than Fiction (2006).mp4')).ffprobe(console.log))

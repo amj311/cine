@@ -139,7 +139,6 @@ app.post('/api/metadata', async (req, res) => {
 		if (!mediaType) {
 			mediaType = LibraryService.determineMediaTypeFromPath(path);
 		}
-		console.log("\n\nFetching metadata for", path, mediaType);
 		const metadata = await MediaMetadataService.getMetadata(mediaType, path, detailed);
 		res.json({
 			data: metadata,
