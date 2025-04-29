@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue';
 import api from '@/services/api';
-import MetadataLoader from '@/components/MetadataLoader.vue';
 import MediaCard from '@/components/MediaCard.vue';
 
 const feed = ref<any[]>([]);
@@ -20,16 +19,11 @@ onBeforeMount(() => {
 	loadFeed();
 });
 
-function playableName(item: any, parentLibraryItem: any) {
-	if (item.type === 'movie') {
-		return item.title;
+function playableName(playable: any, parentLibraryItem: any) {
+	if (playable.type === 'episodeFile') {
+		return parentLibraryItem.name + ' ' + playable.name;
 	}
-	else if (item.type === 'episodeFile') {
-		return parentLibraryItem.name + ' ' + item.name;
-	}
-	else {
-		return item.title;
-	}
+	return playable.name;
 }
 
 /**
@@ -53,7 +47,7 @@ function timeRemaining(watchProgress: any) {
 		<div class="feed">
 			<Scroll>
 				<div class="feed-row" v-for="feedRow in feed" :class="feedRow.type" :key="feedRow.type">
-					<h2>{{ feedRow.title }}</h2>
+					<h3>{{ feedRow.title }}</h3>
 					<div class="feed-scroll-wrapper">
 						<Scroll class="feed-scroll">
 							<div class="feed-row-items-list">
@@ -64,6 +58,7 @@ function timeRemaining(watchProgress: any) {
 									<MediaCard
 										:key="item.relativePath"
 										:imageUrl="item.libraryItem.parentLibrary.metadata.poster_thumb"
+										:imagePosition="'top'"
 										:playSrc="item.relativePath"
 										:progress="item.watchProgress"
 										:aspectRatio="'wide'"

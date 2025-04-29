@@ -224,7 +224,7 @@ app.get('/api/feed', async (req, res) => {
 			nextEpisode = await LibraryService.getNextEpisode(lastFinishedEpisode.relativePath);
 		}
 		if (nextEpisode) {
-			watchItems.push({ ...nextEpisode, isUpNext: true });
+			watchItems.unshift({ ...nextEpisode, isUpNext: true });
 		}
 		if (watchItems.length > 0) {
 			feedLists.push({

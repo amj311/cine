@@ -137,7 +137,7 @@ const showCustomBackgrounds = computed(() => {
 		top: 0;
 		right: 0;
 		bottom: 0;
-		width: 90%;
+		width: 95%;
 		z-index: -1;
 		opacity: 0;
 		transition: all 600ms;

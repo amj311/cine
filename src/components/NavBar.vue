@@ -10,6 +10,8 @@ import { computed, ref } from 'vue';
 const navStore = useAppNavigationStore();
 const lastClickedItem = ref<string | null>(null);
 
+const useMobileNav = ref(window.innerWidth < 768);
+const expandMobileNav = ref(false);
 const queryPathStore = useQueryPathStore();
 
 const props = defineProps<{
@@ -29,52 +31,116 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(1, -2) |
 </script>
 
 <template>
-	<div class="navbar">
-		<div class="logo" tabindex="0" @click="$router.push({ name: 'home' })">
-			<Logo :width="125" />
-		</div>
+	<div class="navbar" :class="{ 'mobile-expanded': expandMobileNav }">
+		<div class="top">
+			<div class="logo" tabindex="0" @click="() => { expandMobileNav = false; $router.push({ name: 'home' }) }">
+				<Logo :width="125" />
+			</div>
 
-		<!-- Starting point libraries -->
-		<div class="flex align-items-center" v-if="showRootNavigation">
-			<Button
-				v-for="library in navStore.libraries"
-				:key="library.relativePath"
-				:label="library.name"
-				variant="text"
-				:severity="($route?.query?.path as any)?.startsWith(library.relativePath) ? 'contrast' : 'secondary'"
-				@click="$router.push({ name: 'browse', query: { path: library.relativePath } })"
-			/>
-		</div>
+			<div v-if="useMobileNav">
+				<Button
+					v-if="!expandMobileNav"
+					variant="text"
+					severity="contrast"
+					@click="expandMobileNav = !expandMobileNav"
+				>
+					{{ queryPathStore.rootLibrary }}
+					<i class="pi pi-angle-down" />
+				</Button>
+			</div>
 
-		<div v-else-if="$route.name === 'browse'" class="flex align-items-center breadcrumbs">
-			<Button @click="() => queryPathStore.goToAncestor(queryPathStore.rootLibrary!)" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.rootLibrary }}</button>
-			<template v-if="hiddenAncestors.length > 0">
-				<i class="pi pi-angle-right opacity-50" />
-				<DropdownMenu :model="hiddenAncestors"><Button variant="text" severity="secondary">...</Button></DropdownMenu>
-			</template>
-			<template v-if="queryPathStore.parentFile && queryPathStore.parentFile !== queryPathStore.rootLibrary">
-				<i class="pi pi-angle-right opacity-50" />
-				<Button @click="queryPathStore.goUp" style="cursor: pointer;" variant="text" severity="secondary">{{ queryPathStore.parentFile }}</button>
+			<!-- Starting point libraries -->
+			<div class="flex align-items-center" v-else-if="showRootNavigation">
+				<Button
+					v-for="library in navStore.libraries"
+					:key="library.relativePath"
+					:label="library.name"
+					variant="text"
+					:severity="($route?.query?.path as any)?.startsWith(library.relativePath) ? 'contrast' : 'secondary'"
+					@click="$router.push({ name: 'browse', query: { path: library.relativePath } })"
+				/>
+			</div>
+
+			<div v-else-if="$route.name === 'browse'" class="breadcrumbs">
+				<Button @click="() => queryPathStore.goToAncestor(queryPathStore.rootLibrary!)" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.rootLibrary }}</button>
+				<template v-if="hiddenAncestors.length > 0">
+					<i class="pi pi-angle-right opacity-50" />
+					<DropdownMenu :model="hiddenAncestors"><Button variant="text" severity="secondary">...</Button></DropdownMenu>
 				</template>
-			<template v-if="queryPathStore.currentFile && !queryPathStore.currentFile.match(/\(\d{4}\)/g)">
-				<i class="pi pi-angle-right opacity-50" />
-				<Button variant="text" severity="contrast" style="pointer-events: none" tabindex="-1">{{ queryPathStore.currentFile }}</Button>
-			</template>
+				<template v-if="queryPathStore.parentFile && queryPathStore.parentFile !== queryPathStore.rootLibrary">
+					<i class="pi pi-angle-right opacity-50" />
+					<Button @click="queryPathStore.goUp" style="cursor: pointer;" variant="text" severity="secondary">{{ queryPathStore.parentFile }}</button>
+					</template>
+				<template v-if="queryPathStore.currentFile && !queryPathStore.currentFile.match(/\(\d{4}\)/g)">
+					<i class="pi pi-angle-right opacity-50" />
+					<Button variant="text" severity="contrast" style="pointer-events: none" tabindex="-1">{{ queryPathStore.currentFile }}</Button>
+				</template>
+			</div>
+
+			<div class="flex-grow-1" />
+
+			<div v-if="useMobileNav && expandMobileNav">
+				<Button
+					variant="text"
+					severity="contrast"
+					@click="expandMobileNav = !expandMobileNav"
+				>
+					<i class="pi pi-times" />
+				</Button>
+			</div>
 		</div>
 
-		<div class="flex-grow-1" />
+		<div class="mobile-nav" @click="expandMobileNav = false">
+			<div class="flex flex-column">
+				<template 
+					v-for="library in navStore.libraries"
+					:key="library.relativePath"
+				>
+					<Button
+						variant="text"
+						size="large"
+						:severity="($route?.query?.path as any)?.startsWith(library.relativePath) ? 'contrast' : 'secondary'"
+						@click="$router.push({ name: 'browse', query: { path: library.relativePath } })"
+					>
+						{{ library.name }}
+					</Button>
+					<template v-if="library.relativePath === queryPathStore.rootLibrary">
+						<Button
+							v-for="folder in queryPathStore.currentDir.slice(1, -1)"
+							variant="text"
+							class="subpath"
+							@click="queryPathStore.goToAncestor(folder)"
+							:key="folder"
+							severity="secondary"
+						>
+							{{ folder }}
+						</Button>
+					</template>
+				</template>
+			</div>
+		</div>
 	</div>
 </template>
 
 <style lang="scss">
 .navbar {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 1rem 1rem;
-	background-color: var(--surface-a);
-	box-shadow: var(--box-shadow);
-	gap: 1em;
+	min-height: 0;
+	overflow: hidden;
+	transition: all 0.4s ease-out;
+	background-color: transparent;
+
+	&.mobile-expanded {
+		min-height: 100vh;
+		background-color: #00000033;
+	}
+
+	.top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1rem 1rem;
+		gap: 1em;
+	}
 }
 
 .logo {
@@ -92,8 +158,33 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(1, -2) |
 	}
 }
 
-.breadcrumbs button.p-button {
-	text-align: left;
-	text-shadow: 0 0 5px #000000;
+.breadcrumbs {
+	background-image: linear-gradient(to right, #00000022, #00000055);
+	white-space: nowrap;
+	border-radius: 5px;
+
+	button.p-button {
+		display: inline-block;
+		text-align: left;
+	}
+}
+
+.mobile-nav {
+	max-height: 0vh;
+	overflow: hidden;
+	transition: all 0.3s ease-out;
+
+	.p-button {
+		justify-content: flex-start;
+
+		&.subpath {
+			padding-left: 2em;
+		}
+	}
+}
+
+.mobile-expanded .mobile-nav {
+	max-height: 100vh;
+	transition: all 0.4s ease-out;
 }
 </style>

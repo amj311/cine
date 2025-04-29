@@ -6,6 +6,7 @@ const router = useRouter();
 
 const props = defineProps<{
 	imageUrl?: string;
+	imagePosition?: 'top' | 'center' | 'bottom';
 	aspectRatio?: 'tall' | 'wide';
 	width?: number;
 	height?: number;
@@ -49,7 +50,7 @@ const onClick = computed(() => {
 		<div
 			class="poster bg-soft"
 			:class="aspectRatio || 'tall'"
-			:style="{ backgroundImage: `url(${imageUrl})` }"
+			:style="{ backgroundImage: `url(${imageUrl})`, backgroundPosition: imagePosition || 'center' }"
 		>
 			<div v-if="!imageUrl && $slots.fallbackIcon" class="fallback-icon">
 				<slot name="fallbackIcon" />

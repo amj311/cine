@@ -61,15 +61,17 @@ const showNavbar = computed(() => {
 <template>
 	<AppBackground />
 
-	<div class="dark-app" :class="{ 'tv-nav': tvNavigationStore.enabled }" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
+	<div class="dark-app app-wrapper" :class="{ 'tv-nav': tvNavigationStore.enabled }" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
 		<div class="nav-wrapper" v-if="showNavbar">
 			<NavBar />
 		</div>
-		<RouterView v-slot="{ Component }">
-			<KeepAlive :include="['BrowseView']">
-				<component :is="Component" />
-			</KeepAlive>
-		</RouterView>
+		<div class="body-wrapper">
+			<RouterView v-slot="{ Component }">
+				<KeepAlive :include="['BrowseView']">
+					<component :is="Component" />
+				</KeepAlive>
+			</RouterView>
+		</div>
 	</div>
 
 	<div v-if="showDebug" class="debug-info">
@@ -85,6 +87,19 @@ const showNavbar = computed(() => {
 </template>
 
 <style>
+
+.app-wrapper {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+
+	.body-wrapper {
+		flex-grow: 1;
+		min-height: 0;
+	}
+}
+
+
 #longLoading {
 	position: fixed;
 	top: 50%;
