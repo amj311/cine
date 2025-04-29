@@ -424,20 +424,12 @@ export class LibraryService {
 		const withoutArticles = LibraryService.removeArticlesFromName(name);
 		let collectionName = '';
 		let featureName = withoutArticles;
-		const collectionNameRegexp = RegExp(/(^[^:]{1,100}):(.{1,100})/g);
+
+		const collectionNameRegexp = RegExp(/(?<series>^[^\d:]{1,100})((?<number>\d{1,3})+|:):*(?<title>.{1,100})*/g);
 		const collectionNameMatch = collectionNameRegexp.exec(withoutArticles);
 		if (collectionNameMatch) {
-			collectionName = collectionNameMatch[1].trim();
-			featureName = collectionNameMatch[2].trim();
-		}
-
-		// exrtact series order numbers, m indful of foirsts with no number. Eg "The Movie" and "The Move 2: Subtitle"
-		const seriesOrderMatch = RegExp(/ (?<number>\d+)/g).exec(featureName)?.groups?.number;
-
-		// Remove everything after the series order (assuming we've identified it correctly)
-		// This should maintain proper series sorting based on the year like "the_movie_2001" and "the_movie_2002"
-		if (seriesOrderMatch) {
-			featureName = featureName.split(seriesOrderMatch)[0].trim();
+			collectionName = collectionNameMatch.groups?.series?.trim() || '';
+			featureName = collectionNameMatch.groups?.title?.trim() || withoutArticles;
 		}
 
 		const keyParts = [featureName, year];
