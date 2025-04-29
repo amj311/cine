@@ -41,13 +41,11 @@ const categorySampling = computed(() => {
 		}
 		// cacetgory is the first level under the library
 		const itemCategoryRelativePath = item.relativePath.split('/').slice(0, 2).join('/');
-		console.log('itemCategoryRelativePath', itemCategoryRelativePath);
 		if (!categoriesMap.has(itemCategoryRelativePath)) {
 			categoriesMap.set(itemCategoryRelativePath, []);
 		}
 		categoriesMap.get(itemCategoryRelativePath)?.push(item);
 	});
-	console.log('categoriesMap', categoriesMap);
 	// Take a random 10 items from each category
 	categoriesMap.forEach((items, category) => {
 		categoriesMap.set(category, items.sort(() => Math.random() - 0.5).slice(0, 10));
