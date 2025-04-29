@@ -34,10 +34,16 @@ const showRootNavigation = computed(() => {
 
 const isInMediaFolder = computed(() => Boolean(queryPathStore.currentFile?.match(/\(\d{4}\)/g)));
 
+function removeExtensionsFromFileName(filename: string) {
+	// Extensions are everything after a '.' AFTER any spaces
+	// Regexp for extension: a . followed by anything other than a space
+	return filename.split(RegExp(/\.[\S]{1,50}/g))[0] || filename;
+}
+
 const navPathItems = computed(() => {
 	const pathItems = queryPathStore.currentDir.slice(1, -1).map((dir) => ({
 		folderName: dir,
-		label: dir,
+		label: removeExtensionsFromFileName(dir),
 		command: () => {
 			queryPathStore.goToAncestor(dir);
 		},
@@ -45,7 +51,8 @@ const navPathItems = computed(() => {
 	// include the current folder if it is not a media item
 	if (!isInMediaFolder.value) {
 		pathItems.push({
-			label: queryPathStore.currentFile,
+			folderName: queryPathStore.currentFile,
+			label: removeExtensionsFromFileName(queryPathStore.currentFile!),
 		} as any);
 	}
 	return pathItems;
