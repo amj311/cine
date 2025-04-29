@@ -5,7 +5,7 @@
 import { useAppNavigationStore } from '@/stores/appNavigation.store';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 import Button from 'primevue/button';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, h, onMounted, onUnmounted, ref } from 'vue';
 
 const navStore = useAppNavigationStore();
 const lastClickedItem = ref<string | null>(null);
@@ -32,12 +32,28 @@ const showRootNavigation = computed(() => {
 	return queryPathStore.currentDir.length < 2;
 });
 
-const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(1, -2) || []).map((dir) => ({
-	label: dir,
-	command: () => {
-		queryPathStore.goToAncestor(dir);
-	},
-})));
+const isInMediaFolder = computed(() => Boolean(queryPathStore.currentFile?.match(/\(\d{4}\)/g)));
+
+const navPathItems = computed(() => {
+	const pathItems = queryPathStore.currentDir.slice(1, -1).map((dir) => ({
+		folderName: dir,
+		label: dir,
+		command: () => {
+			queryPathStore.goToAncestor(dir);
+		},
+	}));
+	// include the current folder if it is not a media item
+	if (!isInMediaFolder.value) {
+		pathItems.push({
+			label: queryPathStore.currentFile,
+		} as any);
+	}
+	return pathItems;
+});
+
+const numHiddenBreadcrumbs = computed(() => Math.max(0, navPathItems.value.length - 2));
+const hiddenBreadcrumbs = computed(() => (navPathItems.value.slice(0, numHiddenBreadcrumbs.value)));
+const visibleBreadcrumbs = computed(() => (navPathItems.value.slice(numHiddenBreadcrumbs.value)));
 
 </script>
 
@@ -55,7 +71,7 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(1, -2) |
 					severity="contrast"
 					@click="expandMobileNav = !expandMobileNav"
 				>
-					{{ queryPathStore.rootLibrary }}
+					{{ navPathItems[navPathItems.length - 1]?.label || queryPathStore.currentFile }}
 					<i class="pi pi-angle-down" />
 				</Button>
 			</div>
@@ -72,19 +88,21 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(1, -2) |
 				/>
 			</div>
 
-			<div v-else-if="$route.name === 'browse'" class="breadcrumbs">
+			<div v-else-if="$route.name === 'browse'" class="breadcrumbs" :class="{ bg: isInMediaFolder }">
 				<Button @click="() => queryPathStore.goToAncestor(queryPathStore.rootLibrary!)" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.rootLibrary }}</button>
-				<template v-if="hiddenAncestors.length > 0">
+				<template v-if="hiddenBreadcrumbs.length > 0">
 					<i class="pi pi-angle-right opacity-50" />
-					<DropdownMenu :model="hiddenAncestors"><Button variant="text" severity="secondary">...</Button></DropdownMenu>
+					<DropdownMenu :model="hiddenBreadcrumbs"><Button variant="text" severity="secondary">...</Button></DropdownMenu>
 				</template>
-				<template v-if="queryPathStore.parentFile && queryPathStore.parentFile !== queryPathStore.rootLibrary">
+				<template v-for="item in visibleBreadcrumbs" :key="item.label">
 					<i class="pi pi-angle-right opacity-50" />
-					<Button @click="queryPathStore.goUp" style="cursor: pointer;" variant="text" severity="secondary">{{ queryPathStore.parentFile }}</button>
-					</template>
-				<template v-if="queryPathStore.currentFile && !queryPathStore.currentFile.match(/\(\d{4}\)/g)">
-					<i class="pi pi-angle-right opacity-50" />
-					<Button variant="text" severity="contrast" style="pointer-events: none" tabindex="-1">{{ queryPathStore.currentFile }}</Button>
+					<Button
+						@click="item.command"
+						variant="text"
+						:severity="($route?.query?.path as any)?.endsWith(item.folderName) ? 'contrast' : 'secondary'"
+					>
+						{{ item.label }}
+					</button>
 				</template>
 			</div>
 
@@ -117,14 +135,14 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(1, -2) |
 					</Button>
 					<template v-if="library.relativePath === queryPathStore.rootLibrary">
 						<Button
-							v-for="folder in queryPathStore.currentDir.slice(1, -1)"
+							v-for="item in navPathItems"
 							variant="text"
 							class="subpath"
-							@click="queryPathStore.goToAncestor(folder)"
-							:key="folder"
-							severity="secondary"
+							@click="item.command"
+							:key="item.label"
+							:severity="($route?.query?.path as any)?.endsWith(item.folderName) ? 'contrast' : 'secondary'"
 						>
-							{{ folder }}
+							{{ item.label }}
 						</Button>
 					</template>
 				</template>
@@ -170,9 +188,12 @@ const hiddenAncestors = computed(() => (queryPathStore.currentDir.slice(1, -2) |
 }
 
 .breadcrumbs {
-	background-image: linear-gradient(to right, #00000022, #00000055);
 	white-space: nowrap;
 	border-radius: 5px;
+
+	&.bg {
+		background-image: linear-gradient(to right, #00000011, #00000055);
+	}
 
 	button.p-button {
 		display: inline-block;
