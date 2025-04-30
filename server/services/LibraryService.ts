@@ -472,8 +472,8 @@ export class LibraryService {
 			// Identify cinema folders by release-year folders
 			for (const folder of folders) {
 				if (LibraryService.parseNamePieces(folder).year) {
-					const { folders: cinemaFolders, files: cinemaFiles } = await DirectoryService.listDirectory(path + '/' + folder);
-					if (folders.find(folderName => folderName.toLowerCase().includes('season'))) {
+					const { folders: cinemaFolders } = await DirectoryService.listDirectory(path + '/' + folder);
+					if (cinemaFolders.find(folderName => folderName.toLowerCase().includes('season'))) {
 						return 'tv';
 					}
 					return 'movies'
