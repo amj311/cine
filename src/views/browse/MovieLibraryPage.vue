@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 import MediaCard from '@/components/MediaCard.vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
 import { useApiStore } from '@/stores/api.store';
@@ -15,26 +15,36 @@ async function loadItems() {
 	try {
 		const { data } = await api.get(`/rootLibrary/${props.libraryItem.relativePath}/flat`);
 		allItems.value = data.data;
+		collectCategorySamples();
 	}
 	catch (error) {
 		console.error('Error loading items:', error);
 	}
 }
-onBeforeMount(() => {
-	loadItems();
+onBeforeMount(async () => {
+	initializeRandomOrder();
+	await loadItems();
 });
+
+const categoryOrder: Record<string, number> = {};
+function initializeRandomOrder() {
+	props.folders.forEach((folder) => {
+		categoryOrder[folder.libraryItem.relativePath] = folder.libraryItem.feedOrder || (Math.ceil(Math.random() * 100));
+	});
+}
+const categorySampling = ref<Record<string, Array<any>>>({});
 
 const categories = computed(() => {
 	return props.folders.map((folder) => ({
 			...folder.libraryItem,
-			order: folder.libraryItem.feedOrder || (Math.ceil(Math.random() * 100)),
+			order: categoryOrder[folder.libraryItem.relativePath] || 100,
 		}))
 		.filter(item => ['collection', 'folder'].includes(item.type))
 		.sort((a, b) => a.order - b.order);
 });
-const categorySampling = computed(() => {
-	console.log('categories', categories.value)
-	const categoriesMap = new Map<string, any[]>();
+
+function collectCategorySamples() {
+	const categoriesMap: Record<string, Array<any>> = {};
 	console.log(allItems.value)
 	allItems.value.forEach((item) => {
 		if (item.type !== 'movie') {
@@ -42,17 +52,17 @@ const categorySampling = computed(() => {
 		}
 		// cacetgory is the first level under the library
 		const itemCategoryRelativePath = item.relativePath.split('/').slice(0, 2).join('/');
-		if (!categoriesMap.has(itemCategoryRelativePath)) {
-			categoriesMap.set(itemCategoryRelativePath, []);
+		if (!categoriesMap[itemCategoryRelativePath]) {
+			categoriesMap[itemCategoryRelativePath] = [];
 		}
-		categoriesMap.get(itemCategoryRelativePath)?.push(item);
+		categoriesMap[itemCategoryRelativePath]!.push(item);
 	});
 	// Take a random 10 items from each category
-	categoriesMap.forEach((items, category) => {
-		categoriesMap.set(category, items.sort(() => Math.random() - 0.5).slice(0, 10));
+	Object.values(categoriesMap).forEach((items, category) => {
+		categoriesMap[category] = items.sort(() => Math.random() - 0.5).slice(0, 10);
 	});
-	return categoriesMap;
-})
+	categorySampling.value = categoriesMap;
+};
 
 /**
  * "xhr ymin" format
@@ -85,7 +95,7 @@ function timeRemaining(watchProgress: any) {
 						<div class="categories-row-items-list">
 							<div
 								class="categories-row-card-wrapper"
-								v-for="item in categorySampling.get(categoriesRow.relativePath)"
+								v-for="item in categorySampling[categoriesRow.relativePath]"
 							>
 								<MetadataLoader
 									:media="item"
