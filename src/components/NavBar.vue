@@ -49,7 +49,7 @@ const navPathItems = computed(() => {
 		},
 	}));
 	// include the current folder if it is not a media item
-	if (!isInMediaFolder.value) {
+	if (queryPathStore.currentFile && !isInMediaFolder.value) {
 		pathItems.push({
 			folderName: queryPathStore.currentFile,
 			label: removeExtensionsFromFileName(queryPathStore.currentFile!),

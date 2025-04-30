@@ -70,12 +70,14 @@ function timeRemaining(watchProgress: any) {
 </script>
 
 <template>
-	<div class="movies-page">
-		<div class="categories flex flex-column gap-4">
+	<div class="movies-page mt-3">
+		<div class="categories flex flex-column gap-3">
 			<div class="categories-row" v-for="categoriesRow in categories" :key="categoriesRow.relativePath">
 				<h3>
 					{{ categoriesRow.name }}
-					<Button variant="text" severity="contrast"><i class="pi pi-angle-right" /></Button>
+					<Button variant="text" severity="contrast" @click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })">
+						<i class="pi pi-angle-right" />
+					</Button>
 				</h3>
 				<div class="categories-scroll-wrapper">
 					<Scroll class="categories-scroll">
@@ -91,11 +93,11 @@ function timeRemaining(watchProgress: any) {
 										<MediaCard
 											:key="item.relativePath"
 											:imageUrl="metadata?.poster_thumb"
-											:playSrc="item.relativePath"
 											:progress="item.watchProgress"
 											:aspectRatio="'tall'"
 											:title="item.name"
 											:subtitle="item.year"
+											:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
 										>
 											<template #fallbackIcon>🎬</template>
 										</MediaCard>
@@ -133,13 +135,14 @@ function timeRemaining(watchProgress: any) {
 
 	.categories-row-items-list {
 		padding: 10px var(--padding);
+		padding-right: 0;
 		display: flex;
 		gap: 15px;
 	}
 
 	.categories-row-card-wrapper {
-		width: min(125px, 30vw);
-		min-width: min(125px, 30vw);
+		width: min(100px, 20vw);
+		min-width: min(100px, 20vw);
 	}
 }
 
