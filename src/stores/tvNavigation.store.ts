@@ -13,14 +13,9 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	const detectedTv = ref(false);
 	const tvWasConfirmed = ref(false);
 	const enabled = ref(false);
-	let computingNewFocus = false;
 
 	async function handleMouseMove(event) {
 		stopScreenEdgeScroll();
-
-		if (computingNewFocus) {
-			return;
-		}
 
 		lastMousePosition.value = { x: event.clientX, y: event.clientY };
 		lastMouseMove.value = { x: event.movementX, y: event.movementY };
@@ -145,10 +140,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 	async function handleKeyDown(event) {
 		stopScreenEdgeScroll();
-		if (computingNewFocus) {
-			return;
-		}
-
 		lastKeyDown.value = event.key;
 		if (event.key === 'Enter' || event.key === ' ') {
 			captureClick(event);
@@ -197,10 +188,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			return;
 		}
 
-		if (computingNewFocus) {
-			return;
-		}
-
 		lastFocusTime = Date.now();
 
 		if (!lastFocusedEl.value) {
@@ -215,7 +202,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			return;
 		}
 
-		computingNewFocus = true;
 		lastDetectedDirection.value = direction;
 
 		let elementToFocus: HTMLElement | null = null;
@@ -226,7 +212,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 				break;
 			}
 		}
-		computingNewFocus = false;
 		return elementToFocus;
 	}
 

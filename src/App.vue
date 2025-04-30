@@ -129,7 +129,8 @@ const showNavbar = computed(() => {
 	top: 50%;
 	left: 50%;
 	translate: -50% -50%;
-	background-color: #fff;
+	background-color: var(--color-background-mute);
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 	padding: 1em;
 	border-radius: 5px;
 	z-index: 1000;
