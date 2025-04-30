@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import api from '@/services/api';
+import { useApiStore } from './api.store';
 
 export const useWatchProgressStore = defineStore('WatchProgress', () => {
 	const lastWatchProgress = ref<any>(null);
@@ -11,7 +11,7 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 			progress,
 		};
 
-		await api.post('/watchProgress', {
+		await useApiStore().api.post('/watchProgress', {
 			relativePath,
 			progress,
 		});

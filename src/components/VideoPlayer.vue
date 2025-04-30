@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { baseURL } from '@/services/api';
+import { useApiStore } from '@/stores/api.store';
 import { defineProps, ref, computed, onMounted } from 'vue';
 
 // Define the `src` prop
@@ -10,7 +10,7 @@ const props = defineProps<{
 }>();
 
 const videoRef = ref<HTMLVideoElement>();
-const videoUrl = computed(() => baseURL + '/video?src=' + props.src.split('&').join('<amp>'))
+const videoUrl = computed(() => useApiStore().baseUrl + '/video?src=' + props.src.split('&').join('<amp>'))
 
 const supportedVideoTypes = [
 	'mp4',

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue';
-import api from '@/services/api';
 import MediaCard from '@/components/MediaCard.vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
+import { useApiStore } from '@/stores/api.store';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -10,7 +10,7 @@ const props = defineProps<{
 }>();
 
 const allItems = ref<any[]>([]);
-
+const api = useApiStore().api;
 async function loadItems() {
 	try {
 		const { data } = await api.get(`/rootLibrary/${props.libraryItem.relativePath}/flat`);

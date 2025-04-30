@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, onBeforeMount, watch, nextTick } from 'vue';
-import api from '@/services/api';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 import MoviePage from '@/views/browse/MoviePage.vue';
 import SeriesPage from '@/views/browse/SeriesPage.vue';
@@ -9,8 +8,10 @@ import Scroll from '@/components/Scroll.vue';
 import { useRoute } from 'vue-router';
 import DropdownMenu from '@/components/utils/DropdownMenu.vue';
 import MovieLibraryPage from './MovieLibraryPage.vue';
+import { useApiStore } from '@/stores/api.store';
 
 const route = useRoute();
+const api = useApiStore().api;
 
 const scrollerRef = ref<InstanceType<typeof Scroll> | null>(null);
 const scrollArea = computed(() => scrollerRef.value?.scrollArea);

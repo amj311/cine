@@ -1,4 +1,6 @@
-import api from "./api";
+import { useApiStore } from "@/stores/api.store";
+
+const api = useApiStore().api;
 
 export class MetadataService {
 	static async getMetadata(media, detailed = false) {

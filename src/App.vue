@@ -10,6 +10,9 @@ import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { usePageTitleStore } from './stores/pageTitle.store';
 import { useFullscreenStore } from './stores/fullscreenStore.store';
+import { useApiStore } from './stores/api.store';
+
+const apiStore = useApiStore();
 
 usePageTitleStore();
 const tvNavigationStore = useTvNavigationStore();
@@ -67,17 +70,29 @@ const showNavbar = computed(() => {
 
 <template>
 	<AppBackground />
-
 	<div class="dark-app app-wrapper" :class="{ 'tv-nav': tvNavigationStore.enabled }" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
-		<div class="nav-wrapper" v-if="showNavbar">
-			<NavBar />
+		<div v-if="apiStore.isInitializing">
+			<div id="longLoading">
+				<i class="pi pi-spin pi-spinner spin" />
+				Loading...
+			</div>
 		</div>
-		<div class="body-wrapper">
-			<RouterView v-slot="{ Component }">
-				<KeepAlive :include="['BrowseView']">
-					<component :is="Component" />
-				</KeepAlive>
-			</RouterView>
+
+		<div v-else-if="!apiStore.selectedHost">
+			<h1>Failed to connect to any servers!</h1>
+		</div>
+
+		<div v-else>
+			<div class="nav-wrapper" v-if="showNavbar">
+				<NavBar />
+			</div>
+			<div class="body-wrapper">
+				<RouterView v-slot="{ Component }">
+					<KeepAlive :include="['BrowseView']">
+						<component :is="Component" />
+					</KeepAlive>
+				</RouterView>
+			</div>
 		</div>
 	</div>
 

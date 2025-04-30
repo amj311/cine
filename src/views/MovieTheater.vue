@@ -5,7 +5,6 @@
 import { useQueryPathStore } from '@/stores/queryPath.store'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
-import api from '@/services/api'
 import { MetadataService } from '@/services/metadataService';
 import { useRoute, useRouter } from 'vue-router';
 import { useTvNavigationStore } from '@/stores/tvNavigation.store';
@@ -15,8 +14,10 @@ import { useFullscreenStore } from '@/stores/fullscreenStore.store';
 import MediaCard from '@/components/MediaCard.vue';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
+import { useApiStore } from '@/stores/api.store';
 
 const router = useRouter();
+const api = useApiStore().api;
 
 const queryPathStore = useQueryPathStore();
 queryPathStore.updatePathFromQuery();

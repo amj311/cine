@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue';
-import api from '@/services/api';
 import MediaCard from '@/components/MediaCard.vue';
+import { useApiStore } from '@/stores/api.store';
 
 const feed = ref<any[]>([]);
 
 async function loadFeed() {
 	try {
-		const { data } = await api.get('/feed');
+		const { data } = await useApiStore().api.get('/feed');
 		feed.value = data.data;
 	}
 	catch (error) {
