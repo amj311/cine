@@ -481,8 +481,12 @@ export class LibraryService {
 					return 'movies'
 				}
 			}
-			console.log("Did not find movie in folder", path, folders)
-			return null;
+			for (const folder of folders) {
+				const mediaType = await findMediaWithin(path + '/' + folder);
+				if (mediaType) {
+					return mediaType;
+				}
+			}
 		}
 		return await findMediaWithin(path);
 	}
