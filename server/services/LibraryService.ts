@@ -95,7 +95,7 @@ type Library = LibraryItemData & {
 type LibraryItem = Movie | Series | Collection | Folder | Library;
 
 export class LibraryService {
-	public static async parseFolderToItem(path: RelativePath, detailed = false, withMetadata = false): Promise<LibraryItem | undefined> {
+	public static async parseFolderToItem(path: RelativePath, detailed = false, withMetadata = true): Promise<LibraryItem | undefined> {
 		const folderName = path.split('/').pop() || path;
 		const { name, year } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
