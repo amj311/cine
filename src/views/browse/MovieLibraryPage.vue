@@ -45,7 +45,6 @@ const categories = computed(() => {
 
 function collectCategorySamples() {
 	const categoriesMap: Record<string, Array<any>> = {};
-	console.log(allItems.value)
 	allItems.value.forEach((item) => {
 		if (item.type !== 'movie') {
 			return;
@@ -58,8 +57,10 @@ function collectCategorySamples() {
 		categoriesMap[itemCategoryRelativePath]!.push(item);
 	});
 	// Take a random 10 items from each category
-	Object.values(categoriesMap).forEach((items, category) => {
+	Object.entries(categoriesMap).forEach(([category, items]) => {
+		console.log(items.sort(() => Math.random() - 0.5).slice(0, 10).length)
 		categoriesMap[category] = items.sort(() => Math.random() - 0.5).slice(0, 10);
+		console.log(category, categoriesMap[category].length)
 	});
 	categorySampling.value = categoriesMap;
 };
