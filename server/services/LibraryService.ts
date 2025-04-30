@@ -167,10 +167,8 @@ export class LibraryService {
 
 		// Root Libraries
 		if (path.split('/').length === 1) {
-			console.log('\n\n\n\n\n\n\nRoot library detected. Determining type.', path);
 			// The library type will be determined by the type of files at its leaf nodes
 			const mediaType = await LibraryService.determineMediaTypeInLibrary(path);
-			console.log("got media type", mediaType)
 			if (mediaType) {
 				return {
 					type: 'library',
