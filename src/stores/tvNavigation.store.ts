@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { useFullscreenStore } from './fullscreenStore.store';
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -230,9 +231,21 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	}
 
 
-	// Just set the first focus item.
 	async function findFocus() {
-		setFocus(Array.from(focusTargets.values())[0].element);
+		const focusablePriority = Array.from(focusTargets.values()).map((focusTarget) => focusTarget.element)
+			.sort((a, b) => {
+				if (a.getAttribute('data-focus-priority') && b.getAttribute('data-focus-priority')) {
+					return parseInt(a.getAttribute('data-focus-priority') || '0') - parseInt(b.getAttribute('data-focus-priority') || '0');
+				}
+				if (a.getAttribute('data-focus-priority')) {
+					return -1;
+				}
+				if (b.getAttribute('data-focus-priority')) {
+					return 1;
+				}
+				return 0;
+			});
+		setFocus(focusablePriority[0]);
 	}
 	function setFocus(element: HTMLElement | null) {
 		if (element) {
@@ -350,6 +363,11 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 				focusGroupStack: scrollableStack,
 			});
 		}
+
+		// Check if the last focused element is still in the focus targets
+		if (lastFocusedEl.value && !focusTargets.has(lastFocusedEl.value)) {
+			findFocus();
+		}
 	}
 
 	const gatherFocusableCooldown = 200;
@@ -454,6 +472,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 
 	function captureClick(event) {
+		useFullscreenStore().userFullscreenRequest();
 		event.stopPropagation();
 		event.preventDefault();
 		lastFocusedEl.value?.click();

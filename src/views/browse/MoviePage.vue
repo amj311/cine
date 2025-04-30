@@ -108,6 +108,7 @@ watch(
 					:size="'large'"
 					class="play-button"
 					@click="() => playVideo(libraryItem.movie.relativePath, resumeTime)"
+					data-focus-priority="1"
 				>
 					<i class="pi pi-play" />
 					{{ resumeTime ? `Resume (${Math.round(libraryItem.movie.watchProgress.percentage)}%)` : 'Play' }}

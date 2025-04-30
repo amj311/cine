@@ -14,6 +14,7 @@ import { usePageTitleStore } from '@/stores/pageTitle.store';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
 import MediaCard from '@/components/MediaCard.vue';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
+import { useToast } from 'primevue/usetoast';
 
 const router = useRouter();
 
@@ -138,12 +139,24 @@ function pauseTvMode() {
 	if (useTvNavigationStore().enabled) {
 		wasTvMode = true;
 		useTvNavigationStore().disengageTvMode();
+		useToast().add({
+			severity: 'info',
+			summary: 'TV Navigation Paused',
+			detail: 'TV Navigation has been paused to allow you ro use media controls.',
+			life: 5000,
+		});
 	}
 }
 function resumeTvMode() {
 	if (wasTvMode) {
 		wasTvMode = false;
 		useTvNavigationStore().engageTvMode();
+		useToast().add({
+			severity: 'info',
+			summary: 'TV Navigation Resumed',
+			detail: 'TV Navigation has been resumed.',
+			life: 5000,
+		});
 	}
 }
 

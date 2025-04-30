@@ -64,10 +64,10 @@
 	box-sizing: border-box;
 }
 
-html, body, #app {
+html, body, #app, :root {
 	height: 100%;
 	margin: 0;
-	font-size: 14px;
+	font-size: 16px;
 }
 
 body {

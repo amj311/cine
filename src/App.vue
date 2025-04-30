@@ -45,12 +45,12 @@ async function suggestFullscreen() {
 		detail: 'TV Navigation has been enabled. You can use the arrow keys to navigate.',
 		life: 5000,
 	});
-	confirm.require({
-		message: 'This looks like a TV environment. Would you lke to go fullscreen?',
-		accept: () => {
-			useFullscreenStore().userFullscreenRequest();
-		},
-	});
+	// confirm.require({
+	// 	message: 'This looks like a TV environment. Would you lke to go fullscreen?',
+	// 	accept: () => {
+	// 		useFullscreenStore().userFullscreenRequest();
+	// 	},
+	// });
 }
 
 onMounted(() => {
