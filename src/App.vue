@@ -71,18 +71,18 @@ const showNavbar = computed(() => {
 <template>
 	<AppBackground />
 	<div class="dark-app app-wrapper" :class="{ 'tv-nav': tvNavigationStore.enabled }" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
-		<div v-if="apiStore.isInitializing">
+		<template v-if="apiStore.isInitializing">
 			<div id="longLoading">
 				<i class="pi pi-spin pi-spinner spin" />
 				Loading...
 			</div>
-		</div>
+		</template>
 
-		<div v-else-if="!apiStore.selectedHost">
+		<template v-else-if="!apiStore.selectedHost">
 			<h1>Failed to connect to any servers!</h1>
-		</div>
+		</template>
 
-		<div v-else>
+		<template v-else>
 			<div class="nav-wrapper" v-if="showNavbar">
 				<NavBar />
 			</div>
@@ -93,7 +93,7 @@ const showNavbar = computed(() => {
 					</KeepAlive>
 				</RouterView>
 			</div>
-		</div>
+		</template>
 	</div>
 
 	<div v-if="showDebug" class="debug-info">
