@@ -83,7 +83,7 @@ watch(
 			
 		<Scroll ref="scrollerRef">
 			<div class="pl-3">
-				<KeepAlive :include="['Explorer']">
+				<KeepAlive :include="['Explorer', 'MovieLibraryPage']">
 					<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'movies'">
 						<MovieLibraryPage :libraryItem="libraryItem" :folders="directory!.folders" />
 					</template>

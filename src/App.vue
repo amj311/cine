@@ -41,7 +41,7 @@ function suggestTvMode() {
 	});
 }
 
-async function suggestFullscreen() {
+async function alertTvDetected() {
 	toast.add({
 		severity: 'info',
 		summary: 'TV detected',
@@ -58,8 +58,8 @@ async function suggestFullscreen() {
 
 onMounted(() => {
 	tvNavigationStore.determineTvEnvironment();
-	tvNavigationStore.onTvDetected(suggestFullscreen);
-	useFullscreenStore().setAccidentalExitHandler(handleExitFullscreen);
+	tvNavigationStore.onTvDetected(alertTvDetected);
+	// useFullscreenStore().setAccidentalExitHandler(handleExitFullscreen);
 });
 
 const route = useRoute();
