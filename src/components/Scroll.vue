@@ -125,8 +125,8 @@ const thumbHover = ref(false);
 
 	/* Make all scrollbars hidden initially, with transparent bg, with --color-background-muted bars */
 	& > ::-webkit-scrollbar {
-		width: 22px;
-		height: 22px;
+		width: 8px;
+		height: 8px;
 	}
 
 	& > ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner {
@@ -140,7 +140,7 @@ const thumbHover = ref(false);
 
 	&:not(.hide) > ::-webkit-scrollbar-thumb {
 		border-radius: 10px;
-		border: 9px solid transparent; /* Add transparent space around the thumb */
+		border: 2px solid transparent; /* Add transparent space around the thumb */
 		// use box shadow as the background color
 		box-shadow: inset 0 0 0 20px var(--color-contrast) !important;
 		transition: 500ms;
