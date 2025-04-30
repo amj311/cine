@@ -1,6 +1,5 @@
 import { useApiStore } from "@/stores/api.store";
 
-const api = useApiStore().api;
 
 export class MetadataService {
 	static async getMetadata(media, detailed = false) {
@@ -9,6 +8,7 @@ export class MetadataService {
 		}
 
 		try {
+			const api = useApiStore().api;
 			const { data } = await api.post("/metadata", {
 				type: media.type,
 				path: media.relativePath,
