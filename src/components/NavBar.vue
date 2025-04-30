@@ -49,7 +49,7 @@ const navPathItems = computed(() => {
 		},
 	}));
 	// include the current folder if it is not a media item
-	if (queryPathStore.currentFile && !isInMediaFolder.value) {
+	if (queryPathStore.currentFile && !isInMediaFolder.value && queryPathStore.currentFile !== queryPathStore.rootLibrary) {
 		pathItems.push({
 			folderName: queryPathStore.currentFile,
 			label: removeExtensionsFromFileName(queryPathStore.currentFile!),
@@ -126,8 +126,8 @@ const visibleBreadcrumbs = computed(() => (navPathItems.value.slice(numHiddenBre
 			</div>
 		</div>
 
-		<div class="mobile-nav" @click="expandMobileNav = false">
-			<div class="flex flex-column">
+		<div class="mobile-nav" :class="{ tvNavigationNoFocus: !expandMobileNav }" @click="expandMobileNav = false">
+			<div class="flex flex-column" v-if="expandMobileNav">
 				<template 
 					v-for="library in navStore.libraries"
 					:key="library.relativePath"

@@ -65,7 +65,7 @@ function timeRemaining(watchProgress: any) {
 										:title="playableName(item.libraryItem.playable, item.libraryItem.parentLibrary)"
 										:subtitle="item.isUpNext ? 'Up Next' : `${timeRemaining(item.watchProgress)} left`"
 									>
-										<template #fallbackIcon>🎬</template>
+										<template #fallbackIcon>🎞️</template>
 									</MediaCard>
 								</div>
 							</div>

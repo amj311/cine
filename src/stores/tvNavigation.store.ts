@@ -14,13 +14,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	const enabled = ref(false);
 	let computingNewFocus = false;
 
-	function captureClick(event) {
-		event.stopPropagation();
-		event.preventDefault();
-		lastFocusedEl?.click();
-	}
-
-
 	async function handleMouseMove(event) {
 		stopScreenEdgeScroll();
 
@@ -28,30 +21,30 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			return;
 		}
 
-		const deltaX = event.clientX - lastMousePosition.value.x;
-		const deltaY = event.clientY - lastMousePosition.value.y;
-
 		lastMousePosition.value = { x: event.clientX, y: event.clientY };
-		lastMouseMove.value = { x: deltaX, y: deltaY };
+		lastMouseMove.value = { x: event.movementX, y: event.movementY };
 		lastMouseMoveTime.value = Date.now();
 
 		let direction: Direction | null = null;
 
-		if (deltaX === 0 && deltaY === 0) {
+		if (event.movementX === 0 && event.movementY === 0) {
 			return;
 		}
 
-		if (Math.abs(deltaX) > Math.abs(deltaY)) {
-			direction = deltaX > 0 ? 'right' : 'left';
+		if (Math.abs(event.movementX) > Math.abs(event.movementY)) {
+			direction = event.movementX > 0 ? 'right' : 'left';
 		}
-		else if (Math.abs(deltaY) > Math.abs(deltaX)) {
-			direction = deltaY > 0 ? 'down' : 'up';
+		else if (Math.abs(event.movementY) > Math.abs(event.movementX)) {
+			direction = event.movementY > 0 ? 'down' : 'up';
 		}
 
 		if (direction) {
 			await moveFocus(direction);
 		}
 	}
+
+
+
 	function handleMouseOut(event) {
 		// Assume user is pushing mouse to edge of screen to conitune scrolling
 		// Since no events will be triggered until the mouse is back in the window,
@@ -80,6 +73,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		if (edgeScrollInterval) {
 			clearInterval(edgeScrollInterval);
 		}
+		addEdgeScrollUi(direction);
 		edgeScrollInterval = setInterval(async () => {
 			const newEl = await moveFocus(direction);
 			if (!newEl) {
@@ -93,8 +87,60 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			clearInterval(edgeScrollInterval);
 			edgeScrollInterval = null;
 		}
+		removeEdgeScrollUi();
 	}
 
+	function addEdgeScrollUi(direction: Direction) {
+		removeEdgeScrollUi();
+		const newEdgeScrollUi = document.createElement('div');
+		newEdgeScrollUi.id = 'tvEdgeScrollUi';
+		newEdgeScrollUi.style.position = 'fixed';
+
+		// defaults
+		newEdgeScrollUi.style.top = '10px';
+		newEdgeScrollUi.style.bottom = '10px';
+		newEdgeScrollUi.style.left = '10px';
+		newEdgeScrollUi.style.right = '10px';
+		newEdgeScrollUi.style.display = 'flex';
+		newEdgeScrollUi.style.alignItems = 'center';
+		newEdgeScrollUi.style.justifyContent = 'center';
+		newEdgeScrollUi.style.zIndex = '9999';
+
+		if (direction === 'up') {
+			newEdgeScrollUi.style.bottom = '';
+		}
+		else if (direction === 'down') {
+			newEdgeScrollUi.style.top = '';
+		}
+		else if (direction === 'left') {
+			newEdgeScrollUi.style.right = '';
+		}
+		else if (direction === 'right') {
+			newEdgeScrollUi.style.left = '';
+		}
+
+		const scrollIcon = document.createElement('i');
+		scrollIcon.className = 'pi pi-angle-double-' + direction;
+		scrollIcon.style.fontSize = '1.5rem';
+		scrollIcon.style.color = 'white';
+		scrollIcon.style.display = 'block';
+		scrollIcon.style.textAlign = 'center';
+		scrollIcon.style.lineHeight = '2em';
+		scrollIcon.style.width = '2em';
+		scrollIcon.style.height = '2em';
+		scrollIcon.style.borderRadius = '50%';
+		scrollIcon.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+
+		newEdgeScrollUi.appendChild(scrollIcon);
+		document.body.appendChild(newEdgeScrollUi);
+	}
+
+	function removeEdgeScrollUi() {
+		const edgeScrollUi = document.getElementById('tvEdgeScrollUi');
+		if (edgeScrollUi) {
+			edgeScrollUi.remove();
+		}
+	}
 
 	async function handleKeyDown(event) {
 		stopScreenEdgeScroll();
@@ -140,7 +186,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	}
 	const focusTargets = new Map<FocusableElement, FocusTarget>();
 	const focusGroups = new Map<ScrollElement, Array<FocusableElement>>();
-	let lastFocusedEl: HTMLElement | null = null;
+	const lastFocusedEl = ref<FocusableElement | null>(null);
 
 
 	const FOCUS_COOLDOWN = 200;
@@ -156,12 +202,12 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 		lastFocusTime = Date.now();
 
-		if (!lastFocusedEl) {
+		if (!lastFocusedEl.value) {
 			findFocus();
 			return;
 		}
 
-		const groupStack = focusTargets.get(lastFocusedEl)?.focusGroupStack;
+		const groupStack = focusTargets.get(lastFocusedEl.value)?.focusGroupStack;
 		if (!groupStack) {
 			console.error("No scrollable stack found for last focused element");
 			findFocus();
@@ -190,9 +236,9 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	}
 	function setFocus(element: HTMLElement | null) {
 		if (element) {
-			lastFocusedEl = element;
-			lastFocusedEl.focus();
-			lastFocusedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+			lastFocusedEl.value = element;
+			lastFocusedEl.value.focus();
+			lastFocusedEl.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 		}
 	}
 
@@ -217,13 +263,13 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 			right: [['top', 'top'], ['right', 'left']],
 		}
 
-		if (direction && lastFocusedEl) {
-			const activeRect = lastFocusedEl.getBoundingClientRect();
+		if (direction && lastFocusedEl.value) {
+			const activeRect = lastFocusedEl.value.getBoundingClientRect();
 
 			const options = elements.map((el) => {
 				const elRect = el.getBoundingClientRect();
 
-				if (el === lastFocusedEl || !compareForInclusion[direction](activeRect, elRect)) {
+				if (el === lastFocusedEl.value || !compareForInclusion[direction](activeRect, elRect)) {
 					return null;
 				}
 
@@ -350,8 +396,8 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	let suggestTvModeHandler: (() => Promise<boolean>) | null = null;
 	let onTvDetected: (() => Promise<boolean>) | null = null;
 
-	function determineTvEnvironment(confirmationCb: () => Promise<boolean>) {
-		suggestTvModeHandler = confirmationCb;
+	function determineTvEnvironment(confirmationCb?: () => Promise<boolean>) {
+		suggestTvModeHandler = confirmationCb || null;
 		console.log('Determining TV environment...');
 		const isTv = window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
 		if (isTv) {
@@ -384,10 +430,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		let shouldDoTvNav = true;
 
 		const localStorageKey = 'tvNavigationPreference.2';
-		// if (localStorage.getItem(localStorageKey) === 'false') {
-		// 	console.log('TV environment was previously declined');
-		// 	shouldDoTvNav = false;
-		// }
 
 		if (shouldDoTvNav && suggestTvModeHandler) {
 			shouldDoTvNav = await suggestTvModeHandler();
@@ -411,6 +453,11 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	}
 
 
+	function captureClick(event) {
+		event.stopPropagation();
+		event.preventDefault();
+		lastFocusedEl.value?.click();
+	}
 
 
 	function engageTvMode() {
@@ -452,6 +499,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		lastDetectedDirection,
 		lastMouseMoveTime,
 		lastKeyDown,
+		lastFocusedEl,
 
 		determineTvEnvironment,
 		engageTvMode,

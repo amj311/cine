@@ -7,15 +7,16 @@ import { useTvNavigationStore } from './stores/tvNavigation.store';
 import AppBackground from './components/AppBackground.vue';
 import { computed, onMounted, ref } from 'vue';
 import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 import { usePageTitleStore } from './stores/pageTitle.store';
 import { useFullscreenStore } from './stores/fullscreenStore.store';
-import { useQueryPathStore } from './stores/queryPath.store';
 
 usePageTitleStore();
 const tvNavigationStore = useTvNavigationStore();
 const showDebug = ref(false);
 
 const confirm = useConfirm();
+const toast = useToast();
 
 async function handleExitFullscreen() {
 	return new Promise<boolean>((resolve) => {
@@ -38,6 +39,12 @@ function suggestTvMode() {
 }
 
 async function suggestFullscreen() {
+	toast.add({
+		severity: 'info',
+		summary: 'TV detected',
+		detail: 'TV Navigation has been enabled. You can use the arrow keys to navigate.',
+		life: 5000,
+	});
 	confirm.require({
 		message: 'This looks like a TV environment. Would you lke to go fullscreen?',
 		accept: () => {
@@ -47,7 +54,7 @@ async function suggestFullscreen() {
 }
 
 onMounted(() => {
-	tvNavigationStore.determineTvEnvironment(suggestTvMode);
+	tvNavigationStore.determineTvEnvironment();
 	tvNavigationStore.onTvDetected(suggestFullscreen);
 	useFullscreenStore().setAccidentalExitHandler(handleExitFullscreen);
 });
@@ -79,11 +86,14 @@ const showNavbar = computed(() => {
 		Last mouse position: {{ tvNavigationStore.lastMousePosition }}<br />
 		Last mouse move time: {{ tvNavigationStore.lastMouseMoveTime }}<br />
 		Last direction: {{ tvNavigationStore.lastDetectedDirection }}<br />
+		Focused: {{ tvNavigationStore.lastFocusedEl?.innerText || 'none' }}<br />
+
 	</div>
 
 	<ConfirmDialog
 		class="tvNavigationFocusArea"
 	/>
+	<Toast />
 </template>
 
 <style>
@@ -142,6 +152,7 @@ const showNavbar = computed(() => {
 	padding: 1em;
 	z-index: 10000;
 	pointer-events: none;
+	background-color: rgba(0, 0, 0, 0.5);
 }
 
 </style>
