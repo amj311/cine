@@ -104,6 +104,7 @@ function timeRemaining(watchProgress: any) {
 							</div>
 							<Button variant="text" severity="contrast"
 								class="px-4"
+								style="white-space: nowrap; min-width: 10em"
 								@click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })"
 							>
 								View All
