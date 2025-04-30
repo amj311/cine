@@ -87,7 +87,6 @@ const showNavbar = computed(() => {
 		Last mouse move time: {{ tvNavigationStore.lastMouseMoveTime }}<br />
 		Last direction: {{ tvNavigationStore.lastDetectedDirection }}<br />
 		Focused: {{ tvNavigationStore.lastFocusedEl?.innerText || 'none' }}<br />
-
 	</div>
 
 	<ConfirmDialog

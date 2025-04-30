@@ -27,12 +27,13 @@ onBeforeMount(() => {
 const categories = computed(() => {
 	return props.folders.map((folder) => ({
 			...folder.libraryItem,
-			order: folder.libraryItem.feedOrder || (Math.ceil(Math.random()) * 100),
+			order: folder.libraryItem.feedOrder || (Math.ceil(Math.random() * 100)),
 		}))
 		.filter(item => ['collection', 'folder'].includes(item.type))
 		.sort((a, b) => a.order - b.order);
 });
 const categorySampling = computed(() => {
+	console.log('categories', categories.value)
 	const categoriesMap = new Map<string, any[]>();
 	console.log(allItems.value)
 	allItems.value.forEach((item) => {
