@@ -121,7 +121,7 @@ function scrollToAnchor(anchor) {
 						<template #default="{ inRange }">
 							<div class="flex flex-column gap-5 mt-3" ref="trackWrapper">
 								<div v-for="day in timelineDays" :key="day.date" class="date-row" :data-track-anchor="day.date">
-									<h2 class="mb-2" style="position: sticky; top: 0; text-shadow: rgba(0, 0, 0, 0.8) 0px 0px 2px">{{ day.date }}</h2>
+									<h2 class="mb-3" style="position: sticky; top: 0; text-shadow: rgba(0, 0, 0, 0.8) 0px 0px 2px">{{ day.date }}</h2>
 									<div class="photo-grid">
 										<div v-for="file in day.items" :key="file.relativePath" :id="file.relativePath" class="photo-cell lazy-load" tabindex="0">
 											<div v-if="file.type === 'photo' && inRange[file.relativePath]" style="width: 100%; height: 100%;">
@@ -189,7 +189,8 @@ function scrollToAnchor(anchor) {
 				top: 0;
 				left: 0;
 				translate: -100% 0;
-				background-color: var(--color-background-mute);
+				background-color: var(--color-background-soft);
+				box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.5);
 				color: var(--color-contrast);
 				padding: 5px;
 				border-radius: 5px;
