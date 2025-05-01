@@ -148,6 +148,8 @@ const thumbHover = ref(false);
 
 	.scroll-area {
 		overflow: auto;
+		max-height: 100%;
+		max-width: 100%;
 	}
 
 	.content-wrapper {

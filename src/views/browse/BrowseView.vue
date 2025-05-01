@@ -14,8 +14,8 @@ import PhotoLibraryPage from './PhotoLibraryPage.vue';
 const route = useRoute();
 const api = useApiStore().api;
 
-const scrollerRef = ref<InstanceType<typeof Scroll> | null>(null);
-const scrollArea = computed(() => scrollerRef.value?.scrollArea);
+// const scrollerRef = ref<InstanceType<typeof Scroll> | null>(null);
+// const scrollArea = computed(() => scrollerRef.value?.scrollArea);
 
 let fetchedPath = '';
 const directory = ref<{ folders: { folderName: string; libraryItem }[]; files: string[] } | null>(null);
@@ -36,25 +36,25 @@ const fetchDirectory = async () => {
 		// normalize paths for accurate pairing
 		const normalizedPath = queryPathStore.currentPath.replace(/[^A-Za-z0-9]/g, '');
 		const normalizedItemPath = libraryItem.value?.relativePath.replace(/[^A-Za-z0-9]/g, '');
-		if (normalizedPath.includes(normalizedItemPath)) {
-			// save current scroll position when going down
-			if (libraryItem.value && scrollArea.value?.scrollTop) {
-				scrollStack.set(libraryItem.value.relativePath, scrollArea.value?.scrollTop);
-			}
-		}
-		else {
-			// when going up, remove the scroll position so it's not weird when we open it again
-			scrollStack.delete(libraryItem.value?.relativePath);
-		}
+		// if (normalizedPath.includes(normalizedItemPath)) {
+		// 	// save current scroll position when going down
+		// 	if (libraryItem.value && scrollArea.value?.scrollTop) {
+		// 		scrollStack.set(libraryItem.value.relativePath, scrollArea.value?.scrollTop);
+		// 	}
+		// }
+		// else {
+		// 	// when going up, remove the scroll position so it's not weird when we open it again
+		// 	scrollStack.delete(libraryItem.value?.relativePath);
+		// }
 
 		const { data } = await api.get('/dir', { params: { dir: queryPathStore.currentPath || '/' } });
 		directory.value = data.directory;
 		libraryItem.value = data.libraryItem;
 
-		nextTick(() => {
-			const scrollPosition = scrollStack.get(libraryItem.value.relativePath);
-			scrollArea.value?.scrollTo(0, scrollPosition || 0);
-		});
+		// nextTick(() => {
+		// 	const scrollPosition = scrollStack.get(libraryItem.value.relativePath);
+		// 	scrollArea.value?.scrollTo(0, scrollPosition || 0);
+		// });
 	} catch (error) {
 		console.error('Error fetching directory:', error);
 	}
@@ -80,10 +80,9 @@ watch(
 </script>
 
 <template>
-	<div style="height: 100%; display: grid; grid-template-rows: auto 1fr;">
-			
-		<Scroll ref="scrollerRef">
-			<div class="pl-3">
+	<div style="height: 100%;">
+		<!-- <Scroll ref="scrollerRef"> -->
+			<div class="pl-3" style="width: 100%; height: 100%">
 				<KeepAlive :include="['Explorer', 'MovieLibraryPage', 'PhotoLibraryPage']">
 					<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'movies'">
 						<MovieLibraryPage :libraryItem="libraryItem" :folders="directory!.folders" />
@@ -112,7 +111,7 @@ watch(
 
 			<!-- Pad scroll bottom -->
 			 <br /><br />
-		</Scroll>
+		<!-- </Scroll> -->
 		
 	</div>
 </template>
