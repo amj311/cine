@@ -383,9 +383,11 @@ const loadingBackground = computed(() => {
 		<VideoPlayer
 			v-if="mediaPath"
 			v-show="showPlayer"
+			:autoplay="true"
+			:controls="true"
 			:key="mediaPath"
 			ref="playerRef"
-			:src="mediaPath"
+			:relativePath="mediaPath"
 			:onLoadedData="() => hasLoaded = true"
 			:onEnd="onEnd"
 		/>

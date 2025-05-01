@@ -5,6 +5,7 @@ import MetadataLoader from '@/components/MetadataLoader.vue';
 import { useApiStore } from '@/stores/api.store';
 import Lazy from '@/components/Lazy.vue';
 import Scroll from '@/components/Scroll.vue';
+import VideoPlayer from '@/components/VideoPlayer.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -183,17 +184,27 @@ onMounted(() => {
 				<Scroll ref="scrollerRef">
 					<Lazy>
 						<template #default="{ inRange }">
-							<div class="flex flex-column gap-5 mt-3" ref="trackWrapper">
+							<div class="gallery flex flex-column gap-6 mt-3" ref="trackWrapper">
 								<div v-for="day in timelineDays" :key="day.date" class="date-row" :data-track-anchor="day.date">
 									<h2 class="mb-3">{{ day.date }}</h2>
 									<div class="photo-grid">
 										<div v-for="file in day.items" :key="file.relativePath" :id="file.relativePath" class="photo-cell lazy-load" tabindex="0">
-											<div v-if="file.type === 'photo' && inRange[file.relativePath]" style="width: 100%; height: 100%;">
+											<div class="media-thumb" v-if="inRange[file.relativePath]" style="width: 100%; height: 100%;">
 												<img 
+													v-if="file.fileType === 'photo'"
 													:src="useApiStore().baseUrl + '/thumb/' + file.relativePath + '?width=300'" 
 													:alt="file.fileName" 
 													style="width: 100%; height: 100%; object-fit: cover;" 
 												/>
+												<VideoPlayer
+													v-if="file.fileType === 'video'"
+													:relativePath="file.relativePath"
+													:controls="false"
+													style="width: 100%; height: 100%; object-fit: cover;"
+												/>
+											</div>
+											<div class="overlay">
+												<i v-if="file.type === 'video'" class="play-icon pi pi-play" />
 											</div>
 										</div>
 									</div>
@@ -221,12 +232,13 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .photos-page {
+	--track-width: 15px;
 	height: 100%;
 	position: relative;
 	
 	.gallery-side {
 		height: 100%;
-		padding-right: 10px;
+		padding-right: calc(var(--track-width) - 5px);
 	}
 
 	.track {
@@ -234,7 +246,7 @@ onMounted(() => {
 		top: 0;
 		right: 0;
 		height: 100%;
-		width: 15px;
+		width: var(--track-width);
 
 		.track-anchor-item {
 			position: absolute;
@@ -287,6 +299,7 @@ onMounted(() => {
 	gap: 10px;
 
 	.photo-cell {
+		position: relative;
 		width: 100%;
 		aspect-ratio: 1;
 		overflow: hidden;
@@ -296,7 +309,29 @@ onMounted(() => {
 		background-color: var(--color-background-mute);
 		border-radius: 5px;
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+		.overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
 	}
+}
+
+.play-icon {
+	font-size: 1.5rem;
+	color: var(--color-text);
+	background-color: rgba(0, 0, 0, 0.5);
+	width: 2.2em;
+	line-height: 2.2em;
+	text-align: center;
+	aspect-ratio: 1;
+	border-radius: 50%;
 }
 
 </style>

@@ -4,13 +4,15 @@ import { defineProps, ref, computed, onMounted } from 'vue';
 
 // Define the `src` prop
 const props = defineProps<{
-	src: string;
+	relativePath: string;
 	onEnd?: () => void;
 	onLoadedData?: (data: any) => void;
+	controls?: boolean;
+	autoplay?: boolean;
 }>();
 
 const videoRef = ref<HTMLVideoElement>();
-const videoUrl = computed(() => useApiStore().baseUrl + '/video?src=' + props.src.split('&').join('<amp>'))
+const videoUrl = computed(() => useApiStore().baseUrl + '/video?src=' + props.relativePath.split('&').join('<amp>'))
 
 const supportedVideoTypes = [
 	'mp4',
@@ -58,7 +60,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<video ref="videoRef" class="video-player" controls autoplay v-if="goodType">
+	<video ref="videoRef" class="video-player" :controls="controls === true" :autoplay="autoplay === true" v-if="goodType">
 		<source :src="videoUrl" :type="'video/mp4'" />
 	</video>
 </template>
