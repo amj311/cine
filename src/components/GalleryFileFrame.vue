@@ -24,7 +24,7 @@ const sizeWidths = {
 	large: 1200,
 };
 const sizeWidth = computed(() => {
-	return Math.min(window.innerWidth, sizeWidths[props.size || 'small'] || 200);
+	return Math.min(window.innerWidth * 2, sizeWidths[props.size || 'small'] || 200);
 });
 
 </script>

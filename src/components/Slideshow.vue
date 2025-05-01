@@ -182,12 +182,14 @@ const activeFileFolders = computed(() => activeFile.value.relativePath.split('/'
 
 <template>
 	<div id="Slideshow" v-if="showSlideshow">
-		<div id="topBar" class="flex justify-content-start align-items-center gap-2">
+		<div id="topBar" class="flex justify-content-start align-items-center gap-2 flex-wrap">
 			<Button text severity="contrast" @click="close" icon="pi pi-times" />
 			<div>{{ activeFile.fileName }}</div>
-			<div style="flex-grow: 1"></div>
-			<small v-if="activeFile.takenAt">&nbsp;&nbsp;<i class="pi pi-calendar">&nbsp;</i>{{ new Date(activeFile.takenAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</small>
-			<small v-if="activeFileFolders.length">&nbsp;&nbsp;🗂️ {{ activeFileFolders.join(' / ') }}</small>
+			<div class="flex-grow-1 flex justify-content-end align-items-center gap-2">
+				<div style="flex-grow: 1"></div>
+				<small v-if="activeFile.takenAt">&nbsp;&nbsp;<i class="pi pi-calendar" /> {{ new Date(activeFile.takenAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</small>
+				<small v-if="activeFileFolders.length">&nbsp;&nbsp;<i class="pi pi-folder-open" /> {{ activeFileFolders.join(' / ') }}</small>
+			</div>
 		</div>
 		<div :class="{ 'file-frame': true, [state.animationClass]: true }">
 			<div class="prev">
