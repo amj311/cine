@@ -19,6 +19,7 @@ export class ThumbnailService {
 
 		const fileBuffer = await readFile(filePath);
 		const thumbnailBuffer = await sharp(fileBuffer)
+			.rotate()
 			.resize(width, width, { fit: 'inside' })
 			.toBuffer();
 		return thumbnailBuffer;
