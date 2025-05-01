@@ -187,7 +187,7 @@ function openSlideshow(file: GalleryFile) {
 </script>
 
 <template>
-	<div class="photos-page">
+	<div class="photos-page pl-3">
 		<div class="gallery-side">
 			<Scroll ref="scrollerRef">
 				<Lazy>
