@@ -14,7 +14,7 @@ const api = useApiStore().api;
 async function loadItems() {
 	try {
 		const { data } = await api.get(`/rootLibrary/${props.libraryItem.relativePath}/flat`);
-		allItems.value = data.data;
+		allItems.value = data.data?.items || [];
 		collectCategorySamples();
 	}
 	catch (error) {
@@ -58,9 +58,7 @@ function collectCategorySamples() {
 	});
 	// Take a random 10 items from each category
 	Object.entries(categoriesMap).forEach(([category, items]) => {
-		console.log(items.sort(() => Math.random() - 0.5).slice(0, 10).length)
 		categoriesMap[category] = items.sort(() => Math.random() - 0.5).slice(0, 10);
-		console.log(category, categoriesMap[category].length)
 	});
 	categorySampling.value = categoriesMap;
 };

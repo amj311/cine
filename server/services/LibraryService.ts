@@ -76,6 +76,7 @@ type Collection = LibraryItemData & {
 	children: Array<RelativePath>,
 }
 
+
 /** A folder is more generic than a collection and could contain anything */
 type Folder = LibraryItemData & {
 	type: 'folder',
@@ -94,8 +95,53 @@ type Library = LibraryItemData & {
 
 type LibraryItem = Movie | Series | Collection | Folder | Library;
 
+
+
+
+
+
+type LibraryFileData = {
+	fileName: string,
+	relativePath: RelativePath,
+	listName: string,
+	sortKey: string,
+}
+
+const PhotoTypes = ['jpg', 'jpeg', 'png', 'gif'] as const;
+type PhotoType = typeof PhotoTypes[number];
+type Photo = LibraryFileData & {
+	type: 'photo',
+	fileType: PhotoType,
+	takenAt?: string,
+}
+
+const VideoTypes = ['mp4', '3gp', '3g2'] as const;
+type VideoType = typeof VideoTypes[number];
+type Video = LibraryFileData & {
+	type: 'video',
+	fileType: VideoType,
+	takenAt?: string,
+}
+
+const AudioTypes = ['mp3', 'm4a', 'aac'] as const;
+type AudioType = typeof AudioTypes[number];
+type Audio = LibraryFileData & {
+	type: 'audio',
+	fileType: AudioType,
+	takenAt?: Date,
+}
+
+// Dictionary for faster fileType lookup
+const FileTypeDictionary = {
+	...Object.fromEntries(PhotoTypes.map((type) => [type, 'photo'])),
+	...Object.fromEntries(VideoTypes.map((type) => [type, 'video'])),
+	...Object.fromEntries(AudioTypes.map((type) => [type, 'audio'])),
+} as const;
+
+type LibraryFile = Photo | Video | Audio;
+
 export class LibraryService {
-	public static async parseFolderToItem(path: RelativePath, detailed = false, withMetadata = true): Promise<LibraryItem | undefined> {
+	public static async parseFolderToItem(path: RelativePath, detailed = false, withMetadata = true): Promise<LibraryItem> {
 		const folderName = path.split('/').pop() || path;
 		const { name, year } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
@@ -219,19 +265,45 @@ export class LibraryService {
 	}
 
 
-	public static async getFlatTree(path: RelativePath): Promise<Array<LibraryItem>> {
+	public static async parseFileToItem(path: RelativePath): Promise<LibraryFile | null> {
+		const fileType = FileTypeDictionary[path.split('.').pop() as keyof typeof FileTypeDictionary];
+		if (!fileType) {
+			return null;
+		}
+		const fileName = path.split('/').pop() || path;
+		const takenAt = await LibraryService.getFileTakenAt(path);
+		return {
+			type: fileType,
+			fileType,
+			relativePath: path,
+			fileName: fileName,
+			takenAt,
+			sortKey: (takenAt?.toISOString() || '') + fileName,
+			listName: fileName,
+		} as LibraryFile;
+	}
+
+
+	public static async getFlatTree(path: RelativePath) {
 		const items: Array<LibraryItem> = [];
+		const files: Array<LibraryFile> = [];
 		async function parseDirectory(path: RelativePath) {
-			const { folders, files } = await DirectoryService.listDirectory(path);
+			const { folders, files: childrenFiles } = await DirectoryService.listDirectory(path);
 			const libraryItem = await LibraryService.parseFolderToItem(path, true);
 			if (libraryItem) {
 				items.push(libraryItem);
 			}
+			await Promise.all(childrenFiles.map(async (file) => {
+				const fileItem = await LibraryService.parseFileToItem(path + '/' + file);
+				if (fileItem) {
+					files.push(fileItem);
+				}
+			}));
 			// Recursively parse all folders
 			await Promise.all(folders.map((folder) => parseDirectory(path + '/' + folder)));
 		}
 		await parseDirectory(path);
-		return items;
+		return { items, files };
 	}
 
 
@@ -512,6 +584,29 @@ export class LibraryService {
 			keyParts.unshift(collectionName, year);
 		}
 		return keyParts.join('_').toLowerCase();
+	}
+
+	public static async getFileTakenAt(path: RelativePath): Promise<Date | undefined> {
+		const regExps: Array<(fileName: string) => Date | undefined> = [
+			// YYYYMMDD_HHMMSS or YYYYMMDD-HHMMSS or YYYY-MM-DD_HH-MM-SS(_mmm)
+			(fileName) => {
+				const dateRegex = /(\d{4})(?:_|-)*(\d{2})(?:_|-)*(\d{2})(?:_|-)*(\d{2})(?:_|-)*(\d{2})(?:_|-)*(\d{2})(?:(?:_|-)*(\d{3}))*/;
+				const match = fileName.match(dateRegex);
+				if (match) {
+					const [_, year, month, day, hour, minute, second] = match;
+					return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+				}
+				return undefined;
+			},
+		];
+		const fileName = path.split('/').pop() || path;
+		for (const regExp of regExps) {
+			const date = regExp(fileName);
+			if (date && !isNaN(date.getTime())) {
+				return date;
+			}
+		}
+		return undefined;
 	}
 }
 

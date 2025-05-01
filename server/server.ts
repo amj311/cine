@@ -303,6 +303,9 @@ app.use('/assets', (req, res) => {
 app.use('/public', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/public/' + req.path));
 });
+app.use('/api/media', (req, res) => {
+	res.sendFile(DirectoryService.resolvePath(req.path));
+});
 app.get('*', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/index.html'));
 });

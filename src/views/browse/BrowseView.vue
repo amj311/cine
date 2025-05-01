@@ -9,6 +9,7 @@ import { useRoute } from 'vue-router';
 import DropdownMenu from '@/components/utils/DropdownMenu.vue';
 import MovieLibraryPage from './MovieLibraryPage.vue';
 import { useApiStore } from '@/stores/api.store';
+import PhotoLibraryPage from './PhotoLibraryPage.vue';
 
 const route = useRoute();
 const api = useApiStore().api;
@@ -83,9 +84,13 @@ watch(
 			
 		<Scroll ref="scrollerRef">
 			<div class="pl-3">
-				<KeepAlive :include="['Explorer', 'MovieLibraryPage']">
+				<KeepAlive :include="['Explorer', 'MovieLibraryPage', 'PhotoLibraryPage']">
 					<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'movies'">
 						<MovieLibraryPage :libraryItem="libraryItem" :folders="directory!.folders" />
+					</template>
+
+					<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'photos'">
+						<PhotoLibraryPage :libraryItem="libraryItem" />
 					</template>
 
 					<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
