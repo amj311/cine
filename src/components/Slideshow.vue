@@ -185,6 +185,8 @@ const activeFileFolders = computed(() => activeFile.value.relativePath.split('/'
 		<div id="topBar" class="flex justify-content-start align-items-center gap-2">
 			<Button text severity="contrast" @click="close" icon="pi pi-times" />
 			<div>{{ activeFile.fileName }}</div>
+			<div style="flex-grow: 1"></div>
+			<small v-if="activeFile.takenAt">&nbsp;&nbsp;<i class="pi pi-calendar">&nbsp;</i>{{ new Date(activeFile.takenAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</small>
 			<small v-if="activeFileFolders.length">&nbsp;&nbsp;🗂️ {{ activeFileFolders.join(' / ') }}</small>
 		</div>
 		<div :class="{ 'file-frame': true, [state.animationClass]: true }">
