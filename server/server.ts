@@ -323,7 +323,8 @@ app.use('/api/thumb', (req, res) => {
 			res.setHeader('Content-Type', 'image/jpeg');
 			res.send(thumbnailBuffer);
 		} catch (err) {
-			console.error(err);
+			console.error("Error while generating thumbnail for image:", relativePath);
+			console.error(err.message);
 			// If the thumbnail is not found, send the lasrger one
 			res.sendFile(DirectoryService.resolvePath(relativePath));
 		}

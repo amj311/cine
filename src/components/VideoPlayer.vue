@@ -7,7 +7,7 @@ const props = defineProps<{
 	relativePath: string;
 	onEnd?: () => void;
 	onLoadedData?: (data: any) => void;
-	controls?: boolean;
+	hideControls?: boolean;
 	autoplay?: boolean;
 }>();
 
@@ -60,7 +60,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<video ref="videoRef" class="video-player" :controls="controls === true" :autoplay="autoplay === true" v-if="goodType">
+	<video ref="videoRef" class="video-player" :controls="!hideControls" :autoplay="autoplay === true" v-if="goodType">
 		<source :src="videoUrl" :type="'video/mp4'" />
 	</video>
 </template>
