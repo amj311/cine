@@ -18,6 +18,7 @@ import { MediaMetadataService } from './services/metadata/MetadataService';
 import { WatchProgress, WatchProgressService } from './services/WatchProgressService';
 import mime from 'mime-types';
 import { EitherMetadata } from './services/metadata/MetadataTypes';
+import { ThumbnailService } from './services/ThumbnailService';
 
 const corsOptions = {};
 
@@ -304,7 +305,29 @@ app.use('/public', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/public/' + req.path));
 });
 app.use('/api/media', (req, res) => {
-	res.sendFile(DirectoryService.resolvePath(req.path));
+	const relativePath = req.path;
+	res.sendFile(DirectoryService.resolvePath(relativePath));
+});
+app.use('/api/thumb', (req, res) => {
+	const relativePath = req.path;
+	const { width } = req.query;
+	(async () => {
+		// Gifs don't work if sharp resizes them, so just send he og file.
+		// Consider using gif-encode in the future if gifs are too large and still need to be resized.
+		if (relativePath.endsWith('.gif')) {
+			res.sendFile(DirectoryService.resolvePath(relativePath));
+			return;
+		}
+		try {
+			const thumbnailBuffer = await ThumbnailService.streamThumbnail(relativePath, !isNaN(width) ? parseInt(width as string) : undefined);
+			res.setHeader('Content-Type', 'image/jpeg');
+			res.send(thumbnailBuffer);
+		} catch (err) {
+			console.error(err);
+			// If the thumbnail is not found, send the lasrger one
+			res.sendFile(DirectoryService.resolvePath(relativePath));
+		}
+	})();
 });
 app.get('*', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/index.html'));

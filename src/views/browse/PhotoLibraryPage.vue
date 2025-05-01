@@ -61,8 +61,12 @@ function computeTimelineDays() {
 							<h2>{{ day.date }}</h2>
 							<div class="photo-grid">
 								<div v-for="file in day.items" :key="file.relativePath" :id="file.relativePath" class="photo-cell lazy-load">
-									<div v-if="file.type === 'photo'">
-										<img v-if="inRange[file.relativePath]" :src="useApiStore().baseUrl + '/media/' + file.relativePath" :alt="file.fileName" width="300" />
+									<div v-if="file.type === 'photo' && inRange[file.relativePath]" style="width: 100%; height: 100%;">
+										<img 
+											:src="useApiStore().baseUrl + '/thumb/' + file.relativePath + '?width=300'" 
+											:alt="file.fileName" 
+											style="width: 100%; height: 100%; object-fit: cover;" 
+										/>
 									</div>
 								</div>
 							</div>

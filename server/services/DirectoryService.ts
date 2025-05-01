@@ -12,15 +12,16 @@ export type AbsolutePath = `/${string}`;
 
 export class DirectoryService {
 	static resolvePath(relativePath: RelativePath): AbsolutePath {
+		const decodedPath = decodeURIComponent(relativePath);
 		if (!process.env.MEDIA_DIR) {
 			throw new Error('MEDIA_DIR environment variable is not set');
 		}
 
 		const MEDIA_DIR = process.env.MEDIA_DIR;
-		if (relativePath.includes(MEDIA_DIR)) {
+		if (decodedPath.includes(MEDIA_DIR)) {
 			return relativePath as AbsolutePath;
 		}
-		return path.join(MEDIA_DIR, relativePath) as AbsolutePath;
+		return path.join(MEDIA_DIR, decodedPath) as AbsolutePath;
 	}
 
 	static async listDirectory(path: string) {
