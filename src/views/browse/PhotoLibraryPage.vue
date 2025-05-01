@@ -187,7 +187,7 @@ function openSlideshow(file: GalleryFile) {
 </script>
 
 <template>
-	<div class="photos-page pl-3">
+	<div class="photos-page">
 		<div class="gallery-side">
 			<Scroll ref="scrollerRef">
 				<Lazy>
@@ -239,10 +239,15 @@ function openSlideshow(file: GalleryFile) {
 	--track-width: 15px;
 	height: 100%;
 	position: relative;
+	padding-left: 5px;
 	
 	.gallery-side {
 		height: 100%;
 		padding-right: calc(var(--track-width) - 5px);
+
+		.gallery {
+			padding: 5px;
+		}
 	}
 
 	.track {
@@ -314,6 +319,11 @@ function openSlideshow(file: GalleryFile) {
 		border-radius: 5px;
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 		cursor: pointer;
+
+		&:hover, &:focus {
+			scale: 1.05;
+			outline: 1px solid var(--color-contrast);
+		}
 
 		.overlay {
 			position: absolute;
