@@ -155,12 +155,10 @@ function debounceScrollHandler(event: Event) {
 	const scrollTop = scrollArea.scrollTop;
 
 	if (Math.abs(scrollTop - oldScrollTop) < 50) {
-		console.log("scrolled small")
 		return;
 	}
 
 	lastScrollTop = scrollTop;
-	console.log("scrolled BIG")
 
 	// find the closest anchor
 	const anchors = trackAnchors.value;
@@ -204,7 +202,7 @@ function openSlideshow(file: GalleryFile) {
 										:id="file.relativePath"
 										@click="openSlideshow(file)"
 									>
-										<GalleryFileFrame v-if="inRange[file.relativePath]" :file="file" :objectFit="'cover'" :hide-controls="true" />
+										<GalleryFileFrame v-if="inRange[file.relativePath]" :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" />
 										<div class="overlay">
 											<i v-if="file.fileType === 'video'" class="play-icon pi pi-play" />
 										</div>

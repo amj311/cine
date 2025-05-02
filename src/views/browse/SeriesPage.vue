@@ -149,115 +149,117 @@ watch(
 </script>
 
 <template>
-	<div class="series-page">
-		<div class="top-wrapper">
-			<div>
-			<div class="poster-wrapper">
-				<MediaCard
-					:imageUrl="metadata?.poster_full"
-				/>
-			</div>
-		</div>
-
-			<div class="left-side" :style="{ flexGrow: 1 }">
-				<h1 class="title line-clamp-3">{{ libraryItem.name }}</h1>
-				<div style="display: flex; column-gap: 10px; flex-wrap: wrap;">
-					<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
-					<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
-					<span v-if="metadata?.content_rating">{{ metadata.content_rating }}</span>
+	<Scroll>
+		<div class="series-page pl-3 pr-2">
+			<div class="top-wrapper">
+				<div>
+				<div class="poster-wrapper">
+					<MediaCard
+						:imageUrl="metadata?.poster_full"
+					/>
 				</div>
+			</div>
+
+				<div class="left-side" :style="{ flexGrow: 1 }">
+					<h1 class="title line-clamp-3">{{ libraryItem.name }}</h1>
+					<div style="display: flex; column-gap: 10px; flex-wrap: wrap;">
+						<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
+						<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
+						<span v-if="metadata?.content_rating">{{ metadata.content_rating }}</span>
+					</div>
 
 
-				<br />
-				<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
-
-				<br />
-				<Button
-					class="play-button"
-					@click="() => playVideo(episodeToPlay?.relativePath, resumeTime)"
-				>
-					<i class="pi pi-play" />
-					{{ resumeTime ? 'Resume' : 'Play' }} S{{ episodeToPlay?.seasonNumber }}:E{{ episodeToPlay?.episodeNumber }}
-				</Button>
-				<Button
-					v-if="resumeTime"
-					:size="'large'"
-					variant="text"
-					severity="contrast"
-					@click="() => playVideo(episodeToPlay.relativePath, episodeToPlay.startTime)"
-				>
-					<i class="pi pi-replay" />
-				</Button>
-
-				<div class="hide-md" style="max-width: 50em;">
 					<br />
-					<p class="line-clamp-4">{{ metadata?.overview }}</p>
-					<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
-				</div>
-			</div>
-		</div>
-	
-		<div class="show-lg">
-			<p>{{ metadata?.overview }}</p>
-			<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
-		</div>
+					<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
 
-		<div v-if="metadata?.credits">
-			<h2>Cast & Crew</h2>
-			<PeopleList :people="metadata.credits" />
-		</div>
-
-		<div>
-			<h2 class="mb-2">Episodes</h2>
-			<div class="season-wrapper">
-				<div class="selection">
+					<br />
 					<Button
-						v-for="season in mergedSeasons"
-						:key="season.seasonNumber"
-						class="season-button"
-						severity="secondary"
-						:variant="activeSeason.seasonNumber === season.seasonNumber ? '' : 'text'"
-						@click="() => activeSeason = season"
+						class="play-button"
+						@click="() => playVideo(episodeToPlay?.relativePath, resumeTime)"
 					>
-						{{ season.name || `Season ${ season.seasonNumber }` }}
+						<i class="pi pi-play" />
+						{{ resumeTime ? 'Resume' : 'Play' }} S{{ episodeToPlay?.seasonNumber }}:E{{ episodeToPlay?.episodeNumber }}
 					</Button>
-				</div>
-				<div class="season-details">
-					<p>{{ activeSeason.overview }}</p>
-					<div class="episodes-list flex flex-column gap-3">
-						<template v-for="(episode, i) in activeSeason.episodes" :key="episode.relativePath">
-							<div class="episode-item">
-								<div class="episode-poster-wrapper">
-									<MediaCard
-										:imageUrl="episode.still_thumb"
-										:fallbackIcon="'📺'"
-										:aspectRatio="'wide'"
-										:playSrc="episode.relativePath"
-										:overrideStartTime="episode.startTime"
-										:progress="episode.watchProgress"
-									/>
-								</div>
-								<div class="episode-info">
-									<h3>{{ episode.name }}{{ episode.version ? ` (${episode.version})` : '' }}</h3>
-									<div style="display: flex; gap: 10px; flex-wrap: wrap;">
-										<span>Ep. {{ episode.episodeNumber }}</span>
-										<span v-if="episode.runtime">{{ formatRuntime(episode.runtime) }}</span>
-										<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
-									</div>
-									<p>{{ episode.overview }}</p>
-								</div>
-							</div>
-						</template>
+					<Button
+						v-if="resumeTime"
+						:size="'large'"
+						variant="text"
+						severity="contrast"
+						@click="() => playVideo(episodeToPlay.relativePath, episodeToPlay.startTime)"
+					>
+						<i class="pi pi-replay" />
+					</Button>
+
+					<div class="hide-md" style="max-width: 50em;">
+						<br />
+						<p class="line-clamp-4">{{ metadata?.overview }}</p>
+						<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
 					</div>
 				</div>
 			</div>
-		</div>
+		
+			<div class="show-lg">
+				<p>{{ metadata?.overview }}</p>
+				<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
+			</div>
 
-		<div v-if="libraryItem.extras?.length > 0">	
-			<h2>Extras</h2>
-			<ExtrasList :extras="libraryItem.extras" />
+			<div v-if="metadata?.credits">
+				<h2>Cast & Crew</h2>
+				<PeopleList :people="metadata.credits" />
+			</div>
+
+			<div>
+				<h2 class="mb-2">Episodes</h2>
+				<div class="season-wrapper">
+					<div class="selection">
+						<Button
+							v-for="season in mergedSeasons"
+							:key="season.seasonNumber"
+							class="season-button"
+							severity="secondary"
+							:variant="activeSeason.seasonNumber === season.seasonNumber ? '' : 'text'"
+							@click="() => activeSeason = season"
+						>
+							{{ season.name || `Season ${ season.seasonNumber }` }}
+						</Button>
+					</div>
+					<div class="season-details">
+						<p>{{ activeSeason.overview }}</p>
+						<div class="episodes-list flex flex-column gap-3">
+							<template v-for="(episode, i) in activeSeason.episodes" :key="episode.relativePath">
+								<div class="episode-item">
+									<div class="episode-poster-wrapper">
+										<MediaCard
+											:imageUrl="episode.still_thumb"
+											:fallbackIcon="'📺'"
+											:aspectRatio="'wide'"
+											:playSrc="episode.relativePath"
+											:overrideStartTime="episode.startTime"
+											:progress="episode.watchProgress"
+										/>
+									</div>
+									<div class="episode-info">
+										<h3>{{ episode.name }}{{ episode.version ? ` (${episode.version})` : '' }}</h3>
+										<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+											<span>Ep. {{ episode.episodeNumber }}</span>
+											<span v-if="episode.runtime">{{ formatRuntime(episode.runtime) }}</span>
+											<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
+										</div>
+										<p>{{ episode.overview }}</p>
+									</div>
+								</div>
+							</template>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div v-if="libraryItem.extras?.length > 0">	
+				<h2>Extras</h2>
+				<ExtrasList :extras="libraryItem.extras" />
+			</div>
 		</div>
-	</div>
+	</Scroll>
 </template>
 
 <style

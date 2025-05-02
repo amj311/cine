@@ -80,54 +80,56 @@ function timeRemaining(watchProgress: any) {
 </script>
 
 <template>
-	<div class="movies-page mt-3">
-		<div class="categories flex flex-column gap-3">
-			<div class="categories-row" v-for="categoriesRow in categories" :key="categoriesRow.relativePath">
-				<h3>
-					{{ categoriesRow.name }}
-					<Button variant="text" severity="contrast" @click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })">
-						<i class="pi pi-angle-right" />
-					</Button>
-				</h3>
-				<div class="categories-scroll-wrapper">
-					<Scroll class="categories-scroll">
-						<div class="categories-row-items-list">
-							<div
-								class="categories-row-card-wrapper"
-								v-for="item in categorySampling[categoriesRow.relativePath]"
-							>
-								<MetadataLoader
-									:media="item"
+	<Scroll>
+		<div class="movies-page mt-3 pl-3">
+			<div class="categories flex flex-column gap-3">
+				<div class="categories-row" v-for="categoriesRow in categories" :key="categoriesRow.relativePath">
+					<h3>
+						{{ categoriesRow.name }}
+						<Button variant="text" severity="contrast" @click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })">
+							<i class="pi pi-angle-right" />
+						</Button>
+					</h3>
+					<div class="categories-scroll-wrapper">
+						<Scroll class="categories-scroll">
+							<div class="categories-row-items-list">
+								<div
+									class="categories-row-card-wrapper"
+									v-for="item in categorySampling[categoriesRow.relativePath]"
 								>
-									<template #default="{ metadata }">
-										<MediaCard
-											:key="item.relativePath"
-											:imageUrl="metadata?.poster_thumb"
-											:progress="item.watchProgress"
-											:aspectRatio="'tall'"
-											:title="item.name"
-											:subtitle="item.year"
-											:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
-										>
-											<template #fallbackIcon>🎬</template>
-										</MediaCard>
-									</template>
-								</MetadataLoader>
+									<MetadataLoader
+										:media="item"
+									>
+										<template #default="{ metadata }">
+											<MediaCard
+												:key="item.relativePath"
+												:imageUrl="metadata?.poster_thumb"
+												:progress="item.watchProgress"
+												:aspectRatio="'tall'"
+												:title="item.name"
+												:subtitle="item.year"
+												:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+											>
+												<template #fallbackIcon>🎬</template>
+											</MediaCard>
+										</template>
+									</MetadataLoader>
+								</div>
+								<Button variant="text" severity="contrast"
+									class="px-4"
+									style="white-space: nowrap; min-width: 10em"
+									@click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })"
+								>
+									View All
+									<i class="pi pi-angle-right" />
+								</Button>
 							</div>
-							<Button variant="text" severity="contrast"
-								class="px-4"
-								style="white-space: nowrap; min-width: 10em"
-								@click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })"
-							>
-								View All
-								<i class="pi pi-angle-right" />
-							</Button>
-						</div>
-					</Scroll>
+						</Scroll>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
+	</Scroll>
 </template>
 
 <style scoped lang="scss">

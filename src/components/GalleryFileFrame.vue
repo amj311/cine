@@ -19,7 +19,7 @@ const props = defineProps<{
 }>();
 
 const sizeWidths = {
-	small: 200,
+	small: 100,
 	medium: 800,
 	large: 1200,
 };

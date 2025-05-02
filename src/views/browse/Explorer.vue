@@ -36,8 +36,8 @@ const items = computed(() => {
 </script>
 
 <template>
-	<div>
-		<div class="mt-3 pr-2">
+	<Scroll>
+		<div class="mt-3 pl-3 pr-2 pb-3">
 			<template v-if="exploreMode === 'library'">
 				<div class="folder-grid" v-if="fodlers.length">
 					<template v-for="folder in fodlers">
@@ -167,7 +167,7 @@ const items = computed(() => {
 				</ul>
 			</template>
 		</div>
-	</div>
+	</Scroll>
 </template>
 
 <style scoped lang="scss">

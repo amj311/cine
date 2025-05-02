@@ -80,72 +80,74 @@ watch(
 </script>
 
 <template>
-	<div class="movie-page">
-		<div class="top-wrapper">
-			<div>
-				<div class="poster-wrapper">
-					<MediaCard
-						:imageUrl="metadata?.poster_full"
-						:progress="libraryItem.movie.watchProgress"
-					/>
-				</div>
-			</div>
-
-			<div class="left-side" :style="{ flexGrow: 1 }">
-
-				<h1 class="title line-clamp-3">{{ libraryItem.name }}</h1>
-				<div style="display: flex; column-gap: 10px; flex-wrap: wrap; align-items: center;">
-					<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
-					<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
-					<span v-if="metadata?.content_rating">{{ metadata.content_rating }}</span>
+	<Scroll>
+		<div class="movie-page pl-3 pr-2">
+			<div class="top-wrapper">
+				<div>
+					<div class="poster-wrapper">
+						<MediaCard
+							:imageUrl="metadata?.poster_full"
+							:progress="libraryItem.movie.watchProgress"
+						/>
+					</div>
 				</div>
 
-				<br />
-				<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
+				<div class="left-side" :style="{ flexGrow: 1 }">
 
-				<br />
-				<Button
-					:size="'large'"
-					class="play-button"
-					@click="() => playVideo(libraryItem.movie.relativePath, resumeTime)"
-					data-focus-priority="1"
-				>
-					<i class="pi pi-play" />
-					{{ resumeTime ? `Resume (${Math.round(libraryItem.movie.watchProgress.percentage)}%)` : 'Play' }}
-				</Button>
-				<Button
-					v-if="resumeTime"
-					:size="'large'"
-					variant="text"
-					severity="contrast"
-					@click="() => playVideo(libraryItem.movie.relativePath, 0)"
-				>
-					<i class="pi pi-replay" />
-				</Button>
+					<h1 class="title line-clamp-3">{{ libraryItem.name }}</h1>
+					<div style="display: flex; column-gap: 10px; flex-wrap: wrap; align-items: center;">
+						<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
+						<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
+						<span v-if="metadata?.content_rating">{{ metadata.content_rating }}</span>
+					</div>
 
-				<div class="hide-md" style="max-width: 50em;">
 					<br />
-					<p class="line-clamp-4">{{ metadata?.overview }}</p>
-					<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
+					<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
+
+					<br />
+					<Button
+						:size="'large'"
+						class="play-button"
+						@click="() => playVideo(libraryItem.movie.relativePath, resumeTime)"
+						data-focus-priority="1"
+					>
+						<i class="pi pi-play" />
+						{{ resumeTime ? `Resume (${Math.round(libraryItem.movie.watchProgress.percentage)}%)` : 'Play' }}
+					</Button>
+					<Button
+						v-if="resumeTime"
+						:size="'large'"
+						variant="text"
+						severity="contrast"
+						@click="() => playVideo(libraryItem.movie.relativePath, 0)"
+					>
+						<i class="pi pi-replay" />
+					</Button>
+
+					<div class="hide-md" style="max-width: 50em;">
+						<br />
+						<p class="line-clamp-4">{{ metadata?.overview }}</p>
+						<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
+					</div>
 				</div>
 			</div>
-		</div>
-	
-		<div class="show-lg">
-			<p>{{ metadata?.overview }}</p>
-			<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
-		</div>
+		
+			<div class="show-lg">
+				<p>{{ metadata?.overview }}</p>
+				<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
+			</div>
 
-		<div v-if="metadata?.credits">
-			<h2>Cast & Crew</h2>
-			<PeopleList :people="metadata.credits" />
-		</div>
+			<div v-if="metadata?.credits">
+				<h2>Cast & Crew</h2>
+				<PeopleList :people="metadata.credits" />
+			</div>
 
-		<div v-if="libraryItem.extras?.length > 0">	
-			<h2>Extras</h2>
-			<ExtrasList :extras="libraryItem.extras" />
+			<div v-if="libraryItem.extras?.length > 0">	
+				<h2>Extras</h2>
+				<ExtrasList :extras="libraryItem.extras" />
+			</div>
 		</div>
-	</div>
+	</Scroll>
 </template>
 
 <style

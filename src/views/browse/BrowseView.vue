@@ -86,31 +86,24 @@ watch(
 				<PhotoLibraryPage :libraryItem="libraryItem" />
 			</template>
 
-			<Scroll ref="scrollerRef" v-else>
-				<div class="pl-3" style="width: 100%; height: 100%">
-					<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'movies'">
-						<MovieLibraryPage :libraryItem="libraryItem" :folders="directory!.folders" />
-					</template>
-		
-					<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
-						<MoviePage :libraryItem="libraryItem" />
-					</template>
+			<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'movies'">
+				<MovieLibraryPage :libraryItem="libraryItem" :folders="directory!.folders" />
+			</template>
 
-					<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'series'">
-						<SeriesPage :libraryItem="libraryItem" />
-					</template>
+			<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
+				<MoviePage :libraryItem="libraryItem" />
+			</template>
 
-					<template v-else>
-						<Explorer v-if="directory"
-							:exploreMode="exploreMode"
-							:directory="directory"
-						/>
-					</template>
-				</div>
+			<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'series'">
+				<SeriesPage :libraryItem="libraryItem" />
+			</template>
 
-				<!-- Pad scroll bottom -->
-				<br /><br />
-			</Scroll>
+			<template v-else>
+				<Explorer v-if="directory"
+					:exploreMode="exploreMode"
+					:directory="directory"
+				/>
+			</template>
 		</KeepAlive>
 	</div>
 </template>
