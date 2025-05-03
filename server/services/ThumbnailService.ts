@@ -21,7 +21,6 @@ export class ThumbnailService {
 			const fileBuffer = await readFile(filePath);
 			let thumbnailBuffer: Buffer = Buffer.from([]);
 			try {
-				console.log("HERE")
 				thumbnailBuffer = await ThumbnailService.resizeBuffer(fileBuffer, width);
 			}
 			catch (err) {
