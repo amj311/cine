@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ProgressBar from '@/components/ProgressBar.vue'
+import { useApiStore } from '@/stores/api.store';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
@@ -51,7 +52,7 @@ const onClick = computed(() => {
 			class="poster"
 			:class="aspectRatio || 'tall'"
 		>	
-			<img v-if="imageUrl" :src="imageUrl" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" />
+			<img v-if="imageUrl" :src="useApiStore().resolve(imageUrl)" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" />
 
 			<div v-else-if="$slots.poster" class="custom-poster">
 				<slot name="poster" />

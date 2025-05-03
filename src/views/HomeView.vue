@@ -57,7 +57,7 @@ function timeRemaining(watchProgress: any) {
 								>
 									<MediaCard
 										:key="item.relativePath"
-										:imageUrl="item.libraryItem.parentLibrary.metadata?.poster_thumb"
+										:imageUrl="item.libraryItem.playable?.still_thumb || item.libraryItem.parentLibrary.metadata?.poster_thumb"
 										:imagePosition="'top'"
 										:playSrc="item.relativePath"
 										:progress="item.watchProgress"

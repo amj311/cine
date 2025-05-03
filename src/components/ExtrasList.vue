@@ -40,7 +40,7 @@ const sortedExtras = computed(() => {
 						<MediaCard
 							:progress="extra.watchProgress"
 							:aspectRatio="'wide'"
-							:imageUrl="useApiStore().resolve(extra.still_thumb)"
+							:imageUrl="extra.still_thumb"
 							:title="extra.name"
 							:subtitle="extraTypeLabels[extra.extraType]"
 							:playSrc="extra.relativePath"
