@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, h, onMounted, ref } from 'vue';
 import { useApiStore } from '@/stores/api.store';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 
@@ -16,6 +16,7 @@ const props = defineProps<{
 	hideControls?: boolean;
 	autoplay?: boolean;
 	size?: 'small' | 'medium' | 'large';
+	sequentialLoad?: boolean;
 }>();
 
 const sizeWidths = {
@@ -27,13 +28,34 @@ const sizeWidth = computed(() => {
 	return Math.min(window.innerWidth * 2, sizeWidths[props.size || 'small'] || 200);
 });
 
+const lowResUrl = computed(() => {
+	return useApiStore().baseUrl + '/thumb/' + props.file.relativePath + '?width=' + sizeWidth.value;
+});
+const hiResUrl = computed(() => {
+	return useApiStore().baseUrl + '/media/' + props.file.relativePath;
+});
+
+const hiResReady = ref(false);
+onMounted(() => {
+	if (props.sequentialLoad && props.file.fileType === 'photo') {
+		const img = new Image();
+		img.src = hiResUrl.value;
+		img.onload = () => {
+			hiResReady.value = true;
+		};
+		img.onerror = () => {
+			hiResReady.value = false;
+		};
+	}
+});
+
 </script>
 
 <template>
 	<div class="media-frame" style="width: 100%; height: 100%;">
 		<img 
 			v-if="file.fileType === 'photo'"
-			:src="useApiStore().baseUrl + '/thumb/' + file.relativePath + '?width=' + sizeWidth" 
+			:src="hiResReady ? hiResUrl : lowResUrl" 
 			:alt="file.fileName" 
 			style="width: 100%; height: 100%;"
 			:style="{ objectFit }" 

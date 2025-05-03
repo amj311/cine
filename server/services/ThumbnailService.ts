@@ -9,19 +9,66 @@ export class ThumbnailService {
 	 * @param relativePath 
 	 */
 	public static async streamThumbnail(relativePath: string, width: number = 300): Promise<Buffer> {
-		const filePath = DirectoryService.resolvePath(relativePath);
-		// Make sure the file is an image
-		const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-		const fileExtension = path.extname(filePath).toLowerCase();
-		if (!imageExtensions.includes(fileExtension)) {
-			throw new Error(`File is not an image: ${filePath}`);
+		try {
+			const filePath = DirectoryService.resolvePath(relativePath);
+			// Make sure the file is an image
+			const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+			const fileExtension = path.extname(filePath).toLowerCase();
+			if (!imageExtensions.includes(fileExtension)) {
+				throw new Error(`File is not an image: ${filePath}`);
+			}
+
+			const fileBuffer = await readFile(filePath);
+			let thumbnailBuffer: Buffer = Buffer.from([]);
+			try {
+				console.log("HERE")
+				thumbnailBuffer = await ThumbnailService.resizeBuffer(fileBuffer, width);
+			}
+			catch (err) {
+				console.log("Error while resizing image:", err.message);
+				if (err.message.includes("SOS parameters for sequential JPEG")) {
+					console.log("Attempting to fix JPEG file", filePath);
+					const newBuffer = await ThumbnailService.attemptFixJpeg(fileBuffer);
+					if (newBuffer) {
+						thumbnailBuffer = await ThumbnailService.resizeBuffer(newBuffer, width);
+					}
+					else {
+						throw new Error("Failed to fix JPEG file");
+					}
+				}
+				else {
+					console.log("Error was not related to JPEG, throwing");
+					throw err;
+				};
+			}
+			return thumbnailBuffer;
+
+		}
+		catch (err) {
+			console.error("Error while generating thumbnail for image:", relativePath);
+			console.error(err.message);
+
+			throw err;
 		}
 
-		const fileBuffer = await readFile(filePath);
-		const thumbnailBuffer = await sharp(fileBuffer)
+	}
+
+	private static async resizeBuffer(buffer: Buffer, width: number) {
+		return await sharp(buffer)
 			.rotate()
 			.resize(width, width, { fit: 'inside' })
 			.toBuffer();
-		return thumbnailBuffer;
+	}
+
+	private static async attemptFixJpeg(buffer: Buffer) {
+		// Attempt to fix the JPEG file by re-encoding it
+		try {
+			const fixedBuffer = await sharp(buffer, { failOn: 'none' })
+				.toFormat('png')
+				.toBuffer()
+			return fixedBuffer;
+		} catch (err) {
+			console.error("Error while fixing jpeg", err.message);
+		}
 	}
 }

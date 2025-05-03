@@ -133,8 +133,8 @@ function updateInDirection(
 }
 
 function setRange() {
-	const bufferAbove = window.innerHeight * 0.5;
-	const bufferBelow = window.innerHeight * 0.5;
+	const bufferAbove = window.innerHeight * 0;
+	const bufferBelow = window.innerHeight * 0;
 	upperRange = 0 - bufferAbove;
 	lowerRange = window.innerHeight + bufferBelow;
 }
