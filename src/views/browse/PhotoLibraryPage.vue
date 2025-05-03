@@ -154,7 +154,7 @@ function debounceScrollHandler(event: Event) {
 	const oldScrollTop = lastScrollTop;
 	const scrollTop = scrollArea.scrollTop;
 
-	if (Math.abs(scrollTop - oldScrollTop) < 50) {
+	if (Math.abs(scrollTop - oldScrollTop) < 2000) {
 		return;
 	}
 
