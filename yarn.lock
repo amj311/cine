@@ -3204,6 +3204,11 @@ pidtree@^0.6.0:
   resolved "https://registry.yarnpkg.com/pidtree/-/pidtree-0.6.0.tgz#90ad7b6d42d5841e69e0a2419ef38f8883aa057c"
   integrity sha512-eG2dWTVw5bzqGRztnHExczNxt5VGsE6OwTeCG3fdUf9KBsZzO3R5OIIIzWR+iZA0NtZ+RDVdaoE2dK1cn6jH4g==
 
+pinch-zoom-js@^2.3.5:
+  version "2.3.5"
+  resolved "https://registry.yarnpkg.com/pinch-zoom-js/-/pinch-zoom-js-2.3.5.tgz#bb598bbd695c006ce8222b71a900064acb8b41b6"
+  integrity sha512-/fydIbmKTbVFINRTd/YytTADpmUBX54K+UEjpACiFN7JT1PkzffcZak8Mabx8o0hbzTsYmaDRmN/89t2U55oTw==
+
 pinia@^2.2.6:
   version "2.2.6"
   resolved "https://registry.yarnpkg.com/pinia/-/pinia-2.2.6.tgz#ff93f35b8c02033eaedc8c92ad5f10f215d6c804"
