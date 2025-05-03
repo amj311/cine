@@ -63,5 +63,21 @@ export const useApiStore = defineStore('Api', () => {
 		baseUrl,
 		api,
 		availableHosts,
+
+		resolve(path?: string) {
+			if (!path) {
+				return '';
+			}
+			if (!baseUrl.value) {
+				throw new Error('No host selected');
+			}
+			if (path.startsWith('http')) {
+				return path;
+			}
+			if (path.startsWith('/')) {
+				return baseUrl.value + path;
+			}
+			return baseUrl.value + '/' + path;
+		}
 	}
 })

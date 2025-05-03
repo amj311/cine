@@ -7,6 +7,7 @@ import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
 import Scroll from '@/components/Scroll.vue';
+import { useApiStore } from '@/stores/api.store';
 
 const props = defineProps<{
 	extras: any[]; // extras
@@ -39,6 +40,7 @@ const sortedExtras = computed(() => {
 						<MediaCard
 							:progress="extra.watchProgress"
 							:aspectRatio="'wide'"
+							:imageUrl="useApiStore().resolve(extra.still_thumb)"
 							:title="extra.name"
 							:subtitle="extraTypeLabels[extra.extraType]"
 							:playSrc="extra.relativePath"

@@ -2,6 +2,7 @@ import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 import { DirectoryService } from './DirectoryService';
 import sharp from 'sharp';
+import ffmpeg from 'fluent-ffmpeg';
 
 const MAX_CACHE_SIZE = 100; // Maximum number of thumbnails to cache
 const thumbCache = new Map<string, Buffer>();
@@ -22,32 +23,39 @@ export class ThumbnailService {
 			const filePath = DirectoryService.resolvePath(relativePath);
 			// Make sure the file is an image
 			const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-			const fileExtension = path.extname(filePath).toLowerCase();
-			if (!imageExtensions.includes(fileExtension)) {
-				throw new Error(`File is not an image: ${filePath}`);
+			const videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.3gp'];
+			const isVideo = videoExtensions.includes(path.extname(filePath).toLowerCase());
+			const isImage = imageExtensions.includes(path.extname(filePath).toLowerCase());
+
+			if (!isImage && !isVideo) {
+				throw new Error(`File is not an image or video: ${filePath}`);
 			}
 
-			const fileBuffer = await readFile(filePath);
+			console.log("IS VIDEo????", isVideo);
+
+			let fileBuffer: Buffer = Buffer.from([]);
+			if (isVideo) {
+				// Use ffmpeg to get a frame from the video
+				fileBuffer = await ThumbnailService.getVideoFrame(relativePath);
+			}
+			else {
+				// Load the image file
+				fileBuffer = await readFile(filePath);
+			}
 			let thumbnailBuffer: Buffer = Buffer.from([]);
 			try {
 				thumbnailBuffer = await ThumbnailService.resizeBuffer(fileBuffer, width);
 			}
 			catch (err) {
 				console.log("Error while resizing image:", err.message);
-				if (err.message.includes("SOS parameters for sequential JPEG")) {
-					console.log("Attempting to fix JPEG file", filePath);
-					const newBuffer = await ThumbnailService.attemptFixJpeg(fileBuffer);
-					if (newBuffer) {
-						thumbnailBuffer = await ThumbnailService.resizeBuffer(newBuffer, width);
-					}
-					else {
-						throw new Error("Failed to fix JPEG file");
-					}
+				console.log("Attempting to fix JPEG file", filePath);
+				const newBuffer = await ThumbnailService.attemptFixJpeg(fileBuffer);
+				if (newBuffer) {
+					thumbnailBuffer = await ThumbnailService.resizeBuffer(newBuffer, width);
 				}
 				else {
-					console.log("Error was not related to JPEG, throwing");
-					throw err;
-				};
+					throw new Error("Failed to fix JPEG file");
+				}
 			}
 			ThumbnailService.cacheThumbnail(relativePath, width, thumbnailBuffer);
 			return thumbnailBuffer;
@@ -72,13 +80,60 @@ export class ThumbnailService {
 		// Attempt to fix the JPEG file by re-encoding it
 		try {
 			const fixedBuffer = await sharp(buffer, { failOn: 'none' })
-				.toFormat('png')
+				.jpeg()
+				.rotate()
 				.toBuffer()
 			return fixedBuffer;
 		} catch (err) {
 			console.error("Error while fixing jpeg", err.message);
 		}
 	}
+
+	/**
+	 * Use ffmpeg to get frame from video
+	 * @param relativePath
+	 * @param buffer 
+	 * @returns 
+	 */
+	private static async getVideoFrame(relativePath: string) {
+		const filePath = DirectoryService.resolvePath(relativePath);
+		const fileExtension = path.extname(filePath).toLowerCase();
+		if (fileExtension !== '.mp4') {
+			throw new Error(`File is not a video: ${filePath}`);
+		}
+		return new Promise<Buffer>((resolve, reject) => {
+			const chunks: Buffer[] = [];
+
+			ffmpeg(filePath)
+				.on('start', () => {
+					console.log('Starting video frame extraction...');
+				})
+				.on('error', (err) => {
+					console.error("Error while processing video:", err.message);
+					reject(err);
+				})
+				.outputOptions([
+					'-ss 5',        // Seek to 5 seconds
+					'-frames:v 1',  // Extract only one frame
+					'-q:v 2',       // Set quality level
+					'-f image2pipe' // Output as a pipe
+				])
+				.outputFormat('image2pipe') // Output format as image
+				.pipe()
+				.on('data', (chunk) => {
+					console.log('Received chunk of data');
+					chunks.push(chunk);
+				})
+				.on('end', () => {
+					console.log('Finished processing video');
+					resolve(Buffer.concat(chunks));
+				})
+				.on('error', (err) => {
+					console.error("Error while processing video:", err.message);
+					reject(err);
+				});
+		});
+	};
 
 	private static cacheThumbnail(relativePath: string, width: number, buffer: Buffer) {
 		if (width > 500) {

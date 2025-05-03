@@ -28,6 +28,7 @@ const ExtraTypes = ['behindthescenes', 'deleted', 'featurette', 'trailer'] as co
 type ExtraType = typeof ExtraTypes[number];
 type Extra = Playable & {
 	extraType: ExtraType | null,
+	still_thumb: string,
 }
 
 type Movie = LibraryItemData & {
@@ -427,6 +428,7 @@ export class LibraryService {
 				fileName: file,
 				relativePath: parentPath + '/' + file,
 				watchProgress: WatchProgressService.getWatchProgress(parentPath + '/' + file),
+				still_thumb: `/thumb/${parentPath + '/' + file}?width=300'`
 			}
 		});
 	}

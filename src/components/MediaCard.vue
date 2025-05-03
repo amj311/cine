@@ -50,9 +50,10 @@ const onClick = computed(() => {
 		<div
 			class="poster"
 			:class="aspectRatio || 'tall'"
-			:style="{ backgroundImage: `url(${imageUrl})`, backgroundPosition: imagePosition || 'center' }"
-		>
-			<div v-if="$slots.poster" class="custom-poster">
+		>	
+			<img v-if="imageUrl" :src="imageUrl" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" />
+
+			<div v-else-if="$slots.poster" class="custom-poster">
 				<slot name="poster" />
 			</div>
 
@@ -71,6 +72,7 @@ const onClick = computed(() => {
 		<div v-if="title || subtitle" class="mt-1 p-1">
 			<div v-if="title" class="title">{{ title }}</div>
 			<div v-if="subtitle" class="subtitle" style="opacity: .7">{{ subtitle }}</div>
+
 		</div>
 	</div>
 </template>
@@ -121,6 +123,13 @@ const onClick = computed(() => {
 			background-color: var(--color-background-mute);	
 		}
 	}
+}
+
+.poster-image {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center;
 }
 
 .poster {

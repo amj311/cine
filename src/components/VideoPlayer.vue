@@ -9,6 +9,7 @@ const props = defineProps<{
 	onLoadedData?: (data: any) => void;
 	hideControls?: boolean;
 	autoplay?: boolean;
+	loadSubs?: boolean;
 }>();
 
 const videoRef = ref<HTMLVideoElement>();
@@ -61,7 +62,7 @@ onMounted(() => {
 <template>
 	<video ref="videoRef" class="video-player" :controls="!hideControls" :autoplay="autoplay === true" v-if="goodType">
 		<source :src="videoUrl" :type="'video/mp4'" />
-		<track kind="captions" :src="useApiStore().baseUrl + '/subtitles?path=' + props.relativePath" srclang="en" label="English" default />
+		<track v-if="loadSubs" kind="captions" :src="useApiStore().baseUrl + '/subtitles?path=' + props.relativePath" srclang="en" label="English" default />
 	</video>
 </template>
 
