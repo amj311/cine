@@ -296,6 +296,53 @@ app.get('/api/rootLibrary/:name/flat', async (req, res) => {
 
 
 
+app.get('/api/subtitles', async (req, res) => {
+	try {
+		const { path: relativePath } = req.query;
+		ffmpeg(DirectoryService.resolvePath(relativePath)).ffprobe((err, data) => {
+			if (err) {
+				console.error("Error while probing video file:", err);
+				return;
+			}
+			// list all subtitle streams
+			const subtitles = data.streams.filter((stream) => stream.codec_type === 'subtitle');
+
+			// extract the first subtitle stream to srt file
+			const subtitleStream = subtitles[0];
+			if (subtitleStream && subtitleStream.codec_name === 'mov_text') {
+				const subtitleIndex = subtitleStream.index;
+				const outputFilePath = path.join(__dirname, '../dist/assets/output.vtt');
+				ffmpeg(DirectoryService.resolvePath(relativePath))
+					.outputOptions(`-map 0:${subtitleIndex}`)
+					.outputOptions('-c:s webvtt')
+					.save(outputFilePath)
+					.on('end', () => {
+						res.sendFile(outputFilePath, (err) => {
+							if (err) {
+								console.error("Error while sending subtitle file:", err);
+								res.status(500).send("Error sending subtitle file");
+							}
+						});
+					})
+					.on('error', (err) => {
+						console.error("Error while extracting subtitles:", err);
+						res.status(500).send("Error extracting subtitles");
+					});
+			}
+			else {
+				console.log("No subtitle stream found");
+				res.status(404).send("No subtitle stream found");
+			}
+		});
+	}
+	catch (err) {
+		console.error(err)
+		res.send(500)
+	}
+});
+
+
+
 
 // STATIC SITE
 app.use('/assets', (req, res) => {
@@ -333,8 +380,11 @@ app.get('*', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
+import ffmpeg from 'fluent-ffmpeg';
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
 	console.log(`Listening on port ${port}`);
+
+
 });

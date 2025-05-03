@@ -609,6 +609,3 @@ export class LibraryService {
 		return undefined;
 	}
 }
-
-// import ffmpeg from 'fluent-ffmpeg';
-// console.log(ffmpeg(DirectoryService.resolvePath('Movies/Funny Movies/Stranger Than Fiction (2006)/Stranger Than Fiction (2006).mp4')).ffprobe(console.log))
