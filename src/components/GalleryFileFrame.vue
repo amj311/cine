@@ -79,7 +79,7 @@ defineExpose({
 </script>
 
 <template>
-	<div style="position: relative; width: 100%; height: 100%;" @touchmove.stop>
+	<div style="position: relative; width: 100%; height: 100%;">
 		<div class="media-frame" ref="mediaFrame" style="width: 100%; height: 100%;">
 			<img 
 				v-if="file.fileType === 'photo'"
@@ -94,7 +94,7 @@ defineExpose({
 				:hideControls="hideControls"
 				:autoplay="autoplay"
 				style="width: 100%; height: 100%;"
-				:style="{ objectFit }" 
+				:style="{ objectFit, background: 'transparent' }" 
 			/>
 		</div>
 	</div>

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { reactive, onBeforeMount, onBeforeUnmount, computed, ref, watch, nextTick } from 'vue';
+import { reactive, computed, ref, watch, nextTick } from 'vue';
 import Button from 'primevue/button';
 import { useRouter } from 'vue-router';
 import GalleryFileFrame, { type GalleryFile } from './GalleryFileFrame.vue';
-import PinchZoom from 'pinch-zoom-js';
 
 const router = useRouter();
 
