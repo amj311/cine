@@ -3,6 +3,9 @@ import path from 'path';
 import { DirectoryService } from './DirectoryService';
 import sharp from 'sharp';
 
+const MAX_CACHE_SIZE = 100; // Maximum number of thumbnails to cache
+const thumbCache = new Map<string, Buffer>();
+
 export class ThumbnailService {
 	/**
 	 * Receives the path to a file, loads and shrinks the image with Shrp.js, and returns the result as a stream for the client to consume.
@@ -10,6 +13,12 @@ export class ThumbnailService {
 	 */
 	public static async streamThumbnail(relativePath: string, width: number = 300): Promise<Buffer> {
 		try {
+			const cachedThumbnail = ThumbnailService.getCachedThumbnail(relativePath, width);
+			if (cachedThumbnail) {
+				return cachedThumbnail;
+			}
+
+
 			const filePath = DirectoryService.resolvePath(relativePath);
 			// Make sure the file is an image
 			const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
@@ -40,8 +49,8 @@ export class ThumbnailService {
 					throw err;
 				};
 			}
+			ThumbnailService.cacheThumbnail(relativePath, width, thumbnailBuffer);
 			return thumbnailBuffer;
-
 		}
 		catch (err) {
 			console.error("Error while generating thumbnail for image:", relativePath);
@@ -69,5 +78,25 @@ export class ThumbnailService {
 		} catch (err) {
 			console.error("Error while fixing jpeg", err.message);
 		}
+	}
+
+	private static cacheThumbnail(relativePath: string, width: number, buffer: Buffer) {
+		if (width > 500) {
+			// Don't cache thumbnails larger than this
+			return;
+		}
+		thumbCache.set(relativePath + width, buffer);
+		if (thumbCache.size > MAX_CACHE_SIZE) {
+			const oldestKey = thumbCache.keys().next().value;
+			thumbCache.delete(oldestKey);
+		}
+	}
+
+	private static getCachedThumbnail(relativePath: string, width: number) {
+		const cachedThumbnail = thumbCache.get(relativePath + width);
+		if (cachedThumbnail) {
+			return cachedThumbnail;
+		}
+		return null;
 	}
 }
