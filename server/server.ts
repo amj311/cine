@@ -325,8 +325,7 @@ app.use('/api/thumb', (req, res) => {
 		} catch (err) {
 			console.error("Error while generating thumbnail for image:", relativePath);
 			console.error(err.message);
-			// If the thumbnail is not found, send the lasrger one
-			res.sendFile(DirectoryService.resolvePath(relativePath));
+			res.status(500).send("Error generating thumbnail");
 		}
 	})();
 });
