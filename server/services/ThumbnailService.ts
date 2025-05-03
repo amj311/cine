@@ -121,11 +121,9 @@ export class ThumbnailService {
 				.outputFormat('image2pipe') // Output format as image
 				.pipe()
 				.on('data', (chunk) => {
-					console.log('Received chunk of data');
 					chunks.push(chunk);
 				})
 				.on('end', () => {
-					console.log('Finished processing video');
 					resolve(Buffer.concat(chunks));
 				})
 				.on('error', (err) => {
