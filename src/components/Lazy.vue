@@ -13,14 +13,22 @@ const children = computed(() => {
 });
 
 const updateDelay = 500;
+let lastBounceTime = 0;
+
 const updateTimeout = ref<number | null>(null);
 function debounceUpdate() {
-	if (updateTimeout.value) {
-		clearTimeout(updateTimeout.value);
+	lastBounceTime = Date.now();
+	if (!updateTimeout.value) {
+		updateTimeout.value = window.setTimeout(() => {
+			updateScrollRange();
+			updateTimeout.value = null;
+			// If the last bounce time is more than the delay, we can safely assume that the user has stopped scrolling
+			if (lastBounceTime + updateDelay < Date.now()) {
+				debounceUpdate();
+			}
+		}, updateDelay);
 	}
-	updateTimeout.value = window.setTimeout(() => {
-		updateScrollRange();
-	}, updateDelay);
+	
 }
 
 const inRangeIds = ref<Record<string, boolean>>({});
