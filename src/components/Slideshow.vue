@@ -55,8 +55,7 @@ const nextFile = computed(() => state.files[(state.activeFileIdx + 1) % state.fi
 const prevFile = computed(() => state.files[(state.activeFileIdx - 1 + state.files.length) % state.files.length]);
 
 const initialScroll = window.scrollY;
-let pinchZoom: any = null;
-const activeFileEl = ref<HTMLElement | null>(null);
+const activeFrame = ref<InstanceType<typeof GalleryFileFrame> | null>(null);
 
 function setupListeners() {
 	window.addEventListener('keydown', handleKeydown);
@@ -64,19 +63,6 @@ function setupListeners() {
 	window.addEventListener('touchmove', handleTouchMove);
 	window.addEventListener('touchend', handleTouchEnd);
 	window.addEventListener('scroll', preventScroll);
-	if (activeFileEl.value) {
-		pinchZoom = new PinchZoom(activeFileEl.value, {
-			draggableUnzoomed: false,
-			onZoomUpdate(zoomEvent: any) {
-				console.log('zoomEvent', zoomEvent.zoomFactor);
-				if (zoomEvent.zoomFactor > 1) {
-					isZooming.value = true;
-				} else {
-					isZooming.value = false;
-				}
-			},
-		});
-	}
 }
 function removeListeners() {
 	window.removeEventListener('keydown', handleKeydown);
@@ -84,10 +70,6 @@ function removeListeners() {
 	window.removeEventListener('touchmove', handleTouchMove);
 	window.removeEventListener('touchend', handleTouchEnd);
 	window.removeEventListener('scroll', preventScroll);
-	if (pinchZoom) {
-		pinchZoom.destroy();
-		pinchZoom = null;
-	}
 }
 
 
@@ -165,7 +147,6 @@ function handleKeydown(e) {
 }
 
 let swipeStartX = 0;
-const isZooming = ref(false);
 
 function updateSwipeDelta(val) {
 	document.documentElement.style.setProperty('--swipe-delta', val + 'px');
@@ -175,13 +156,13 @@ function handleTouchStart(e) {
 	swipeStartX = e.touches[0].clientX;
 }
 function handleTouchMove(e) {
-	if (isZooming.value) {
+	if (activeFrame.value?.isZooming) {
 		return;
 	}
 	updateSwipeDelta(e.touches[0].clientX - swipeStartX);
 }
 function handleTouchEnd(e) {
-	if (isZooming.value) {
+	if (activeFrame.value?.isZooming) {
 		return;
 	}
 	const swipeEndX = e.changedTouches[0].clientX;
@@ -224,10 +205,8 @@ const activeFileFolders = computed(() => activeFile.value.relativePath.split('/'
 			<div class="prev">
 				<GalleryFileFrame :key="prevFile.relativePath" :file="prevFile" :size="'large'" :object-fit="'contain'" />
 			</div>
-			<div class="active">
-				<div ref="activeFileEl" >
-					<GalleryFileFrame :key="activeFile.relativePath" :file="activeFile" :size="'large'" :object-fit="'contain'" :autoplay="true" :sequential-load="true" />
-				</div>
+			<div class="active" >
+				<GalleryFileFrame ref="activeFrame" :key="activeFile.relativePath" :file="activeFile" :size="'large'" :object-fit="'contain'" :autoplay="true" :sequential-load="true" :zoom="true" />
 			</div>
 			<div class="next">
 				<GalleryFileFrame :key="nextFile.relativePath" :file="nextFile" :size="'large'" :object-fit="'contain'" />

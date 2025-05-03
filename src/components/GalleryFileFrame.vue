@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, h, onMounted, ref } from 'vue';
+import { computed, h, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useApiStore } from '@/stores/api.store';
 import VideoPlayer from '@/components/VideoPlayer.vue';
+import PinchZoom from 'pinch-zoom-js';
 
 export type GalleryFile = {
 	fileType: 'video' | 'photo' | 'audio';
@@ -17,6 +18,7 @@ const props = defineProps<{
 	autoplay?: boolean;
 	size?: 'small' | 'medium' | 'large';
 	sequentialLoad?: boolean;
+	zoom?: boolean;
 }>();
 
 const sizeWidths = {
@@ -36,6 +38,10 @@ const hiResUrl = computed(() => {
 });
 
 const hiResReady = ref(false);
+const mediaFrame = ref<HTMLElement | null>(null);
+let pinchZoom: any = null;
+const isZooming = ref(false);
+
 onMounted(() => {
 	if (props.sequentialLoad && props.file.fileType === 'photo') {
 		const img = new Image();
@@ -47,27 +53,50 @@ onMounted(() => {
 			hiResReady.value = false;
 		};
 	}
+
+	if (props.zoom && props.file.fileType === 'photo' && mediaFrame.value) {
+		pinchZoom = new PinchZoom(mediaFrame.value, {
+			draggableUnzoomed: false,
+			minZoom: 1,
+			onZoomUpdate: (event: any) => {
+				isZooming.value = event.zoomFactor > 1;
+				console.log(isZooming.value);
+			},
+		});
+	}
 });
+
+onBeforeUnmount(() => {
+	if (pinchZoom) {
+		pinchZoom.disable();
+	}
+});
+
+defineExpose({
+	isZooming,
+})
 
 </script>
 
 <template>
-	<div class="media-frame" style="width: 100%; height: 100%;">
-		<img 
-			v-if="file.fileType === 'photo'"
-			:src="hiResReady ? hiResUrl : lowResUrl" 
-			:alt="file.fileName" 
-			style="width: 100%; height: 100%;"
-			:style="{ objectFit }" 
-		/>
-		<VideoPlayer
-			v-if="file.fileType === 'video'"
-			:relativePath="file.relativePath"
-			:hideControls="hideControls"
-			:autoplay="autoplay"
-			style="width: 100%; height: 100%;"
-			:style="{ objectFit }" 
-		/>
+	<div style="position: relative; width: 100%; height: 100%;" @touchmove.stop>
+		<div class="media-frame" ref="mediaFrame" style="width: 100%; height: 100%;">
+			<img 
+				v-if="file.fileType === 'photo'"
+				:src="hiResReady ? hiResUrl : lowResUrl" 
+				:alt="file.fileName" 
+				style="width: 100%; height: 100%;"
+				:style="{ objectFit }" 
+			/>
+			<VideoPlayer
+				v-if="file.fileType === 'video'"
+				:relativePath="file.relativePath"
+				:hideControls="hideControls"
+				:autoplay="autoplay"
+				style="width: 100%; height: 100%;"
+				:style="{ objectFit }" 
+			/>
+		</div>
 	</div>
 </template>
 
