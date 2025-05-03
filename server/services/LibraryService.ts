@@ -428,7 +428,7 @@ export class LibraryService {
 				fileName: file,
 				relativePath: parentPath + '/' + file,
 				watchProgress: WatchProgressService.getWatchProgress(parentPath + '/' + file),
-				still_thumb: `/thumb/${parentPath + '/' + file}?width=300'`
+				still_thumb: `/thumb/${parentPath + '/' + file}?width=300`
 			}
 		});
 	}

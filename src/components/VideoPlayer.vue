@@ -60,7 +60,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<video ref="videoRef" class="video-player" :controls="!hideControls" :autoplay="autoplay === true" v-if="goodType">
+	<video ref="videoRef" class="video-player" :controls="!hideControls" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous">
 		<source :src="videoUrl" :type="'video/mp4'" />
 		<track v-if="loadSubs" kind="captions" :src="useApiStore().baseUrl + '/subtitles?path=' + props.relativePath" srclang="en" label="English" default />
 	</video>

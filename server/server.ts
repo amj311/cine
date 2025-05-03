@@ -317,6 +317,9 @@ app.get('/api/subtitles', async (req, res) => {
 					.outputOptions('-c:s webvtt')
 					.save(outputFilePath)
 					.on('end', () => {
+						// set cors header
+						res.setHeader('Access-Control-Allow-Origin', '*');
+						res.setHeader('Content-Type', 'text/vtt');
 						res.sendFile(outputFilePath, (err) => {
 							if (err) {
 								console.error("Error while sending subtitle file:", err);

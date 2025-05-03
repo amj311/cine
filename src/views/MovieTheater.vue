@@ -385,6 +385,7 @@ const loadingBackground = computed(() => {
 			v-show="showPlayer"
 			:autoplay="true"
 			:controls="true"
+			:load-subs="true"
 			:key="mediaPath"
 			ref="playerRef"
 			:relativePath="mediaPath"
