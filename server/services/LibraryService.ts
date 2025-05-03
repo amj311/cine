@@ -456,9 +456,6 @@ export class LibraryService {
 			|| ((parentLibrary as Movie).movie?.relativePath === relativePath ? (parentLibrary as Movie).movie : null)
 			|| (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => episodeFile.relativePath === relativePath);
 
-		console.log((parentLibrary as Movie).extras)
-		console.log('playable', playable);
-
 		if (!playable) {
 			console.warn(`No playable found for ${relativePath}`);
 			return {

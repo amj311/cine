@@ -11,6 +11,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	const lastKeyDown = ref<string | null>(null);
 	const lastMouseMoveTime = ref(0);
 	const detectedTv = ref(false);
+	const detectedTouch = ref(false);
 	const tvWasConfirmed = ref(false);
 	const enabled = ref(false);
 
@@ -414,6 +415,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 	function onScreenTouch() {
 		console.log('Screen touch detected. Not a TV environment.');
+		detectedTouch.value = true;
 		finalizeTvDetection(false);
 	}
 
@@ -510,6 +512,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		disengageTvMode,
 
 		detectedTv,
+		detectedTouch,
 		onTvDetected: (cb) => onTvDetected = cb,
 		tvWasConfirmed,
 		enabled,

@@ -183,10 +183,15 @@ function navigateBackOnFullscreenExit(isFullscreen: boolean) {
 	if (router.currentRoute.value.name !== 'play') {
 		return;
 	}
-	carefulBackNav();
+	if (didAutoFullscreen.value) {
+		carefulBackNav();
+	}
 }
 
 async function attemptAutoFullscreen() {
+	if (!useTvNavigationStore().detectedTouch) {
+		return;
+	}
 	try {
 		if (useFullscreenStore().isAppInFullscreenMode) {
 			console.log("Already in fullscreen mode");

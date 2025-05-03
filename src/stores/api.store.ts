@@ -10,7 +10,7 @@ type Host = {
 
 export const useApiStore = defineStore('Api', () => {
 	const standardHosts: Array<Host> = [
-		...(window.location.href.includes('localhost:5') ? [{ hostname: 'Local', baseUrl: "http://localhost:5000" }] : []),
+		...(window.location.href.includes(':5') ? [{ hostname: 'Local', baseUrl: "http://localhost:5000" }] : []),
 		{ hostname: 'LAN', baseUrl: import.meta.env.VITE_LAN_HOST_URL },
 		{ hostname: 'Remote', baseUrl: import.meta.env.VITE_REMOTE_HOST_URL },
 	]

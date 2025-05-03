@@ -305,32 +305,34 @@ app.get('/api/subtitles', async (req, res) => {
 				return;
 			}
 			// list all subtitle streams
-			const subtitlesMov = data.streams.filter((stream) => stream.codec_type === 'subtitle' && stream.codec_name === 'mov_text');
+			const subtitlesMov = data.streams.filter((stream) => stream.codec_type === 'subtitle');
 
 			// extract the first subtitle stream to srt file
 			const subtitleStream = subtitlesMov[0];
 			if (subtitleStream) {
-				const subtitleIndex = subtitleStream.index;
-				const outputFilePath = path.join(__dirname, '../dist/assets/output.vtt');
-				ffmpeg(DirectoryService.resolvePath(relativePath))
-					.outputOptions(`-map 0:${subtitleIndex}`)
-					.outputOptions('-c:s webvtt')
-					.save(outputFilePath)
-					.on('end', () => {
-						// set cors header
-						res.setHeader('Access-Control-Allow-Origin', '*');
-						res.setHeader('Content-Type', 'text/vtt');
-						res.sendFile(outputFilePath, (err) => {
-							if (err) {
-								console.error("Error while sending subtitle file:", err);
-								res.status(500).send("Error sending subtitle file");
-							}
+				if (subtitleStream.codec_name === 'mov_text') {
+					const subtitleIndex = subtitleStream.index;
+					const outputFilePath = path.join(__dirname, '../dist/assets/output.vtt');
+					ffmpeg(DirectoryService.resolvePath(relativePath))
+						.outputOptions(`-map 0:${subtitleIndex}`)
+						.outputOptions('-c:s webvtt')
+						.save(outputFilePath)
+						.on('end', () => {
+							// set cors header
+							res.setHeader('Access-Control-Allow-Origin', '*');
+							res.setHeader('Content-Type', 'text/vtt');
+							res.sendFile(outputFilePath, (err) => {
+								if (err) {
+									console.error("Error while sending subtitle file:", err);
+									res.status(500).send("Error sending subtitle file");
+								}
+							});
+						})
+						.on('error', (err) => {
+							console.error("Error while extracting subtitles:", err);
+							res.status(500).send("Error extracting subtitles");
 						});
-					})
-					.on('error', (err) => {
-						console.error("Error while extracting subtitles:", err);
-						res.status(500).send("Error extracting subtitles");
-					});
+				}
 			}
 			else {
 				console.log("No subtitle stream found");
