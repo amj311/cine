@@ -31,8 +31,6 @@ export class ThumbnailService {
 				throw new Error(`File is not an image or video: ${filePath}`);
 			}
 
-			console.log("IS VIDEo????", isVideo);
-
 			let fileBuffer: Buffer = Buffer.from([]);
 			if (isVideo) {
 				// Use ffmpeg to get a frame from the video
@@ -105,17 +103,14 @@ export class ThumbnailService {
 			const chunks: Buffer[] = [];
 
 			ffmpeg(filePath)
-				.on('start', () => {
-					console.log('Starting video frame extraction...');
-				})
 				.on('error', (err) => {
 					console.error("Error while processing video:", err.message);
 					reject(err);
 				})
 				.outputOptions([
-					'-ss 5',        // Seek to 5 seconds
+					'-ss 2',        // Seek a bit into the video
 					'-frames:v 1',  // Extract only one frame
-					'-q:v 2',       // Set quality level
+					'-q:v 30',       // Set quality level
 					'-f image2pipe' // Output as a pipe
 				])
 				.outputFormat('image2pipe') // Output format as image
