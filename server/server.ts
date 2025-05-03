@@ -305,11 +305,11 @@ app.get('/api/subtitles', async (req, res) => {
 				return;
 			}
 			// list all subtitle streams
-			const subtitles = data.streams.filter((stream) => stream.codec_type === 'subtitle');
+			const subtitlesMov = data.streams.filter((stream) => stream.codec_type === 'subtitle' && stream.codec_name === 'mov_text');
 
 			// extract the first subtitle stream to srt file
-			const subtitleStream = subtitles[0];
-			if (subtitleStream && subtitleStream.codec_name === 'mov_text') {
+			const subtitleStream = subtitlesMov[0];
+			if (subtitleStream) {
 				const subtitleIndex = subtitleStream.index;
 				const outputFilePath = path.join(__dirname, '../dist/assets/output.vtt');
 				ffmpeg(DirectoryService.resolvePath(relativePath))
