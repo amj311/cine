@@ -19,6 +19,7 @@ const props = defineProps<{
 	size?: 'small' | 'medium' | 'large';
 	sequentialLoad?: boolean;
 	zoom?: boolean;
+	thumbnail?: boolean;
 }>();
 
 const sizeWidths = {
@@ -82,14 +83,14 @@ defineExpose({
 	<div style="position: relative; width: 100%; height: 100%;">
 		<div class="media-frame" ref="mediaFrame" style="width: 100%; height: 100%;">
 			<img 
-				v-if="file.fileType === 'photo'"
+				v-if="file.fileType === 'photo' || thumbnail"
 				:src="hiResReady ? hiResUrl : lowResUrl" 
 				:alt="file.fileName" 
 				style="width: 100%; height: 100%;"
 				:style="{ objectFit }" 
 			/>
 			<VideoPlayer
-				v-if="file.fileType === 'video'"
+				v-if="file.fileType === 'video' && !thumbnail"
 				:relativePath="file.relativePath"
 				:hideControls="hideControls"
 				:autoplay="autoplay"
