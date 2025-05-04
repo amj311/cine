@@ -18,7 +18,9 @@ const videoUrl = computed(() => useApiStore().baseUrl + '/video?src=' + props.re
 const supportedVideoTypes = [
 	'mp4',
 	'mkv',
+	'3gp',
 ];
+
 const goodType = computed(() => {
 	return supportedVideoTypes.find(type => videoUrl.value.endsWith(type));
 });

@@ -19,6 +19,7 @@ import { WatchProgress, WatchProgressService } from './services/WatchProgressSer
 import mime from 'mime-types';
 import { EitherMetadata } from './services/metadata/MetadataTypes';
 import { ThumbnailService } from './services/ThumbnailService';
+import ffmpeg from 'fluent-ffmpeg';
 
 const corsOptions = {};
 
@@ -61,11 +62,11 @@ app.get("/api/dir/", async function (req, res) {
 	}
 });
 
-app.get("/api/video", function (req, res) {
+app.get("/api/video", async function (req, res) {
 	const range = req.headers.range;
-	if (!range) {
-		res.status(400).send("Requires Range header");
-	}
+	// if (!range) {
+	// 	res.status(400).send("Requires Range header");
+	// }
 	let { src } = req.query;
 	if (!src) {
 		res.status(400).send("Requires src query param");
@@ -73,6 +74,32 @@ app.get("/api/video", function (req, res) {
 	}
 	src = src.replaceAll('<amp>', '&');
 	const file = DirectoryService.resolvePath(src as string);
+
+	if (file.endsWith('.3gp')) {
+		const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp4');
+		await new Promise<void>((resolve, reject) => {
+			// Convert 3GP to MP4
+			ffmpeg(file)
+				.output(outputFilePath)
+				.videoCodec('copy') // Copy the video stream without re-encoding
+				.audioCodec('aac')  // Encode the audio stream in AAC
+				.on('end', () => {
+					resolve();
+				})
+				.on('error', (err) => {
+					console.error('Error during conversion: ', err.message);
+				})
+				.run();
+		});
+		res.sendFile(outputFilePath, (err) => {
+			if (err) {
+				console.error("Error while sending converted file:", err);
+				res.status(500).send("Error sending converted file");
+			}
+		});
+		return;
+	}
+
 	fs.stat(file, function (err, stats) {
 		if (err) {
 			console.error(`Failed to load video file: "${file}"`)
@@ -96,14 +123,6 @@ app.get("/api/video", function (req, res) {
 		const total = stats.size;
 		const end = positions[1] ? parseInt(positions[1], 10) : total - 1;
 		const chunksize = (end - start) + 1;
-
-		// console.log({
-		// 	src,
-		// 	range,
-		// 	positions,
-		// 	start,
-		// 	end,
-		// });
 
 		// Dynamically determine the MIME type
 		const mimeType = mime.lookup(file) || 'application/octet-stream';
@@ -385,11 +404,7 @@ app.get('*', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
-import ffmpeg from 'fluent-ffmpeg';
-
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
 	console.log(`Listening on port ${port}`);
-
-
 });

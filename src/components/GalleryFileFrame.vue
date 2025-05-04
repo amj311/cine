@@ -77,20 +77,30 @@ defineExpose({
 	isZooming,
 })
 
+const showThumbnail = computed(() => {
+	if (!props.thumbnail) {
+		return false;
+	}
+	if (props.file.fileType === 'video' && props.file.relativePath.endsWith('.3gp')) {
+		return false;
+	}
+	return true;
+})
+
 </script>
 
 <template>
 	<div style="position: relative; width: 100%; height: 100%;">
 		<div class="media-frame" ref="mediaFrame" style="width: 100%; height: 100%;">
 			<img 
-				v-if="file.fileType === 'photo' || thumbnail"
+				v-if="file.fileType === 'photo' || showThumbnail"
 				:src="hiResReady ? hiResUrl : lowResUrl" 
 				:alt="file.fileName" 
 				style="width: 100%; height: 100%;"
 				:style="{ objectFit }" 
 			/>
 			<VideoPlayer
-				v-if="file.fileType === 'video' && !thumbnail"
+				v-else-if="file.fileType === 'video'"
 				:relativePath="file.relativePath"
 				:hideControls="hideControls"
 				:autoplay="autoplay"
