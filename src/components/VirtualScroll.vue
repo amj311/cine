@@ -35,7 +35,6 @@ const allRows = computed<Array<VirtualScrollRowWithPosition>>(() => {
 		};
 	});
 	totalHeight.value = accHeight;
-	console.log('All rows:', rows);
 	return rows;
 });
 
