@@ -23,7 +23,7 @@ const props = defineProps<{
 }>();
 
 const sizeWidths = {
-	small: 100,
+	small: 200,
 	medium: 800,
 	large: 1200,
 };
@@ -44,16 +44,16 @@ let pinchZoom: any = null;
 const isZooming = ref(false);
 
 onMounted(() => {
-	// if (props.sequentialLoad && props.file.fileType === 'photo') {
-	// 	const img = new Image();
-	// 	img.src = hiResUrl.value;
-	// 	img.onload = () => {
-	// 		hiResReady.value = true;
-	// 	};
-	// 	img.onerror = () => {
-	// 		hiResReady.value = false;
-	// 	};
-	// }
+	if (props.sequentialLoad && props.file.fileType === 'photo') {
+		const img = new Image();
+		img.src = hiResUrl.value;
+		img.onload = () => {
+			hiResReady.value = true;
+		};
+		img.onerror = () => {
+			hiResReady.value = false;
+		};
+	}
 
 	if (props.zoom && props.file.fileType === 'photo' && mediaFrame.value) {
 		pinchZoom = new PinchZoom(mediaFrame.value, {

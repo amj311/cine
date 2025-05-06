@@ -137,7 +137,7 @@ function doShowClosestLabel() {
 	}, showClosestLabelTime);
 }
 
-watch(topRow, (newValue) => {
+watch(() => topRow.value?.data?.date, (newValue) => {
 	if (newValue) {
 		doShowClosestLabel();
 	}
@@ -160,7 +160,7 @@ function openSlideshow(file: GalleryFile) {
 						<!-- <div class="gallery flex flex-column gap-6 mt-3" ref="trackWrapper"> -->
 							<VirtualScroll ref="virtualScroller" :rows="timelineRows">
 								<template #row="{ data }" :key="day.date" class="date-row" :data-track-anchor="day.date">
-									<div class="pl-3 pb-2 pr-2 h-full">
+									<div class="pl-2 pb-2 pr-2 h-full">
 										<h2 v-if="data.isHeader" class="mt-7">{{ data.date }}</h2>
 										<div v-else class="photo-grid flex flex-row gap-2 h-full">
 											<div
