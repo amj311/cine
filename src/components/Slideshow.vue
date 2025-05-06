@@ -203,13 +203,13 @@ const activeFileFolders = computed(() => activeFile.value.relativePath.split('/'
 		</div>
 		<div :class="{ 'file-frame': true, [state.animationClass]: true }">
 			<div class="prev">
-				<GalleryFileFrame :key="prevFile.relativePath" :file="prevFile" :size="'large'" :object-fit="'contain'" />
+				<GalleryFileFrame :key="prevFile.relativePath" :file="prevFile" :size="'small'" :object-fit="'contain'" />
 			</div>
 			<div class="active" >
 				<GalleryFileFrame ref="activeFrame" :key="activeFile.relativePath" :file="activeFile" :size="'large'" :object-fit="'contain'" :autoplay="true" :sequential-load="true" :zoom="true" />
 			</div>
 			<div class="next">
-				<GalleryFileFrame :key="nextFile.relativePath" :file="nextFile" :size="'large'" :object-fit="'contain'" />
+				<GalleryFileFrame :key="nextFile.relativePath" :file="nextFile" :size="'small'" :object-fit="'contain'" />
 			</div>
 		</div>
 		<div id="bottomBar">

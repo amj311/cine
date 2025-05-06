@@ -36,7 +36,7 @@ function maxWidth(width: number) {
 }
 
 const lowResUrl = computed(() => {
-	return useApiStore().baseUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(sizeWidth.value);
+	return useApiStore().baseUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(props.sequentialLoad ? 200 : sizeWidth.value);
 });
 const hiResUrl = computed(() => {
 	const HI_RES_WIDTH = 2400;
