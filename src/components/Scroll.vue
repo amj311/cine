@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useTvNavigationStore } from '@/stores/tvNavigation.store';
-import { onBeforeUnmount, onMounted, ref, useSlots } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 const scrollArea = ref<HTMLElement | null>(null);
 defineExpose({
