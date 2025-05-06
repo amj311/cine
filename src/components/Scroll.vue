@@ -148,6 +148,7 @@ const thumbHover = ref(false);
 
 	.scroll-area {
 		overflow: auto;
+		height: 100%;
 		max-height: 100%;
 		max-width: 100%;
 	}
