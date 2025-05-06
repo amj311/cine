@@ -162,6 +162,7 @@ function handleTouchMove(e) {
 }
 function handleTouchEnd(e) {
 	if (activeFrame.value?.isZooming) {
+		updateSwipeDelta(0);
 		return;
 	}
 	const swipeEndX = e.changedTouches[0].clientX;

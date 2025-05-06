@@ -28,14 +28,19 @@ const sizeWidths = {
 	large: 1200,
 };
 const sizeWidth = computed(() => {
-	return Math.min(window.innerWidth * 2, sizeWidths[props.size || 'small'] || 200);
+	return sizeWidths[props.size || 'small'] || 200;
 });
 
+function maxWidth(width: number) {
+	return Math.min(window.innerWidth * 4, width);
+}
+
 const lowResUrl = computed(() => {
-	return useApiStore().baseUrl + '/thumb/' + props.file.relativePath + '?width=' + sizeWidth.value;
+	return useApiStore().baseUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(sizeWidth.value);
 });
 const hiResUrl = computed(() => {
-	return useApiStore().baseUrl + '/media/' + props.file.relativePath;
+	const HI_RES_WIDTH = 2400;
+	return useApiStore().baseUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(HI_RES_WIDTH);
 });
 
 const hiResReady = ref(false);
