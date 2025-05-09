@@ -20,6 +20,8 @@ import mime from 'mime-types';
 import { EitherMetadata } from './services/metadata/MetadataTypes';
 import { ThumbnailService } from './services/ThumbnailService';
 import ffmpeg from 'fluent-ffmpeg';
+import { ProbeService } from './services/ProbeService';
+import tesseract from 'tesseract.js';
 
 const corsOptions = {};
 
@@ -207,9 +209,14 @@ app.post('/api/watchProgress', async (req, res) => {
 app.get('/api/theaterData', async (req, res) => {
 	try {
 		const { relativePath } = req.query;
-		const data = await LibraryService.getLibraryForPlayable(relativePath);
+		const libraryData = await LibraryService.getLibraryForPlayable(relativePath);
+		const probe = await ProbeService.getProbeData(relativePath);
 		res.json({
-			data,
+			data: {
+				playable: libraryData.playable,
+				parentLibrary: libraryData.parentLibrary,
+				probe: probe.glossary,
+			},
 		})
 	}
 	catch (err) {
@@ -317,47 +324,78 @@ app.get('/api/rootLibrary/:name/flat', async (req, res) => {
 
 app.get('/api/subtitles', async (req, res) => {
 	try {
-		const { path: relativePath } = req.query;
-		ffmpeg(DirectoryService.resolvePath(relativePath)).ffprobe((err, data) => {
-			if (err) {
-				console.error("Error while probing video file:", err);
-				return;
-			}
-			// list all subtitle streams
-			const subtitlesMov = data.streams.filter((stream) => stream.codec_type === 'subtitle');
+		const { path: relativePath, index } = req.query;
+		const fullPath = DirectoryService.resolvePath(relativePath as string);
+		const probe = await ProbeService.getProbeData(fullPath);
 
-			// extract the first subtitle stream to srt file
-			const subtitleStream = subtitlesMov[0];
-			if (subtitleStream) {
-				if (subtitleStream.codec_name === 'mov_text') {
-					const subtitleIndex = subtitleStream.index;
-					const outputFilePath = path.join(__dirname, '../dist/assets/output.vtt');
-					ffmpeg(DirectoryService.resolvePath(relativePath))
-						.outputOptions(`-map 0:${subtitleIndex}`)
-						.outputOptions('-c:s webvtt')
-						.save(outputFilePath)
-						.on('end', () => {
-							// set cors header
-							res.setHeader('Access-Control-Allow-Origin', '*');
-							res.setHeader('Content-Type', 'text/vtt');
-							res.sendFile(outputFilePath, (err) => {
-								if (err) {
-									console.error("Error while sending subtitle file:", err);
-									res.status(500).send("Error sending subtitle file");
-								}
-							});
-						})
-						.on('error', (err) => {
-							console.error("Error while extracting subtitles:", err);
-							res.status(500).send("Error extracting subtitles");
+		const subtitleStream = probe.full.streams[index];
+
+		if (subtitleStream && subtitleStream.codec_type === 'subtitle') {
+			if (subtitleStream.codec_name === 'mov_text') {
+				const subtitleIndex = subtitleStream.index;
+				const outputFilePath = path.join(__dirname, '../dist/assets/output.vtt');
+				ffmpeg(DirectoryService.resolvePath(relativePath))
+					.outputOptions(`-map 0:${subtitleIndex}`)
+					.outputOptions('-c:s webvtt')
+					.save(outputFilePath)
+					.on('end', () => {
+						// set cors header
+						res.setHeader('Access-Control-Allow-Origin', '*');
+						res.setHeader('Content-Type', 'text/vtt');
+						res.sendFile(outputFilePath, (err) => {
+							if (err) {
+								console.error("Error while sending subtitle file:", err);
+								res.status(500).send("Error sending subtitle file");
+							}
 						});
-				}
+					})
+					.on('error', (err) => {
+						console.error("Error while extracting subtitles:", err);
+						res.status(500).send("Error extracting subtitles");
+					});
+			}
+			else if (subtitleStream.codec_name === 'dvd_subtitle') {
+				// extract to .idx and .sub, then recognize with tesseract
+				const subtitleIndex = subtitleStream.index;
+				const outFile = path.join(__dirname, '../dist/assets/temp.sup');
+
+				// Extract VobSub subtitles
+				ffmpeg(fullPath)
+					.outputOptions(`-map 0:${subtitleIndex}`)
+					.outputOptions('-c:s copy') // Copy the subtitle stream without re-encoding
+					.output(outFile) // Output the .idx file
+					.on('end', async () => {
+						try {
+							console.log("VobSub subtitles extracted successfully");
+							// Perform OCR on the extracted subtitles
+							// const ocrResult = await tesseract.recognize(subFilePath, 'eng');
+
+							// console.log("OCR Result:", ocrResult.data.text);
+
+							// Send the OCR result as plain text
+							res.setHeader('Access-Control-Allow-Origin', '*');
+							res.setHeader('Content-Type', 'text/plain');
+							// res.send(ocrResult.data.text);
+							res.send(200);
+						} catch (ocrError) {
+							console.error("Error during OCR processing:", ocrError);
+							res.status(500).send("Error during OCR processing");
+						}
+					})
+					.on('error', (ffmpegError) => {
+						console.error("Error while extracting VobSub subtitles:", ffmpegError);
+						res.status(500).send("Error extracting VobSub subtitles");
+					})
+					.run();
 			}
 			else {
-				console.log("No subtitle stream found");
-				res.status(404).send("No subtitle stream found");
+				res.status(400).send("Unsupported subtitle format: " + subtitleStream.codec_name);
 			}
-		});
+		}
+		else {
+			console.log("No subtitle stream found");
+			res.status(404).send("No subtitle stream found");
+		}
 	}
 	catch (err) {
 		console.error(err)

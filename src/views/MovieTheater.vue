@@ -71,6 +71,7 @@ function updateShowControlsTimeout() {
 const isLoadingLibrary = ref(false);
 const parentLibrary = ref<any>(null);
 const playable = ref<any>(null);
+const probe = ref<any>(null);
 
 async function loadMediaData(pathToLoad: string) {
 	try {
@@ -82,6 +83,7 @@ async function loadMediaData(pathToLoad: string) {
 		});
 		parentLibrary.value = data.data.parentLibrary;
 		playable.value = data.data.playable;
+		probe.value = data.data.probe;
 
 		parentLibrary.value.metadata = await MetadataService.getMetadata(parentLibrary.value, true);
 
@@ -390,12 +392,12 @@ const loadingBackground = computed(() => {
 			v-show="showPlayer"
 			:autoplay="true"
 			:controls="true"
-			:load-subs="true"
 			:key="mediaPath"
 			ref="playerRef"
 			:relativePath="mediaPath"
 			:onLoadedData="() => hasLoaded = true"
 			:onEnd="onEnd"
+			:subtitles="probe?.subtitles"
 		/>
 		<div class="loading" v-if="!hasLoaded">
 			<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />

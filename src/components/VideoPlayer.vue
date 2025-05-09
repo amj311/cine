@@ -10,6 +10,11 @@ const props = defineProps<{
 	hideControls?: boolean;
 	autoplay?: boolean;
 	loadSubs?: boolean;
+	subtitles?: Array<{
+		index: number;
+		foramt: string;
+		name?: string;
+	}>;
 }>();
 
 const videoRef = ref<HTMLVideoElement>();
@@ -59,12 +64,23 @@ onMounted(() => {
 		}
 	});
 });
+
+const subtitleTracks = computed(() => {
+	if (!props.subtitles?.length) {
+		return [];
+	}
+	return props.subtitles.map((track, i) => ({
+		index: track.index,
+		label: track.name || 'Subtitle ' + (i + 1),
+		url: useApiStore().baseUrl + '/subtitles?path=' + props.relativePath + '&index=' + track.index,
+	}));
+});
 </script>
 
 <template>
 	<video ref="videoRef" class="video-player" :controls="!hideControls" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous">
 		<source :src="videoUrl" :type="'video/mp4'" />
-		<track v-if="loadSubs" kind="captions" :src="useApiStore().baseUrl + '/subtitles?path=' + props.relativePath" srclang="en" label="English" default />
+		<track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" />
 	</video>
 </template>
 
