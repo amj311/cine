@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import ProgressBar from '@/components/ProgressBar.vue'
 import { useApiStore } from '@/stores/api.store';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
 
@@ -44,6 +44,7 @@ const onClick = computed(() => {
 	return undefined;
 });
 
+const imageError = ref<any>(null);
 </script>
 
 <template>
@@ -52,14 +53,14 @@ const onClick = computed(() => {
 			class="poster"
 			:class="aspectRatio || 'tall'"
 		>	
-			<img v-if="imageUrl" :src="useApiStore().resolve(imageUrl)" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" />
-
-			<div v-else-if="$slots.poster" class="custom-poster">
-				<slot name="poster" />
+			<div v-if="$slots.fallbackIcon" class="fallback-icon bg-soft">
+				<slot name="fallbackIcon" />
 			</div>
 
-			<div v-if="!imageUrl && !$slots.poster && $slots.fallbackIcon" class="fallback-icon bg-soft">
-				<slot name="fallbackIcon" />
+			<img v-if="imageUrl && !imageError" :src="useApiStore().resolve(imageUrl)" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" @error="(err) => imageError = err" />
+
+			<div v-if="$slots.poster" class="custom-poster">
+				<slot name="poster" />
 			</div>
 
 			<div v-if="progress?.percentage" class="progress-bar-wrapper">
@@ -127,6 +128,9 @@ const onClick = computed(() => {
 }
 
 .poster-image {
+	position: absolute;
+	top: 0;
+	left: 0;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
