@@ -146,6 +146,38 @@ app.get("/api/video", async function (req, res) {
 	});
 });
 
+app.post('/api/prepareAudio', async (req, res) => {
+	const { src, index } = req.body;
+	// Use ffmpeg to extract indicated audio stream from video file as mp3
+	if (!src) {
+		res.status(400).send("Requires src query param");
+		return;
+	}
+	if (!index) {
+		res.status(400).send("Requires index query param");
+		return;
+	}
+	const file = DirectoryService.resolvePath(src as string);
+	const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp3');
+	await new Promise<void>((resolve, reject) => {
+		ffmpeg(file)
+			.outputOptions(`-map 0:${index}`)
+			.outputOptions('-c:a libmp3lame')
+			.output(outputFilePath)
+			.on('end', () => {
+				resolve();
+			})
+			.on('error', (err) => {
+				reject(err);
+			})
+			.run();
+	}).catch((err) => {
+		console.error("Error while sending converted file:", err);
+		res.status(500).send("Error sending converted file");
+	});
+	res.send(200);
+});
+
 app.post('/api/metadata', async (req, res) => {
 	try {
 		const { type, path, detailed } = req.body;
@@ -408,6 +440,9 @@ app.get('/api/subtitles', async (req, res) => {
 
 // STATIC SITE
 app.use('/assets', (req, res) => {
+	res.sendFile(path.join(__dirname, '../dist/assets/' + req.path));
+});
+app.use('/api/assets', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/assets/' + req.path));
 });
 app.use('/public', (req, res) => {

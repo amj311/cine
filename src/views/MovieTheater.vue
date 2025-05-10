@@ -55,18 +55,6 @@ const showPlayer = computed(() => {
 	return Boolean(mediaPath.value && hasLoaded.value);
 });
 
-const showControlsTime = 2500;
-const hideControlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const showControls = ref(false);
-function updateShowControlsTimeout() {
-	if (hideControlsTimeout.value) {
-		clearTimeout(hideControlsTimeout.value);
-	}
-	showControls.value = true;
-	hideControlsTimeout.value = setTimeout(() => {
-		showControls.value = false;
-	}, showControlsTime);
-} 
 
 const isLoadingLibrary = ref(false);
 const parentLibrary = ref<any>(null);
@@ -185,7 +173,7 @@ function navigateBackOnFullscreenExit(isFullscreen: boolean) {
 	if (router.currentRoute.value.name !== 'play') {
 		return;
 	}
-	if (didAutoFullscreen.value) {
+	if (useTvNavigationStore().detectedTouch || useTvNavigationStore().detectedTv) {
 		carefulBackNav();
 	}
 }
@@ -231,7 +219,6 @@ onMounted(async () => {
 	playMedia(mediaPath.value).catch((e) => {
 		console.error("Failed to load media data", e);
 	});
-	updateShowControlsTimeout();
 	pauseTvMode();
 	attemptAutoFullscreen();
 
@@ -242,12 +229,6 @@ onMounted(async () => {
 			console.error("Failed to acquire wake lock", e);
 		}
 	}
-
-	// Setup control hiding
-	const events = ['mousemove', 'keydown', 'touchstart'];
-	events.forEach((event) => {
-		theaterRef.value?.addEventListener(event, updateShowControlsTimeout, { passive: true });
-	});
 
 	// Setup fullscreen exit handling
 	useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
@@ -386,10 +367,12 @@ const loadingBackground = computed(() => {
 </script>
 
 <template>
-	<div ref="theaterRef" class="movie-theater" :class="{ 'show-controls': showControls }" :style="{ backgroundImage: loadingBackground ? `url(${loadingBackground})` : undefined }">
+	<div ref="theaterRef" class="movie-theater" :style="{ backgroundImage: loadingBackground ? `url(${loadingBackground})` : undefined }">
 		<VideoPlayer
 			v-if="mediaPath"
 			v-show="showPlayer"
+			:title="title"
+			:close="carefulBackNav"
 			:autoplay="true"
 			:controls="true"
 			:key="mediaPath"
@@ -398,14 +381,10 @@ const loadingBackground = computed(() => {
 			:onLoadedData="() => hasLoaded = true"
 			:onEnd="onEnd"
 			:subtitles="probe?.subtitles"
+			:audio="probe?.audio"
 		/>
 		<div class="loading" v-if="!hasLoaded">
 			<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
-		</div>
-		<div class="overlay top-fade"></div>
-		<div class="top-left overlay">
-			<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="carefulBackNav" />
-			<div>{{ title }}</div>
 		</div>
 		<div v-if="showNextEpisodeCard" class="next-episode-card" :class="{ full: hasEnded }" @click="() => playMedia(nextEpisodeFile?.relativePath, true)">
 			<div class="play-icon">
