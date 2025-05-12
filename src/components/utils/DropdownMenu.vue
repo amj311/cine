@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { focusAreaClass } from '@/stores/tvNavigation.store';
 import TieredMenu from 'primevue/tieredmenu';
 import { ref } from 'vue';
 
@@ -16,7 +17,7 @@ function openMenu(event) {
 
 <template>
 	<span @click="openMenu" v-bind="{ ...$props, ...$attrs }" tabindex="0"><slot></slot></span>
-	<TieredMenu ref="menu" id="overlay_menu" :popup="true" v-bind="$attrs">
+	<TieredMenu ref="menu" id="overlay_menu" :class="focusAreaClass" :popup="true" v-bind="$attrs">
 		<template #start><slot name="start"></slot></template>
 	</TieredMenu>
 </template>

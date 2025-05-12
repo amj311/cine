@@ -4,6 +4,9 @@ import { useFullscreenStore } from './fullscreenStore.store';
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
+export const focusAreaClass = 'tvNavigationFocusArea';
+
+
 export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	const lastMouseMove = ref({ x: 0, y: 0 });
 	const lastMousePosition = ref({ x: 0, y: 0 });
@@ -320,7 +323,6 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		const focusElements = ['[href]', 'button', 'input', 'select', 'textarea', '[tabindex]', 'details', 'summary'];
 		const query = focusElements.map(el => el + ':not([disabled]:not([disabled="false"])):not([tabindex="-1"])').join(', ');
 
-		const focusAreaClass = 'tvNavigationFocusArea';
 		const focusArea = document.getElementsByClassName(focusAreaClass)[0] || document.body;
 		let elements = Array.from(focusArea.querySelectorAll(query)) as Array<HTMLElement>;
 
