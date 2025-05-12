@@ -59,7 +59,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 				<div class="feed-row" v-for="feedRow in feed" :class="feedRow.type" :key="feedRow.type">
 					<template v-if="feedRow.type === 'continue-watching'">
 						<h3>{{ feedRow.title }}</h3>
-						<div class="feed-scroll-wrapper mt-3">
+						<div class="feed-scroll-wrapper">
 							<Scroll class="feed-scroll">
 								<div class="feed-row-items-list">
 									<div
@@ -91,6 +91,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 								class="photo-grid-cell"
 								v-for="item in feedRow.items"
 								:key="item.relativePath"
+								tabindex="0"
 								@click="openSlideshow(feedRow.items, item)"
 							>
 								<GalleryFileFrame
@@ -116,10 +117,6 @@ function openSlideshow(files: any[], firstFile?: any) {
 	--padding: 15px;
 	padding: var(--padding);
 
-	h2 {
-		// margin-bottom: 10px;
-	}
-
 	.feed-scroll-wrapper {
 		margin: 0 calc(-1 * var(--padding));
 	}
@@ -142,6 +139,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 		gap: 10px;
 
 		.photo-grid-cell {
+			cursor: pointer;
 			aspect-ratio: 1;
 			overflow: hidden;
 			border-radius: 10px;
