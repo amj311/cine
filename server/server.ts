@@ -339,6 +339,8 @@ app.get('/api/feed', async (req, res) => {
 				return false;
 			}
 			const photoDate = new Date(photo.takenAt);
+			// set photo date to same year as today
+			photoDate.setFullYear(today.getFullYear());
 			const diffTime = Math.abs(photoDate.getTime() - today.getTime());
 			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 			return diffDays <= dayRange;
@@ -346,7 +348,7 @@ app.get('/api/feed', async (req, res) => {
 
 		if (pastPhotos.length > 0) {
 			feedLists.push({
-				title: "Past Photos",
+				title: "Memories",
 				type: "photos",
 				items: pastPhotos,
 			});
