@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref } from 'vue';
 import MediaCard from '@/components/MediaCard.vue';
 import { useApiStore } from '@/stores/api.store';
 import GalleryFileFrame from '@/components/GalleryFileFrame.vue';
+import Slideshow from '@/components/Slideshow.vue';
 
 const feed = ref<any[]>([]);
 
@@ -39,6 +40,14 @@ function timeRemaining(watchProgress: any) {
 	const minutes = Math.floor((remainingTime % 3600) / 60);
 
 	return `${hours ? (hours + 'hr ') : '' }${minutes}min`;
+}
+
+
+const slideshow = ref<InstanceType<typeof Slideshow> | null>(null);
+function openSlideshow(files: any[], firstFile?: any) {
+	if (slideshow.value) {
+		slideshow.value.open(files, firstFile);
+	}
 }
 
 </script>
@@ -81,9 +90,10 @@ function timeRemaining(watchProgress: any) {
 							<div
 								class="photo-grid-cell"
 								v-for="item in feedRow.items"
+								:key="item.relativePath"
+								@click="openSlideshow(feedRow.items, item)"
 							>
 								<GalleryFileFrame
-									:key="item.relativePath"
 									:file="item"
 									:objectFit="'cover'"
 									:hide-controls="true"
@@ -97,6 +107,8 @@ function timeRemaining(watchProgress: any) {
 			</Scroll>
 		</div>
 	</div>
+
+	<Slideshow ref="slideshow" />
 </template>
 
 <style scoped lang="scss">
