@@ -13,7 +13,7 @@ const app = express() as any;
 import cors from 'cors';
 import fs, { readdirSync } from 'fs';
 import { DirectoryService } from './services/DirectoryService';
-import { LibraryService } from './services/LibraryService';
+import { LibraryService, Photo } from './services/LibraryService';
 import { MediaMetadataService } from './services/metadata/MetadataService';
 import { WatchProgress, WatchProgressService } from './services/WatchProgressService';
 import mime from 'mime-types';
@@ -276,6 +276,7 @@ app.get('/api/feed', async (req, res) => {
 			}>;
 		}>;
 
+		// Continue Watching
 		const watchItems = await WatchProgressService.getContinueWatchingList();
 		const lastFinishedEpisode = await WatchProgressService.getLastFinishedEpisode();
 		let nextEpisode: any = null;
@@ -303,6 +304,55 @@ app.get('/api/feed', async (req, res) => {
 			});
 		}
 
+		// identify photo libraries
+		const libraries = await LibraryService.getRootLibraries();
+		const photoLibraries = libraries.filter((library) => library.libraryType === 'photos');
+		const allPhotos = (await Promise.all(photoLibraries.map(async (library) => {
+			const { files } = await LibraryService.getFlatTree(library.name);
+			return files;
+		}))).flat().sort((a, b) => {
+			if (!a.takenAt) {
+				return 1;
+			}
+			if (!b.takenAt) {
+				return -1;
+			}
+			return new Date(b.takenAt).getTime() - new Date(a.takenAt).getTime();
+		});
+
+		// Recent Photos
+		const recentPhotos = allPhotos.slice(0, 10) as Array<Photo>;
+		if (recentPhotos.length > 0) {
+			feedLists.push({
+				title: "Recent Photos",
+				type: "photos",
+				items: recentPhotos,
+			});
+		}
+
+		// Past Photos
+		// Find past photos that match today's date +- day range
+		const dayRange = 3;
+		const today = new Date();
+		const pastPhotos = allPhotos.filter((photo) => {
+			if (!photo.takenAt) {
+				return false;
+			}
+			const photoDate = new Date(photo.takenAt);
+			const diffTime = Math.abs(photoDate.getTime() - today.getTime());
+			const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+			return diffDays <= dayRange;
+		});
+
+		if (pastPhotos.length > 0) {
+			feedLists.push({
+				title: "Past Photos",
+				type: "photos",
+				items: pastPhotos,
+			});
+		}
+
+
 		res.json({
 			success: true,
 			data: feedLists,
@@ -318,14 +368,7 @@ app.get('/api/feed', async (req, res) => {
 
 app.get('/api/rootLibraries', async (req, res) => {
 	try {
-		const rootLibraries = await DirectoryService.listDirectory('/');
-		const libraries = rootLibraries.folders.map((folder) => {
-			return {
-				folderName: folder,
-				relativePath: folder,
-				libraryItem: LibraryService.parseFolderToItem(folder, true),
-			};
-		});
+		const libraries = await LibraryService.getRootLibraries();
 		res.json({
 			success: true,
 			data: libraries,

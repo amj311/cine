@@ -110,7 +110,7 @@ type LibraryFileData = {
 
 const PhotoTypes = ['jpg', 'jpeg', 'png', 'gif'] as const;
 type PhotoType = typeof PhotoTypes[number];
-type Photo = LibraryFileData & {
+export type Photo = LibraryFileData & {
 	type: 'photo',
 	fileType: PhotoType,
 	takenAt?: string,
@@ -282,6 +282,19 @@ export class LibraryService {
 			sortKey: (takenAt?.toISOString() || '') + fileName,
 			listName: fileName,
 		} as LibraryFile;
+	}
+
+
+	public static async getRootLibraries() {
+		const rootLibraries = await DirectoryService.listDirectory('/');
+		const libraries = await Promise.all(rootLibraries.folders.map(async (folder) => {
+			return {
+				folderName: folder,
+				relativePath: folder,
+				libraryItem: await LibraryService.parseFolderToItem(folder, true),
+			};
+		}));
+		return libraries.filter((library) => library.libraryItem?.type === 'library').map((library) => library.libraryItem) as Library[];
 	}
 
 
