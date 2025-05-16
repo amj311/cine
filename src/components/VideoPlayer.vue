@@ -186,6 +186,14 @@ async function turnOnSecondaryAudio(audio) {
 		}
 		catch (e) {
 			console.error('Error turning on secondary audio', e);
+			toast.removeAllGroups();
+			toast.add({
+				severity: 'error',
+				summary: 'Error Preparing Audio',
+				detail: 'There was an error preparing the audio. Please try again.',
+			});
+			loadingAudio.value = false;
+			turnOffSecondaryAudio();
 		}		
 	}
 }

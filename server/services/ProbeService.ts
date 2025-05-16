@@ -72,18 +72,24 @@ export class ProbeService {
 				};
 				if (data && data.streams) {
 					for (const stream of data.streams) {
-						if (stream.codec_type === 'subtitle' && stream.codec_name === 'mov_text') {
+						if (stream.codec_type === 'subtitle' || stream.codec_type === 'mov_text') {
+							const language = stream.tags?.language;
+							const handler_name = stream.tags?.handler_name;
+							let name = `${language} (${stream.codec_long_name})`;
+							if (handler_name && handler_name !== 'SubtitleHandler') {
+								name = handler_name;
+							}
 							probeData.glossary.subtitles.push({
 								index: stream.index,
 								format: stream.codec_name,
-								name: stream.tags?.title
+								name,
 							});
 						}
 						else if (stream.codec_type === 'audio') {
 							probeData.glossary.audio.push({
 								index: stream.index,
 								format: stream.codec_name,
-								name: stream.tags?.title,
+								name: stream.tags?.handler_name,
 							});
 						}
 					}
