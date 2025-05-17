@@ -10,7 +10,6 @@ const metadata = ref<any[]>([]);
 const posters = computed(() => metadata.value.map((item) => item.poster_thumb).filter(Boolean));
 
 async function loadMetadata() {
-	console.log(props.paths)
 	metadata.value = (await Promise.all(
 		props.paths.map(async (path) => {
 			return await MetadataService.getMetadata({ relativePath: path });
