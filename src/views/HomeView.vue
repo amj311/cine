@@ -135,7 +135,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 
 	&.photos .photo-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
 		gap: 10px;
 
 		.photo-grid-cell {

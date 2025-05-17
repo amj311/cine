@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 import { computed } from 'vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
+import CollectionPoster from '@/components/CollectionPoster.vue';
 
 const router = useRouter();
 
@@ -117,23 +118,7 @@ const items = computed(() => {
 								:action="() => queryPathStore.enterDirectory(folder.folderName)"
 							>
 								<template #poster v-if="folder.libraryItem.children.length">
-									<MetadataLoader v-for="(childPath, i) in folder.libraryItem.children.slice(0, 2)" :key="childPath" :media="{ relativePath: childPath }">
-										<template #default="{ metadata }">
-											<img
-												:src="metadata?.poster_thumb"
-												:alt="folder.libraryItem.name"
-												:style="{
-													position: 'absolute',
-													width: `90%`,
-													borderRadius: '5px',
-													top: `${i * 10}px`,
-													left: `${i * 10}px`,
-													zIndex: 10 - i,
-													opacity: 1 - i * 0.2,
-												}"
-											/>
-										</template>
-									</MetadataLoader>
+									<CollectionPoster :paths="folder.libraryItem.children" />
 								</template>
 								<template #fallbackIcon v-else>🗂️</template>
 							</MediaCard>
@@ -173,13 +158,13 @@ const items = computed(() => {
 <style scoped lang="scss">
 .folder-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
 	gap: 15px;
 	margin-bottom: 30px;
 }
 .item-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
 	gap: 15px;
 }
 .grid-tile {

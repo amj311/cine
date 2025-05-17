@@ -153,8 +153,8 @@ function timeRemaining(watchProgress: any) {
 	}
 
 	.categories-row-card-wrapper {
-		width: min(100px, 20vw);
-		min-width: min(100px, 20vw);
+		width: min(7rem, 20vw);
+		min-width: min(7rem, 20vw);
 	}
 }
 
