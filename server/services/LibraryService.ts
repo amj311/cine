@@ -17,7 +17,7 @@ type LibraryItemData = {
 }
 
 type Playable = {
-	type: 'movie' | 'episodeFile' | 'episode' | 'extra',
+	type: 'movie' | 'episodeFile' | 'episode' | 'extra' | 'track',
 	name: string,
 	version?: string | null,
 	fileName: RelativePath,
@@ -79,6 +79,14 @@ type Album = LibraryItemData & {
 	artist?: string,
 	genre?: string,
 	cover_thumb?: string,
+	tracks?: Array<Playable & {
+		title?: string,
+		artist?: string,
+		album?: string,
+		trackNumber?: number,
+		trackTotal?: number,
+		duration?: number,
+	}>,
 }
 
 /** A collection is a specific group of media, like a movie series i.e. Harry Potter */
@@ -227,18 +235,38 @@ export class LibraryService {
 		// Identify an album if all children are audio files
 		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioTypes.includes(file.split('.').pop() as AudioType));
 		if (allChildrenAreAudio) {
-			const firstTrackTags = await ProbeService.getMp3Tags(path + '/' + children.files[0]);
+			const firstTrackProbe = await ProbeService.getMp3Data(path + '/' + children.files[0]);
+			const tracks = detailed && (await Promise.all(children.files.map(async (file) => {
+				const probe = await ProbeService.getMp3Data(path + '/' + file);
+				const title = probe?.title || LibraryService.removeExtensionsFromFileName(file);
+				return {
+					type: 'track',
+					title,
+					artist: probe?.artist,
+					album: probe?.album,
+					trackNumber: probe?.trackNumber,
+					trackTotal: probe?.trackTotal,
+					duration: probe?.duration,
+					name: title,
+					fileName: file,
+					relativePath: path + '/' + file,
+					watchProgress: WatchProgressService.getWatchProgress(path + '/' + file),
+					sortKey: (probe?.trackNumber ? probe.trackNumber + '_' : '') + file,
+					listName: title,
+				} as Playable;
+			})));
 			return {
 				type: 'album',
-				title: firstTrackTags?.album,
-				artist: firstTrackTags?.album_artist || firstTrackTags?.artist,
-				genre: firstTrackTags?.genre,
+				title: firstTrackProbe?.album,
+				artist: firstTrackProbe?.album_artist || firstTrackProbe?.artist,
+				genre: firstTrackProbe?.genre,
 				cover_thumb: `/thumb/${path + '/' + children.files[0]}?width=300`,
 				relativePath: path,
 				folderName: folderName,
 				metadata: null,
 				sortKey: LibraryService.createSortKey(folderName),
 				listName: name,
+				tracks: tracks || undefined,
 			};
 		}
 

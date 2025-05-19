@@ -65,7 +65,6 @@ export const useApiStore = defineStore('Api', () => {
 		availableHosts,
 
 		resolve(path?: string) {
-			console.log('Resolving path', path);
 			if (!path) {
 				return '';
 			}

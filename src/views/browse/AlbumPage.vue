@@ -2,36 +2,16 @@
 	setup
 	lang="ts"
 >
-import { useRouter } from 'vue-router';
-import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useBackgroundStore } from '@/stores/background.store';
 import { useApiStore } from '@/stores/api.store';
+import { useWatchProgressStore } from '@/stores/watchProgress.store';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
-	directory: { folders: { folderName: string; libraryItem }[]; files: string[] } | null;
 }>();
 const backgroundStore = useBackgroundStore();
 
-const metadata = ref<any>(null);
-const isLoadingMetadata = ref(false);
-
-// async function loadMetadata() {
-// 	try {
-// 		isLoadingMetadata.value = true;
-// 		metadata.value = await MetadataService.getMetadata(props.libraryItem, true);
-// 		if (metadata.value) {
-// 			backgroundStore.setBackgroundUrl(metadata.value.background);
-// 			backgroundStore.setPosterUrl(metadata.value.background);
-// 		}
-// 	} catch (error) {
-// 		console.error('Error loading metadata', error);
-// 	} finally {
-// 		isLoadingMetadata.value = false;
-// 	}
-// }
-
-// loadMetadata();
 
 onBeforeMount(() => {
 	backgroundStore.setBackgroundUrl(props.libraryItem.cover_thumb);
@@ -43,118 +23,156 @@ onBeforeUnmount(() => {
 	backgroundStore.clearPosterUrl();
 });
 
-// function playVideo(path: string, startTime?: number) {
-// 	router.push({
-// 		name: 'play',
-// 		query: {
-// 			path,
-// 			startTime,
-// 		},
-// 	})
-// }
+function formatRuntime(seconds: number) {
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.floor((seconds % 3600) / 60);
+	const secondsOver = Math.floor(seconds % 60);
+	return `${hours > 0 ? hours + ':' : ''}${minutes > 0 ? minutes + '' : '00'}:${secondsOver > 0 ? secondsOver + '' : ''}`.trim();
+}
 
-// function formatRuntime(minutes: number) {
-// 	const hours = Math.floor(minutes / 60);
-// 	const minutesOver = minutes % 60;
-// 	if (hours === 0) {
-// 		return `${minutesOver}min`;
-// 	}
-// 	return `${hours}hr ${minutesOver}min`;
-// }
+const audio = ref<HTMLAudioElement | null>(null);
+const currentTrack = ref<any>(null);
 
+onMounted(() => {
+	if (audio.value) {
+		audio.value.addEventListener('ended', playNextTrack);
+		audio.value.addEventListener('play', startProgressUpdate);
+		audio.value.addEventListener('pause', stopProgressUpdate);
+	}
+})
 
-// // Combine libraryItem.season with matching metadata from metadata.seasons
-// const activeSeason = ref(metadata.value?.seasons[0] || null);
-
-// const mergedSeasons = computed(() => {
-// 	const seasons = props.libraryItem.seasons.map((season: any) => {
-// 		const metadataSeason = metadata.value?.seasons.find((s: any) => s.seasonNumber === season.seasonNumber);
-// 		return {
-// 			...season,
-// 			...metadataSeason,
-// 			name: season.seasonNumber === 0 ? 'Specials' : season.name,
-// 			tracks: season.trackFiles.flatMap((file: any) => file.tracks).map(track => {
-// 				const metadatatrack = metadataSeason?.tracks.find((e: any) => e.trackNumber === track.trackNumber);
-// 				return {
-// 					...track,
-// 					...metadatatrack,
-// 				};
-// 			}),
-// 		};
-// 	});
-// 	// Sort seasons by season number bu put specials last
-// 	seasons.sort((a: any, b: any) => {
-// 		if (a.seasonNumber === 0) {
-// 			return 1;
-// 		}
-// 		if (b.seasonNumber === 0) {
-// 			return -1;
-// 		}
-// 		return a.seasonNumber - b.seasonNumber;
-// 	});
-// 	return seasons;
-// });
-
-// const trackToPlay = ref<any>(null);
-
-// watch(() => mergedSeasons.value, determinetrackToPlay, { immediate: true, deep: true });
-
-// function determinetrackToPlay() {
-// 	// Find the track with the most recent watch time
-// 	const scored = mergedSeasons.value.flatMap((season: any) => season.tracks).map((track: any) => {
-// 		let score = 0;
-// 		if (!track.watchProgress) {
-// 			score = 0;
-// 		}
-// 		else if (track.watchProgress.percentage >= 90) {
-// 			score = 0;
-// 		}
-// 		else {
-// 			score = track.watchProgress?.watchedAt
-// 		}
-// 		return {
-// 			...track,
-// 			score,
-// 		};
-// 	}).filter((track: any) => track.score > 0).reverse();
-// 	const track = scored[0] || mergedSeasons.value[0].tracks[0];
-
-// 	// Use this opportunity to update the active season based on the last watched track
-// 	activeSeason.value =
-// 		mergedSeasons.value.find((season: any) => season.seasonNumber === track.seasonNumber)
-// 		// Or select the first season that is not specials
-// 		|| mergedSeasons.value.find((season: any) => season.seasonNumber !== 0)
-// 		|| mergedSeasons.value[0];
-
-// 	trackToPlay.value = track;
-// };
-
-// const resumeTime = computed(() => {
-// 	if (trackToPlay.value?.watchProgress?.percentage < 90) {
-// 		return trackToPlay.value?.watchProgress.time;
-// 	}
-// 	return 0;
-// });
+onBeforeUnmount(() => {
+	stopProgressUpdate();
+});
 
 
-// watch(
-// 	() => useWatchProgressStore().lastWatchProgress,
-// 	(lastProgress) => {
-// 		// find matching track in mergedSeasons
-// 		const track = mergedSeasons.value.flatMap((season: any) => season.tracks).find((track: any) => track.relativePath === lastProgress?.relativePath);
-// 		if (track) {
-// 			track.watchProgress = lastProgress.progress;
-// 			trackToPlay.value = track;
-// 		}
-// 	}
-// )
+function playTrack(track: any, time: number = 0) {
+	if (currentTrack.value === track) {
+		return;
+	}
+	currentTrack.value = track;
+	if (audio.value) {
+		audio.value.src = useApiStore().baseUrl + '/stream?src=' + track.relativePath;
+		audio.value.play();
+		audio.value.currentTime = time;
+		startProgressUpdate();
 
+		// set device media image
+		if ('mediaSession' in navigator) {
+			navigator.mediaSession.metadata = new MediaMetadata({
+				title: currentTrack.value.title,
+				artist: currentTrack.value.artist,
+				album: currentTrack.value.album,
+				artwork: [
+					{ src: useApiStore().resolve(props.libraryItem.cover_thumb), sizes: '512x512', type: 'image/png' },
+					{ src: useApiStore().resolve(props.libraryItem.cover_thumb), sizes: '256x256', type: 'image/png' },
+					{ src: useApiStore().resolve(props.libraryItem.cover_thumb), sizes: '96x96', type: 'image/png' }
+				],
+			});
+
+			navigator.mediaSession.setActionHandler('previoustrack', playPreviousTrack);
+			navigator.mediaSession.setActionHandler('nexttrack', playNextTrack);
+			navigator.mediaSession.setActionHandler('play', () => {
+				audio.value?.play();
+			});
+			navigator.mediaSession.setActionHandler('pause', () => {
+				audio.value?.pause();
+			});
+			// seek
+			navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+				if (audio.value) {
+					audio.value.currentTime = Math.max(0, audio.value.currentTime - (details.seekOffset || 10));
+				}
+			});
+			navigator.mediaSession.setActionHandler('seekforward', (details) => {
+				if (audio.value) {
+					audio.value.currentTime = Math.min(audio.value.duration, audio.value.currentTime + (details.seekOffset || 10));
+				}
+			});
+		}
+	}
+}
+
+function playPreviousTrack() {
+	if (!currentTrack.value) {
+		return;
+	}
+	const tracks = props.libraryItem.tracks;
+	const currentIndex = tracks.findIndex((track: any) => track.trackNumber === currentTrack.value.trackNumber);
+	if (currentIndex <= 0) {
+		return;
+	}
+	const previousTrack = tracks[currentIndex - 1];
+	playTrack(previousTrack);
+}
+
+function playNextTrack() {
+	if (!currentTrack.value) {
+		return;
+	}
+	const tracks = props.libraryItem.tracks;
+	const currentIndex = tracks.findIndex((track: any) => track.trackNumber === currentTrack.value.trackNumber);
+	if (currentIndex < 0 || currentIndex >= tracks.length - 1) {
+		return;
+	}
+	const nextTrack = tracks[currentIndex + 1];
+	playTrack(nextTrack);
+}
+
+const PROGRESS_INTERVAL = 1000 * 5;
+let progressUpdateInterval;
+
+function startProgressUpdate() {
+	if (progressUpdateInterval) {
+		return;
+	}
+	progressUpdateInterval = setInterval(() => {
+		postProgress();
+	}, PROGRESS_INTERVAL);
+}
+
+function stopProgressUpdate() {
+	if (progressUpdateInterval) {
+		clearInterval(progressUpdateInterval);
+		progressUpdateInterval = null;
+	}
+}
+
+async function postProgress() {
+	try {
+		if (!audio.value) {
+			return;
+		}
+		await useWatchProgressStore().postprogress(
+			currentTrack.value.relativePath,
+			useWatchProgressStore().createProgress(audio.value.currentTime, audio.value.duration)
+		);
+	}
+	catch (e) {
+		console.error("Failed to update progress")
+		console.error(e);
+	}
+}
+
+const lastWatchedtrack = computed(() => {
+	const tracks = props.libraryItem?.tracks || [];
+	const watchedTracks = tracks.filter((track: any) => track.watchProgress);
+	const lastWatched = watchedTracks.slice().sort((a: any, b: any) => b.watchProgress.watchedAt - a.watchProgress.watchedAt)[0];
+	if (!lastWatched) {
+		return null;
+	}
+	const lastWatchedIndex = tracks.findIndex((track: any) => track.trackNumber === lastWatched.trackNumber);
+	if (lastWatchedIndex === tracks.length - 1 && lastWatched.watchProgress.time >= lastWatched.watchProgress.duration) {
+		return null;
+	}
+	return lastWatched;
+})
 
 </script>
 
 <template>
 	<Scroll>
-		<div class="series-page pl-3 pr-2">
+		<div class="series-page">
 			<div class="top-wrapper">
 				<div class="poster-wrapper">
 					<MediaCard
@@ -163,20 +181,47 @@ onBeforeUnmount(() => {
 						:progress="libraryItem?.watchProgress"
 					/>
 				</div>
-				<h3>{{ libraryItem.title }}</h3>
-				<div>{{ libraryItem.artist }}</div>
+				<div class="my-3">
+					<h3>{{ libraryItem.title }}</h3>
+					<div>{{ libraryItem.artist }}</div>
+				</div>
 			</div>
-			<div class="tracks-list-wrapper" v-if="directory?.files">
+			<div class="tracks-list-wrapper" v-if="libraryItem?.tracks">
 				<Scroll>
 					<div class="tracks-list">
-						<div class="track-item" v-for="(file, index) in directory.files" :key="index">
-							<div>{{ file }}</div>
-							<audio controls>
-								<source :src="useApiStore().baseUrl + '/stream?src=' + libraryItem.relativePath + '/' + file" type="audio/mpeg" />
-							</audio>
+						<div
+							class="track-item"
+							:class="{ 'active': track === currentTrack }"
+							v-for="(track, index) in libraryItem.tracks"
+							:key="index"
+							@click="() => playTrack(track)"
+						>
+							<div><i :class="`pi pi-${track === currentTrack ? 'volume-up' : 'play'}`" /></div>
+							<div class="number">{{ track.trackNumber }}</div>
+							<div class="title">{{ track.title }}</div>
+							<div class="duration">{{ formatRuntime(track.duration) }}</div>
 						</div>
 					</div>
 				</Scroll>
+			</div>
+			<div class="audio-controls px-2 pb-3">
+				<audio v-show="currentTrack" ref="audio" :src="useApiStore().baseUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
+				<Button
+					v-if="!currentTrack && lastWatchedtrack"
+					icon="pi pi-play"
+					:label="`Resume (#${lastWatchedtrack.trackNumber}, ${formatRuntime(lastWatchedtrack.watchProgress.time)})`"
+					size="large"
+					class="w-full"
+					@click="() => playTrack(lastWatchedtrack, lastWatchedtrack.watchProgress.time)"
+				/>
+				<Button
+					v-if="!currentTrack && !lastWatchedtrack"
+					icon="pi pi-play"
+					:label="`Play All`"
+					size="large"
+					class="w-full"
+					@click="() => playTrack(libraryItem?.tracks[0])"
+				/>
 			</div>
 		</div>
 	</Scroll>
@@ -189,7 +234,7 @@ onBeforeUnmount(() => {
 .series-page {
 	display: flex;
 	flex-direction: column;
-	gap: 30px;
+	gap: 1em;
 	height: 100%;
 	min-height: 0;
 	max-height: 100%;
@@ -200,12 +245,12 @@ onBeforeUnmount(() => {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 20px;
+	text-align: center;
 }
 
 .poster-wrapper {
-	width: min(100%, 20rem);
-	min-width: min(100%, 20rem);
+	width: min(100%, 15rem);
+	min-width: min(100%, 15rem);
 }
 
 .tracks-list-wrapper {
@@ -215,6 +260,41 @@ onBeforeUnmount(() => {
 }
 
 .track-item {
+	display: grid;
+	grid-template-columns: 1em 1em 1fr auto;
+	align-items: center;
+	gap: .5rem;
+	padding: 0.5rem 0.7rem;
+	cursor: pointer;
+
+	
+	&.active {
+		background-color: #fff1;
+		.title { font-weight: bold; }
+	}
+	&:hover {
+		background-color: #fff2;
+	}
+
+	.number {
+		text-align: right;
+		opacity: .7;
+	}
+
+	.title {
+		text-align: left;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.duration {
+		text-align: right;
+		opacity: .7;
+	}
+}
+
+.audio-controls {
 	audio {
 		width: 100%;
 	}

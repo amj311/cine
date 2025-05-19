@@ -31,12 +31,11 @@ type ProbeData = {
 
 export class ProbeService {
 
-	public static async getMp3Tags(relativePath: string): Promise<any> {
+	public static async getMp3Data(relativePath: string): Promise<any> {
 		if (!relativePath) {
 			return null;
 		}
 		try {
-			const filePath = DirectoryService.resolvePath(relativePath);
 			const probe = await ProbeService.getProbeData(relativePath);
 			const tags = probe?.full?.format?.tags;
 			if (!tags) {
@@ -44,8 +43,9 @@ export class ProbeService {
 			}
 			return {
 				...tags,
-				trackNumber: tags.track.split('/')[0] ? parseInt(tags.track.split('/')[0]) : undefined,
-				trackTotal: tags.track.split('/')[1] ? parseInt(tags.track.split('/')[1]) : undefined,
+				trackNumber: tags.track?.split('/')[0] ? parseInt(tags.track.split('/')[0]) : undefined,
+				trackTotal: tags.track?.split('/')[1] ? parseInt(tags.track.split('/')[1]) : undefined,
+				duration: probe?.full?.format?.duration,
 			}
 		}
 		catch (err) {

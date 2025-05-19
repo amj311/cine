@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useApiStore } from '@/stores/api.store';
+import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
 import { defineProps, ref, computed, onMounted, watch } from 'vue';
 
@@ -60,12 +61,7 @@ defineExpose({
 			console.warn("Video element is not rendered yet")
 			return;
 		}
-		return {
-			time: videoRef.value.currentTime,
-			duration: videoRef.value.duration,
-			percentage: parseInt((videoRef.value.currentTime / videoRef.value.duration * 100).toFixed(5)),
-			watchedAt: Date.now(),
-		};
+		return useWatchProgressStore().createProgress(videoRef.value.currentTime, videoRef.value.duration);
 	},
 	setTime(time) {
 		videoRef.value!.currentTime = time;

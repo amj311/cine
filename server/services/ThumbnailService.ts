@@ -25,7 +25,6 @@ export class ThumbnailService {
 			const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 			const videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.3gp'];
 			const audioExtensions = ['.mp3'];
-			console.log("File path:", filePath, path.extname(filePath).toLowerCase());
 			const isVideo = videoExtensions.includes(path.extname(filePath).toLowerCase());
 			const isImage = imageExtensions.includes(path.extname(filePath).toLowerCase());
 			const isAudio = audioExtensions.includes(path.extname(filePath).toLowerCase());
@@ -102,7 +101,6 @@ export class ThumbnailService {
 	 */
 	private static async getVideoFrame(relativePath: string, seek: number = 2) {
 		const filePath = DirectoryService.resolvePath(relativePath);
-		const fileExtension = path.extname(filePath).toLowerCase();
 		return new Promise<Buffer>((resolve, reject) => {
 			const chunks: Buffer[] = [];
 
