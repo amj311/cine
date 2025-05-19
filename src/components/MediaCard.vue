@@ -8,7 +8,7 @@ const router = useRouter();
 const props = defineProps<{
 	imageUrl?: string;
 	imagePosition?: 'top' | 'center' | 'bottom';
-	aspectRatio?: 'tall' | 'wide';
+	aspectRatio?: 'tall' | 'wide' | 'square';
 	width?: number;
 	height?: number;
 	title?: string;
@@ -150,6 +150,9 @@ const imageError = ref<any>(null);
 	}
 	&.wide {
 		aspect-ratio: 3/2;
+	}
+	&.square {
+		aspect-ratio: 1/1;
 	}
 
 	.custom-poster {

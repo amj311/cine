@@ -64,11 +64,7 @@ app.get("/api/dir/", async function (req, res) {
 	}
 });
 
-app.get("/api/video", async function (req, res) {
-	const range = req.headers.range;
-	// if (!range) {
-	// 	res.status(400).send("Requires Range header");
-	// }
+app.get("/api/stream", async function (req, res) {
 	let { src } = req.query;
 	if (!src) {
 		res.status(400).send("Requires src query param");
@@ -99,6 +95,12 @@ app.get("/api/video", async function (req, res) {
 				res.status(500).send("Error sending converted file");
 			}
 		});
+		return;
+	}
+
+	const stramable = ['mp4', 'mp3'];
+	if (!stramable.some((ext) => file.endsWith(ext))) {
+		res.status(400).send("File type not supported for streaming");
 		return;
 	}
 
@@ -525,4 +527,7 @@ app.get('*', (req, res) => {
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
 	console.log(`Listening on port ${port}`);
+
+	// Setup slow jobs
+
 });

@@ -5,6 +5,7 @@
 import { DirectoryService, RelativePath } from "./DirectoryService";
 import { MediaMetadataService } from "./metadata/MetadataService";
 import { EitherMetadata } from "./metadata/MetadataTypes";
+import { ProbeService } from "./ProbeService";
 import { WatchProgress, WatchProgressService } from "./WatchProgressService";
 
 type LibraryItemData = {
@@ -70,6 +71,16 @@ type Series = LibraryItemData & {
 	extras?: Array<Extra>,
 }
 
+
+type Album = LibraryItemData & {
+	type: 'album',
+	title?: string,
+	year?: string,
+	artist?: string,
+	genre?: string,
+	cover_thumb?: string,
+}
+
 /** A collection is a specific group of media, like a movie series i.e. Harry Potter */
 type Collection = LibraryItemData & {
 	type: 'collection',
@@ -89,12 +100,12 @@ type Folder = LibraryItemData & {
 /** A library is a root-level entity containing all of one type of media */
 type Library = LibraryItemData & {
 	type: 'library',
-	libraryType: 'tv' | 'movies' | 'photos',
+	libraryType: 'tv' | 'movies' | 'photos' | 'audio',
 	name: string,
 	children: Array<RelativePath>,
 }
 
-type LibraryItem = Movie | Series | Collection | Folder | Library;
+type LibraryItem = Movie | Series | Album | Collection | Folder | Library;
 
 
 
@@ -210,6 +221,25 @@ export class LibraryService {
 					listName: name,
 				};
 			}
+		}
+
+
+		// Identify an album if all children are audio files
+		const allChildrenAreAudio = children.files.every((file) => AudioTypes.includes(file.split('.').pop() as AudioType));
+		if (allChildrenAreAudio) {
+			const firstTrackTags = await ProbeService.getMp3Tags(path + '/' + children.files[0]);
+			return {
+				type: 'album',
+				title: firstTrackTags?.album,
+				artist: firstTrackTags?.album_artist || firstTrackTags?.artist,
+				genre: firstTrackTags?.genre,
+				cover_thumb: `/thumb/${path + '/' + children.files[0]}?width=300`,
+				relativePath: path,
+				folderName: folderName,
+				metadata: null,
+				sortKey: LibraryService.createSortKey(folderName),
+				listName: name,
+			};
 		}
 
 		// Root Libraries
@@ -543,17 +573,20 @@ export class LibraryService {
 		return 'folder';
 	}
 
-	private static async determineMediaTypeInLibrary(path: RelativePath) {
+	private static async determineMediaTypeInLibrary(path: RelativePath): Promise<Library['libraryType'] | null> {
 		// recursivle search for first descendent that matches a media description
 		async function findMediaWithin(path: RelativePath) {
 			const { folders, files } = await DirectoryService.listDirectory(path);
 			if (folders.length === 0 && files.length === 0) {
 				return null;
 			}
-			// Not currently saving any images in library other than photos, so we can rely on that here
 			for (const file of files) {
+				// Not currently saving any images in library other than photos, so we can rely on that here
 				if (file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.png')) {
 					return 'photos';
+				}
+				if (file.endsWith('.mp3')) {
+					return 'audio';
 				}
 			}
 			// Identify cinema folders by release-year folders

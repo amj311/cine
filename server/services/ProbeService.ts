@@ -28,7 +28,50 @@ type ProbeData = {
 	full: any;
 }
 
+
 export class ProbeService {
+
+	public static async getMp3Tags(relativePath: string): Promise<any> {
+		try {
+			const filePath = DirectoryService.resolvePath(relativePath);
+			const probe = await ProbeService.getProbeData(relativePath);
+			const tags = probe?.full?.format?.tags;
+			if (!tags) {
+				return null;
+			}
+			return {
+				...tags,
+				trackNumber: tags.track.split('/')[0] ? parseInt(tags.track.split('/')[0]) : undefined,
+				trackTotal: tags.track.split('/')[1] ? parseInt(tags.track.split('/')[1]) : undefined,
+			}
+		}
+		catch (err) {
+			console.error("Error while getting mp3 tags:", err);
+			return null;
+		}
+	}
+
+
+	// public static async getMp3Art(relativePath: string): Promise<any> {
+	// 	try {
+	// 		const filePath = DirectoryService.resolvePath(relativePath);
+	// 		const probe = await ProbeService.getProbeData(relativePath);
+	// 		const tags = probe?.full?.format?.tags;
+	// 		if (!tags) {
+	// 			return null;
+	// 		}
+	// 		return {
+	// 			...tags,
+	// 			trackNumber: tags.track.split('/')[0] ? parseInt(tags.track.split('/')[0]) : undefined,
+	// 			trackTotal: tags.track.split('/')[1] ? parseInt(tags.track.split('/')[1]) : undefined,
+	// 		}
+	// 	}
+	// 	catch (err) {
+	// 		console.error("Error while getting mp3 tags:", err);
+	// 		return null;
+	// 	}
+	// }
+
 	/**
 	 * 
 	 * @param relativePath 
@@ -115,3 +158,8 @@ export class ProbeService {
 		return null;
 	}
 }
+
+setTimeout(() => {
+	ProbeService.getMp3Tags('/Books/the-two-towers/01 - The Departure of Boromir.mp3').then(console.log).catch(console.error);
+}
+	, 1000);

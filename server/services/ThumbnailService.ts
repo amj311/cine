@@ -24,17 +24,24 @@ export class ThumbnailService {
 			// Make sure the file is an image
 			const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 			const videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.3gp'];
+			const audioExtensions = ['.mp3'];
+			console.log("File path:", filePath, path.extname(filePath).toLowerCase());
 			const isVideo = videoExtensions.includes(path.extname(filePath).toLowerCase());
 			const isImage = imageExtensions.includes(path.extname(filePath).toLowerCase());
+			const isAudio = audioExtensions.includes(path.extname(filePath).toLowerCase());
 
-			if (!isImage && !isVideo) {
-				throw new Error(`File is not an image or video: ${filePath}`);
+			if (!isImage && !isVideo && !isAudio) {
+				throw new Error(`Thumb is not support for file: ${filePath}`);
 			}
 
 			let fileBuffer: Buffer = Buffer.from([]);
 			if (isVideo) {
 				// Use ffmpeg to get a frame from the video
 				fileBuffer = await ThumbnailService.getVideoFrame(relativePath);
+			}
+			if (isAudio) {
+				// ffpeg can extract album art from mp3 files as a video stream
+				fileBuffer = await ThumbnailService.getVideoFrame(relativePath, 0);
 			}
 			else {
 				// Load the image file
@@ -93,12 +100,9 @@ export class ThumbnailService {
 	 * @param buffer 
 	 * @returns 
 	 */
-	private static async getVideoFrame(relativePath: string) {
+	private static async getVideoFrame(relativePath: string, seek: number = 2) {
 		const filePath = DirectoryService.resolvePath(relativePath);
 		const fileExtension = path.extname(filePath).toLowerCase();
-		if (fileExtension !== '.mp4') {
-			throw new Error(`File is not a video: ${filePath}`);
-		}
 		return new Promise<Buffer>((resolve, reject) => {
 			const chunks: Buffer[] = [];
 
@@ -108,7 +112,7 @@ export class ThumbnailService {
 					reject(err);
 				})
 				.outputOptions([
-					'-ss 2',        // Seek a bit into the video
+					`-ss ${seek || 0}`,        // Seek a bit into the video
 					'-frames:v 1',  // Extract only one frame
 					'-q:v 30',       // Set quality level
 					'-f image2pipe' // Output as a pipe

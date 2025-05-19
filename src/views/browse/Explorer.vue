@@ -109,6 +109,26 @@ const items = computed(() => {
 							</MetadataLoader>
 						</template>
 
+						<template v-if="folder.libraryItem.type === 'album'">
+							<MetadataLoader
+								:media="folder.libraryItem"
+							>
+								<template #default="{ metadata }">
+									<MediaCard
+										clickable
+										:imageUrl="folder.libraryItem.cover_thumb"
+										:aspectRatio="'square'"
+										:title="folder.libraryItem.title"
+										:subtitle="folder.libraryItem.artist"
+										:progress="folder.libraryItem.watchProgress"
+										:action="() => queryPathStore.enterDirectory(folder.folderName)"
+									>
+										<template #fallbackIcon>💿</template>
+									</MediaCard>
+								</template>
+							</MetadataLoader>
+						</template>
+
 						<template v-if="folder.libraryItem.type === 'collection'">
 							<MediaCard
 								clickable

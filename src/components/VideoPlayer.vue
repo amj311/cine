@@ -41,7 +41,7 @@ function updateShowControlsTimeout() {
 } 
 
 const videoRef = ref<HTMLVideoElement>();
-const videoUrl = computed(() => useApiStore().baseUrl + '/video?src=' + props.relativePath.split('&').join('<amp>'))
+const videoUrl = computed(() => useApiStore().baseUrl + '/stream?src=' + props.relativePath.split('&').join('<amp>'))
 const secondaryAudioPlayer = ref<HTMLAudioElement>();
 
 const supportedVideoTypes = [
