@@ -3,13 +3,10 @@
 	lang="ts"
 >
 import { useRouter } from 'vue-router';
-import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
-import { MetadataService } from '@/services/metadataService';
+import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 import { useBackgroundStore } from '@/stores/background.store';
-import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useApiStore } from '@/stores/api.store';
 
-const router = useRouter();
 const props = defineProps<{
 	libraryItem: any; // libraryItem
 	directory: { folders: { folderName: string; libraryItem }[]; files: string[] } | null;
@@ -166,8 +163,8 @@ onBeforeUnmount(() => {
 						:progress="libraryItem?.watchProgress"
 					/>
 				</div>
-				<h2>{{ libraryItem.title }}</h2>
-				<h3>{{ libraryItem.artist }}</h3>
+				<h3>{{ libraryItem.title }}</h3>
+				<div>{{ libraryItem.artist }}</div>
 			</div>
 			<div class="tracks-list-wrapper" v-if="directory?.files">
 				<Scroll>
@@ -189,28 +186,14 @@ onBeforeUnmount(() => {
 	lang="scss"
 	scoped
 >
-
-.show-lg {
-	display: none;
-}
-
-@media screen and (max-width: 800px) {
-	.hide-md {
-		display: none;
-	}
-	.show-lg {
-		display: block;
-	}
-	.title {
-		font-size: 1.5em;
-	}
-}
-
-
 .series-page {
 	display: flex;
 	flex-direction: column;
 	gap: 30px;
+	height: 100%;
+	min-height: 0;
+	max-height: 100%;
+	overflow: hidden;
 }
 
 .top-wrapper {
@@ -221,8 +204,14 @@ onBeforeUnmount(() => {
 }
 
 .poster-wrapper {
-	width: min(225px, 30vw);
-	min-width: min(225px, 30vw);
+	width: min(100%, 20rem);
+	min-width: min(100%, 20rem);
+}
+
+.tracks-list-wrapper {
+	flex-grow: 1;
+	min-width: 0;
+	overflow: hidden;
 }
 
 .track-item {

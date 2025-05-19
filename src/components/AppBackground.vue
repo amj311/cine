@@ -9,7 +9,7 @@ import { useRoute } from 'vue-router';
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 const backgroundStore = useBackgroundStore();
-const backgroundImage = computed(() => backgroundStore.backgroundUrl ? `url(${backgroundStore.backgroundUrl})` : undefined);
+const backgroundImage = computed(() => backgroundStore.backgroundUrl ? `url("${backgroundStore.backgroundUrl}")` : undefined);
 
 function getCanvasCtx() {
 	if (!canvasRef.value) {

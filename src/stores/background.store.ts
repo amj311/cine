@@ -15,12 +15,15 @@ export const useBackgroundStore = defineStore('Background', () => {
 			return;
 		}
 		posterUrl.value = useApiStore().resolve(url) || null;
+		console.log('Setting poster url', posterUrl.value);
 	}
 
 	return {
 		backgroundUrl,
 		setBackgroundUrl(url: string) {
+			console.log('Setting background url', url);
 			backgroundUrl.value = useApiStore().resolve(url) || null;
+			console.log('Set', backgroundUrl.value);
 		},
 		clearBackgroundUrl() {
 			backgroundUrl.value = null;
