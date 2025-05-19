@@ -225,7 +225,7 @@ export class LibraryService {
 
 
 		// Identify an album if all children are audio files
-		const allChildrenAreAudio = children.files.every((file) => AudioTypes.includes(file.split('.').pop() as AudioType));
+		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioTypes.includes(file.split('.').pop() as AudioType));
 		if (allChildrenAreAudio) {
 			const firstTrackTags = await ProbeService.getMp3Tags(path + '/' + children.files[0]);
 			return {

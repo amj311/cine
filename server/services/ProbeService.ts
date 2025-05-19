@@ -32,6 +32,9 @@ type ProbeData = {
 export class ProbeService {
 
 	public static async getMp3Tags(relativePath: string): Promise<any> {
+		if (!relativePath) {
+			return null;
+		}
 		try {
 			const filePath = DirectoryService.resolvePath(relativePath);
 			const probe = await ProbeService.getProbeData(relativePath);
@@ -158,8 +161,3 @@ export class ProbeService {
 		return null;
 	}
 }
-
-setTimeout(() => {
-	ProbeService.getMp3Tags('/Books/the-two-towers/01 - The Departure of Boromir.mp3').then(console.log).catch(console.error);
-}
-	, 1000);
