@@ -365,7 +365,7 @@ const lastWatched = computed<Bookmark>(() => {
 					<div class="tracks-list">
 						<div
 							class="track-item"
-							:class="{ 'active': track === currentTrack }"
+							:class="{ 'active': currentTrack ? track === currentTrack : index === lastWatched?.trackIndex }"
 							v-for="(track, index) in libraryItem.tracks"
 							:key="index"
 							@click="() => playTrack(track)"
