@@ -5,7 +5,7 @@ import { useApiStore } from './api.store';
 export const useWatchProgressStore = defineStore('WatchProgress', () => {
 	const lastWatchProgress = ref<any>(null);
 
-	async function postprogress(relativePath: string, progress: any, bookmarkId?: string) {
+	async function postprogress(relativePath: string, progress: any, bookmarkId?: string, subpath?: string) {
 		lastWatchProgress.value = {
 			relativePath,
 			progress,
@@ -16,6 +16,7 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 			progress,
 			watcherId: getWatcherId(),
 			bookmarkId,
+			subpath,
 		});
 	}
 

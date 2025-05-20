@@ -131,25 +131,13 @@ type Bookmark = {
 	duration: number;
 	watchedAt: number;
 	relativePath: string;
+	subpath: string,
 	trackIndex: number;
 }
-const bookmarks = computed(() => {
-	const allTrackBookmarks = props.libraryItem?.tracks.map((track: any) => track.watchProgress?.bookmarks || []).flat() || [];
-	const lastWatchedBookmarks = {};
-	for (const bookmark of allTrackBookmarks) {
-		if (!(bookmark.relativePath in lastWatchedBookmarks)) {
-			lastWatchedBookmarks[bookmark.name] = bookmark;
-		}
-		else if (bookmark.watchedAt > lastWatchedBookmarks[bookmark.name].watchedAt) {
-			lastWatchedBookmarks[bookmark.name] = bookmark;
-			
-		}
-	}
-	return Object.values(lastWatchedBookmarks).map((bookmark: any) => ({
-		...bookmark,
-		trackIndex: props.libraryItem.tracks.findIndex((track: any) => track.relativePath === bookmark.relativePath),
-	})) as Bookmark[];
-})
+const bookmarks = computed<Bookmark[]>(() => props.libraryItem.watchProgress?.bookmarks.map(b => ({
+	...b,
+	trackIndex: props.libraryItem.tracks.findIndex((track: any) => track.relativePath === b.subpath),
+})) || []);
 
 function timeOffset(trackIndex, timeIntoTrack: number) {
 	const track = props.libraryItem.tracks[trackIndex];
@@ -168,7 +156,7 @@ function bookmarkLabel(bookmarkName: string) {
 }
 
 const bookmarkMenuItems = computed(() => {
-	const bookmarkNames = new Set(bookmarks.value.map((bookmark: any) => bookmark.name));
+	const bookmarkNames = new Set(bookmarks.value.map((bookmark: Bookmark) => bookmark.name));
 	currentBookmarkName.value && bookmarkNames.add(currentBookmarkName.value);
 	
 	const items = Array.from(bookmarkNames).map((name: string) => {
@@ -277,15 +265,17 @@ function stopProgressUpdate() {
 }
 
 async function postProgress() {
+	if (!isBook.value || !audio.value || !currentTrack.value) {
+		return;
+	}
 	try {
-		if (!audio.value) {
-			return;
-		}
-		const progress = useWatchProgressStore().createProgress(audio.value.currentTime, audio.value.duration);
+		const currentTrackIndex = props.libraryItem.tracks.findIndex((track: any) => track.relativePath === currentTrack.value.relativePath);
+		const progress = useWatchProgressStore().createProgress(timeOffset(currentTrackIndex, audio.value.currentTime), totalTime.value);
 		await useWatchProgressStore().postprogress(
-			currentTrack.value.relativePath,
+			props.libraryItem.relativePath,
 			progress,
 			currentBookmarkName.value,
+			currentTrack.value.relativePath,
 		);
 		// update local bookmark
 		if (currentBookmarkName.value) {
@@ -299,14 +289,16 @@ async function postProgress() {
 				if (!currentTrack.value.watchProgress) {
 					currentTrack.value.watchProgress = {
 						...progress,
-						relativePath: currentTrack.value.relativePath,
+						relativePath: props.libraryItem.relativePath,
+						subpath: currentTrack.value.relativePath,
 						bookmarks: [],
 					};
 				}
 				currentTrack.value.watchProgress.bookmarks.push({
 					name: currentBookmarkName.value,
 					...progress,
-					relativePath: currentTrack.value.relativePath,
+					relativePath: props.libraryItem.relativePath,
+					subpath: currentTrack.value.relativePath,
 				});
 			}
 		}
@@ -321,19 +313,12 @@ const lastWatched = computed<Bookmark>(() => {
 	if (currentBookmarkName.value) {
 		return bookmarks.value.find((bookmark: any) => bookmark.name === currentBookmarkName.value);
 	}
-	const tracks = props.libraryItem?.tracks || [];
-	const watchedTracks = tracks.filter((track: any) => track.watchProgress);
-	const lastWatched = watchedTracks.slice().sort((a: any, b: any) => b.watchProgress.watchedAt - a.watchProgress.watchedAt)[0];
-	if (!lastWatched) {
+	if (!props.libraryItem?.watchProgress) {
 		return null;
 	}
-	const lastWatchedIndex = tracks.findIndex((track: any) => track.relativePath === lastWatched.relativePath);
-	// detect total completion
-	if (lastWatchedIndex === tracks.length - 1 && lastWatched.watchProgress.time >= lastWatched.watchProgress.duration) {
-		return null;
-	}
+	const lastWatchedIndex = props.libraryItem.tracks.findIndex((track: any) => track.relativePath === props.libraryItem.watchProgress.subpath);
 	return {
-		...lastWatched.watchProgress,
+		...props.libraryItem.watchProgress,
 		trackIndex: lastWatchedIndex,
 	};
 })
@@ -347,7 +332,7 @@ const lastWatched = computed<Bookmark>(() => {
 				<MediaCard
 					:imageUrl="libraryItem?.cover"
 					:aspectRatio="'square'"
-					:progress="(isBook && lastWatched) && useWatchProgressStore().createProgress(timeOffset(lastWatched.trackIndex, lastWatched.time), totalTime)"
+					:progress="(isBook) && libraryItem?.watchProgress"
 				/>
 			</div>
 			<div>

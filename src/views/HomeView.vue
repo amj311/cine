@@ -65,9 +65,23 @@ function openSlideshow(files: any[], firstFile?: any) {
 									<div
 										class="feed-row-card-wrapper"
 										v-for="item in feedRow.items"
+										:key="item.relativePath"
 									>
 										<MediaCard
-											:key="item.relativePath"
+											v-if="item.libraryItem.playable?.type === 'album'"
+											clickable
+											:action="() => $router.push({ name: 'browse', query: { path: item.libraryItem.playable.relativePath } })"
+											:imageUrl="item.libraryItem.playable.cover_thumb"
+											:imagePosition="'top'"
+											:progress="item.watchProgress"
+											:aspectRatio="'square'"
+											:title="item.libraryItem.playable.title"
+											:subtitle="`${timeRemaining(item.watchProgress)} left`"
+										>
+											<template #fallbackIcon>💿</template>
+										</MediaCard>
+										<MediaCard
+											v-else
 											:imageUrl="item.libraryItem.playable?.still_thumb || item.libraryItem.parentLibrary.metadata?.background_thumb || item.libraryItem.parentLibrary.metadata?.poster_thumb"
 											:imagePosition="'top'"
 											:playSrc="item.relativePath"

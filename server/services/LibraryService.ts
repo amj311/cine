@@ -17,7 +17,7 @@ type LibraryItemData = {
 }
 
 type Playable = {
-	type: 'movie' | 'episodeFile' | 'episode' | 'extra' | 'track',
+	type: 'movie' | 'episodeFile' | 'episode' | 'extra' | 'album',
 	name: string,
 	version?: string | null,
 	fileName: RelativePath,
@@ -72,7 +72,7 @@ type Series = LibraryItemData & {
 }
 
 
-type Album = LibraryItemData & {
+type Album = LibraryItemData & Playable & {
 	type: 'album',
 	title?: string,
 	year?: string,
@@ -80,7 +80,8 @@ type Album = LibraryItemData & {
 	genre?: string,
 	cover_thumb: string,
 	cover: string,
-	tracks?: Array<Playable & {
+	tracks?: Array<{
+		relativePath: RelativePath,
 		title?: string,
 		artist?: string,
 		album?: string,
@@ -252,7 +253,6 @@ export class LibraryService {
 					name: title,
 					fileName: file,
 					relativePath: path + '/' + file,
-					watchProgress: WatchProgressService.getWatchProgress(path + '/' + file),
 					sortKey: (probe?.trackNumber ? probe.trackNumber + '_' : '') + file,
 					listName: title,
 				} as any;
@@ -274,7 +274,10 @@ export class LibraryService {
 				folderName: folderName,
 				metadata: null,
 				sortKey: LibraryService.createSortKey(folderName),
-				listName: name,
+				watchProgress: WatchProgressService.getWatchProgress(path),
+				name: firstTrackProbe?.album || name,
+				listName: firstTrackProbe?.album || name,
+				fileName: path,
 				tracks: tracks || undefined,
 			};
 		}
@@ -515,26 +518,32 @@ export class LibraryService {
 
 
 	public static async getLibraryForPlayable(relativePath: RelativePath) {
+		let parentLibrary;
+		let playable: Playable | null = null;
+
 		// find the parent which contains a name and year
 		const ancestors = relativePath.split('/').slice(0, -1);
 		const parentFolder = ancestors.reverse().find((folder) => {
 			const { name, year } = LibraryService.parseNamePieces(folder);
 			return !!name && !!year;
 		});
-		if (!parentFolder) {
-			console.warn(`No parent found for ${relativePath}`);
-			return {};
+		if (parentFolder) {
+			const parentPath = relativePath.split(parentFolder)[0] + parentFolder;
+			parentLibrary = await LibraryService.parseFolderToItem(parentPath, true) as LibraryItem;
+			if (!parentLibrary) {
+				console.warn(`No parent library found for ${relativePath}`);
+				return {};
+			}
+			// Identify playable within the parent library
+			playable = (parentLibrary as Movie).extras?.find((extra) => extra.relativePath === relativePath)
+				|| ((parentLibrary as Movie).movie?.relativePath === relativePath ? (parentLibrary as Movie).movie : null)
+				|| (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => episodeFile.relativePath === relativePath)
+				|| null;
 		}
-		const parentPath = relativePath.split(parentFolder)[0] + parentFolder;
-		const parentLibrary = await LibraryService.parseFolderToItem(parentPath, true) as LibraryItem;
-		if (!parentLibrary) {
-			console.warn(`No parent library found for ${relativePath}`);
-			return {};
+		else {
+			playable = await LibraryService.parseFolderToItem(relativePath) as Playable;
 		}
-		// Identify playable within the parent library
-		const playable = (parentLibrary as Movie).extras?.find((extra) => extra.relativePath === relativePath)
-			|| ((parentLibrary as Movie).movie?.relativePath === relativePath ? (parentLibrary as Movie).movie : null)
-			|| (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => episodeFile.relativePath === relativePath);
+
 
 		if (!playable) {
 			console.warn(`No playable found for ${relativePath}`);

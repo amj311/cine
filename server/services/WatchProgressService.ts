@@ -10,6 +10,7 @@ export type WatchProgress = {
 	percentage: number,
 	watchedAt: number,
 	relativePath: RelativePath,
+	subpath?: RelativePath,
 }
 
 // A bookmark saves additional timestamps for a media
@@ -32,10 +33,11 @@ export class WatchProgressService {
 	 * @param relativePath The id of the media.
 	 * @param percentage The percentage of the media that has been watched.
 	 */
-	public static updateWatchProgress(relativePath: RelativePath, progress: WatchProgress, bookmarkId?: string): void {
+	public static updateWatchProgress(relativePath: RelativePath, progress: WatchProgress, subpath?: RelativePath, bookmarkId?: string): void {
 		// Always save the overall progress
 		watching.set(relativePath, {
 			...progress,
+			subpath,
 			relativePath,
 		});
 
@@ -44,6 +46,7 @@ export class WatchProgressService {
 			const bookmarksForMedia = bookmarks.get(relativePath) || new Map<string, Bookmark>();
 			bookmarksForMedia.set(bookmarkId, {
 				...progress,
+				subpath,
 				relativePath,
 				name: bookmarkId,
 			});
