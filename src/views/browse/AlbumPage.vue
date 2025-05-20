@@ -54,7 +54,7 @@ function playTrack(track: any, time: number = 0) {
 	}
 	currentTrack.value = track;
 	if (audio.value) {
-		audio.value.src = useApiStore().baseUrl + '/stream?src=' + track.relativePath;
+		audio.value.src = useApiStore().apiUrl + '/stream?src=' + track.relativePath;
 		audio.value.play();
 		audio.value.currentTime = time;
 		startProgressUpdate();
@@ -381,7 +381,7 @@ const lastWatched = computed<Bookmark>(() => {
 			</div>
 			<div class="bottom px-2 mb-3 flex align-items-center">
 				<div class="audio-controls flex-grow-1">
-					<audio v-show="currentTrack" ref="audio" :src="useApiStore().baseUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
+					<audio v-show="currentTrack" ref="audio" :src="useApiStore().apiUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
 					<Button
 						v-if="!currentTrack && lastWatched && isBook"
 						icon="pi pi-play"

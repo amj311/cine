@@ -2,10 +2,11 @@ import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios';
 
-type Host = {
+export type Host = {
 	hostname: string;
 	baseUrl: string;
 	status?: 'connected' | 'failed';
+	isCustom?: boolean;
 }
 
 export const useApiStore = defineStore('Api', () => {
@@ -14,23 +15,23 @@ export const useApiStore = defineStore('Api', () => {
 		{ hostname: 'LAN', baseUrl: import.meta.env.VITE_LAN_HOST_URL },
 		{ hostname: 'Remote', baseUrl: import.meta.env.VITE_REMOTE_HOST_URL },
 	]
-	const additionalHosts = ref<Array<Host>>([]);
+	const additionalHosts = ref<Array<Host>>(loadCustomHosts());
 	const availableHosts = computed(() => standardHosts.concat(additionalHosts.value));
 
 	const isInitializing = ref(true);
 	const selectedHost = ref<Host | null>(null);
-	const baseUrl = computed(() => selectedHost.value?.baseUrl + '/api');
+	const baseUrl = computed(() => selectedHost.value?.baseUrl);
+	const apiUrl = computed(() => selectedHost.value?.baseUrl + '/api');
 
 	const api = computed(() => {
 		return axios.create({
-			baseURL: baseUrl.value,
+			baseURL: apiUrl.value,
 		})
 	});
 
-
 	async function testConnection(host: Host): Promise<boolean> {
 		try {
-			const response = await axios.get(host.baseUrl);
+			const response = await axios.get(host.baseUrl + '/health');
 			const success = response.status === 200;
 			host.status = success ? 'connected' : 'failed';
 			return success;
@@ -42,33 +43,90 @@ export const useApiStore = defineStore('Api', () => {
 	}
 
 	async function connectToFirstAvailableHost() {
+		let successfulHost;
 		for (const host of availableHosts.value) {
 			if (host.baseUrl) {
 				const success = await testConnection(host);
 				if (success) {
-					selectedHost.value = host;
+					console.log("Success! COnnecting to", host)
+					successfulHost = host;
 					break;
 				}
 			}
 		}
+		selectedHost.value = successfulHost || null;
+		console.log("setting initializing to false")
 		isInitializing.value = false;
+		console.log(isInitializing.value)
 	}
 	connectToFirstAvailableHost().catch((error) => {
 		console.error('Error connecting to first available host:', error);
 	});
 
+	async function connectToHost(host: Host) {
+		if (host.baseUrl) {
+			const success = await testConnection(host);
+			if (success) {
+				selectedHost.value = host;
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	function loadCustomHosts(): Array<Host> {
+		return JSON.parse(localStorage.getItem('customHosts') || '[]');
+	}
+
+	function saveCustomHosts() {
+		localStorage.setItem('customHosts', JSON.stringify(additionalHosts.value));
+	}
+
+	function addHost(name: string, baseUrl: string) {
+		const newHost: Host = {
+			hostname: name,
+			baseUrl: baseUrl,
+			isCustom: true,
+		};
+		additionalHosts.value.push(newHost);
+		saveCustomHosts();
+		return newHost;
+	}
+
+	function updateHost(name: string, data: Partial<Host>) {
+		const host = additionalHosts.value.find((host) => host.hostname === name);
+		if (host && host.isCustom) {
+			Object.assign(host, data);
+			saveCustomHosts();
+		}
+	}
+
+	function removeHost(name: string) {
+		const host = additionalHosts.value.find((host) => host.hostname === name);
+		if (host && host.isCustom) {
+			additionalHosts.value = additionalHosts.value.filter((h) => h.hostname !== name);
+			saveCustomHosts();
+		}
+	}
+
 	return {
 		isInitializing,
 		selectedHost,
 		baseUrl,
+		apiUrl,
 		api,
 		availableHosts,
+		connectToHost,
+		addHost,
+		updateHost,
+		removeHost,
 
 		resolve(path?: string) {
 			if (!path) {
 				return '';
 			}
-			if (!baseUrl.value) {
+			if (!apiUrl.value) {
 				throw new Error('No host selected');
 			}
 			let resolvedPath = path;
@@ -76,10 +134,10 @@ export const useApiStore = defineStore('Api', () => {
 				resolvedPath = path.replace(/\/api\//, '/');
 			}
 			else if (path.startsWith('/')) {
-				resolvedPath = baseUrl.value + path;
+				resolvedPath = apiUrl.value + path;
 			}
 			else {
-				resolvedPath = baseUrl.value + '/' + path;
+				resolvedPath = apiUrl.value + '/' + path;
 			}
 			return resolvedPath;
 		}

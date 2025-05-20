@@ -36,11 +36,11 @@ function maxWidth(width: number) {
 }
 
 const lowResUrl = computed(() => {
-	return useApiStore().baseUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(props.sequentialLoad ? 200 : sizeWidth.value);
+	return useApiStore().apiUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(props.sequentialLoad ? 200 : sizeWidth.value);
 });
 const hiResUrl = computed(() => {
 	const HI_RES_WIDTH = 2400;
-	return useApiStore().baseUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(HI_RES_WIDTH);
+	return useApiStore().apiUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(HI_RES_WIDTH);
 });
 
 const hiResReady = ref(false);

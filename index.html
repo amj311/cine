@@ -10,16 +10,21 @@
 		<link rel="apple-touch-icon" href="/public/Popcorn-Emoji-512.png" />
 
 		<link rel="manifest" href="/public/manifest.json">
-		<!-- <script>
-			if('serviceWorker' in navigator) {
-			  navigator.serviceWorker.register('/serviceworker.js', { scope: '/' });
-			}
-		</script> -->
-
 		<title>Video Streaming With Node</title>
 	</head>
 	<body>
 		<div id="app"></div>
+		<script>
+			if('serviceWorker' in navigator) {
+				navigator.serviceWorker.register('/serviceworker.js', { scope: '/' });
+				navigator.serviceWorker.ready.then((registration) => {
+					registration.active.postMessage({
+						type: 'indexResources',
+						indexResources: Array.from(document.head.querySelectorAll('[src], [href]')).map(el => el.src || el.href)
+					});
+				});
+			}
+		</script>
 		<script type="module" src="/src/main.ts"></script>
 	</body>
 </html>

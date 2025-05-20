@@ -44,6 +44,10 @@ h1, h2, h3, h4, h5, h6 {
 	background-color: var(--color-background-soft);
 }
 
+.bg-mute {
+	background-color: var(--color-background-mute);
+}
+
 .bg-accent {
 	background-color: var(--color-accent);
 }
@@ -63,6 +67,12 @@ h1, h2, h3, h4, h5, h6 {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+.text-muted {
+	opacity: .7;
+}
+.text-small {
+	font-size: 0.8em;
 }
 
 .pi {

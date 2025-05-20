@@ -29,6 +29,7 @@ app.use(cors(corsOptions));
 app.use(json());
 app.use(urlencoded({ extended: false }));
 
+app.get('/health', (_, res) => res.sendStatus(200));
 
 // get directory at relative path from media dir
 app.get("/api/dir/", async function (req, res) {
@@ -507,6 +508,9 @@ app.use('/api/assets', (req, res) => {
 });
 app.use('/public', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/public/' + req.path));
+});
+app.use('/serviceworker.js', (req, res) => {
+	res.sendFile(path.join(__dirname, '../dist/public/serviceworker.js'));
 });
 app.use('/api/media', (req, res) => {
 	const relativePath = req.path;

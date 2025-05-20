@@ -42,7 +42,7 @@ function updateShowControlsTimeout() {
 } 
 
 const videoRef = ref<HTMLVideoElement>();
-const videoUrl = computed(() => useApiStore().baseUrl + '/stream?src=' + props.relativePath.split('&').join('<amp>'))
+const videoUrl = computed(() => useApiStore().apiUrl + '/stream?src=' + props.relativePath.split('&').join('<amp>'))
 const secondaryAudioPlayer = ref<HTMLAudioElement>();
 
 const supportedVideoTypes = [
@@ -113,7 +113,7 @@ const subtitleTracks = computed(() => {
 	return props.subtitles.map((track, i) => ({
 		index: track.index,
 		label: track.name || 'Subtitle ' + (i + 1),
-		url: useApiStore().baseUrl + '/subtitles?path=' + props.relativePath + '&index=' + track.index,
+		url: useApiStore().apiUrl + '/subtitles?path=' + props.relativePath + '&index=' + track.index,
 	}));
 });
 
@@ -167,7 +167,7 @@ async function turnOnSecondaryAudio(audio) {
 				src: props.relativePath,
 				index: audio.index,
 			});
-			audioPlayer.src = useApiStore().baseUrl + '/assets/conversion.mp3';
+			audioPlayer.src = useApiStore().apiUrl + '/assets/conversion.mp3';
 			audioPlayer.play();
 			audioPlayer.currentTime = videoRef.value.currentTime;
 			videoRef.value.muted = true;
