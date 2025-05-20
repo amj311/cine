@@ -62,6 +62,7 @@ const numHiddenBreadcrumbs = computed(() => Math.max(0, navPathItems.value.lengt
 const hiddenBreadcrumbs = computed(() => (navPathItems.value.slice(0, numHiddenBreadcrumbs.value)));
 const visibleBreadcrumbs = computed(() => (navPathItems.value.slice(numHiddenBreadcrumbs.value)));
 
+const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1]?.label || queryPathStore.currentFile)
 </script>
 
 <template>
@@ -79,7 +80,7 @@ const visibleBreadcrumbs = computed(() => (navPathItems.value.slice(numHiddenBre
 					@click="expandMobileNav = !expandMobileNav"
 					style="max-width: 100%;"
 				>
-					<div class="text-ellipsis">{{ navPathItems[navPathItems.length - 1]?.label || queryPathStore.currentFile }}</div>
+					<div v-if="singleNavLabel" class="text-ellipsis">{{ singleNavLabel }}</div>
 					<i class="pi pi-angle-down" />
 				</Button>
 			</div>
