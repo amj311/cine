@@ -1,1 +1,86 @@
 @use './base.scss';
+
+
+
+:root {
+	font-size: 14px;
+}
+
+@media (min-width: 960px) {
+	:root {
+		font-size: 18px !important;
+	}
+}
+
+body {
+	color: var(--color-text);
+	background: var(--color-background);
+	line-height: 1.2;
+	font-family:
+		Inter,
+		-apple-system,
+		BlinkMacSystemFont,
+		'Segoe UI',
+		Roboto,
+		Oxygen,
+		Ubuntu,
+		Cantarell,
+		'Fira Sans',
+		'Droid Sans',
+		'Helvetica Neue',
+		sans-serif;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	margin-top: 0;
+	margin-bottom: 0;
+	padding: 0;
+}
+
+.bg-soft {
+	background-color: var(--color-background-soft);
+}
+
+.bg-accent {
+	background-color: var(--color-accent);
+}
+
+// make a few options for line clamp with different line numbers. iterate with scss
+@for $i from 1 through 5 {
+	.line-clamp-#{$i} {
+		-webkit-line-clamp: $i;
+		line-clamp: $i;
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+}
+
+.text-ellipsis {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.pi {
+	--p-icon-size: 1em;
+}
+
+
+
+.spin {
+	animation: spin 1500ms linear infinite;
+}
+
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+
+	to {
+		transform: rotate(360deg);
+	}
+}
