@@ -131,12 +131,15 @@ type Bookmark = {
 	duration: number;
 	watchedAt: number;
 	relativePath: string;
-	subpath: string,
+	sub: {
+		relativePath: string;
+		time: number;
+	}
 	trackIndex: number;
 }
 const bookmarks = computed<Bookmark[]>(() => props.libraryItem.watchProgress?.bookmarks.map(b => ({
 	...b,
-	trackIndex: props.libraryItem.tracks.findIndex((track: any) => track.relativePath === b.subpath),
+	trackIndex: props.libraryItem.tracks.findIndex((track: any) => track.relativePath === b.sub.relativePath),
 })) || []);
 
 function timeOffset(trackIndex, timeIntoTrack: number) {
@@ -164,12 +167,17 @@ const bookmarkMenuItems = computed(() => {
 			isCurrent: currentBookmarkName.value === name,
 			bookmarkName: name,
 			command: () => {
-				if (name === currentBookmarkName.value && confirm(`Stop using bookmark '${name}'?`)) {					
+				if (name === currentBookmarkName.value) {
+					if (!confirm(`Are you sure you want to stop using bookmark '${name}'?`)) {
+						return;
+					}
 					setBookmark('');
 					return;
 				}
-				setBookmark(name);
-				playAtBookmark(name);
+				else {
+					setBookmark(name);
+					playAtBookmark(name);
+				}
 			},
 		};
 	}) as any[];
@@ -229,7 +237,7 @@ function playAtBookmark(bookmarkName: string) {
 	if (!bookmark) {
 		return;
 	}
-	playAtTrackTime(bookmark.trackIndex, bookmark.time);
+	playAtTrackTime(bookmark.trackIndex, bookmark.sub.time);
 }
 
 function playAtTrackTime(trackIndex: number, time: number) {
@@ -270,12 +278,15 @@ async function postProgress() {
 	}
 	try {
 		const currentTrackIndex = props.libraryItem.tracks.findIndex((track: any) => track.relativePath === currentTrack.value.relativePath);
-		const progress = useWatchProgressStore().createProgress(timeOffset(currentTrackIndex, audio.value.currentTime), totalTime.value);
+		const progress = useWatchProgressStore().createProgress(timeOffset(currentTrackIndex, audio.value.currentTime), totalTime.value, {
+			relativePath: currentTrack.value.relativePath,
+			time: audio.value.currentTime,
+			duration: currentTrack.value.duration,
+		});
 		await useWatchProgressStore().postprogress(
 			props.libraryItem.relativePath,
 			progress,
 			currentBookmarkName.value,
-			currentTrack.value.relativePath,
 		);
 		// update local bookmark
 		if (currentBookmarkName.value) {
@@ -290,7 +301,6 @@ async function postProgress() {
 					currentTrack.value.watchProgress = {
 						...progress,
 						relativePath: props.libraryItem.relativePath,
-						subpath: currentTrack.value.relativePath,
 						bookmarks: [],
 					};
 				}
@@ -298,7 +308,6 @@ async function postProgress() {
 					name: currentBookmarkName.value,
 					...progress,
 					relativePath: props.libraryItem.relativePath,
-					subpath: currentTrack.value.relativePath,
 				});
 			}
 		}
@@ -316,7 +325,7 @@ const lastWatched = computed<Bookmark>(() => {
 	if (!props.libraryItem?.watchProgress) {
 		return null;
 	}
-	const lastWatchedIndex = props.libraryItem.tracks.findIndex((track: any) => track.relativePath === props.libraryItem.watchProgress.subpath);
+	const lastWatchedIndex = props.libraryItem.tracks.findIndex((track: any) => track.relativePath === props.libraryItem.watchProgress.sub.relativePath);
 	return {
 		...props.libraryItem.watchProgress,
 		trackIndex: lastWatchedIndex,
@@ -373,7 +382,7 @@ const lastWatched = computed<Bookmark>(() => {
 						:label="`Resume ${formatRuntime(timeOffset(lastWatched.trackIndex, lastWatched.time))}`"
 						size="large"
 						class="w-full"
-						@click="() => playAtTrackTime(lastWatched.trackIndex, lastWatched.time)"
+						@click="() => playAtTrackTime(lastWatched.trackIndex, lastWatched.sub.time)"
 					/>
 					<Button
 						v-else-if="!currentTrack && !lastWatched"

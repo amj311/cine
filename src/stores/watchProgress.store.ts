@@ -2,10 +2,25 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useApiStore } from './api.store';
 
+type SubWatchProgress = {
+	relativePath: string;
+	time: number;
+	duration: number;
+}
+
+export type WatchProgress = {
+	time: number;
+	duration: number;
+	percentage: number;
+	watchedAt: number;
+	relativePath?: string;
+	sub?: SubWatchProgress;
+}
+
 export const useWatchProgressStore = defineStore('WatchProgress', () => {
 	const lastWatchProgress = ref<any>(null);
 
-	async function postprogress(relativePath: string, progress: any, bookmarkId?: string, subpath?: string) {
+	async function postprogress(relativePath: string, progress: any, bookmarkId?: string) {
 		lastWatchProgress.value = {
 			relativePath,
 			progress,
@@ -16,7 +31,6 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 			progress,
 			watcherId: getWatcherId(),
 			bookmarkId,
-			subpath,
 		});
 	}
 
@@ -40,12 +54,13 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 		return newWatcherId;
 	}
 
-	function createProgress(currentTime: number, duration: number) {
+	function createProgress(currentTime: number, duration: number, sub?: SubWatchProgress) {
 		return {
 			time: currentTime,
 			duration: duration,
 			percentage: parseInt((currentTime / duration * 100).toFixed(5)),
 			watchedAt: Date.now(),
+			sub,
 		};
 	}
 

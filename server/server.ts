@@ -224,8 +224,8 @@ app.get('/api/watchProgress', async (req, res) => {
 });
 app.post('/api/watchProgress', async (req, res) => {
 	try {
-		const { relativePath, progress, bookmarkId, subpath } = req.body;
-		await WatchProgressService.updateWatchProgress(relativePath, progress, subpath, bookmarkId);
+		const { relativePath, progress, bookmarkId } = req.body;
+		await WatchProgressService.updateWatchProgress(relativePath, progress, bookmarkId);
 		res.json({
 			success: true,
 		})
