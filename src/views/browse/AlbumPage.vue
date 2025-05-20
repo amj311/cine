@@ -151,13 +151,12 @@ const bookmarks = computed(() => {
 	})) as Bookmark[];
 })
 
-function timeOffsetLabel(trackIndex, timeIntoTrack: number) {
+function timeOffset(trackIndex, timeIntoTrack: number) {
 	const track = props.libraryItem.tracks[trackIndex];
 	if (!track) {
 		return '';
 	}
-	const time = timeIntoTrack + track.startOffset;
-	return formatRuntime(time);
+	return timeIntoTrack + track.startOffset;
 }
 
 function bookmarkLabel(bookmarkName: string) {
@@ -165,7 +164,7 @@ function bookmarkLabel(bookmarkName: string) {
 	if (!bookmark) {
 		return bookmarkName;
 	}
-	return `${bookmarkName} - ${timeOffsetLabel(bookmark.trackIndex, bookmark.time)}`;
+	return `${bookmarkName} - ${formatRuntime(timeOffset(bookmark.trackIndex, bookmark.time))}`;
 }
 
 const bookmarkMenuItems = computed(() => {
@@ -348,7 +347,7 @@ const lastWatched = computed<Bookmark>(() => {
 				<MediaCard
 					:imageUrl="libraryItem?.cover"
 					:aspectRatio="'square'"
-					:progress="libraryItem?.watchProgress"
+					:progress="(isBook && lastWatched) && useWatchProgressStore().createProgress(timeOffset(lastWatched.trackIndex, lastWatched.time), totalTime)"
 				/>
 			</div>
 			<div>
@@ -386,7 +385,7 @@ const lastWatched = computed<Bookmark>(() => {
 					<Button
 						v-if="!currentTrack && lastWatched && isBook"
 						icon="pi pi-play"
-						:label="`Resume ${timeOffsetLabel(lastWatched.trackIndex, lastWatched.time)}`"
+						:label="`Resume ${formatRuntime(timeOffset(lastWatched.trackIndex, lastWatched.time))}`"
 						size="large"
 						class="w-full"
 						@click="() => playAtTrackTime(lastWatched.trackIndex, lastWatched.time)"
