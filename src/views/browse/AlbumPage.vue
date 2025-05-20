@@ -27,7 +27,7 @@ function formatRuntime(seconds: number) {
 	const hours = Math.floor(seconds / 3600);
 	const minutes = Math.floor((seconds % 3600) / 60);
 	const secondsOver = Math.floor(seconds % 60);
-	return `${hours > 0 ? hours + ':' : ''}${minutes > 0 ? minutes + '' : '00'}:${String(secondsOver).padStart(2, '0')}`.trim();
+	return `${hours > 0 ? hours + ':' : ''}${minutes > 0 ? String(minutes).padStart(2, '0') : '00'}:${String(secondsOver).padStart(2, '0')}`.trim();
 }
 
 const audio = ref<HTMLAudioElement | null>(null);
@@ -45,6 +45,8 @@ onBeforeUnmount(() => {
 	stopProgressUpdate();
 });
 
+const isBook = computed(() => props.libraryItem?.genre === 'Audiobook');
+const totalTime = computed(() => props.libraryItem?.tracks.reduce((acc: number, track: any) => acc + track.duration, 0) || 0);
 
 function playTrack(track: any, time: number = 0) {
 	if (currentTrack.value === track && !time) {
@@ -149,8 +151,13 @@ const bookmarks = computed(() => {
 	})) as Bookmark[];
 })
 
-function timeLabel(index, time: number) {
-	return `#${index + 1} ${formatRuntime(time)}`;
+function timeOffsetLabel(trackIndex, timeIntoTrack: number) {
+	const track = props.libraryItem.tracks[trackIndex];
+	if (!track) {
+		return '';
+	}
+	const time = timeIntoTrack + track.startOffset;
+	return formatRuntime(time);
 }
 
 function bookmarkLabel(bookmarkName: string) {
@@ -158,11 +165,7 @@ function bookmarkLabel(bookmarkName: string) {
 	if (!bookmark) {
 		return bookmarkName;
 	}
-	const track = props.libraryItem.tracks.find((track: any) => track.relativePath === bookmark.relativePath);
-	if (!track) {
-		return bookmarkName;
-	}
-	return `${bookmarkName} - ${timeLabel(bookmark.trackIndex, bookmark.time)}`;
+	return `${bookmarkName} - ${timeOffsetLabel(bookmark.trackIndex, bookmark.time)}`;
 }
 
 const bookmarkMenuItems = computed(() => {
@@ -339,21 +342,25 @@ const lastWatched = computed<Bookmark>(() => {
 </script>
 
 <template>
-	<Scroll>
-		<div class="series-page">
-			<div class="top-wrapper">
-				<div class="poster-wrapper">
-					<MediaCard
-						:imageUrl="libraryItem?.cover_thumb"
-						:aspectRatio="'square'"
-						:progress="libraryItem?.watchProgress"
-					/>
-				</div>
-				<div class="my-3">
-					<h3>{{ libraryItem.title }}</h3>
-					<div>{{ libraryItem.artist }}</div>
+	<div class="album-page">
+		<div class="top-wrapper my-3">
+			<div class="poster-wrapper">
+				<MediaCard
+					:imageUrl="libraryItem?.cover"
+					:aspectRatio="'square'"
+					:progress="libraryItem?.watchProgress"
+				/>
+			</div>
+			<div>
+				<h3 class="mb-2">{{ libraryItem.title }}</h3>
+				<div class="flex align-items-center justify-content-center gap-2">
+					<span>{{ libraryItem.artist }}</span>
+					-
+					<span>{{ formatRuntime(totalTime) }}</span>
 				</div>
 			</div>
+		</div>
+		<div class="other-wrapper">
 			<div class="tracks-list-wrapper" v-if="libraryItem?.tracks">
 				<Scroll>
 					<div class="tracks-list">
@@ -367,7 +374,7 @@ const lastWatched = computed<Bookmark>(() => {
 							<div><i :class="`pi pi-${track === currentTrack ? 'volume-up' : 'play'}`" /></div>
 							<div class="number">{{ index + 1 }}</div>
 							<div class="title">{{ track.title }}</div>
-							<div class="duration">{{ formatRuntime(track.duration) }}</div>
+							<div class="duration">{{ formatRuntime(isBook ? track.startOffset : track.duration) }}</div>
 						</div>
 					</div>
 
@@ -377,15 +384,15 @@ const lastWatched = computed<Bookmark>(() => {
 				<div class="audio-controls flex-grow-1">
 					<audio v-show="currentTrack" ref="audio" :src="useApiStore().baseUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
 					<Button
-						v-if="!currentTrack && lastWatched"
+						v-if="!currentTrack && lastWatched && isBook"
 						icon="pi pi-play"
-						:label="`Resume ${timeLabel(lastWatched.trackIndex, lastWatched.time)}`"
+						:label="`Resume ${timeOffsetLabel(lastWatched.trackIndex, lastWatched.time)}`"
 						size="large"
 						class="w-full"
 						@click="() => playAtTrackTime(lastWatched.trackIndex, lastWatched.time)"
 					/>
 					<Button
-						v-if="!currentTrack && !lastWatched"
+						v-else-if="!currentTrack && !lastWatched"
 						icon="pi pi-play"
 						:label="`Play All`"
 						size="large"
@@ -393,7 +400,7 @@ const lastWatched = computed<Bookmark>(() => {
 						@click="() => playTrack(libraryItem?.tracks[0])"
 					/>
 				</div>
-				<div>
+				<div v-if="isBook">
 					<DropdownMenu
 						:model="bookmarkMenuItems"
 					>
@@ -414,14 +421,14 @@ const lastWatched = computed<Bookmark>(() => {
 				</div>
 			</div>
 		</div>
-	</Scroll>
+	</div>
 </template>
 
 <style
 	lang="scss"
 	scoped
 >
-.series-page {
+.album-page {
 	display: flex;
 	flex-direction: column;
 	gap: 1em;
@@ -429,18 +436,39 @@ const lastWatched = computed<Bookmark>(() => {
 	min-height: 0;
 	max-height: 100%;
 	overflow: hidden;
+
+	.top-wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 1em;
+	}
+
+	.other-wrapper {
+		flex-grow: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 1em;
+		height: 100%;
+		max-height: 100%;
+		min-height: 0;
+	}
 }
 
-.top-wrapper {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	text-align: center;
+/* landscape screens */
+@media (min-aspect-ratio: 1/1) {
+	.album-page {
+		flex-direction: row;
+		align-items: center;
+		padding-left: 1rem;
+	}
 }
+
 
 .poster-wrapper {
-	width: min(100%, 15rem);
-	min-width: min(100%, 15rem);
+	width: min(100%, 13rem);
+	min-width: min(100%, 13rem);
 }
 
 .tracks-list-wrapper {
@@ -450,11 +478,12 @@ const lastWatched = computed<Bookmark>(() => {
 }
 
 .track-item {
+	font-size: 1.1rem;
 	display: grid;
 	grid-template-columns: 1em 1em 1fr auto;
 	align-items: center;
 	gap: .5rem;
-	padding: 0.5rem 0.7rem;
+	padding: 0.8em 0.7em;
 	cursor: pointer;
 
 	

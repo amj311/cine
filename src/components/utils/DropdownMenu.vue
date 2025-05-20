@@ -16,7 +16,7 @@ function openMenu(event) {
 </script>
 
 <template>
-	<span @click="openMenu" v-bind="{ ...$props, ...$attrs }" tabindex="0"><slot></slot></span>
+	<span @click="openMenu" class="trigger" v-bind="{ ...$props, ...$attrs }" tabindex="0"><slot></slot></span>
 	<TieredMenu ref="menu" id="overlay_menu" :class="focusAreaClass" :popup="true" v-bind="$attrs">
 		<template v-for="(slotFn, name) in $slots" #[name]="slotProps">
 			<slot :name="name" v-bind="slotProps" />
@@ -24,5 +24,8 @@ function openMenu(event) {
 	</TieredMenu>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+.trigger {
+	display: inline-block;
+}
 </style>

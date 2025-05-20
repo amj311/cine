@@ -78,14 +78,16 @@ type Album = LibraryItemData & {
 	year?: string,
 	artist?: string,
 	genre?: string,
-	cover_thumb?: string,
+	cover_thumb: string,
+	cover: string,
 	tracks?: Array<Playable & {
 		title?: string,
 		artist?: string,
 		album?: string,
 		trackNumber?: number,
 		trackTotal?: number,
-		duration?: number,
+		duration: number,
+		startOffset: number,
 	}>,
 }
 
@@ -233,10 +235,10 @@ export class LibraryService {
 
 
 		// Identify an album if all children are audio files
-		const isFirstChildAudio = children.files.length > 0 && AudioTypes.some((type) => children.files[0].endsWith(type));
-		if (isFirstChildAudio) {
+		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioTypes.includes(file.split('.').pop() as AudioType));
+		if (allChildrenAreAudio) {
 			const firstTrackProbe = await ProbeService.getMp3Data(path + '/' + children.files[0]);
-			const tracks = detailed && (await Promise.all(children.files.map(async (file) => {
+			const tracks = detailed ? (await Promise.all(children.files.map(async (file) => {
 				const probe = await ProbeService.getMp3Data(path + '/' + file);
 				const title = probe?.title || LibraryService.removeExtensionsFromFileName(file);
 				return {
@@ -253,14 +255,21 @@ export class LibraryService {
 					watchProgress: WatchProgressService.getWatchProgress(path + '/' + file),
 					sortKey: (probe?.trackNumber ? probe.trackNumber + '_' : '') + file,
 					listName: title,
-				} as Playable;
-			})));
+				} as any;
+			}))) : undefined;
+			// Compute the start offset for each track
+			detailed && tracks!.reduce((acc, track) => {
+				track.startOffset = acc;
+				acc += track.duration;
+				return acc;
+			}, 0);
 			return {
 				type: 'album',
 				title: firstTrackProbe?.album,
 				artist: firstTrackProbe?.album_artist || firstTrackProbe?.artist,
 				genre: firstTrackProbe?.genre,
 				cover_thumb: `/thumb/${path + '/' + children.files[0]}?width=300`,
+				cover: `/thumb/${path + '/' + children.files[0]}?width=500`,
 				relativePath: path,
 				folderName: folderName,
 				metadata: null,
