@@ -38,7 +38,7 @@ export class ThumbnailService {
 				// Use ffmpeg to get a frame from the video
 				fileBuffer = await ThumbnailService.getVideoFrame(relativePath);
 			}
-			if (isAudio) {
+			else if (isAudio) {
 				// ffpeg can extract album art from mp3 files as a video stream
 				fileBuffer = await ThumbnailService.getVideoFrame(relativePath, 0);
 			}
