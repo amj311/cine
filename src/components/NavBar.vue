@@ -71,18 +71,17 @@ const visibleBreadcrumbs = computed(() => (navPathItems.value.slice(numHiddenBre
 				<Logo :width="125" />
 			</div>
 
-			<template v-if="useMobileNav">
+			<div v-if="useMobileNav">
 				<Button
 					v-if="!expandMobileNav"
 					variant="text"
 					severity="contrast"
-					class="flex-grow-1"
 					@click="expandMobileNav = !expandMobileNav"
 				>
-					<div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ navPathItems[navPathItems.length - 1]?.label || queryPathStore.currentFile }}</div>
+					{{ navPathItems[navPathItems.length - 1]?.label || queryPathStore.currentFile }}
 					<i class="pi pi-angle-down" />
 				</Button>
-			</template>
+			</div>
 
 			<!-- Starting point libraries -->
 			<div class="flex align-items-center" v-else-if="showRootNavigation">

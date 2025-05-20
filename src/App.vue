@@ -73,7 +73,7 @@ const showNavbar = computed(() => {
 	<div class="dark-app app-wrapper" :class="{ 'tv-nav': tvNavigationStore.enabled }" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
 		<template v-if="apiStore.isInitializing">
 			<div id="longLoading">
-				<i class="pi pi-spin pi-spinner spin" />
+				<i class="pi pi-spinner spin" />
 				Loading...
 			</div>
 		</template>
@@ -138,20 +138,6 @@ const showNavbar = computed(() => {
 	justify-content: center;
 	align-items: center;
 	gap: .5em;
-}
-
-.spin {
-	animation: spin 1500ms linear infinite;
-}
-
-@keyframes spin {
-	from {
-		transform: rotate(0deg);
-	}
-
-	to {
-		transform: rotate(360deg);
-	}
 }
 
 .tv-nav :focus {

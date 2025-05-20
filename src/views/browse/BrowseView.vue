@@ -30,8 +30,24 @@ queryPathStore.updatePathFromQuery();
 // maintain a stack of scroll positions for consistency when navigating backwards
 const scrollStack = new Map<string, number>();
 
+const loading = ref(false);
+const longLoading = ref(false);
+
+function awaitLongLoad() {
+	const time = 200;
+	const timeout = setTimeout(() => {
+		longLoading.value = true;
+	}, time);
+	return () => {
+		clearTimeout(timeout);
+		longLoading.value = false;
+	};
+}
+
 const fetchDirectory = async () => {
+	const removeLongLoad = awaitLongLoad();
 	try {
+		loading.value = true;
 		fetchedPath = queryPathStore.currentPath || '/';
 	
 		// normalize paths for accurate pairing
@@ -59,6 +75,10 @@ const fetchDirectory = async () => {
 	} catch (error) {
 		console.error('Error fetching directory:', error);
 	}
+	finally {
+		loading.value = false;
+		removeLongLoad();
+	}
 };
 
 onBeforeMount(() => {
@@ -81,38 +101,50 @@ watch(
 </script>
 
 <template>
-	<div style="height: 100%;">
-		<KeepAlive :include="['Explorer', 'MovieLibraryPage', 'PhotoLibraryPage']">
-			<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'photos'">
-				<PhotoLibraryPage :libraryItem="libraryItem" />
-			</template>
+	<div style="height: 100%; position: relative">
+		<div style="height: 100%;" :style="longLoading ? { opacity: 0.5, transition: '500ms' } : {}">
+			<KeepAlive :include="['Explorer', 'MovieLibraryPage', 'PhotoLibraryPage']">
+				<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'photos'">
+					<PhotoLibraryPage :libraryItem="libraryItem" />
+				</template>
 
-			<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'movies'">
-				<MovieLibraryPage :libraryItem="libraryItem" :folders="directory!.folders" />
-			</template>
+				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'movies'">
+					<MovieLibraryPage :libraryItem="libraryItem" :folders="directory!.folders" />
+				</template>
 
-			<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
-				<MoviePage :libraryItem="libraryItem" />
-			</template>
+				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
+					<MoviePage :libraryItem="libraryItem" />
+				</template>
 
-			<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'series'">
-				<SeriesPage :libraryItem="libraryItem" />
-			</template>
+				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'series'">
+					<SeriesPage :libraryItem="libraryItem" />
+				</template>
 
-			<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'album'">
-				<AlbumPage :libraryItem="libraryItem" :directory="directory" />
-			</template>
+				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'album'">
+					<AlbumPage :libraryItem="libraryItem" :directory="directory" />
+				</template>
 
-			<template v-else>
-				<Explorer v-if="directory"
-					:exploreMode="exploreMode"
-					:directory="directory"
-				/>
-			</template>
-		</KeepAlive>
+				<template v-else>
+					<Explorer v-if="directory"
+						:exploreMode="exploreMode"
+						:directory="directory"
+					/>
+				</template>
+			</KeepAlive>
+		</div>
+		<div v-if="longLoading" class="loading">
+			<i class="pi pi-spinner spin" />
+		</div>
 	</div>
 </template>
 
 <style scoped lang="scss">
-
+.loading {
+	position: absolute;
+	top: 5rem;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 2rem;
+	color: var(--text-color);
+}
 </style>

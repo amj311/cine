@@ -27,7 +27,7 @@ function playVideo(path: string) {
 	})
 }
 
-const fodlers = computed(() => {
+const folders = computed(() => {
 	return props.directory.folders.filter(folder => folder.libraryItem && folder.libraryItem.type === 'folder');
 });
 const items = computed(() => {
@@ -40,8 +40,8 @@ const items = computed(() => {
 	<Scroll>
 		<div class="mt-3 pl-3 pr-2 pb-3">
 			<template v-if="exploreMode === 'library'">
-				<div class="folder-grid" v-if="fodlers.length">
-					<template v-for="folder in fodlers">
+				<div class="folder-grid" v-if="folders.length">
+					<template v-for="folder in folders">
 						<MetadataLoader
 							v-if="folder.libraryItem"
 							:key="folder.libraryItem.relativePath"
