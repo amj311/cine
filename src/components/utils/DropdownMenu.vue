@@ -18,7 +18,9 @@ function openMenu(event) {
 <template>
 	<span @click="openMenu" v-bind="{ ...$props, ...$attrs }" tabindex="0"><slot></slot></span>
 	<TieredMenu ref="menu" id="overlay_menu" :class="focusAreaClass" :popup="true" v-bind="$attrs">
-		<template #start><slot name="start"></slot></template>
+		<template v-for="(slotFn, name) in $slots" #[name]="slotProps">
+			<slot :name="name" v-bind="slotProps" />
+		</template>
 	</TieredMenu>
 </template>
 

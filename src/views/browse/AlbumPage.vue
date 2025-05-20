@@ -27,7 +27,7 @@ function formatRuntime(seconds: number) {
 	const hours = Math.floor(seconds / 3600);
 	const minutes = Math.floor((seconds % 3600) / 60);
 	const secondsOver = Math.floor(seconds % 60);
-	return `${hours > 0 ? hours + ':' : ''}${minutes > 0 ? minutes + '' : '00'}:${secondsOver > 0 ? secondsOver + '' : ''}`.trim();
+	return `${hours > 0 ? hours + ':' : ''}${minutes > 0 ? minutes + '' : '00'}:${String(secondsOver).padStart(2, '0')}`.trim();
 }
 
 const audio = ref<HTMLAudioElement | null>(null);
@@ -47,7 +47,7 @@ onBeforeUnmount(() => {
 
 
 function playTrack(track: any, time: number = 0) {
-	if (currentTrack.value === track) {
+	if (currentTrack.value === track && !time) {
 		return;
 	}
 	currentTrack.value = track;
@@ -70,7 +70,7 @@ function playTrack(track: any, time: number = 0) {
 				],
 			});
 
-			navigator.mediaSession.setActionHandler('previoustrack', playPreviousTrack);
+			navigator.mediaSession.setActionHandler('previoustrack', backTrack);
 			navigator.mediaSession.setActionHandler('nexttrack', playNextTrack);
 			navigator.mediaSession.setActionHandler('play', () => {
 				audio.value?.play();
@@ -93,12 +93,16 @@ function playTrack(track: any, time: number = 0) {
 	}
 }
 
-function playPreviousTrack() {
-	if (!currentTrack.value) {
+function backTrack() {
+	if (!currentTrack.value || !audio.value) {
+		return;
+	}
+	if (audio.value.currentTime > 5) {
+		audio.value.currentTime = 0;
 		return;
 	}
 	const tracks = props.libraryItem.tracks;
-	const currentIndex = tracks.findIndex((track: any) => track.trackNumber === currentTrack.value.trackNumber);
+	const currentIndex = tracks.findIndex((track: any) => track.relativePath === currentTrack.value.relativePath);
 	if (currentIndex <= 0) {
 		return;
 	}
@@ -111,13 +115,145 @@ function playNextTrack() {
 		return;
 	}
 	const tracks = props.libraryItem.tracks;
-	const currentIndex = tracks.findIndex((track: any) => track.trackNumber === currentTrack.value.trackNumber);
+	const currentIndex = tracks.findIndex((track: any) => track.relativePath === currentTrack.value.relativePath);
 	if (currentIndex < 0 || currentIndex >= tracks.length - 1) {
 		return;
 	}
 	const nextTrack = tracks[currentIndex + 1];
 	playTrack(nextTrack);
 }
+
+type Bookmark = {
+	name: string;
+	time: number;
+	duration: number;
+	watchedAt: number;
+	relativePath: string;
+	trackIndex: number;
+}
+const bookmarks = computed(() => {
+	const allTrackBookmarks = props.libraryItem?.tracks.map((track: any) => track.watchProgress?.bookmarks || []).flat() || [];
+	const lastWatchedBookmarks = {};
+	for (const bookmark of allTrackBookmarks) {
+		if (!(bookmark.relativePath in lastWatchedBookmarks)) {
+			lastWatchedBookmarks[bookmark.name] = bookmark;
+		}
+		else if (bookmark.watchedAt > lastWatchedBookmarks[bookmark.name].watchedAt) {
+			lastWatchedBookmarks[bookmark.name] = bookmark;
+			
+		}
+	}
+	return Object.values(lastWatchedBookmarks).map((bookmark: any) => ({
+		...bookmark,
+		trackIndex: props.libraryItem.tracks.findIndex((track: any) => track.relativePath === bookmark.relativePath),
+	})) as Bookmark[];
+})
+
+function timeLabel(index, time: number) {
+	return `#${index + 1} ${formatRuntime(time)}`;
+}
+
+function bookmarkLabel(bookmarkName: string) {
+	const bookmark = bookmarks.value.find((bookmark: any) => bookmark.name === bookmarkName);
+	if (!bookmark) {
+		return bookmarkName;
+	}
+	const track = props.libraryItem.tracks.find((track: any) => track.relativePath === bookmark.relativePath);
+	if (!track) {
+		return bookmarkName;
+	}
+	return `${bookmarkName} - ${timeLabel(bookmark.trackIndex, bookmark.time)}`;
+}
+
+const bookmarkMenuItems = computed(() => {
+	const bookmarkNames = new Set(bookmarks.value.map((bookmark: any) => bookmark.name));
+	currentBookmarkName.value && bookmarkNames.add(currentBookmarkName.value);
+	
+	const items = Array.from(bookmarkNames).map((name: string) => {
+		return {
+			isCurrent: currentBookmarkName.value === name,
+			bookmarkName: name,
+			command: () => {
+				if (name === currentBookmarkName.value && confirm(`Stop using bookmark '${name}'?`)) {					
+					setBookmark('');
+					return;
+				}
+				setBookmark(name);
+				playAtBookmark(name);
+			},
+		};
+	}) as any[];
+
+	items.push({
+		label: 'New bookmark...',
+		command: addNewBookmark,
+	})
+	return items;
+});
+
+const bookmarkKey = computed(() => props.libraryItem?.relativePath + '_activeBookmark')
+const currentBookmarkName = ref<string>(localStorage.getItem(bookmarkKey.value) || '');
+
+function addNewBookmark() {
+	const newName = prompt('Enter a name for the bookmark');
+	if (newName) {
+		setBookmark(newName);
+		if (currentTrack.value) {
+			postProgress();
+		}
+	}
+}
+
+async function deleteBookmark(name: string) {
+	if (!confirm(`Are you sure you want to delete bookmark '${name}'?`)) {
+		return;
+	}
+	if (currentBookmarkName.value === name) {
+		setBookmark('');
+	}
+	const tracksToDeleteFrom = props.libraryItem?.tracks.filter((track: any) => track.watchProgress?.bookmarks?.some((bookmark: any) => bookmark.name === name)) || [];
+	await Promise.all(tracksToDeleteFrom.map(async (track: any) => {
+		track.watchProgress.bookmarks = track.watchProgress?.bookmarks?.filter((bookmark: any) => bookmark.name !== name);
+		await useWatchProgressStore().deleteBookmark(track.relativePath, name);
+	}));
+}
+
+function setBookmark(name: string) {
+	if (currentBookmarkName.value === name) {
+		return;
+	}
+	currentBookmarkName.value = name;
+	localStorage.setItem(bookmarkKey.value, name);
+}
+
+function getBookmark(name: string) {
+	const bookmark = bookmarks.value.find((bookmark: any) => bookmark.name === name);
+	if (!bookmark) {
+		return null;
+	}
+	return bookmark;
+}
+
+function playAtBookmark(bookmarkName: string) {
+	const bookmark = getBookmark(bookmarkName);
+	if (!bookmark) {
+		return;
+	}
+	playAtTrackTime(bookmark.trackIndex, bookmark.time);
+}
+
+function playAtTrackTime(trackIndex: number, time: number) {
+	if (!audio.value) {
+		return;
+	}
+	const track = props.libraryItem.tracks[trackIndex];
+	if (!track) {
+		return;
+	}
+	playTrack(track, time);
+}
+
+
 
 const PROGRESS_INTERVAL = 1000 * 5;
 let progressUpdateInterval;
@@ -143,10 +279,35 @@ async function postProgress() {
 		if (!audio.value) {
 			return;
 		}
+		const progress = useWatchProgressStore().createProgress(audio.value.currentTime, audio.value.duration);
 		await useWatchProgressStore().postprogress(
 			currentTrack.value.relativePath,
-			useWatchProgressStore().createProgress(audio.value.currentTime, audio.value.duration)
+			progress,
+			currentBookmarkName.value,
 		);
+		// update local bookmark
+		if (currentBookmarkName.value) {
+			const bookmark = getBookmark(currentBookmarkName.value);
+			if (bookmark) {
+				bookmark.time = progress.time;
+				bookmark.duration = progress.duration;
+				bookmark.watchedAt = progress.watchedAt;
+			}
+			else {
+				if (!currentTrack.value.watchProgress) {
+					currentTrack.value.watchProgress = {
+						...progress,
+						relativePath: currentTrack.value.relativePath,
+						bookmarks: [],
+					};
+				}
+				currentTrack.value.watchProgress.bookmarks.push({
+					name: currentBookmarkName.value,
+					...progress,
+					relativePath: currentTrack.value.relativePath,
+				});
+			}
+		}
 	}
 	catch (e) {
 		console.error("Failed to update progress")
@@ -154,18 +315,25 @@ async function postProgress() {
 	}
 }
 
-const lastWatchedtrack = computed(() => {
+const lastWatched = computed<Bookmark>(() => {
+	if (currentBookmarkName.value) {
+		return bookmarks.value.find((bookmark: any) => bookmark.name === currentBookmarkName.value);
+	}
 	const tracks = props.libraryItem?.tracks || [];
 	const watchedTracks = tracks.filter((track: any) => track.watchProgress);
 	const lastWatched = watchedTracks.slice().sort((a: any, b: any) => b.watchProgress.watchedAt - a.watchProgress.watchedAt)[0];
 	if (!lastWatched) {
 		return null;
 	}
-	const lastWatchedIndex = tracks.findIndex((track: any) => track.trackNumber === lastWatched.trackNumber);
+	const lastWatchedIndex = tracks.findIndex((track: any) => track.relativePath === lastWatched.relativePath);
+	// detect total completion
 	if (lastWatchedIndex === tracks.length - 1 && lastWatched.watchProgress.time >= lastWatched.watchProgress.duration) {
 		return null;
 	}
-	return lastWatched;
+	return {
+		...lastWatched.watchProgress,
+		trackIndex: lastWatchedIndex,
+	};
 })
 
 </script>
@@ -197,31 +365,53 @@ const lastWatchedtrack = computed(() => {
 							@click="() => playTrack(track)"
 						>
 							<div><i :class="`pi pi-${track === currentTrack ? 'volume-up' : 'play'}`" /></div>
-							<div class="number">{{ track.trackNumber }}</div>
+							<div class="number">{{ index + 1 }}</div>
 							<div class="title">{{ track.title }}</div>
 							<div class="duration">{{ formatRuntime(track.duration) }}</div>
 						</div>
 					</div>
+
 				</Scroll>
 			</div>
-			<div class="audio-controls px-2 pb-3">
-				<audio v-show="currentTrack" ref="audio" :src="useApiStore().baseUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
-				<Button
-					v-if="!currentTrack && lastWatchedtrack"
-					icon="pi pi-play"
-					:label="`Resume (#${lastWatchedtrack.trackNumber}, ${formatRuntime(lastWatchedtrack.watchProgress.time)})`"
-					size="large"
-					class="w-full"
-					@click="() => playTrack(lastWatchedtrack, lastWatchedtrack.watchProgress.time)"
-				/>
-				<Button
-					v-if="!currentTrack && !lastWatchedtrack"
-					icon="pi pi-play"
-					:label="`Play All`"
-					size="large"
-					class="w-full"
-					@click="() => playTrack(libraryItem?.tracks[0])"
-				/>
+			<div class="bottom px-2 mb-3 flex align-items-center">
+				<div class="audio-controls flex-grow-1">
+					<audio v-show="currentTrack" ref="audio" :src="useApiStore().baseUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
+					<Button
+						v-if="!currentTrack && lastWatched"
+						icon="pi pi-play"
+						:label="`Resume ${timeLabel(lastWatched.trackIndex, lastWatched.time)}`"
+						size="large"
+						class="w-full"
+						@click="() => playAtTrackTime(lastWatched.trackIndex, lastWatched.time)"
+					/>
+					<Button
+						v-if="!currentTrack && !lastWatched"
+						icon="pi pi-play"
+						:label="`Play All`"
+						size="large"
+						class="w-full"
+						@click="() => playTrack(libraryItem?.tracks[0])"
+					/>
+				</div>
+				<div>
+					<DropdownMenu
+						:model="bookmarkMenuItems"
+					>
+						<Button
+							:icon="`pi pi-bookmark${(currentBookmarkName === '') ? '' : '-fill'}`"
+							size="large"
+							text
+							severity="contrast"
+						/>
+						<template #item="{ item }">
+							<div class="p-tieredmenu-item-link gap-3" :style="item.isCurrent ? { backgroundColor: 'var(--p-tieredmenu-item-focus-background)', fontWeight: 'bold' } : undefined">
+								<span style="white-space: nowrap;">{{item.bookmarkName ? bookmarkLabel(item.bookmarkName) : item.label}}</span>
+								<div class="flex-grow-1" />
+								<i v-if="item.bookmarkName" @click.stop="() => deleteBookmark(item.bookmarkName)" class="pi pi-trash" />
+							</div>
+						</template>
+					</DropdownMenu>
+				</div>
 			</div>
 		</div>
 	</Scroll>

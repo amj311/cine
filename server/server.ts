@@ -223,8 +223,21 @@ app.get('/api/watchProgress', async (req, res) => {
 });
 app.post('/api/watchProgress', async (req, res) => {
 	try {
-		const { relativePath, progress } = req.body;
-		await WatchProgressService.updateWatchProgress(relativePath, progress);
+		const { relativePath, progress, bookmarkId } = req.body;
+		await WatchProgressService.updateWatchProgress(relativePath, progress, bookmarkId);
+		res.json({
+			success: true,
+		})
+	}
+	catch (err) {
+		console.error(err)
+		res.send(500)
+	}
+});
+app.delete('/api/watchProgress/bookmark', async (req, res) => {
+	try {
+		const { relativePath, bookmarkId } = req.body;
+		await WatchProgressService.deleteBookmark(relativePath, bookmarkId);
 		res.json({
 			success: true,
 		})

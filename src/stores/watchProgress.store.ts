@@ -5,7 +5,7 @@ import { useApiStore } from './api.store';
 export const useWatchProgressStore = defineStore('WatchProgress', () => {
 	const lastWatchProgress = ref<any>(null);
 
-	async function postprogress(relativePath: string, progress: any) {
+	async function postprogress(relativePath: string, progress: any, bookmarkId?: string) {
 		lastWatchProgress.value = {
 			relativePath,
 			progress,
@@ -15,6 +15,16 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 			relativePath,
 			progress,
 			watcherId: getWatcherId(),
+			bookmarkId,
+		});
+	}
+
+	async function deleteBookmark(relativePath: string, bookmarkId: string) {
+		await useApiStore().api.delete('/watchProgress/bookmark', {
+			data: {
+				relativePath,
+				bookmarkId,
+			}
 		});
 	}
 
@@ -41,6 +51,7 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 	return {
 		lastWatchProgress,
 		postprogress,
+		deleteBookmark,
 		createProgress,
 	}
 })

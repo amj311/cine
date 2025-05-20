@@ -11,7 +11,18 @@ export type WatchProgress = {
 	watchedAt: number,
 	relativePath: RelativePath,
 }
+
+// A bookmark saves additional timestamps for a media
+type Bookmark = WatchProgress & {
+	name: string,
+}
+
+type WatchProgressWithBookmarks = WatchProgress & {
+	bookmarks: Bookmark[],
+}
+
 const watching = new Map<RelativePath, WatchProgress>();
+const bookmarks = new Map<RelativePath, Map<string, Bookmark>>();
 
 export class WatchProgressService {
 	/**
@@ -21,15 +32,23 @@ export class WatchProgressService {
 	 * @param relativePath The id of the media.
 	 * @param percentage The percentage of the media that has been watched.
 	 */
-	public static updateWatchProgress(relativePath: RelativePath, progress: WatchProgress): void {
-		// if (progress.percentage >= 90) {
-		// 	watching.delete(relativePath);
-		// 	return;
-		// }
+	public static updateWatchProgress(relativePath: RelativePath, progress: WatchProgress, bookmarkId?: string): void {
+		// Always save the overall progress
 		watching.set(relativePath, {
 			...progress,
 			relativePath,
 		});
+
+		if (bookmarkId) {
+			// Save the bookmark progress
+			const bookmarksForMedia = bookmarks.get(relativePath) || new Map<string, Bookmark>();
+			bookmarksForMedia.set(bookmarkId, {
+				...progress,
+				relativePath,
+				name: bookmarkId,
+			});
+			bookmarks.set(relativePath, bookmarksForMedia);
+		}
 	}
 
 	/**
@@ -37,8 +56,22 @@ export class WatchProgressService {
 	 * @param relativePath The id of the media.
 	 * @returns The watching progress of the media.
 	 */
-	public static getWatchProgress(relativePath: RelativePath): WatchProgress | null {
-		return watching.get(relativePath) || null;
+	public static getWatchProgress(relativePath: RelativePath): WatchProgressWithBookmarks | null {
+		const progress = watching.get(relativePath);
+		if (progress) {
+			return {
+				...progress,
+				bookmarks: Array.from(bookmarks.get(relativePath)?.values() || []),
+			}
+		}
+		return null;
+	}
+
+	public static deleteBookmark(relativePath: RelativePath, bookmarkId: string): void {
+		const bookmarksForMedia = bookmarks.get(relativePath);
+		if (bookmarksForMedia) {
+			bookmarksForMedia.delete(bookmarkId);
+		}
 	}
 
 	public static getAllRecentlyWatched(): WatchProgress[] {

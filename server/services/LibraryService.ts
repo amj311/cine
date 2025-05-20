@@ -233,8 +233,8 @@ export class LibraryService {
 
 
 		// Identify an album if all children are audio files
-		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioTypes.includes(file.split('.').pop() as AudioType));
-		if (allChildrenAreAudio) {
+		const isFirstChildAudio = children.files.length > 0 && AudioTypes.some((type) => children.files[0].endsWith(type));
+		if (isFirstChildAudio) {
 			const firstTrackProbe = await ProbeService.getMp3Data(path + '/' + children.files[0]);
 			const tracks = detailed && (await Promise.all(children.files.map(async (file) => {
 				const probe = await ProbeService.getMp3Data(path + '/' + file);
