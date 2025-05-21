@@ -368,7 +368,7 @@ const lastWatched = computed<Bookmark>(() => {
 				<MediaCard
 					:imageUrl="libraryItem?.cover"
 					:aspectRatio="'square'"
-					:progress="(isBook) && libraryItem?.watchProgress"
+					:progress="(isBook) && (lastWatched || libraryItem?.watchProgress)"
 				/>
 			</div>
 			<div>
