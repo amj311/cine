@@ -381,26 +381,8 @@ const lastWatched = computed<Bookmark>(() => {
 			</div>
 		</div>
 		<div class="other-wrapper">
-			<div class="tracks-list-wrapper" v-if="libraryItem?.tracks">
-				<Scroll>
-					<div class="tracks-list">
-						<div
-							class="track-item"
-							:class="{ 'active': currentTrack ? track === currentTrack : index === lastWatched?.trackIndex }"
-							v-for="(track, index) in libraryItem.tracks"
-							:key="index"
-							@click="() => playTrack(track)"
-						>
-							<div><i :class="`pi pi-${track === currentTrack ? 'volume-up' : 'play'}`" /></div>
-							<div class="number">{{ index + 1 }}</div>
-							<div class="title">{{ track.title }}</div>
-							<div class="duration">{{ formatRuntime(isBook ? track.startOffset : track.duration) }}</div>
-						</div>
-					</div>
 
-				</Scroll>
-			</div>
-			<div class="bottom px-2 mb-3 flex align-items-center">
+			<div class="controls px-2 mb-3 flex align-items-center">
 				<div class="audio-controls flex-grow-1">
 					<audio v-show="currentTrack" ref="audio" :src="useApiStore().apiUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
 					<Button
@@ -447,6 +429,25 @@ const lastWatched = computed<Bookmark>(() => {
 						</template>
 					</DropdownMenu>
 				</div>
+			</div>
+			<div class="tracks-list-wrapper" v-if="libraryItem?.tracks">
+				<Scroll>
+					<div class="tracks-list">
+						<div
+							class="track-item"
+							:class="{ 'active': currentTrack ? track === currentTrack : index === lastWatched?.trackIndex }"
+							v-for="(track, index) in libraryItem.tracks"
+							:key="index"
+							@click="() => playTrack(track)"
+						>
+							<div><i :class="`pi pi-${track === currentTrack ? 'volume-up' : 'play'}`" /></div>
+							<div class="number">{{ index + 1 }}</div>
+							<div class="title">{{ track.title }}</div>
+							<div class="duration">{{ formatRuntime(isBook ? track.startOffset : track.duration) }}</div>
+						</div>
+					</div>
+
+				</Scroll>
 			</div>
 		</div>
 	</div>
