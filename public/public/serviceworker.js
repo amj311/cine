@@ -10,10 +10,17 @@ addEventListener("message", (event) => {
 async function cacheIndexResources(indexResources) {
 	try {
 		const cache = await caches.open(CACHE_NAME);
+		// remove previous indexResources
+		const previousItems = await getData('indexResources');
+		if (previousItems) {
+			const oldItems = previousItems.filter(item => !indexResources.includes(item));
+			await Promise.all(oldItems.map(item => cache.delete(item)));
+		}
 		await cache.addAll([OFFLINE_URL, ...indexResources]);
+		await setData('indexResources', indexResources);
 	}
 	catch (e) {
-		console.error("Failed to cache indexResoures")
+		console.error("Failed to cache indexResources");
 		console.error(e);
 	}
 };
@@ -67,3 +74,38 @@ self.addEventListener('activate', event => {
 		);
 	})());
 });
+
+
+
+// Simple IndexedDB helper
+function openDB() {
+	return new Promise((resolve, reject) => {
+		const request = indexedDB.open('sw-db', 1);
+		request.onupgradeneeded = () => {
+			request.result.createObjectStore('kv');
+		};
+		request.onsuccess = () => resolve(request.result);
+		request.onerror = () => reject(request.error);
+	});
+}
+
+async function setData(key, value) {
+	const db = await openDB();
+	const tx = db.transaction('kv', 'readwrite');
+	tx.objectStore('kv').put(value, key);
+	return tx.complete;
+}
+
+async function getData(key) {
+	const db = await openDB();
+	const tx = db.transaction('kv', 'readonly');
+	const request = tx.objectStore('kv').get(key);
+	return new Promise((resolve, reject) => {
+		request.onsuccess = () => {
+			if (request.readyState === 'done') {
+				resolve(request.result);
+			}
+		};
+		request.onerror = () => reject(request.error);
+	});
+}
