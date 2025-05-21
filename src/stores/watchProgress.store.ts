@@ -57,7 +57,7 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 
 	function updateLocalProgress(relativePath: string, progress: any) {
 		const key = `localProgress_${relativePath}`;
-		if (progress.percentage >= 90) {
+		if (progress.percentage >= 99) {
 			// Remove the progress from local storage if the video is finished
 			localStorage.removeItem(key);
 			return;

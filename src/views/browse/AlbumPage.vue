@@ -165,7 +165,7 @@ function bookmarkTime(bookmarkName: string) {
 	if (!bookmark) {
 		return '';
 	}
-	return formatRuntime(timeOffset(bookmark.trackIndex, bookmark.time));
+	return formatRuntime(timeOffset(bookmark.trackIndex, bookmark.sub.time));
 }
 
 const bookmarkMenuItems = computed(() => {
@@ -387,7 +387,7 @@ const lastWatched = computed<Bookmark>(() => {
 					<Button
 						v-if="!currentTrack && lastWatched && isBook"
 						icon="pi pi-play"
-						:label="`Resume ${formatRuntime(timeOffset(lastWatched.trackIndex, lastWatched.time))}`"
+						:label="`Resume ${formatRuntime(timeOffset(lastWatched.trackIndex, lastWatched.sub.time))}`"
 						size="large"
 						class="w-full"
 						@click="() => playAtTrackTime(lastWatched.trackIndex, lastWatched.sub.time)"
@@ -506,7 +506,7 @@ const lastWatched = computed<Bookmark>(() => {
 }
 
 .track-item {
-	font-size: 1.1rem;
+	font-size: 1.2rem;
 	display: grid;
 	grid-template-columns: 1em 1em 1fr auto;
 	align-items: center;
