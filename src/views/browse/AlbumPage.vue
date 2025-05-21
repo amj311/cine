@@ -381,7 +381,6 @@ const lastWatched = computed<Bookmark>(() => {
 			</div>
 		</div>
 		<div class="other-wrapper">
-
 			<div class="controls px-2 flex align-items-center">
 				<div class="audio-controls flex-grow-1">
 					<audio v-show="currentTrack" ref="audio" :src="useApiStore().apiUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
@@ -446,7 +445,7 @@ const lastWatched = computed<Bookmark>(() => {
 							<div class="duration">{{ formatRuntime(isBook ? track.startOffset : track.duration) }}</div>
 						</div>
 					</div>
-
+					<br />
 				</Scroll>
 			</div>
 		</div>
