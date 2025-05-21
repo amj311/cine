@@ -20,7 +20,7 @@ export type WatchProgress = {
 export const useWatchProgressStore = defineStore('WatchProgress', () => {
 	const lastWatchProgress = ref<any>(null);
 
-	async function postprogress(relativePath: string, progress: any, bookmarkId?: string) {
+	async function postprogress(relativePath: string, progress: any, bookmarkId?: string, local: boolean = false) {
 		lastWatchProgress.value = {
 			relativePath,
 			progress,
@@ -29,9 +29,12 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 		await useApiStore().api.post('/watchProgress', {
 			relativePath,
 			progress,
-			watcherId: getWatcherId(),
 			bookmarkId,
 		});
+
+		if (local) {
+			updateLocalProgress(relativePath, progress);
+		}
 	}
 
 	async function deleteBookmark(relativePath: string, bookmarkId: string) {
@@ -43,15 +46,23 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 		});
 	}
 
-	function getWatcherId() {
-		const key = 'watcherId';
-		const watcherId = localStorage.getItem(key);
-		if (watcherId) {
-			return watcherId;
+	function getLocalProgress(relativePath: string) {
+		const key = `localProgress_${relativePath}`;
+		const localProgress = localStorage.getItem(key);
+		if (localProgress) {
+			return JSON.parse(localProgress);
 		}
-		const newWatcherId = Math.random().toString(36).substring(2, 15);
-		localStorage.setItem(key, newWatcherId);
-		return newWatcherId;
+		return null;
+	}
+
+	function updateLocalProgress(relativePath: string, progress: any) {
+		const key = `localProgress_${relativePath}`;
+		if (progress.percentage >= 90) {
+			// Remove the progress from local storage if the video is finished
+			localStorage.removeItem(key);
+			return;
+		}
+		localStorage.setItem(key, JSON.stringify(progress));
 	}
 
 	function createProgress(currentTime: number, duration: number, sub?: SubWatchProgress) {
@@ -66,8 +77,9 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 
 	return {
 		lastWatchProgress,
-		postprogress,
+		postProgress: postprogress,
 		deleteBookmark,
 		createProgress,
+		getLocalProgress,
 	}
 })

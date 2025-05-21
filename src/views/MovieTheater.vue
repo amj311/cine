@@ -294,7 +294,7 @@ const progressUpdateInterval = setInterval(async () => {
 			if (!playerProgress.value) {
 				return;
 			}
-			await useWatchProgressStore().postprogress(
+			await useWatchProgressStore().postProgress(
 				mediaPath.value,
 				playerProgress.value,
 			);

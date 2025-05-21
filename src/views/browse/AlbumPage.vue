@@ -136,11 +136,21 @@ type Bookmark = {
 		time: number;
 	}
 	trackIndex: number;
+	isLocal?: boolean;
 }
-const bookmarks = computed<Bookmark[]>(() => props.libraryItem.watchProgress?.bookmarks.map(b => ({
-	...b,
-	trackIndex: props.libraryItem.tracks.findIndex((track: any) => track.relativePath === b.sub.relativePath),
-})) || []);
+const bookmarks = computed<Bookmark[]>(() => {
+	const allBookmarks = props.libraryItem.watchProgress?.bookmarks || [];
+	const localBookmark = useWatchProgressStore().getLocalProgress(props.libraryItem.relativePath);
+	if (localBookmark) {
+		localBookmark.name = "Latest";
+		localBookmark.isLocal = true;
+		allBookmarks.push(localBookmark);
+	}
+	return allBookmarks.map(b => ({
+		...b,
+		trackIndex: props.libraryItem.tracks.findIndex((track: any) => track.relativePath === b.sub.relativePath),
+	})) || [];
+});
 
 function timeOffset(trackIndex, timeIntoTrack: number) {
 	const track = props.libraryItem.tracks[trackIndex];
@@ -150,12 +160,12 @@ function timeOffset(trackIndex, timeIntoTrack: number) {
 	return timeIntoTrack + track.startOffset;
 }
 
-function bookmarkLabel(bookmarkName: string) {
+function bookmarkTime(bookmarkName: string) {
 	const bookmark = bookmarks.value.find((bookmark: any) => bookmark.name === bookmarkName);
 	if (!bookmark) {
-		return bookmarkName;
+		return '';
 	}
-	return `${bookmarkName} - ${formatRuntime(timeOffset(bookmark.trackIndex, bookmark.time))}`;
+	return formatRuntime(timeOffset(bookmark.trackIndex, bookmark.time));
 }
 
 const bookmarkMenuItems = computed(() => {
@@ -163,10 +173,18 @@ const bookmarkMenuItems = computed(() => {
 	currentBookmarkName.value && bookmarkNames.add(currentBookmarkName.value);
 	
 	const items = Array.from(bookmarkNames).map((name: string) => {
+		const isLocal = name === 'Latest';
 		return {
 			isCurrent: currentBookmarkName.value === name,
+			isLocal,
 			bookmarkName: name,
+			canDelete: !isLocal,
 			command: () => {
+				if (isLocal) {
+					setBookmark('');
+					playAtBookmark(name);
+					return;
+				}
 				if (name === currentBookmarkName.value) {
 					if (!confirm(`Are you sure you want to stop using bookmark '${name}'?`)) {
 						return;
@@ -209,11 +227,8 @@ async function deleteBookmark(name: string) {
 	if (currentBookmarkName.value === name) {
 		setBookmark('');
 	}
-	const tracksToDeleteFrom = props.libraryItem?.tracks.filter((track: any) => track.watchProgress?.bookmarks?.some((bookmark: any) => bookmark.name === name)) || [];
-	await Promise.all(tracksToDeleteFrom.map(async (track: any) => {
-		track.watchProgress.bookmarks = track.watchProgress?.bookmarks?.filter((bookmark: any) => bookmark.name !== name);
-		await useWatchProgressStore().deleteBookmark(track.relativePath, name);
-	}));
+	props.libraryItem.watchProgress.bookmarks = props.libraryItem.watchProgress.bookmarks.filter((bookmark: any) => bookmark.name !== name);
+	await useWatchProgressStore().deleteBookmark(props.libraryItem.relativePath, name);
 }
 
 function setBookmark(name: string) {
@@ -278,15 +293,20 @@ async function postProgress() {
 	}
 	try {
 		const currentTrackIndex = props.libraryItem.tracks.findIndex((track: any) => track.relativePath === currentTrack.value.relativePath);
-		const progress = useWatchProgressStore().createProgress(timeOffset(currentTrackIndex, audio.value.currentTime), totalTime.value, {
-			relativePath: currentTrack.value.relativePath,
-			time: audio.value.currentTime,
-			duration: currentTrack.value.duration,
-		});
-		await useWatchProgressStore().postprogress(
+		const progress = useWatchProgressStore().createProgress(
+			timeOffset(currentTrackIndex, audio.value.currentTime),
+			totalTime.value,
+			{
+				relativePath: currentTrack.value.relativePath,
+				time: audio.value.currentTime,
+				duration: currentTrack.value.duration,
+			}
+		);
+		await useWatchProgressStore().postProgress(
 			props.libraryItem.relativePath,
 			progress,
 			currentBookmarkName.value,
+			true,
 		);
 		// update local bookmark
 		if (currentBookmarkName.value) {
@@ -321,6 +341,13 @@ async function postProgress() {
 const lastWatched = computed<Bookmark>(() => {
 	if (currentBookmarkName.value) {
 		return bookmarks.value.find((bookmark: any) => bookmark.name === currentBookmarkName.value);
+	}
+	const localProgress = useWatchProgressStore().getLocalProgress(props.libraryItem.relativePath);
+	if (localProgress) {
+		return {
+			...localProgress,
+			trackIndex: props.libraryItem.tracks.findIndex((track: any) => track.relativePath === localProgress.sub.relativePath),
+		};
 	}
 	if (!props.libraryItem?.watchProgress) {
 		return null;
@@ -405,9 +432,17 @@ const lastWatched = computed<Bookmark>(() => {
 						/>
 						<template #item="{ item }">
 							<div class="p-tieredmenu-item-link gap-3" :style="item.isCurrent ? { backgroundColor: 'var(--p-tieredmenu-item-focus-background)', fontWeight: 'bold' } : undefined">
-								<span style="white-space: nowrap;">{{item.bookmarkName ? bookmarkLabel(item.bookmarkName) : item.label}}</span>
+								<span style="white-space: nowrap;">
+									<template v-if="item.bookmarkName">
+										{{ item.bookmarkName }}
+										<span class="text-muted">&nbsp;{{ bookmarkTime(item.bookmarkName) }}</span>
+									</template>
+									<template v-else>
+										{{ item.label }}
+									</template>
+								</span>
 								<div class="flex-grow-1" />
-								<i v-if="item.bookmarkName" @click.stop="() => deleteBookmark(item.bookmarkName)" class="pi pi-trash" />
+								<i v-if="item.canDelete" @click.stop="() => deleteBookmark(item.bookmarkName)" class="pi pi-trash" />
 							</div>
 						</template>
 					</DropdownMenu>
