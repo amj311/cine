@@ -382,7 +382,7 @@ const lastWatched = computed<Bookmark>(() => {
 		</div>
 		<div class="other-wrapper">
 
-			<div class="controls px-2 mb-3 flex align-items-center">
+			<div class="controls px-2 flex align-items-center">
 				<div class="audio-controls flex-grow-1">
 					<audio v-show="currentTrack" ref="audio" :src="useApiStore().apiUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
 					<Button
