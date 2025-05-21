@@ -48,16 +48,13 @@ export const useApiStore = defineStore('Api', () => {
 			if (host.baseUrl) {
 				const success = await testConnection(host);
 				if (success) {
-					console.log("Success! COnnecting to", host)
 					successfulHost = host;
 					break;
 				}
 			}
 		}
 		selectedHost.value = successfulHost || null;
-		console.log("setting initializing to false")
 		isInitializing.value = false;
-		console.log(isInitializing.value)
 	}
 	connectToFirstAvailableHost().catch((error) => {
 		console.error('Error connecting to first available host:', error);
