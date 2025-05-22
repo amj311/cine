@@ -89,7 +89,7 @@ function leaveRestPasswordMode() {
 <template>
 	<div
 		class="flex flex-column gap-2 align-items-center justify-content-center mx-auto"
-		style="width: 15em"
+		style="width: 20em"
 	>
 		<Logo class="my-5" />
 		<div
@@ -112,7 +112,7 @@ function leaveRestPasswordMode() {
 				type="text"
 				v-model="state.email"
 				placeholder="Email"
-				size="small"
+				size="large"
 				class="w-full"
 			/>
 
@@ -121,72 +121,94 @@ function leaveRestPasswordMode() {
 					type="text"
 					v-model="state.givenName"
 					placeholder="First Name"
-					size="small"
+					size="large"
 					class="w-full"
 				/>
 				<InputText
 					type="text"
 					v-model="state.familyName"
 					placeholder="Last Name"
-					size="small"
+					size="large"
 					class="w-full"
 				/>
 			</template>
 
 
 			<InputGroup>
-				<InputText
-					v-if="state.mode === 'signup' || state.mode === 'login'"
-					v-model="state.password"
-					placeholder="Password"
-					:type="state.showPassword ? 'text' : 'password'"
-					size="small"
-					class="w-full"
-				/>
-
-				<InputGroupAddon style="padding: 0; cursor: pointer">
-					<i
-						class="pi"
-						:class="state.showPassword ? 'pi-eye-slash' : 'pi-eye'"
-						@click="state.showPassword = !state.showPassword"
+				<template v-if="state.mode === 'signup' || state.mode === 'login'">
+					<InputText
+						v-model="state.password"
+						placeholder="Password"
+						:type="state.showPassword ? 'text' : 'password'"
+						size="large"
+						class="w-full"
 					/>
-				</InputGroupAddon>
+					<InputGroupAddon style="padding: 0; cursor: pointer">
+						<i
+							class="pi"
+							:class="state.showPassword ? 'pi-eye-slash' : 'pi-eye'"
+							@click="state.showPassword = !state.showPassword"
+						/>
+					</InputGroupAddon>
+				</template>
+				
 			</InputGroup>
 
 
 			<template v-if="state.mode === 'signup'">
 				<Button
+					size="large"
 					severity="primary"
 					@click="createEmailUser"
 					:loading="state.isLoading"
-					class="w-full mt-3 justify-content-around"
-				>Create Account</button>
-				<small>Already have an account? <span
+					class="w-full my-3 justify-content-around"
+				>
+					Create Account
+				</button>
+				<small>
+					Already have an account?
+					<span
 						class="text-link"
 						@click="state.mode = 'login'"
-					>Sign in</span></small>
+					>
+						Sign in
+					</span>
+				</small>
 			</template>
 			<template v-else-if="state.mode === 'login'">
 				<Button
+					size="large"
 					severity="primary"
 					@click="loginWithEmail"
 					:loading="state.isLoading"
-					class="w-full mt-3 justify-content-around"
-				>Sign in</button>
-				<small>New here? <span
+					class="w-full my-3 justify-content-around"
+				>
+					Sign in
+				</button>
+				<small>
+					New here?
+					<span
 						class="text-link"
 						@click="state.mode = 'signup'"
-					>Create account</span></small>
-				<small><span
+					>
+						Create account
+					</span>
+				</small>
+				<small>
+					<span
 						class="text-link"
 						@click="state.mode = 'reset_password'"
-					>Forgot password?</span></small>
+					>
+						Forgot password?
+					</span>
+				</small>
 			</template>
 			<template v-else-if="state.mode === 'reset_password'">
 				<Button
+					size="large"
 					v-if="!state.hasSentEmail"
 					@click="sendPasswordResetEmail"
-					class="w-full mt-3 justify-content-around"
+					class="w-full my-3 justify-content-around"
 				>Send Email</button>
 				<small>Back to <span
 						class="text-link"
@@ -197,7 +219,8 @@ function leaveRestPasswordMode() {
 		<!-- GOOGLE SIGN-IN NOT WORKING!!!!
 		<div>or</div>
 
-		<Button @click="loginWithGoogle" outlined class="w-full justify-content-between gap-2"><i class="pi pi-google" /><div class="flex-grow-1 text-align-center">Sign in with Google</div></button> -->
+		<Button
+			size="large" @click="loginWithGoogle" outlined class="w-full justify-content-between gap-2"><i class="pi pi-google" /><div class="flex-grow-1 text-align-center">Sign in with Google</div></button> -->
 	</div>
 </template>
 
