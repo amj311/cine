@@ -75,6 +75,19 @@ h1, h2, h3, h4, h5, h6 {
 	font-size: 0.8em;
 }
 
+.text-primary {
+	color: var(--p-primary-color);
+}
+
+.link {
+	color: var(--p-primary-color);
+	cursor: pointer;
+	text-decoration: none;
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
 .pi {
 	--p-icon-size: 1em;
 }

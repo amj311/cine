@@ -21,7 +21,6 @@ import { EitherMetadata } from './services/metadata/MetadataTypes';
 import { ThumbnailService } from './services/ThumbnailService';
 import ffmpeg from 'fluent-ffmpeg';
 import { ProbeService } from './services/ProbeService';
-import tesseract from 'tesseract.js';
 
 const corsOptions = {};
 

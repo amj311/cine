@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios';
+import { AuthService } from '@/services/AuthService';
 
 export type Host = {
 	hostname: string;
@@ -24,9 +25,28 @@ export const useApiStore = defineStore('Api', () => {
 	const apiUrl = computed(() => selectedHost.value?.baseUrl + '/api');
 
 	const api = computed(() => {
-		return axios.create({
+		const client = axios.create({
 			baseURL: apiUrl.value,
 		})
+
+		client.interceptors.request.use(async (config) => {
+			const token = await AuthService.getToken();
+			if (token) {
+				config.headers.Authorization = token;
+			}
+			return config;
+		});
+
+		client.interceptors.response.use(null, (error) => {
+			if (error.isAxiosError && error.response?.status === 401) {
+				console.log("Received unauthenticated response. Logging out");
+				AuthService.signOut();
+			}
+
+			return Promise.reject(error);
+		})
+
+		return client;
 	});
 
 	async function testConnection(host: Host): Promise<boolean> {
