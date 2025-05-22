@@ -5,7 +5,7 @@
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useBackgroundStore } from '@/stores/background.store';
 import { useApiStore } from '@/stores/api.store';
-import { useWatchProgressStore } from '@/stores/watchProgress.store';
+import { useWatchProgressStore, type WatchProgress } from '@/stores/watchProgress.store';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -125,25 +125,30 @@ function playNextTrack() {
 	playTrack(nextTrack);
 }
 
-type Bookmark = {
+type Bookmark = WatchProgress & {
 	name: string;
-	time: number;
-	duration: number;
-	watchedAt: number;
-	relativePath: string;
-	sub: {
-		relativePath: string;
-		time: number;
-	}
 	trackIndex: number;
-	isLocal?: boolean;
+	isAuto?: boolean;
+	sub: NonNullable<WatchProgress['sub']>;
 }
+
+const LOCAL_BOOKMARK_NAME = 'This device';
+const LATEST_BOOKMARK_NAME = 'Latest';
+
 const bookmarks = computed<Bookmark[]>(() => {
-	const allBookmarks = props.libraryItem.watchProgress?.bookmarks || [];
+	const allBookmarks = props.libraryItem.watchProgress?.bookmarks.slice() || [];
 	const localBookmark = useWatchProgressStore().getLocalProgress(props.libraryItem.relativePath);
-	if (localBookmark) {
-		localBookmark.name = "Latest";
-		localBookmark.isLocal = true;
+	if (props.libraryItem.watchProgress) {
+		const latestBookmark = {
+			name: LATEST_BOOKMARK_NAME,
+			isAuto: true,
+			...props.libraryItem.watchProgress,
+		};
+		allBookmarks.push(latestBookmark);
+	}
+	if (localBookmark && localBookmark.time !== props.libraryItem.watchProgress?.time) {
+		localBookmark.name = LOCAL_BOOKMARK_NAME;
+		localBookmark.isAuto = true;
 		allBookmarks.push(localBookmark);
 	}
 	return allBookmarks.map(b => ({
@@ -169,32 +174,28 @@ function bookmarkTime(bookmarkName: string) {
 }
 
 const bookmarkMenuItems = computed(() => {
-	const bookmarkNames = new Set(bookmarks.value.map((bookmark: Bookmark) => bookmark.name));
-	currentBookmarkName.value && bookmarkNames.add(currentBookmarkName.value);
-	
-	const items = Array.from(bookmarkNames).map((name: string) => {
-		const isLocal = name === 'Latest';
+	const items = bookmarks.value.map((bookmark) => {
 		return {
-			isCurrent: currentBookmarkName.value === name,
-			isLocal,
-			bookmarkName: name,
-			canDelete: !isLocal,
+			isCurrent: currentBookmarkName.value === bookmark.name,
+			isAuto: bookmark.isAuto,
+			bookmarkName: bookmark.name,
+			canDelete: !bookmark.isAuto,
 			command: () => {
-				if (isLocal) {
+				if (bookmark.isAuto) {
 					setBookmark('');
-					playAtBookmark(name);
+					playAtBookmark(bookmark.name);
 					return;
 				}
-				if (name === currentBookmarkName.value) {
-					if (!confirm(`Are you sure you want to stop using bookmark '${name}'?`)) {
+				if (bookmark.name === currentBookmarkName.value) {
+					if (!confirm(`Are you sure you want to stop using bookmark '${bookmark.name}'?`)) {
 						return;
 					}
 					setBookmark('');
 					return;
 				}
 				else {
-					setBookmark(name);
-					playAtBookmark(name);
+					setBookmark(bookmark.name);
+					playAtBookmark(bookmark.name);
 				}
 			},
 		};
@@ -212,12 +213,17 @@ const currentBookmarkName = ref<string>(localStorage.getItem(bookmarkKey.value) 
 
 function addNewBookmark() {
 	const newName = prompt('Enter a name for the bookmark');
-	if (newName) {
-		setBookmark(newName);
-		if (currentTrack.value) {
-			postProgress();
-		}
+	if (!newName) {
+		return;
 	}
+	const progress = getCurrentProgress() || lastWatched.value;
+	props.libraryItem.watchProgress?.bookmarks.push({
+		...progress,
+		name: newName,
+		relativePath: props.libraryItem.relativePath,
+	});
+	setBookmark(newName);
+	postProgress(progress);
 }
 
 async function deleteBookmark(name: string) {
@@ -287,21 +293,30 @@ function stopProgressUpdate() {
 	}
 }
 
-async function postProgress() {
-	if (!isBook.value || !audio.value || !currentTrack.value) {
+function getCurrentProgress() {
+	if (!audio.value || !currentTrack.value) {
+		return;
+	}
+	const currentTrackIndex = props.libraryItem.tracks.findIndex((track: any) => track.relativePath === currentTrack.value.relativePath);
+	return useWatchProgressStore().createProgress(
+		timeOffset(currentTrackIndex, audio.value.currentTime),
+		totalTime.value,
+		{
+			relativePath: currentTrack.value.relativePath,
+			time: audio.value.currentTime,
+			duration: currentTrack.value.duration,
+		}
+	);
+}
+
+async function postProgress(progress = getCurrentProgress()) {
+	if (!isBook.value) {
 		return;
 	}
 	try {
-		const currentTrackIndex = props.libraryItem.tracks.findIndex((track: any) => track.relativePath === currentTrack.value.relativePath);
-		const progress = useWatchProgressStore().createProgress(
-			timeOffset(currentTrackIndex, audio.value.currentTime),
-			totalTime.value,
-			{
-				relativePath: currentTrack.value.relativePath,
-				time: audio.value.currentTime,
-				duration: currentTrack.value.duration,
-			}
-		);
+		if (!progress) {
+			return;
+		}	
 		await useWatchProgressStore().postProgress(
 			props.libraryItem.relativePath,
 			progress,
@@ -316,20 +331,6 @@ async function postProgress() {
 				bookmark.duration = progress.duration;
 				bookmark.watchedAt = progress.watchedAt;
 			}
-			else {
-				if (!currentTrack.value.watchProgress) {
-					currentTrack.value.watchProgress = {
-						...progress,
-						relativePath: props.libraryItem.relativePath,
-						bookmarks: [],
-					};
-				}
-				currentTrack.value.watchProgress.bookmarks.push({
-					name: currentBookmarkName.value,
-					...progress,
-					relativePath: props.libraryItem.relativePath,
-				});
-			}
 		}
 	}
 	catch (e) {
@@ -340,7 +341,10 @@ async function postProgress() {
 
 const lastWatched = computed<Bookmark>(() => {
 	if (currentBookmarkName.value) {
-		return bookmarks.value.find((bookmark: any) => bookmark.name === currentBookmarkName.value);
+		const bookmark = getBookmark(currentBookmarkName.value);
+		if (bookmark) {
+			return bookmark;
+		}
 	}
 	const localProgress = useWatchProgressStore().getLocalProgress(props.libraryItem.relativePath);
 	if (localProgress) {
