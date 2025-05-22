@@ -64,6 +64,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 								<div class="feed-row-items-list">
 									<div
 										class="feed-row-card-wrapper"
+										:class="item.libraryItem.playable?.type"
 										v-for="item in feedRow.items"
 										:key="item.relativePath"
 									>
@@ -142,8 +143,14 @@ function openSlideshow(files: any[], firstFile?: any) {
 	}
 
 	&.continue-watching .feed-row-card-wrapper {
-		width: min(225px, 30vw);
-		min-width: min(225px, 30vw);
+		--baseWidth: min(15rem, max(8rem, 30vw));
+		width: var(--baseWidth);
+
+		&.album {
+			--mult: 0.66;
+			width: calc(var(--baseWidth) * var(--mult));
+		}
+
 	}
 
 
