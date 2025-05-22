@@ -75,7 +75,7 @@ const showNavbar = computed(() => {
 			</div>
 		</template>
 
-		<template v-else-if="true || !useUserStore().isLoggedIn">
+		<template v-else-if="!useUserStore().isLoggedIn">
 			<LoginPage />
 		</template>
 
