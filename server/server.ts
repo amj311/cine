@@ -347,13 +347,16 @@ app.get('/api/feed', async (req, res) => {
 
 		// Past Photos
 		// Find past photos that match today's date +- day range
-		const dayRange = 3;
+		const dayRange = 2;
 		const today = new Date();
 		const pastPhotos = allPhotos.filter((photo) => {
 			if (!photo.takenAt) {
 				return false;
 			}
 			const photoDate = new Date(photo.takenAt);
+			if (photoDate.getFullYear() === today.getFullYear()) {
+				return false; // skip photos from this year
+			}
 			// set photo date to same year as today
 			photoDate.setFullYear(today.getFullYear());
 			const diffTime = Math.abs(photoDate.getTime() - today.getTime());
