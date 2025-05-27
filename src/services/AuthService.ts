@@ -17,16 +17,57 @@ const auth = getAuth(firebaseApp);
 auth.useDeviceLanguage();
 
 onAuthStateChanged(auth, (authUser) => {
-	AuthService.onLogInOrOut?.call(null, authUser);
+	AuthService.onFbAuthChange(authUser);
 });
 // const isWeb = [':8100', ':3000', '.com'].some((str)=> document.location.href.includes(str));
 
 export const AuthService = {
 	info: [''],
-	onLogInOrOut: (authUser) => { },
+	authUser: null as null | {
+		email: string,
+		isOwner?: boolean,
+		isFb?: boolean,
+	},
 
-	get authUser() {
-		return auth?.currentUser;
+	getInitialUser() {
+		const maxAge = 1000 * 60 * 60 * 24 * 7;
+		const isOwner = localStorage.getItem('isOwner') === 'true';
+		const lastLogin = localStorage.getItem('lastLogin');
+		if (isOwner && lastLogin) {
+			const lastLoginDate = new Date(parseInt(lastLogin));
+			if (Date.now() - lastLoginDate.getTime() < maxAge) {
+				return {
+					email: import.meta.env.VITE_OWNER_EMAIL,
+					isOwner: true,
+				};
+			}
+		}
+		return null;
+	},
+
+	onLogInOrOut: (authUser) => { },
+	setAuthUser(authUser) {
+		const isOwner = authUser?.email === import.meta.env.VITE_OWNER_EMAIL;
+		if (isOwner) {
+			authUser.isOwner = true;
+			localStorage.setItem('isOwner', 'true');
+			localStorage.setItem('lastLogin', Date.now().toString());
+		}
+
+		this.authUser = authUser || null;
+		this.onLogInOrOut(authUser);
+	},
+
+	onFbAuthChange(authUser) {
+		if (!this.authUser?.isOwner) {
+			this.setAuthUser(authUser ?
+				{
+					...authUser,
+					isFb: true,
+				}
+				: null
+			);
+		}
 	},
 
 	async getToken() {
@@ -43,20 +84,32 @@ export const AuthService = {
 			newFbUser = userCredential.user;
 		}
 		catch (error: any) {
-			console.log('createEmailUser error', error)
+			console.error('createEmailUser error', error)
 			throw new Error(error.message);
 		}
 
-		this.onLogInOrOut?.call(null, newFbUser);
+		this.setAuthUser(newFbUser);
 	},
 
 	async signInWithEmail(email, password) {
 		try {
-			const userCredential = await signInWithEmailAndPassword(auth, email, password);
-			const user = userCredential.user;
-			return user;
+			if (email === import.meta.env.VITE_OWNER_EMAIL && password === import.meta.env.VITE_OWNER_PASS) {
+				this.info.push('signing in as owner');
+				this.setAuthUser({
+					email: import.meta.env.VITE_OWNER_EMAIL,
+					isOwner: true,
+				});
+			}
+			else {
+				// const userCredential = await signInWithEmailAndPassword(auth, email, password);
+				// const user = userCredential.user;
+				// this.setAuthUser({
+				// 	email: user.email || '',
+				// 	isFb: true,
+				// });
+			}
 		} catch (error: any) {
-			console.log('signInWithEmail error', error)
+			console.error('signInWithEmail error', error)
 			throw new Error(error.message);
 		}
 	},
@@ -97,6 +150,7 @@ export const AuthService = {
 	async signOut() {
 		try {
 			await signOut(auth);
+			this.onLogInOrOut?.call(null, null);
 		} catch (error: any) {
 			throw new Error(error.message);
 		}

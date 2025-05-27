@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { AuthService } from '@/services/AuthService';
 import { useApiStore } from './api.store';
@@ -7,14 +7,19 @@ export const useUserStore = defineStore('user', () => {
 	const hasLoadedSessionData = ref(false);
 	const loginError = ref<String>('');
 	const isLoggedIn = ref(false);
-	const isOwner = ref(false);
 	const currentUser = ref<any>();
 	// const newUserData = ref<any>(null);
 	// const session = ref<any>();
 	const isLoading = ref(false);
 
 	const loadSessionData = async () => {
-		const authUser = AuthService.authUser;
+		// This is triggered by firebase at app initialization
+		let authUser = AuthService.authUser;
+		if (!authUser) {
+			// Try to get initial user from localStorage
+			authUser = AuthService.getInitialUser();
+			AuthService.setAuthUser(authUser);
+		}
 		if (!authUser) {
 			isLoggedIn.value = false;
 			// currentUser.value = null;
@@ -29,7 +34,6 @@ export const useUserStore = defineStore('user', () => {
 				currentUser.value = null;
 				return;
 			}
-			isOwner.value = authUser?.email === import.meta.env.VITE_OWNER_EMAIL;
 			// if (newUserData.value) {
 			// 	await useApiStore().api.put('user/self', newUserData.value);
 			// 	newUserData.value = null;
@@ -37,10 +41,7 @@ export const useUserStore = defineStore('user', () => {
 			// const { data } = await useApiStore().api.get('user/session');
 			// Push new user details after creating account with email
 			// currentUser.value = data.data;
-			currentUser.value = {
-				email: authUser?.email,
-				isOwner: isOwner.value,
-			};
+			currentUser.value = authUser;
 			// session.value = data;
 			loginError.value = '';
 		}
@@ -82,7 +83,7 @@ export const useUserStore = defineStore('user', () => {
 		hasLoadedSessionData,
 		isLoggedIn,
 		loginError,
-		isOwner,
+		isOwner: computed(() => currentUser.value?.isOwner || false),
 		currentUser,
 		// session,
 		// setNewUserData,
