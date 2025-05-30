@@ -266,6 +266,7 @@ export class LibraryService {
 					title,
 					artist: probe?.artist,
 					album: probe?.album,
+					year: probe?.year,
 					trackNumber: probe?.trackNumber,
 					trackTotal: probe?.trackTotal,
 					duration: probe?.duration,
@@ -290,12 +291,13 @@ export class LibraryService {
 					type: 'audiobook',
 					title: firstTrackProbe?.album,
 					author: firstTrackProbe?.album_artist || firstTrackProbe?.artist,
+					year: firstTrackProbe?.year,
 					cover_thumb: `/thumb/${path + '/' + children.files[0]}?width=300`,
 					cover: `/thumb/${path + '/' + children.files[0]}?width=500`,
 					relativePath: path,
 					folderName: folderName,
 					metadata: null,
-					sortKey: LibraryService.createSortKey(folderName),
+					sortKey: LibraryService.createSortKey(folderName, firstTrackProbe?.year),
 					watchProgress: WatchProgressService.getWatchProgress(path),
 					name: firstTrackProbe?.album || name,
 					listName: firstTrackProbe?.album || name,
@@ -719,7 +721,7 @@ export class LibraryService {
 		return name.replace(/^(the|a|an)\s+/i, '');
 	}
 
-	public static createSortKey(folderName: string) {
+	public static createSortKey(folderName: string, providedYear?: string) {
 		const { name, year } = LibraryService.parseNamePieces(folderName);
 		const withoutArticles = LibraryService.removeArticlesFromName(name);
 		let collectionName = '';
@@ -732,9 +734,11 @@ export class LibraryService {
 			featureName = collectionNameMatch.groups?.title?.trim() || withoutArticles;
 		}
 
-		const keyParts = [featureName, year];
+		const yearToUse = providedYear || year || '0000'; // Default to '0000' if no year is found
+
+		const keyParts = [featureName, yearToUse];
 		if (collectionName) {
-			keyParts.unshift(collectionName, year);
+			keyParts.unshift(collectionName, yearToUse);
 		}
 		return keyParts.join('_').toLowerCase();
 	}

@@ -40,6 +40,7 @@ export class ProbeService {
 			const tags = probe?.full?.format?.tags || {};
 			return {
 				...tags,
+				year: tags.date ? parseInt(tags.date) : undefined,
 				subtitles: probe?.glossary?.subtitles || [],
 				trackNumber: tags.track?.split('/')[0] ? parseInt(tags.track.split('/')[0]) : undefined,
 				trackTotal: tags.track?.split('/')[1] ? parseInt(tags.track.split('/')[1]) : undefined,
