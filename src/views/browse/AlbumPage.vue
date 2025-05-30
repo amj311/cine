@@ -36,16 +36,9 @@ const currentTrack = ref<any>(null);
 onMounted(() => {
 	if (audio.value) {
 		audio.value.addEventListener('ended', playNextTrack);
-		audio.value.addEventListener('play', startProgressUpdate);
-		audio.value.addEventListener('pause', stopProgressUpdate);
 	}
 })
 
-onBeforeUnmount(() => {
-	stopProgressUpdate();
-});
-
-const isBook = computed(() => props.libraryItem?.genre === 'Audiobook');
 const totalTime = computed(() => props.libraryItem?.tracks.reduce((acc: number, track: any) => acc + track.duration, 0) || 0);
 
 function playTrack(track: any, time: number = 0) {
@@ -57,7 +50,6 @@ function playTrack(track: any, time: number = 0) {
 		audio.value.src = useApiStore().apiUrl + '/stream?src=' + track.relativePath;
 		audio.value.play();
 		audio.value.currentTime = time;
-		startProgressUpdate();
 
 		// set device media image
 		if ('mediaSession' in navigator) {
@@ -125,243 +117,6 @@ function playNextTrack() {
 	playTrack(nextTrack);
 }
 
-type Bookmark = WatchProgress & {
-	name: string;
-	trackIndex: number;
-	isAuto?: boolean;
-	sub: NonNullable<WatchProgress['sub']>;
-}
-
-const LOCAL_BOOKMARK_NAME = 'This device';
-const LATEST_BOOKMARK_NAME = 'Latest';
-
-const bookmarks = computed<Bookmark[]>(() => {
-	const allBookmarks = props.libraryItem.watchProgress?.bookmarks.slice() || [];
-	const localBookmark = useWatchProgressStore().getLocalProgress(props.libraryItem.relativePath);
-	if (props.libraryItem.watchProgress) {
-		const latestBookmark = {
-			name: LATEST_BOOKMARK_NAME,
-			isAuto: true,
-			...props.libraryItem.watchProgress,
-		};
-		allBookmarks.push(latestBookmark);
-	}
-	if (localBookmark && localBookmark.time !== props.libraryItem.watchProgress?.time) {
-		localBookmark.name = LOCAL_BOOKMARK_NAME;
-		localBookmark.isAuto = true;
-		allBookmarks.push(localBookmark);
-	}
-	return allBookmarks.map(b => ({
-		...b,
-		trackIndex: props.libraryItem.tracks.findIndex((track: any) => track.relativePath === b.sub.relativePath),
-	})) || [];
-});
-
-function timeOffset(trackIndex, timeIntoTrack: number) {
-	const track = props.libraryItem.tracks[trackIndex];
-	if (!track) {
-		return '';
-	}
-	return timeIntoTrack + track.startOffset;
-}
-
-function bookmarkTime(bookmarkName: string) {
-	const bookmark = bookmarks.value.find((bookmark: any) => bookmark.name === bookmarkName);
-	if (!bookmark) {
-		return '';
-	}
-	return formatRuntime(timeOffset(bookmark.trackIndex, bookmark.sub.time));
-}
-
-const bookmarkMenuItems = computed(() => {
-	const items = bookmarks.value.map((bookmark) => {
-		return {
-			isCurrent: currentBookmarkName.value === bookmark.name,
-			isAuto: bookmark.isAuto,
-			bookmarkName: bookmark.name,
-			canDelete: !bookmark.isAuto,
-			command: () => {
-				if (bookmark.isAuto) {
-					setBookmark('');
-					playAtBookmark(bookmark.name);
-					return;
-				}
-				if (bookmark.name === currentBookmarkName.value) {
-					if (!confirm(`Are you sure you want to stop using bookmark '${bookmark.name}'?`)) {
-						return;
-					}
-					setBookmark('');
-					return;
-				}
-				else {
-					setBookmark(bookmark.name);
-					playAtBookmark(bookmark.name);
-				}
-			},
-		};
-	}) as any[];
-
-	items.push({
-		label: 'New bookmark...',
-		command: addNewBookmark,
-	})
-	return items;
-});
-
-const bookmarkKey = computed(() => props.libraryItem?.relativePath + '_activeBookmark')
-const currentBookmarkName = ref<string>(localStorage.getItem(bookmarkKey.value) || '');
-
-function addNewBookmark() {
-	const newName = prompt('Enter a name for the bookmark');
-	if (!newName) {
-		return;
-	}
-	const progress = getCurrentProgress() || lastWatched.value;
-	props.libraryItem.watchProgress?.bookmarks.push({
-		...progress,
-		name: newName,
-		relativePath: props.libraryItem.relativePath,
-	});
-	setBookmark(newName);
-	postProgress(progress);
-}
-
-async function deleteBookmark(name: string) {
-	if (!confirm(`Are you sure you want to delete bookmark '${name}'?`)) {
-		return;
-	}
-	if (currentBookmarkName.value === name) {
-		setBookmark('');
-	}
-	props.libraryItem.watchProgress.bookmarks = props.libraryItem.watchProgress.bookmarks.filter((bookmark: any) => bookmark.name !== name);
-	await useWatchProgressStore().deleteBookmark(props.libraryItem.relativePath, name);
-}
-
-function setBookmark(name: string) {
-	if (currentBookmarkName.value === name) {
-		return;
-	}
-	currentBookmarkName.value = name;
-	localStorage.setItem(bookmarkKey.value, name);
-}
-
-function getBookmark(name: string) {
-	const bookmark = bookmarks.value.find((bookmark: any) => bookmark.name === name);
-	if (!bookmark) {
-		return null;
-	}
-	return bookmark;
-}
-
-function playAtBookmark(bookmarkName: string) {
-	const bookmark = getBookmark(bookmarkName);
-	if (!bookmark) {
-		return;
-	}
-	playAtTrackTime(bookmark.trackIndex, bookmark.sub.time);
-}
-
-function playAtTrackTime(trackIndex: number, time: number) {
-	if (!audio.value) {
-		return;
-	}
-	const track = props.libraryItem.tracks[trackIndex];
-	if (!track) {
-		return;
-	}
-	playTrack(track, time);
-}
-
-
-
-const PROGRESS_INTERVAL = 1000 * 5;
-let progressUpdateInterval;
-
-function startProgressUpdate() {
-	if (progressUpdateInterval) {
-		return;
-	}
-	progressUpdateInterval = setInterval(() => {
-		postProgress();
-	}, PROGRESS_INTERVAL);
-}
-
-function stopProgressUpdate() {
-	if (progressUpdateInterval) {
-		clearInterval(progressUpdateInterval);
-		progressUpdateInterval = null;
-	}
-}
-
-function getCurrentProgress() {
-	if (!audio.value || !currentTrack.value) {
-		return;
-	}
-	const currentTrackIndex = props.libraryItem.tracks.findIndex((track: any) => track.relativePath === currentTrack.value.relativePath);
-	return useWatchProgressStore().createProgress(
-		timeOffset(currentTrackIndex, audio.value.currentTime),
-		totalTime.value,
-		{
-			relativePath: currentTrack.value.relativePath,
-			time: audio.value.currentTime,
-			duration: currentTrack.value.duration,
-		}
-	);
-}
-
-async function postProgress(progress = getCurrentProgress()) {
-	if (!isBook.value) {
-		return;
-	}
-	try {
-		if (!progress) {
-			return;
-		}	
-		await useWatchProgressStore().postProgress(
-			props.libraryItem.relativePath,
-			progress,
-			currentBookmarkName.value,
-			true,
-		);
-		// update local bookmark
-		if (currentBookmarkName.value) {
-			const bookmark = getBookmark(currentBookmarkName.value);
-			if (bookmark) {
-				bookmark.time = progress.time;
-				bookmark.duration = progress.duration;
-				bookmark.watchedAt = progress.watchedAt;
-			}
-		}
-	}
-	catch (e) {
-		console.error("Failed to update progress")
-		console.error(e);
-	}
-}
-
-const lastWatched = computed<Bookmark>(() => {
-	if (currentBookmarkName.value) {
-		const bookmark = getBookmark(currentBookmarkName.value);
-		if (bookmark) {
-			return bookmark;
-		}
-	}
-	const localProgress = useWatchProgressStore().getLocalProgress(props.libraryItem.relativePath);
-	if (localProgress) {
-		return {
-			...localProgress,
-			trackIndex: props.libraryItem.tracks.findIndex((track: any) => track.relativePath === localProgress.sub.relativePath),
-		};
-	}
-	if (!props.libraryItem?.watchProgress) {
-		return null;
-	}
-	const lastWatchedIndex = props.libraryItem.tracks.findIndex((track: any) => track.relativePath === props.libraryItem.watchProgress.sub.relativePath);
-	return {
-		...props.libraryItem.watchProgress,
-		trackIndex: lastWatchedIndex,
-	};
-})
 
 </script>
 
@@ -372,7 +127,6 @@ const lastWatched = computed<Bookmark>(() => {
 				<MediaCard
 					:imageUrl="libraryItem?.cover"
 					:aspectRatio="'square'"
-					:progress="(isBook) && (lastWatched || libraryItem?.watchProgress)"
 				/>
 			</div>
 			<div>
@@ -389,15 +143,6 @@ const lastWatched = computed<Bookmark>(() => {
 				<div class="audio-controls flex-grow-1">
 					<audio v-show="currentTrack" ref="audio" :src="useApiStore().apiUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
 					<Button
-						v-if="!currentTrack && lastWatched && isBook"
-						icon="pi pi-play"
-						:label="`Resume ${formatRuntime(timeOffset(lastWatched.trackIndex, lastWatched.sub.time))}`"
-						size="large"
-						class="w-full"
-						@click="() => playAtTrackTime(lastWatched.trackIndex, lastWatched.sub.time)"
-					/>
-					<Button
-						v-else-if="!currentTrack && !lastWatched"
 						icon="pi pi-play"
 						:label="`Play All`"
 						size="large"
@@ -405,40 +150,13 @@ const lastWatched = computed<Bookmark>(() => {
 						@click="() => playTrack(libraryItem?.tracks[0])"
 					/>
 				</div>
-				<div v-if="isBook">
-					<DropdownMenu
-						:model="bookmarkMenuItems"
-					>
-						<Button
-							:icon="`pi pi-bookmark${(currentBookmarkName === '') ? '' : '-fill'}`"
-							size="large"
-							text
-							severity="contrast"
-						/>
-						<template #item="{ item }">
-							<div class="p-tieredmenu-item-link gap-3" :style="item.isCurrent ? { backgroundColor: 'var(--p-tieredmenu-item-focus-background)', fontWeight: 'bold' } : undefined">
-								<span style="white-space: nowrap;">
-									<template v-if="item.bookmarkName">
-										{{ item.bookmarkName }}
-										<span class="text-muted">&nbsp;{{ bookmarkTime(item.bookmarkName) }}</span>
-									</template>
-									<template v-else>
-										{{ item.label }}
-									</template>
-								</span>
-								<div class="flex-grow-1" />
-								<i v-if="item.canDelete" @click.stop="() => deleteBookmark(item.bookmarkName)" class="pi pi-trash" />
-							</div>
-						</template>
-					</DropdownMenu>
-				</div>
 			</div>
 			<div class="tracks-list-wrapper" v-if="libraryItem?.tracks">
 				<Scroll>
 					<div class="tracks-list">
 						<div
 							class="track-item"
-							:class="{ 'active': currentTrack ? track === currentTrack : index === lastWatched?.trackIndex }"
+							:class="{ 'active': track === currentTrack }"
 							v-for="(track, index) in libraryItem.tracks"
 							:key="index"
 							@click="() => playTrack(track)"
@@ -446,7 +164,7 @@ const lastWatched = computed<Bookmark>(() => {
 							<div><i :class="`pi pi-${track === currentTrack ? 'volume-up' : 'play'}`" /></div>
 							<div class="number">{{ index + 1 }}</div>
 							<div class="title">{{ track.title }}</div>
-							<div class="duration">{{ formatRuntime(isBook ? track.startOffset : track.duration) }}</div>
+							<div class="duration">{{ formatRuntime(track.duration) }}</div>
 						</div>
 					</div>
 					<br />
