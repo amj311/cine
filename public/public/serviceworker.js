@@ -42,22 +42,29 @@ self.addEventListener('fetch', event => {
 	event.respondWith((async () => {
 		const cache = await caches.open(CACHE_NAME);
 
-		try {
-			const fetchResponse = await fetch(event.request);
-			// Only cache if the URL matches our patterns.
-			if (shouldCache(event.request.url)) {
-				cache.put(event.request, fetchResponse.clone());
-			}
-			return fetchResponse;
-		} catch (e) {
-			const cachedResponse = await cache.match(event.request);
+		// load from cache first to avoid delays
+		const cachedResponse = await cache.match(event.request);
+
+		return new Promise((res) => {
 			if (cachedResponse) {
-				return cachedResponse;
+				// If we have a cached response, resolve it immediately, but still load from network in the background.
+				res(cachedResponse);
 			}
-			if (event.request.mode === 'navigate') {
-				return cache.match(OFFLINE_URL);
-			}
-		}
+
+			fetch(event.request).then((fetchResponse) => {
+				// Only cache if the URL matches our patterns.
+				if (shouldCache(event.request.url)) {
+					cache.put(event.request, fetchResponse.clone());
+				}
+				if (fetchResponse.ok && !cachedResponse) {
+					res(fetchResponse);
+				}
+			}).catch((error) => {
+				if (event.request.mode === 'navigate' && !cachedResponse) {
+					return cache.match(OFFLINE_URL);
+				}
+			});
+		})
 	})());
 });
 
