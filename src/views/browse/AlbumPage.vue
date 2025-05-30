@@ -132,8 +132,8 @@ function playNextTrack() {
 			<div>
 				<h3 class="mb-2">{{ libraryItem.title }}</h3>
 				<div class="flex align-items-center justify-content-center gap-2">
-					<span>{{ libraryItem.artist }}</span>
-					-
+					<span v-if="libraryItem.artist">{{ libraryItem.artist }}&nbsp;-&nbsp;</span>
+					<span v-if="libraryItem.year">{{ libraryItem.year }}&nbsp;-&nbsp;</span>
 					<span>{{ formatRuntime(totalTime) }}</span>
 				</div>
 			</div>

@@ -415,9 +415,9 @@ const lastWatched = computed<Bookmark>(() => {
 			</div>
 			<div>
 				<h3 class="mb-2">{{ libraryItem.title }}</h3>
-				<div class="flex align-items-center justify-content-center gap-2">
-					<span>{{ libraryItem.author }}</span>
-					-
+				<div class="flex align-items-center justify-content-center">
+					<span v-if="libraryItem.author">{{ libraryItem.author }}&nbsp;-&nbsp;</span>
+					<span v-if="libraryItem.year">{{ libraryItem.year }}&nbsp;-&nbsp;</span>
 					<span>{{ formatRuntime(totalTime) }}</span>
 				</div>
 			</div>
