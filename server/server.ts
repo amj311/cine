@@ -98,8 +98,8 @@ app.get("/api/stream", async function (req, res) {
 		return;
 	}
 
-	const stramable = ['mp4', 'mp3'];
-	if (!stramable.some((ext) => file.endsWith(ext))) {
+	const streamable = ['mp4', 'mp3', 'm4b'];
+	if (!streamable.some((ext) => file.endsWith(ext))) {
 		res.status(400).send("File type not supported for streaming");
 		return;
 	}
@@ -129,7 +129,10 @@ app.get("/api/stream", async function (req, res) {
 		const chunksize = (end - start) + 1;
 
 		// Dynamically determine the MIME type
-		const mimeType = mime.lookup(file) || 'application/octet-stream';
+		let mimeType = mime.lookup(file) || 'application/octet-stream';
+		if (file.endsWith('.m4b')) {
+			mimeType = 'audio/mp4'; // or 'audio/x-m4b'
+		}
 
 		res.writeHead(206, {
 			"Content-Range": "bytes " + start + "-" + end + "/" + total,
@@ -425,7 +428,9 @@ app.get('/api/subtitles', async (req, res) => {
 
 		const subtitleStream = probe.full.streams[index];
 
-		if (subtitleStream && subtitleStream.codec_type === 'subtitle') {
+		console.log(probe.full.streams);
+
+		if (subtitleStream && (subtitleStream.codec_type === 'subtitle' || subtitleStream.tags?.handler_name === 'SubtitleHandler')) {
 			if (subtitleStream.codec_name === 'mov_text') {
 				const subtitleIndex = subtitleStream.index;
 				const outputFilePath = path.join(__dirname, '../dist/assets/output.vtt');
@@ -482,6 +487,32 @@ app.get('/api/subtitles', async (req, res) => {
 						res.status(500).send("Error extracting VobSub subtitles");
 					})
 					.run();
+			}
+			else if (subtitleStream.codec_name === 'bin_data') {
+				// Log the binary data as text
+				// use ffmpeg to pass the data into a buffer and send it as text
+				const subtitleIndex = subtitleStream.index;
+				const outputFilePath = path.join(__dirname, '../dist/assets/output.txt');
+				ffmpeg(DirectoryService.resolvePath(relativePath))
+					.outputOptions(`-map 0:${subtitleIndex}`)
+					.outputOptions('-f srt') // Output format as SRT
+					.save(outputFilePath)
+					.on('end', () => {
+						// set cors header
+						res.setHeader('Access-Control-Allow-Origin', '*');
+						res.setHeader('Content-Type', 'text/plain');
+						res.sendFile(outputFilePath, (err) => {
+							if (err) {
+								console.error("Error while sending subtitle file:", err);
+								res.status(500).send("Error sending subtitle file");
+							}
+						});
+					})
+					.on('error', (err) => {
+						console.error("Error while extracting subtitles:", err);
+						res.status(500).send("Error extracting subtitles");
+					})
+					;
 			}
 			else {
 				res.status(400).send("Unsupported subtitle format: " + subtitleStream.codec_name);

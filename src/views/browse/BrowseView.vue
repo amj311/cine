@@ -11,6 +11,7 @@ import MovieLibraryPage from './MovieLibraryPage.vue';
 import { useApiStore } from '@/stores/api.store';
 import PhotoLibraryPage from './PhotoLibraryPage.vue';
 import AlbumPage from './AlbumPage.vue';
+import AudiobookPage from './AudiobookPage.vue';
 
 const route = useRoute();
 const api = useApiStore().api;
@@ -122,6 +123,10 @@ watch(
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'album'">
 					<AlbumPage :libraryItem="libraryItem" :directory="directory" />
+				</template>
+
+				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'audiobook'">
+					<AudiobookPage :libraryItem="libraryItem" :directory="directory" />
 				</template>
 
 				<template v-else>

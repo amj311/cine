@@ -31,21 +31,20 @@ type ProbeData = {
 
 export class ProbeService {
 
-	public static async getMp3Data(relativePath: string): Promise<any> {
+	public static async getTrackData(relativePath: string): Promise<any> {
 		if (!relativePath) {
 			return null;
 		}
 		try {
 			const probe = await ProbeService.getProbeData(relativePath);
-			const tags = probe?.full?.format?.tags;
-			if (!tags) {
-				return null;
-			}
+			const tags = probe?.full?.format?.tags || {};
 			return {
 				...tags,
+				subtitles: probe?.glossary?.subtitles || [],
 				trackNumber: tags.track?.split('/')[0] ? parseInt(tags.track.split('/')[0]) : undefined,
 				trackTotal: tags.track?.split('/')[1] ? parseInt(tags.track.split('/')[1]) : undefined,
 				duration: probe?.full?.format?.duration,
+				chapters: probe?.full?.chapters,
 			}
 		}
 		catch (err) {
@@ -103,7 +102,7 @@ export class ProbeService {
 	 */
 	private static async probeFile(filePath: string): Promise<ProbeData> {
 		return new Promise((resolve, reject) => {
-			ffmpeg.ffprobe(filePath, (err, data) => {
+			ffmpeg.ffprobe(filePath, ['-show_chapters'], (err, data) => {
 				if (err) {
 					console.error("Error while probing file:", err);
 					reject(err);
@@ -118,9 +117,9 @@ export class ProbeService {
 				};
 				if (data && data.streams) {
 					for (const stream of data.streams) {
-						if (stream.codec_type === 'subtitle' || stream.codec_type === 'mov_text') {
+						const handler_name = stream.tags?.handler_name;
+						if (stream.codec_type === 'subtitle' || stream.codec_name === 'mov_text' || handler_name === 'SubtitleHandler') {
 							const language = stream.tags?.language;
-							const handler_name = stream.tags?.handler_name;
 							let name = `${language} (${stream.codec_long_name})`;
 							if (handler_name && handler_name !== 'SubtitleHandler') {
 								name = handler_name;

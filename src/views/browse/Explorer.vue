@@ -109,7 +109,7 @@ const items = computed(() => {
 							</MetadataLoader>
 						</template>
 
-						<template v-if="folder.libraryItem.type === 'album'">
+						<template v-if="folder.libraryItem.type === 'album' || folder.libraryItem.type === 'audiobook'">
 							<MetadataLoader
 								:media="folder.libraryItem"
 							>

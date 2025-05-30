@@ -17,7 +17,7 @@ type LibraryItemData = {
 }
 
 type Playable = {
-	type: 'movie' | 'episodeFile' | 'episode' | 'extra' | 'album',
+	type: 'movie' | 'episodeFile' | 'episode' | 'extra' | 'album' | 'audiobook',
 	name: string,
 	version?: string | null,
 	fileName: RelativePath,
@@ -88,7 +88,26 @@ type Album = LibraryItemData & Playable & {
 		trackNumber?: number,
 		trackTotal?: number,
 		duration: number,
-		startOffset: number,
+	}>,
+}
+
+type Audiobook = LibraryItemData & Playable & {
+	type: 'audiobook',
+	title?: string,
+	year?: string,
+	author?: string,
+	cover_thumb: string,
+	cover: string,
+	chapterStrategy: 'tracks' | 'chapters',
+	// each chapter references a file, but multiple chapters can be in one file
+	// in the case of .m4b files all chapters are in one file
+	chapters?: Array<{
+		relativePath: RelativePath,
+		title?: string,
+		trackDuration: number,
+		chapterDuration: number,
+		bookStartOffset: number,
+		trackStartOffset: number, // for multiple chapters in the same track
 	}>,
 }
 
@@ -116,7 +135,7 @@ type Library = LibraryItemData & {
 	children: Array<RelativePath>,
 }
 
-type LibraryItem = Movie | Series | Album | Collection | Folder | Library;
+type LibraryItem = Movie | Series | Album | Audiobook | Collection | Folder | Library;
 
 
 
@@ -146,7 +165,7 @@ type Video = LibraryFileData & {
 	takenAt?: string,
 }
 
-const AudioTypes = ['mp3', 'm4a', 'aac'] as const;
+const AudioTypes = ['mp3', 'm4a', 'm4b', 'aac'] as const;
 type AudioType = typeof AudioTypes[number];
 type Audio = LibraryFileData & {
 	type: 'audio',
@@ -238,9 +257,9 @@ export class LibraryService {
 		// Identify an album if all children are audio files
 		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioTypes.includes(file.split('.').pop() as AudioType));
 		if (allChildrenAreAudio) {
-			const firstTrackProbe = await ProbeService.getMp3Data(path + '/' + children.files[0]);
+			const firstTrackProbe = await ProbeService.getTrackData(path + '/' + children.files[0]);
 			const tracks = detailed ? (await Promise.all(children.files.map(async (file) => {
-				const probe = await ProbeService.getMp3Data(path + '/' + file);
+				const probe = await ProbeService.getTrackData(path + '/' + file);
 				const title = probe?.title || LibraryService.removeExtensionsFromFileName(file);
 				return {
 					type: 'track',
@@ -255,6 +274,7 @@ export class LibraryService {
 					relativePath: path + '/' + file,
 					sortKey: (probe?.trackNumber ? probe.trackNumber + '_' : '') + file,
 					listName: title,
+					chapters: probe?.chapters
 				} as any;
 			}))) : undefined;
 			// Compute the start offset for each track
@@ -263,6 +283,45 @@ export class LibraryService {
 				acc += track.duration;
 				return acc;
 			}, 0);
+			if (firstTrackProbe?.genre === 'Audiobook' || children.files[0].endsWith('.m4b')) {
+				const isMb4b = children.files[0].endsWith('.m4b');
+
+				return {
+					type: 'audiobook',
+					title: firstTrackProbe?.album,
+					author: firstTrackProbe?.album_artist || firstTrackProbe?.artist,
+					cover_thumb: `/thumb/${path + '/' + children.files[0]}?width=300`,
+					cover: `/thumb/${path + '/' + children.files[0]}?width=500`,
+					relativePath: path,
+					folderName: folderName,
+					metadata: null,
+					sortKey: LibraryService.createSortKey(folderName),
+					watchProgress: WatchProgressService.getWatchProgress(path),
+					name: firstTrackProbe?.album || name,
+					listName: firstTrackProbe?.album || name,
+					fileName: path,
+					chapterStrategy: isMb4b ? 'chapters' : 'tracks',
+					chapters: tracks?.flatMap((track) => {
+						if (!isMb4b || !track.chapters || track.chapters.length === 0) {
+							return {
+								...track,
+								trackDuration: track.duration,
+								chapterDuration: track.duration,
+								bookStartOffset: track.startOffset || 0,
+								trackStartOffset: 0,
+							}
+						}
+						return track.chapters.map((chapter) => ({
+							...track,
+							title: chapter['TAG:title'] || track.title,
+							trackDuration: track.duration,
+							chapterDuration: chapter.duration,
+							bookStartOffset: chapter.start_time || 0,
+							trackStartOffset: chapter.start_time || 0,
+						}));
+					}) || undefined,
+				}
+			}
 			return {
 				type: 'album',
 				title: firstTrackProbe?.album,

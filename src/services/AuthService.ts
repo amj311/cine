@@ -12,16 +12,23 @@ const firebaseConfig = {
 	appId: import.meta.env.VITE_FB_APP_ID,
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
-const auth = getAuth(firebaseApp);
-auth.useDeviceLanguage();
-
-onAuthStateChanged(auth, (authUser) => {
-	AuthService.onFbAuthChange(authUser);
-});
-// const isWeb = [':8100', ':3000', '.com'].some((str)=> document.location.href.includes(str));
+let firebaseApp;
+let auth;
 
 export const AuthService = {
+	initialize() {
+		this.setAuthUser(this.getInitialUser());
+		if (!this.authUser) {
+			firebaseApp = initializeApp(firebaseConfig);
+			auth = getAuth(firebaseApp);
+
+			auth.useDeviceLanguage();
+			onAuthStateChanged(auth, (authUser) => {
+				AuthService.onFbAuthChange(authUser);
+			});
+		}
+	},
+
 	info: [''],
 	authUser: null as null | {
 		email: string,

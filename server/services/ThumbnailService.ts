@@ -24,7 +24,7 @@ export class ThumbnailService {
 			// Make sure the file is an image
 			const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 			const videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.3gp'];
-			const audioExtensions = ['.mp3'];
+			const audioExtensions = ['.mp3', '.m4b'];
 			const isVideo = videoExtensions.includes(path.extname(filePath).toLowerCase());
 			const isImage = imageExtensions.includes(path.extname(filePath).toLowerCase());
 			const isAudio = audioExtensions.includes(path.extname(filePath).toLowerCase());

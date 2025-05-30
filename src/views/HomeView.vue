@@ -69,7 +69,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 										:key="item.relativePath"
 									>
 										<MediaCard
-											v-if="item.libraryItem.playable?.type === 'album'"
+											v-if="item.libraryItem.playable?.type === 'album' || item.libraryItem.playable?.type === 'audiobook'"
 											clickable
 											:action="() => $router.push({ name: 'browse', query: { path: item.libraryItem.playable.relativePath } })"
 											:imageUrl="item.libraryItem.playable.cover_thumb"
@@ -83,7 +83,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 										</MediaCard>
 										<MediaCard
 											v-else
-											:imageUrl="item.libraryItem.playable?.still_thumb || item.libraryItem.parentLibrary.metadata?.background_thumb || item.libraryItem.parentLibrary.metadata?.poster_thumb"
+											:imageUrl="item.libraryItem.playable?.still_thumb || item.libraryItem.parentLibrary?.metadata?.background_thumb || item.libraryItem.parentLibrary?.metadata?.poster_thumb"
 											:imagePosition="'top'"
 											:playSrc="item.relativePath"
 											:progress="item.watchProgress"
@@ -146,7 +146,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 		--baseWidth: min(15rem, max(8rem, 30vw));
 		width: var(--baseWidth);
 
-		&.album {
+		&.album, &.audiobook {
 			--mult: 0.66;
 			width: calc(var(--baseWidth) * var(--mult));
 		}

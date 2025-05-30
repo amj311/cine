@@ -16,11 +16,6 @@ export const useUserStore = defineStore('user', () => {
 		// This is triggered by firebase at app initialization
 		let authUser = AuthService.authUser;
 		if (!authUser) {
-			// Try to get initial user from localStorage
-			authUser = AuthService.getInitialUser();
-			AuthService.setAuthUser(authUser);
-		}
-		if (!authUser) {
 			isLoggedIn.value = false;
 			// currentUser.value = null;
 			hasLoadedSessionData.value = true;
@@ -59,6 +54,7 @@ export const useUserStore = defineStore('user', () => {
 	AuthService.onLogInOrOut = () => {
 		loadSessionData();
 	};
+	AuthService.initialize();
 
 	// const setNewUserData = (data) => {
 	// 	newUserData.value = data;

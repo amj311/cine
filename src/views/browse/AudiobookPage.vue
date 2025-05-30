@@ -46,7 +46,7 @@ onBeforeUnmount(() => {
 });
 
 const isM4b = computed(() => props.libraryItem?.chapterStrategy === 'chapters');
-const totalTime = computed(() => isM4b ? props.libraryItem?.chapters[0]?.trackDuration : props.libraryItem?.chapters.reduce((acc: number, chapter: any) => acc + chapter.duration, 0) || 0);
+const totalTime = computed(() => isM4b.value ? props.libraryItem?.chapters[0]?.trackDuration : props.libraryItem?.chapters.reduce((acc: number, chapter: any) => acc + chapter.duration, 0));
 
 function playChapter(chapter: any, time: number = chapter.trackStartOffset || 0) {
 	if (currentChapter.value === chapter && !time) {
@@ -104,7 +104,7 @@ function backChapter() {
 		return;
 	}
 	const chapters = props.libraryItem.chapters;
-	const currentIndex = chapters.findIndex((chapter: any) => chapter.relativePath === currentChapter.value.relativePath);
+	const currentIndex = chapters.findIndex((chapter: any) => chapter === currentChapter.value);
 	if (currentIndex <= 0) {
 		return;
 	}
@@ -117,7 +117,7 @@ function playNextChapter() {
 		return;
 	}
 	const chapters = props.libraryItem.chapters;
-	const currentIndex = chapters.findIndex((chapter: any) => chapter.relativePath === currentChapter.value.relativePath);
+	const currentIndex = chapters.findIndex((chapter: any) => chapter === currentChapter.value);
 	if (currentIndex < 0 || currentIndex >= chapters.length - 1) {
 		return;
 	}
@@ -153,16 +153,31 @@ const bookmarks = computed<Bookmark[]>(() => {
 	}
 	return allBookmarks.map(b => ({
 		...b,
-		chapterIndex: props.libraryItem.chapters.findIndex((chapter: any) => chapter.relativePath === b.sub.relativePath),
+		chapterIndex: findChapterIndexForBookmark(b.sub.relativePath, b.sub.time),
 	})) || [];
 });
+
+function findChapterIndexForBookmark(relativePath, trackTime) {
+	if (!isM4b.value) {
+		return props.libraryItem.chapters.findIndex((chapter) => {
+			return chapter.relativePath === relativePath;
+		});
+	}
+	return props.libraryItem.chapters.findIndex((_, i) => {
+		if (!props.libraryItem.chapters[i + 1]) {
+			return i;
+		}
+		let nextTrack = props.libraryItem.chapters[i + 1];
+		return nextTrack.relativePath === relativePath && nextTrack.trackStartOffset > trackTime;
+	})
+}
 
 function timeOffset(chapterIndex, timeIntoChapter: number) {
 	const chapter = props.libraryItem.chapters[chapterIndex];
 	if (!chapter) {
 		return '';
 	}
-	return timeIntoChapter + chapter.startOffset;
+	return timeIntoChapter + chapter.bookStartOffset;
 }
 
 function bookmarkTime(bookmarkName: string) {
@@ -297,7 +312,7 @@ function getCurrentProgress() {
 	if (!audio.value || !currentChapter.value) {
 		return;
 	}
-	const currentChapterIndex = props.libraryItem.chapters.findIndex((chapter: any) => chapter.relativePath === currentChapter.value.relativePath);
+	const currentChapterIndex = props.libraryItem.chapters.indexOf(currentChapter.value);
 	return useWatchProgressStore().createProgress(
 		timeOffset(currentChapterIndex, audio.value.currentTime),
 		totalTime.value,
@@ -347,13 +362,19 @@ const lastWatched = computed<Bookmark>(() => {
 	if (localProgress) {
 		return {
 			...localProgress,
-			chapterIndex: props.libraryItem.chapters.findIndex((chapter: any) => chapter.relativePath === localProgress.sub.relativePath),
+			chapterIndex: findChapterIndexForBookmark(
+				localProgress.sub.relativePath,
+				localProgress.sub.time
+			),
 		};
 	}
 	if (!props.libraryItem?.watchProgress) {
 		return null;
 	}
-	const lastWatchedIndex = props.libraryItem.chapters.findIndex((chapter: any) => chapter.relativePath === props.libraryItem.watchProgress.sub.relativePath);
+	const lastWatchedIndex = findChapterIndexForBookmark(
+		props.libraryItem.watchProgress.sub.relativePath,
+		props.libraryItem.watchProgress.sub.time
+	);
 	return {
 		...props.libraryItem.watchProgress,
 		chapterIndex: lastWatchedIndex,
