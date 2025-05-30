@@ -32,6 +32,10 @@ function formatRuntime(seconds: number) {
 
 const audio = ref<HTMLAudioElement | null>(null);
 const currentChapter = ref<any>(null);
+const currentTrack = ref<{
+	relativePath: string;
+	duration: string;
+} | null>(null);
 
 onMounted(() => {
 	if (audio.value) {
@@ -52,9 +56,15 @@ function playChapter(chapter: any, time: number = chapter.trackStartOffset || 0)
 	if (currentChapter.value === chapter && !time) {
 		return;
 	}
+	if (currentTrack.value?.relativePath !== chapter.relativePath) {
+		currentTrack.value = {
+			relativePath: chapter.relativePath,
+			duration: chapter.trackDuration,
+		};
+	}
 	currentChapter.value = chapter;
 	if (audio.value) {
-		audio.value.src = useApiStore().apiUrl + ('/stream?src=') + chapter.relativePath;
+		audio.value.src = useApiStore().apiUrl + ('/stream?src=') + currentTrack.value!.relativePath;
 		audio.value.play();
 		audio.value.currentTime = time;
 		startProgressUpdate();
@@ -66,7 +76,7 @@ function playChapter(chapter: any, time: number = chapter.trackStartOffset || 0)
 				artist: currentChapter.value.author,
 				album: currentChapter.value.album,
 				artwork: [
-					{ src: useApiStore().resolve(props.libraryItem.cover_thumb), sizes: '512x512', type: 'image/png' },
+					{ src: useApiStore().resolve(props.libraryItem.cover), sizes: '512x512', type: 'image/png' },
 					{ src: useApiStore().resolve(props.libraryItem.cover_thumb), sizes: '256x256', type: 'image/png' },
 					{ src: useApiStore().resolve(props.libraryItem.cover_thumb), sizes: '96x96', type: 'image/png' }
 				],
@@ -99,8 +109,8 @@ function backChapter() {
 	if (!currentChapter.value || !audio.value) {
 		return;
 	}
-	if (audio.value.currentTime > 5) {
-		audio.value.currentTime = 0;
+	if (audio.value.currentTime > currentChapter.value.trackStartOffset + 5) {
+		audio.value.currentTime = currentChapter.value.trackStartOffset || 0;
 		return;
 	}
 	const chapters = props.libraryItem.chapters;
@@ -109,7 +119,7 @@ function backChapter() {
 		return;
 	}
 	const previousChapter = chapters[currentIndex - 1];
-	playChapter(previousChapter);
+	playChapter(previousChapter);	
 }
 
 function playNextChapter() {
@@ -163,21 +173,20 @@ function findChapterIndexForBookmark(relativePath, trackTime) {
 			return chapter.relativePath === relativePath;
 		});
 	}
-	return props.libraryItem.chapters.findIndex((_, i) => {
+	return props.libraryItem.chapters.findIndex((chapter, i) => {
 		if (!props.libraryItem.chapters[i + 1]) {
-			return i;
+			return true;
 		}
-		let nextTrack = props.libraryItem.chapters[i + 1];
-		return nextTrack.relativePath === relativePath && nextTrack.trackStartOffset > trackTime;
+		return trackTime >= chapter.bookStartOffset && trackTime < props.libraryItem.chapters[i + 1].bookStartOffset;
 	})
 }
 
-function timeOffset(chapterIndex, timeIntoChapter: number) {
+function timeOffset(chapterIndex, timeIntoTrack: number) {
 	const chapter = props.libraryItem.chapters[chapterIndex];
 	if (!chapter) {
 		return '';
 	}
-	return timeIntoChapter + chapter.bookStartOffset;
+	return isM4b.value ? timeIntoTrack : timeIntoTrack + chapter.bookStartOffset;
 }
 
 function bookmarkTime(bookmarkName: string) {
@@ -328,7 +337,7 @@ async function postProgress(progress = getCurrentProgress()) {
 	try {
 		if (!progress) {
 			return;
-		}	
+		}
 		await useWatchProgressStore().postProgress(
 			props.libraryItem.relativePath,
 			progress,
@@ -342,6 +351,17 @@ async function postProgress(progress = getCurrentProgress()) {
 				bookmark.time = progress.time;
 				bookmark.duration = progress.duration;
 				bookmark.watchedAt = progress.watchedAt;
+			}
+		}
+
+		// check for new chapter
+		if (isM4b.value) {
+			const index = findChapterIndexForBookmark(
+				props.libraryItem.relativePath,
+				progress.sub!.time
+			);
+			if (index !== -1) {
+				currentChapter.value = props.libraryItem.chapters[index];
 			}
 		}
 	}
