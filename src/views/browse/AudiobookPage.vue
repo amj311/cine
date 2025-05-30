@@ -361,7 +361,10 @@ async function postProgress(progress = getCurrentProgress()) {
 				progress.sub!.time
 			);
 			if (index !== -1) {
-				currentChapter.value = props.libraryItem.chapters[index];
+				const chapter = props.libraryItem.chapters[index];
+				if (currentChapter.value !== chapter) {
+					playChapter(chapter, audio.value!.currentTime);
+				}
 			}
 		}
 	}
