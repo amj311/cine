@@ -183,5 +183,6 @@ const imageError = ref<any>(null);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	font-size: .85rem;
 }
 </style>
