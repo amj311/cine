@@ -143,6 +143,7 @@ function playNextTrack() {
 				<div class="audio-controls flex-grow-1">
 					<audio v-show="currentTrack" ref="audio" :src="useApiStore().apiUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
 					<Button
+						v-if="!currentTrack"
 						icon="pi pi-play"
 						:label="`Play All`"
 						size="large"
