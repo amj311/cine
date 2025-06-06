@@ -428,8 +428,6 @@ app.get('/api/subtitles', async (req, res) => {
 
 		const subtitleStream = probe.full.streams[index];
 
-		console.log(probe.full.streams);
-
 		if (subtitleStream && (subtitleStream.codec_type === 'subtitle' || subtitleStream.tags?.handler_name === 'SubtitleHandler')) {
 			if (subtitleStream.codec_name === 'mov_text') {
 				const subtitleIndex = subtitleStream.index;

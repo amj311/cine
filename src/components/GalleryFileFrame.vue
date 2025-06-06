@@ -66,7 +66,6 @@ onMounted(() => {
 			minZoom: 1,
 			onZoomUpdate: (event: any) => {
 				isZooming.value = event.zoomFactor > 1;
-				console.log(isZooming.value);
 			},
 		});
 	}
