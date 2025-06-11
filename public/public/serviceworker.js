@@ -39,33 +39,32 @@ function shouldCache(url) {
 }
 
 self.addEventListener('fetch', event => {
-	event.respondWith((async () => {
-		const cache = await caches.open(CACHE_NAME);
+	if (shouldCache(event.request.url)) {
+		event.respondWith((async () => {
+			const cache = await caches.open(CACHE_NAME);
 
-		// load from cache first to avoid delays
-		const cachedResponse = await cache.match(event.request);
+			// load from cache first to avoid delays
+			const cachedResponse = await cache.match(event.request);
 
-		return new Promise((res) => {
-			if (cachedResponse) {
-				// If we have a cached response, resolve it immediately, but still load from network in the background.
-				res(cachedResponse);
-			}
+			return new Promise((res) => {
+				if (cachedResponse) {
+					// If we have a cached response, resolve it immediately, but still load from network in the background.
+					res(cachedResponse);
+				}
 
-			fetch(event.request).then((fetchResponse) => {
-				// Only cache if the URL matches our patterns.
-				if (shouldCache(event.request.url)) {
+				fetch(event.request).then((fetchResponse) => {
 					cache.put(event.request, fetchResponse.clone());
-				}
-				if (fetchResponse.ok && !cachedResponse) {
-					res(fetchResponse);
-				}
-			}).catch((error) => {
-				if (event.request.mode === 'navigate' && !cachedResponse) {
-					return cache.match(OFFLINE_URL);
-				}
-			});
-		})
-	})());
+					if (fetchResponse.ok && !cachedResponse) {
+						res(fetchResponse);
+					}
+				}).catch((error) => {
+					if (event.request.mode === 'navigate' && !cachedResponse) {
+						return cache.match(OFFLINE_URL);
+					}
+				});
+			})
+		})());
+	}
 });
 
 // Clean up old caches during the activate event.
