@@ -2,7 +2,7 @@
  * Keeps track of the media that are being watched and not yet finished
  */
 
-import { RelativePath } from "./DirectoryService";
+import { ConfirmedPath, RelativePath } from "./DirectoryService";
 
 export type WatchProgress = {
 	time: number,
@@ -34,46 +34,46 @@ export class WatchProgressService {
 	 * Sets the current watching progress of a media.
 	 * If the media is nearly done, it is considered finished.
 	 * If the media is finished, it is removed from the list.
-	 * @param relativePath The id of the media.
+	 * @param path The id of the media.
 	 * @param percentage The percentage of the media that has been watched.
 	 */
-	public static updateWatchProgress(relativePath: RelativePath, progress: WatchProgress, bookmarkId?: string): void {
+	public static updateWatchProgress(path: ConfirmedPath, progress: WatchProgress, bookmarkId?: string): void {
 		// Always save the overall progress
-		watching.set(relativePath, {
+		watching.set(path.relativePath, {
 			...progress,
-			relativePath,
+			relativePath: path.relativePath,
 		});
 
 		if (bookmarkId) {
 			// Save the bookmark progress
-			const bookmarksForMedia = bookmarks.get(relativePath) || new Map<string, Bookmark>();
+			const bookmarksForMedia = bookmarks.get(path.relativePath) || new Map<string, Bookmark>();
 			bookmarksForMedia.set(bookmarkId, {
 				...progress,
-				relativePath,
+				relativePath: path.relativePath,
 				name: bookmarkId,
 			});
-			bookmarks.set(relativePath, bookmarksForMedia);
+			bookmarks.set(path.relativePath, bookmarksForMedia);
 		}
 	}
 
 	/**
 	 * Returns the current watching progress of a media.
-	 * @param relativePath The id of the media.
+	 * @param path The id of the media.
 	 * @returns The watching progress of the media.
 	 */
-	public static getWatchProgress(relativePath: RelativePath): WatchProgressWithBookmarks | null {
-		const progress = watching.get(relativePath);
+	public static getWatchProgress(path: ConfirmedPath): WatchProgressWithBookmarks | null {
+		const progress = watching.get(path.relativePath);
 		if (progress) {
 			return {
 				...progress,
-				bookmarks: Array.from(bookmarks.get(relativePath)?.values() || []),
+				bookmarks: Array.from(bookmarks.get(path.relativePath)?.values() || []),
 			}
 		}
 		return null;
 	}
 
-	public static deleteBookmark(relativePath: RelativePath, bookmarkId: string): void {
-		const bookmarksForMedia = bookmarks.get(relativePath);
+	public static deleteBookmark(path: ConfirmedPath, bookmarkId: string): void {
+		const bookmarksForMedia = bookmarks.get(path.relativePath);
 		if (bookmarksForMedia) {
 			bookmarksForMedia.delete(bookmarkId);
 		}

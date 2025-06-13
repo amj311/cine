@@ -1,8 +1,8 @@
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
-import { DirectoryService } from './DirectoryService';
+import { ConfirmedPath, DirectoryService, RelativePath } from './DirectoryService';
 import sharp from 'sharp';
-import ffmpeg from 'fluent-ffmpeg';
+import { useFfmpeg } from '../utils/ffmpeg';
 
 const MAX_CACHE_SIZE = 100; // Maximum number of thumbnails to cache
 const thumbCache = new Map<string, Buffer>();
@@ -10,41 +10,40 @@ const thumbCache = new Map<string, Buffer>();
 export class ThumbnailService {
 	/**
 	 * Receives the path to a file, loads and shrinks the image with Shrp.js, and returns the result as a stream for the client to consume.
-	 * @param relativePath 
+	 * @param filePath 
 	 */
-	public static async streamThumbnail(relativePath: string, width: number = 300): Promise<Buffer> {
+	public static async streamThumbnail(filePath: ConfirmedPath, width: number = 300): Promise<Buffer> {
 		try {
-			const cachedThumbnail = ThumbnailService.getCachedThumbnail(relativePath, width);
+			const cachedThumbnail = this.getCachedThumbnail(filePath.relativePath, width);
 			if (cachedThumbnail) {
 				return cachedThumbnail;
 			}
 
 
-			const filePath = DirectoryService.resolvePath(relativePath);
 			// Make sure the file is an image
 			const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 			const videoExtensions = ['.mp4', '.mkv', '.avi', '.mov', '.3gp'];
 			const audioExtensions = ['.mp3', '.m4b'];
-			const isVideo = videoExtensions.includes(path.extname(filePath).toLowerCase());
-			const isImage = imageExtensions.includes(path.extname(filePath).toLowerCase());
-			const isAudio = audioExtensions.includes(path.extname(filePath).toLowerCase());
+			const isVideo = videoExtensions.includes(path.extname(filePath.absolutePath).toLowerCase());
+			const isImage = imageExtensions.includes(path.extname(filePath.absolutePath).toLowerCase());
+			const isAudio = audioExtensions.includes(path.extname(filePath.absolutePath).toLowerCase());
 
 			if (!isImage && !isVideo && !isAudio) {
-				throw new Error(`Thumb is not support for file: ${filePath}`);
+				throw new Error(`Thumb is not support for file: ${filePath.relativePath}`);
 			}
 
 			let fileBuffer: Buffer = Buffer.from([]);
 			if (isVideo) {
 				// Use ffmpeg to get a frame from the video
-				fileBuffer = await ThumbnailService.getVideoFrame(relativePath);
+				fileBuffer = await ThumbnailService.getVideoFrame(filePath);
 			}
 			else if (isAudio) {
 				// ffpeg can extract album art from mp3 files as a video stream
-				fileBuffer = await ThumbnailService.getVideoFrame(relativePath, 0);
+				fileBuffer = await ThumbnailService.getVideoFrame(filePath, 0);
 			}
 			else {
 				// Load the image file
-				fileBuffer = await readFile(filePath);
+				fileBuffer = await readFile(filePath.absolutePath);
 			}
 			let thumbnailBuffer: Buffer = Buffer.from([]);
 			try {
@@ -61,11 +60,11 @@ export class ThumbnailService {
 					throw new Error("Failed to fix JPEG file");
 				}
 			}
-			ThumbnailService.cacheThumbnail(relativePath, width, thumbnailBuffer);
+			ThumbnailService.cacheThumbnail(filePath.relativePath, width, thumbnailBuffer);
 			return thumbnailBuffer;
 		}
 		catch (err) {
-			console.error("Error while generating thumbnail for image:", relativePath);
+			console.error("Error while generating thumbnail for image:", filePath);
 			console.error(err.message);
 
 			throw err;
@@ -95,20 +94,18 @@ export class ThumbnailService {
 
 	/**
 	 * Use ffmpeg to get frame from video
-	 * @param relativePath
+	 * @param filePath
 	 * @param buffer 
 	 * @returns 
 	 */
-	private static async getVideoFrame(relativePath: string, seek: number = 2) {
-		const filePath = DirectoryService.resolvePath(relativePath);
-		return new Promise<Buffer>((resolve, reject) => {
+	private static async getVideoFrame(filePath: ConfirmedPath, seek: number = 3) {
+		return await useFfmpeg<Buffer>(filePath.absolutePath, (ffmpeg, resolve, reject) => {
 			const chunks: Buffer[] = [];
 
-			ffmpeg(filePath)
-				.on('error', (err) => {
-					console.error("Error while processing video:", err.message);
-					reject(err);
-				})
+			ffmpeg.on('error', (err) => {
+				console.error("Error while processing video:", err.message);
+				reject(err);
+			})
 				.outputOptions([
 					`-ss ${seek || 0}`,        // Seek a bit into the video
 					'-frames:v 1',  // Extract only one frame
@@ -130,7 +127,7 @@ export class ThumbnailService {
 		});
 	};
 
-	private static cacheThumbnail(relativePath: string, width: number, buffer: Buffer) {
+	private static cacheThumbnail(relativePath: RelativePath, width: number, buffer: Buffer) {
 		if (width > 500) {
 			// Don't cache thumbnails larger than this
 			return;
@@ -142,7 +139,7 @@ export class ThumbnailService {
 		}
 	}
 
-	private static getCachedThumbnail(relativePath: string, width: number) {
+	private static getCachedThumbnail(relativePath: RelativePath, width: number) {
 		const cachedThumbnail = thumbCache.get(relativePath + width);
 		if (cachedThumbnail) {
 			return cachedThumbnail;

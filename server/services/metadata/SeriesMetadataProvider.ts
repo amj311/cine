@@ -2,6 +2,7 @@ import { CommonDetailsMetadata, CommonSearchKey, CommonSimpleMetadata, MetadataD
 import { IMetadataProvider } from "./IMetadataProvider";
 import { LibraryService } from "../LibraryService";
 import { TmdbApi } from "./TmdbApi";
+import { ConfirmedPath } from "../DirectoryService";
 
 
 export type SeriesMetadata = MetadataDefinition<
@@ -16,9 +17,9 @@ export type SeriesMetadata = MetadataDefinition<
  * Responsible for reading metadata about films from a provider API
  */
 export class SeriesMetadataProvider extends IMetadataProvider<SeriesMetadata> {
-	protected createSearchKeyFromPath(path) {
+	protected createSearchKeyFromPath(path: ConfirmedPath) {
 		// Split the path into file segments, and find one with a (year) in it
-		const seriesFileName = path.split('/').find(s => s.match(/\(\d{4}\)/));
+		const seriesFileName = path.relativePath.split('/').find(s => s.match(/\(\d{4}\)/))!;
 		const { name, year } = LibraryService.parseNamePieces(seriesFileName);
 
 		return {

@@ -234,11 +234,11 @@ onMounted(async () => {
 	useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
 
 	// Attempt rotate screen
-	if ((screen.orientation as any)?.lock) {
-		try {
-			await (screen.orientation as any).lock('landscape');
-		} catch (e) {}
-	}
+	// if ((screen.orientation as any)?.lock) {
+	// 	try {
+	// 		await (screen.orientation as any).lock('landscape');
+	// 	} catch (e) {}
+	// }
 })
 
 onBeforeUnmount(async () => {

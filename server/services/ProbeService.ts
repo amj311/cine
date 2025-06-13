@@ -1,11 +1,11 @@
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
-import { DirectoryService } from './DirectoryService';
+import { AbsolutePath, ConfirmedPath, DirectoryService, RelativePath } from './DirectoryService';
 import sharp from 'sharp';
 import ffmpeg from 'fluent-ffmpeg';
 
 const MAX_CACHE_SIZE = 100; // Maximum number of Probes to cache
-const probeCache = new Map<string, ProbeData>();
+const probeCache = new Map<RelativePath, ProbeData>();
 
 type SubtitleTrack = {
 	index: number;
@@ -31,12 +31,12 @@ type ProbeData = {
 
 export class ProbeService {
 
-	public static async getTrackData(relativePath: string): Promise<any> {
-		if (!relativePath) {
+	public static async getTrackData(path: ConfirmedPath): Promise<any> {
+		if (!path) {
 			return null;
 		}
 		try {
-			const probe = await ProbeService.getProbeData(relativePath);
+			const probe = await ProbeService.getProbeData(path);
 			const tags = probe?.full?.format?.tags || {};
 			return {
 				...tags,
@@ -77,18 +77,17 @@ export class ProbeService {
 
 	/**
 	 * 
-	 * @param relativePath 
+	 * @param filePath 
 	 */
-	public static async getProbeData(relativePath: string): Promise<ProbeData> {
+	public static async getProbeData(filePath: ConfirmedPath): Promise<ProbeData> {
 		try {
-			const cachedProbe = ProbeService.getCachedProbe(relativePath);
+			const cachedProbe = ProbeService.getCachedProbe(filePath.relativePath);
 			if (cachedProbe) {
 				return cachedProbe;
 			}
 
-			const filePath = DirectoryService.resolvePath(relativePath);
-			const probeData = await ProbeService.probeFile(filePath);
-			ProbeService.cacheProbe(relativePath, probeData);
+			const probeData = await ProbeService.probeFile(filePath.absolutePath);
+			ProbeService.cacheProbe(filePath.relativePath, probeData);
 			return probeData;
 		}
 		catch (err) {
@@ -101,7 +100,7 @@ export class ProbeService {
 	 * Probes the file using ffprobe and returns the data.
 	 * @param filePath 
 	 */
-	private static async probeFile(filePath: string): Promise<ProbeData> {
+	private static async probeFile(filePath: AbsolutePath): Promise<ProbeData> {
 		return new Promise((resolve, reject) => {
 			ffmpeg.ffprobe(filePath, ['-show_chapters'], (err, data) => {
 				if (err) {
@@ -145,16 +144,16 @@ export class ProbeService {
 		});
 	}
 
-	private static cacheProbe(relativePath: string, probe: ProbeData) {
-		probeCache.set(relativePath, probe);
+	private static cacheProbe(path: RelativePath, probe: ProbeData) {
+		probeCache.set(path, probe);
 		if (probeCache.size > MAX_CACHE_SIZE) {
 			const oldestKey = probeCache.keys().next().value;
 			probeCache.delete(oldestKey);
 		}
 	}
 
-	private static getCachedProbe(relativePath: string) {
-		const cachedProbe = probeCache.get(relativePath);
+	private static getCachedProbe(path: RelativePath) {
+		const cachedProbe = probeCache.get(path);
 		if (cachedProbe) {
 			return cachedProbe;
 		}

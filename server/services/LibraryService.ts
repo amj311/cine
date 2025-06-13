@@ -2,7 +2,7 @@
  * Parses file system into directories of media.
  */
 
-import { DirectoryService, RelativePath } from "./DirectoryService";
+import { AbsolutePath, ConfirmedPath, DirectoryService, RelativePath } from "./DirectoryService";
 import { MediaMetadataService } from "./metadata/MetadataService";
 import { EitherMetadata } from "./metadata/MetadataTypes";
 import { ProbeService } from "./ProbeService";
@@ -20,7 +20,7 @@ type Playable = {
 	type: 'movie' | 'episodeFile' | 'episode' | 'extra' | 'album' | 'audiobook',
 	name: string,
 	version?: string | null,
-	fileName: RelativePath,
+	fileName: string,
 	relativePath: RelativePath,
 	watchProgress: WatchProgress | null,
 }
@@ -133,6 +133,7 @@ type Library = LibraryItemData & {
 	libraryType: 'tv' | 'movies' | 'photos' | 'audio',
 	name: string,
 	children: Array<RelativePath>,
+	confirmedPath: ConfirmedPath,
 }
 
 type LibraryItem = Movie | Series | Album | Audiobook | Collection | Folder | Library;
@@ -183,8 +184,8 @@ const FileTypeDictionary = {
 type LibraryFile = Photo | Video | Audio;
 
 export class LibraryService {
-	public static async parseFolderToItem(path: RelativePath, detailed = false, withMetadata = true): Promise<LibraryItem> {
-		const folderName = path.split('/').pop() || path;
+	public static async parseFolderToItem(path: ConfirmedPath, detailed = false, withMetadata = true): Promise<LibraryItem> {
+		const folderName = path.relativePath.split('/').pop() || path.relativePath;
 		const { name, year } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
 
@@ -192,21 +193,21 @@ export class LibraryService {
 		// Take care of series and movies first
 		if (year) {
 			// Search for "Season" folders
-			const allSeasonFolders = children.folders.filter((folder) => folder.toLowerCase().includes('season'));
+			const allSeasonFolders = children.folders.filter((folder) => folder.name.toLowerCase().includes('season'));
 			if (allSeasonFolders.length > 0) {
-				const seasons = detailed ? await LibraryService.extractSeasons(allSeasonFolders.map((folder) => path + '/' + folder)) : undefined;
+				const seasons = detailed ? await LibraryService.extractSeasons(allSeasonFolders.map((folder) => folder.confirmedPath)) : undefined;
 				// consider files that are not in a season folder as extras
 				let extras: Extra[] = [];
 				if (detailed) {
-					const extraVideos = children.files.filter((file) => !allSeasonFolders.some((folder) => file.startsWith(folder)));
-					extras = LibraryService.prepareExtras(extraVideos, path)
+					const extraVideos = children.files.filter((file) => !allSeasonFolders.some((folder) => file.name.startsWith(folder.name)));
+					extras = LibraryService.prepareExtras(extraVideos.map((file) => file.name), path)
 				}
 
 				return {
 					type: 'series',
 					name,
 					year,
-					relativePath: path,
+					relativePath: path.relativePath,
 					folderName: folderName,
 					seasons,
 					numSeasons: allSeasonFolders.length,
@@ -219,31 +220,31 @@ export class LibraryService {
 
 			// Identify movie when a child item has the same name and year
 			const movieFile = children.files.find((file) => {
-				const { name: folderName, year: fileYear } = LibraryService.parseNamePieces(file);
-				return file.endsWith('.mp4') && folderName === name && fileYear === year;
+				const { name: folderName, year: fileYear } = LibraryService.parseNamePieces(file.name);
+				return file.name.endsWith('.mp4') && folderName === name && fileYear === year;
 			});
 			if (movieFile) {
 				let extras: Extra[] = [];
 				if (detailed) {
 					const extraVideos = children.files.filter((file) => file !== movieFile);
-					extras = LibraryService.prepareExtras(extraVideos, path)
+					extras = LibraryService.prepareExtras(extraVideos.map((file) => file.name), path)
 				}
 
-				const { version: movieVersion } = LibraryService.parseNamePieces(movieFile);
+				const { version: movieVersion } = LibraryService.parseNamePieces(movieFile.name);
 
 				return {
 					type: 'movie',
 					name,
 					year,
-					relativePath: path,
+					relativePath: path.relativePath,
 					folderName: folderName,
 					movie: {
 						type: 'movie',
-						name: LibraryService.removeExtensionsFromFileName(movieFile),
+						name: LibraryService.removeExtensionsFromFileName(movieFile.name),
 						version: movieVersion,
-						fileName: movieFile,
-						relativePath: path + '/' + movieFile,
-						watchProgress: WatchProgressService.getWatchProgress(path + '/' + movieFile)
+						fileName: movieFile.name,
+						relativePath: movieFile.confirmedPath.relativePath,
+						watchProgress: WatchProgressService.getWatchProgress(movieFile.confirmedPath)
 					},
 					extras,
 					metadata: withMetadata ? await MediaMetadataService.getMetadata('movie', path, detailed, true) : null,
@@ -255,12 +256,12 @@ export class LibraryService {
 
 
 		// Identify an album if all children are audio files
-		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioTypes.includes(file.split('.').pop() as AudioType));
+		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioTypes.includes(file.name.split('.').pop() as AudioType));
 		if (allChildrenAreAudio) {
-			const firstTrackProbe = await ProbeService.getTrackData(path + '/' + children.files[0]);
+			const firstTrackProbe = await ProbeService.getTrackData(children.files[0].confirmedPath);
 			const tracks = detailed ? (await Promise.all(children.files.map(async (file) => {
-				const probe = await ProbeService.getTrackData(path + '/' + file);
-				const title = probe?.title || LibraryService.removeExtensionsFromFileName(file);
+				const probe = await ProbeService.getTrackData(file.confirmedPath);
+				const title = probe?.title || LibraryService.removeExtensionsFromFileName(file.name);
 				return {
 					type: 'track',
 					title,
@@ -278,30 +279,31 @@ export class LibraryService {
 					chapters: probe?.chapters
 				} as any;
 			}))) : undefined;
+
 			// Compute the start offset for each track
 			detailed && tracks!.reduce((acc, track) => {
 				track.startOffset = acc;
 				acc += track.duration;
 				return acc;
 			}, 0);
-			if (firstTrackProbe?.genre === 'Audiobook' || children.files[0].endsWith('.m4b')) {
-				const isMb4b = children.files[0].endsWith('.m4b');
+			if (firstTrackProbe?.genre === 'Audiobook' || children.files[0].name.endsWith('.m4b')) {
+				const isMb4b = children.files[0].name.endsWith('.m4b');
 
 				return {
 					type: 'audiobook',
 					title: firstTrackProbe?.album,
 					author: firstTrackProbe?.album_artist || firstTrackProbe?.artist,
 					year: firstTrackProbe?.year,
-					cover_thumb: `/thumb/${path + '/' + children.files[0]}?width=300`,
-					cover: `/thumb/${path + '/' + children.files[0]}?width=500`,
-					relativePath: path,
+					cover_thumb: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=300`,
+					cover: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=500`,
+					relativePath: path.relativePath,
 					folderName: folderName,
 					metadata: null,
 					sortKey: LibraryService.createSortKey(folderName, firstTrackProbe?.year),
 					watchProgress: WatchProgressService.getWatchProgress(path),
 					name: firstTrackProbe?.album || name,
 					listName: firstTrackProbe?.album || name,
-					fileName: path,
+					fileName: path.absolutePath,
 					chapterStrategy: isMb4b ? 'chapters' : 'tracks',
 					chapters: tracks?.flatMap((track) => {
 						if (!isMb4b || !track.chapters || track.chapters.length === 0) {
@@ -331,20 +333,20 @@ export class LibraryService {
 				genre: firstTrackProbe?.genre,
 				cover_thumb: `/thumb/${path + '/' + children.files[0]}?width=300`,
 				cover: `/thumb/${path + '/' + children.files[0]}?width=500`,
-				relativePath: path,
+				relativePath: path.relativePath,
 				folderName: folderName,
 				metadata: null,
 				sortKey: LibraryService.createSortKey(folderName),
 				watchProgress: WatchProgressService.getWatchProgress(path),
 				name: firstTrackProbe?.album || name,
 				listName: firstTrackProbe?.album || name,
-				fileName: path,
+				fileName: path.absolutePath,
 				tracks: tracks || undefined,
 			};
 		}
 
 		// Root Libraries
-		if (path.split('/').length === 1) {
+		if (path.relativePath.split('/').length === 1) {
 			// The library type will be determined by the type of files at its leaf nodes
 			const mediaType = await LibraryService.determineMediaTypeInLibrary(path);
 			if (mediaType) {
@@ -352,9 +354,10 @@ export class LibraryService {
 					type: 'library',
 					libraryType: mediaType,
 					name,
-					relativePath: path,
+					relativePath: path.relativePath,
+					confirmedPath: path,
 					folderName: folderName,
-					children: children.folders.map((folder) => path + '/' + folder),
+					children: children.folders.map((folder) => folder.confirmedPath.relativePath),
 					metadata: null,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
@@ -364,13 +367,13 @@ export class LibraryService {
 
 
 		// If all children are media, consider it a collection
-		const allChildrenAreMedia = children.folders.length > 0 && children.folders.every((folderName) => Boolean(LibraryService.parseNamePieces(folderName).year));
+		const allChildrenAreMedia = children.folders.length > 0 && children.folders.every((folder) => Boolean(LibraryService.parseNamePieces(folder.name).year));
 		if (allChildrenAreMedia) {
-			const childrenPaths = children.folders.map((folder) => path + '/' + folder);
+			const childrenPaths = children.folders.map((folder) => folder.confirmedPath.relativePath);
 			return {
 				type: 'collection',
 				name,
-				relativePath: path,
+				relativePath: path.relativePath,
 				folderName: folderName,
 				children: childrenPaths,
 				metadata: null,
@@ -386,9 +389,9 @@ export class LibraryService {
 		return {
 			type: 'folder',
 			name,
-			relativePath: path,
+			relativePath: path.relativePath,
 			folderName: folderName,
-			children: children.folders.map((folder) => path + '/' + folder),
+			children: children.folders.map((folder) => folder.confirmedPath.relativePath),
 			feedOrder,
 			listName: name,
 			sortKey: LibraryService.createSortKey(folderName),
@@ -397,17 +400,17 @@ export class LibraryService {
 	}
 
 
-	public static async parseFileToItem(path: RelativePath): Promise<LibraryFile | null> {
-		const fileType = FileTypeDictionary[path.split('.').pop() as keyof typeof FileTypeDictionary];
+	public static async parseFileToItem(path: ConfirmedPath): Promise<LibraryFile | null> {
+		const fileType = FileTypeDictionary[path.relativePath.split('.').pop() as keyof typeof FileTypeDictionary];
 		if (!fileType) {
 			return null;
 		}
-		const fileName = path.split('/').pop() || path;
+		const fileName = path.relativePath.split('/').pop() || path.relativePath;
 		const takenAt = await LibraryService.getFileTakenAt(path);
 		return {
 			type: fileType,
 			fileType,
-			relativePath: path,
+			relativePath: path.relativePath,
 			fileName: fileName,
 			takenAt,
 			sortKey: (takenAt?.toISOString() || '') + fileName,
@@ -417,53 +420,53 @@ export class LibraryService {
 
 
 	public static async getRootLibraries() {
-		const rootLibraries = await DirectoryService.listDirectory('/');
+		const rootLibraries = await DirectoryService.listDirectory(DirectoryService.resolvePath('/')!);
 		const libraries = await Promise.all(rootLibraries.folders.map(async (folder) => {
 			return {
-				folderName: folder,
-				relativePath: folder,
-				libraryItem: await LibraryService.parseFolderToItem(folder, true),
+				folderName: folder.name,
+				relativePath: folder.confirmedPath.relativePath,
+				libraryItem: await LibraryService.parseFolderToItem(folder.confirmedPath, true),
 			};
 		}));
 		return libraries.filter((library) => library.libraryItem?.type === 'library').map((library) => library.libraryItem) as Library[];
 	}
 
 
-	public static async getFlatTree(path: RelativePath) {
+	public static async getFlatTree(path: ConfirmedPath) {
 		const items: Array<LibraryItem> = [];
 		const files: Array<LibraryFile> = [];
-		async function parseDirectory(path: RelativePath) {
-			const { folders, files: childrenFiles } = await DirectoryService.listDirectory(path);
-			const libraryItem = await LibraryService.parseFolderToItem(path, true);
+		async function parseDirectory(confirmedPath: ConfirmedPath) {
+			const { folders, files: childrenFiles } = await DirectoryService.listDirectory(confirmedPath);
+			const libraryItem = await LibraryService.parseFolderToItem(confirmedPath, true);
 			if (libraryItem) {
 				items.push(libraryItem);
 			}
 			await Promise.all(childrenFiles.map(async (file) => {
-				const fileItem = await LibraryService.parseFileToItem(path + '/' + file);
+				const fileItem = await LibraryService.parseFileToItem(file.confirmedPath);
 				if (fileItem) {
 					files.push(fileItem);
 				}
 			}));
 			// Recursively parse all folders
-			await Promise.all(folders.map((folder) => parseDirectory(path + '/' + folder)));
+			await Promise.all(folders.map((folder) => parseDirectory(folder.confirmedPath)));
 		}
 		await parseDirectory(path);
 		return { items, files };
 	}
 
 
-	private static async extractSeasons(seasonFolders) {
-		const episodeFiles: EpisodeFile[] = await Promise.all(seasonFolders.map(async (folder) => {
+	private static async extractSeasons(seasonFolders: Array<ConfirmedPath>) {
+		const episodeFiles = await Promise.all(seasonFolders.map(async (folder) => {
 			const { files } = await DirectoryService.listDirectory(folder);
-			const videoFiles = files.filter((file) => file.endsWith('.mp4'));
+			const videoFiles = files.filter((file) => file.name.endsWith('.mp4'));
 
 			return videoFiles.map((file) => {
-				const overAllwatchProgress = WatchProgressService.getWatchProgress(folder + '/' + file);
+				const overAllwatchProgress = WatchProgressService.getWatchProgress(file.confirmedPath);
 
 				const NumbersRegex = RegExp(/s(?<seasonNumber>\d{1,3})e(?<firstEpisodeNumber>\d{1,3})/g);
-				const numbersMatch = NumbersRegex.exec(file)?.groups;
+				const numbersMatch = NumbersRegex.exec(file.name)?.groups;
 				if (!numbersMatch) {
-					console.warn(`File "${file}" does not match season/episode regex`);
+					console.warn(`File "${file.name}" does not match season/episode regex`);
 					return;
 				}
 
@@ -471,10 +474,10 @@ export class LibraryService {
 				const firstEpisodeNumber = parseInt(numbersMatch.firstEpisodeNumber);
 
 				const multipleEpisodesRegex = RegExp(/-e(?<episodeNumber>\d{1,3})/g);
-				const lastEspisodeNumber = multipleEpisodesRegex.exec(file)?.groups?.episodeNumber;
+				const lastEspisodeNumber = multipleEpisodesRegex.exec(file.name)?.groups?.episodeNumber;
 
 				const episodeTimesRegex = RegExp(/.e(?<episodeNumber>\d{1,3})-(?<startTime>\d{1,50})/g);
-				const timesMatch = Array.from(file.matchAll(episodeTimesRegex));
+				const timesMatch = Array.from(file.name.matchAll(episodeTimesRegex));
 				const extraEpisodeTimes = timesMatch?.map((match) => ({
 					episodeNumber: parseInt(match.groups?.episodeNumber || '0'),
 					startTime: parseInt(match.groups?.startTime || '0'),
@@ -512,14 +515,14 @@ export class LibraryService {
 					...(extraEpisodeTimes || []),
 				]
 
-				const { version } = LibraryService.parseNamePieces(file);
+				const { version } = LibraryService.parseNamePieces(file.name);
 				const episodeName = `S${seasonNumber}:E${firstEpisodeNumber}`;
 				const episodes: Episode[] = allEpisodeTimes.map(({ episodeNumber, startTime }, i) => ({
 					name: episodeName,
 					type: 'episode',
 					version,
-					fileName: file,
-					relativePath: folder + '/' + file,
+					fileName: file.name,
+					relativePath: file.confirmedPath.relativePath,
 
 					seasonNumber,
 					episodeNumber,
@@ -536,8 +539,8 @@ export class LibraryService {
 					hasMultipleEpisodes,
 					seasonNumber,
 					firstEpisodeNumber,
-					fileName: file,
-					relativePath: folder + '/' + file,
+					fileName: file.name as string,
+					relativePath: file.confirmedPath.relativePath,
 					watchProgress: overAllwatchProgress,
 					episodes,
 					name: lastEspisodeNumber ? `Episodes ${firstEpisodeNumber} - ${Number(lastEspisodeNumber)}` : episodeName,
@@ -562,52 +565,56 @@ export class LibraryService {
 		})).sort((a, b) => a.seasonNumber - b.seasonNumber);
 	}
 
-	private static prepareExtras(extraPaths: string[], parentPath: string): Extra[] {
-		return extraPaths.filter(p => p.endsWith('.mp4')).map((file) => {
+	private static prepareExtras(fileNames: string[], parentPath: ConfirmedPath): Extra[] {
+		return fileNames.filter(p => p.endsWith('.mp4')).map((file) => {
 			const { name: extraName, type: extraType } = LibraryService.getExtraNameAndType(file);
 			return {
 				type: 'extra',
 				name: extraName,
 				extraType,
 				fileName: file,
-				relativePath: parentPath + '/' + file,
-				watchProgress: WatchProgressService.getWatchProgress(parentPath + '/' + file),
-				still_thumb: `/thumb/${parentPath + '/' + file}?width=300`
+				relativePath: parentPath.append(file).relativePath,
+				watchProgress: WatchProgressService.getWatchProgress(parentPath.append(file)),
+				still_thumb: `/thumb/${parentPath.append(file).relativePath}?width=300`
 			}
 		});
 	}
 
 
-	public static async getLibraryForPlayable(relativePath: RelativePath) {
+	public static async getLibraryForPlayable(path: ConfirmedPath) {
 		let parentLibrary;
 		let playable: Playable | null = null;
 
 		// find the parent which contains a name and year
-		const ancestors = relativePath.split('/').slice(0, -1);
+		const ancestors = path.relativePath.split('/').slice(0, -1);
 		const parentFolder = ancestors.reverse().find((folder) => {
 			const { name, year } = LibraryService.parseNamePieces(folder);
 			return !!name && !!year;
 		});
+
 		if (parentFolder) {
-			const parentPath = relativePath.split(parentFolder)[0] + parentFolder;
+			const parentPath = DirectoryService.resolvePath(path.relativePath.split(parentFolder)[0] + parentFolder)!;
 			parentLibrary = await LibraryService.parseFolderToItem(parentPath, true) as LibraryItem;
 			if (!parentLibrary) {
-				console.warn(`No parent library found for ${relativePath}`);
+				console.warn(`No parent library found for ${path}`);
 				return {};
 			}
 			// Identify playable within the parent library
-			playable = (parentLibrary as Movie).extras?.find((extra) => extra.relativePath === relativePath)
-				|| ((parentLibrary as Movie).movie?.relativePath === relativePath ? (parentLibrary as Movie).movie : null)
-				|| (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => episodeFile.relativePath === relativePath)
-				|| null;
+			playable = (parentLibrary as Movie).extras?.find((extra) => path.equals(extra.relativePath)) || null;
+			if (!playable && parentLibrary.type === 'movie') {
+				playable = parentLibrary.movie.relativePath === path.relativePath ? parentLibrary.movie : null;
+			}
+			if (!playable && parentLibrary.type === 'series') {
+				playable = parentLibrary.seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => path.equals(episodeFile.relativePath)) || null;
+			}
 		}
 		else {
-			playable = await LibraryService.parseFolderToItem(relativePath) as Playable;
+			playable = await LibraryService.parseFolderToItem(path) as Playable;
 		}
 
 
 		if (!playable) {
-			console.warn(`No playable found for ${relativePath}`);
+			console.warn(`No playable found for ${path.relativePath}`);
 			return {
 				parentLibrary,
 			};
@@ -618,13 +625,13 @@ export class LibraryService {
 		}
 	}
 
-	public static async getNextEpisode(relativePath: RelativePath) {
-		const { parentLibrary, playable } = await LibraryService.getLibraryForPlayable(relativePath);
+	public static async getNextEpisode(path: ConfirmedPath) {
+		const { parentLibrary, playable } = await LibraryService.getLibraryForPlayable(path);
 		if (!parentLibrary || !playable || playable.type !== 'episodeFile') {
 			return null;
 		}
 		const allEpisodes = (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).flatMap((episodeFile) => episodeFile.episodes);
-		const currentEpisodeIndex = allEpisodes?.findIndex((episode) => episode.relativePath === playable.relativePath);
+		const currentEpisodeIndex = allEpisodes?.findIndex((episode) => path.equals(episode.relativePath));
 		if (currentEpisodeIndex === undefined || currentEpisodeIndex === -1) {
 			return null;
 		}
@@ -636,16 +643,16 @@ export class LibraryService {
 	 * Helper functions
 	 *********/
 
-	public static parseNamePieces(path) {
-		// MKae sure we're dealing with the folder/file name, not the full path
+	public static parseNamePieces(nameOrPath: string) {
+		// Make sure we're dealing with the folder/file name, not the full path
 		// Also remove anything after a .
-		const folderName = LibraryService.removeExtensionsFromFileName(path.split('/').pop());
+		const folderName = LibraryService.removeExtensionsFromFileName(nameOrPath.split('/').pop() || nameOrPath);
 		const YearRegExp = RegExp(/\((\d{4})\)/g);
 		const year = YearRegExp.exec(folderName)?.[1];
 		const titleBeforeYear = folderName.split(YearRegExp)[0].trim();
 
 		const versionRegExp = RegExp(/.version(?<version>[^\.]{1,50})\./g);
-		const version = versionRegExp.exec(path)?.groups?.version?.replaceAll('_', ' ').trim() || null;
+		const version = versionRegExp.exec(nameOrPath)?.groups?.version?.replaceAll('_', ' ').trim() || null;
 		return {
 			name: titleBeforeYear,
 			year,
@@ -680,34 +687,34 @@ export class LibraryService {
 		return 'folder';
 	}
 
-	private static async determineMediaTypeInLibrary(path: RelativePath): Promise<Library['libraryType'] | null> {
+	private static async determineMediaTypeInLibrary(path: ConfirmedPath): Promise<Library['libraryType'] | null> {
 		// recursivle search for first descendent that matches a media description
-		async function findMediaWithin(path: RelativePath) {
+		async function findMediaWithin(path: ConfirmedPath) {
 			const { folders, files } = await DirectoryService.listDirectory(path);
 			if (folders.length === 0 && files.length === 0) {
 				return null;
 			}
 			for (const file of files) {
 				// Not currently saving any images in library other than photos, so we can rely on that here
-				if (file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.png')) {
+				if (file.name.endsWith('.jpg') || file.name.endsWith('.jpeg') || file.name.endsWith('.png')) {
 					return 'photos';
 				}
-				if (file.endsWith('.mp3')) {
+				if (file.name.endsWith('.mp3')) {
 					return 'audio';
 				}
 			}
 			// Identify cinema folders by release-year folders
 			for (const folder of folders) {
-				if (LibraryService.parseNamePieces(folder).year) {
-					const { folders: cinemaFolders } = await DirectoryService.listDirectory(path + '/' + folder);
-					if (cinemaFolders.find(folderName => folderName.toLowerCase().includes('season'))) {
+				if (LibraryService.parseNamePieces(folder.name).year) {
+					const { folders: cinemaFolders } = await DirectoryService.listDirectory(folder.confirmedPath);
+					if (cinemaFolders.find(cinemaFolder => cinemaFolder.name.toLowerCase().includes('season'))) {
 						return 'tv';
 					}
 					return 'movies'
 				}
 			}
 			for (const folder of folders) {
-				const mediaType = await findMediaWithin(path + '/' + folder);
+				const mediaType = await findMediaWithin(folder.confirmedPath);
 				if (mediaType) {
 					return mediaType;
 				}
@@ -743,7 +750,7 @@ export class LibraryService {
 		return keyParts.join('_').toLowerCase();
 	}
 
-	public static async getFileTakenAt(path: RelativePath): Promise<Date | undefined> {
+	public static async getFileTakenAt(path: ConfirmedPath): Promise<Date | undefined> {
 		const regExps: Array<(fileName: string) => Date | undefined> = [
 			// YYYYMMDD_HHMMSS or YYYYMMDD-HHMMSS or YYYY-MM-DD_HH-MM-SS(_mmm)
 			(fileName) => {
@@ -756,7 +763,7 @@ export class LibraryService {
 				return undefined;
 			},
 		];
-		const fileName = path.split('/').pop() || path;
+		const fileName = path.relativePath.split('/').pop() || path.relativePath;
 		for (const regExp of regExps) {
 			const date = regExp(fileName);
 			if (date && !isNaN(date.getTime())) {

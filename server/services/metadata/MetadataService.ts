@@ -1,4 +1,4 @@
-import { RelativePath } from '../DirectoryService';
+import { ConfirmedPath } from '../DirectoryService';
 import { EitherMetadata, MetadataType } from './MetadataTypes';
 import { MovieMetadataProvider } from './MovieMetadataProvider';
 import { SeriesMetadataProvider } from './SeriesMetadataProvider';
@@ -23,7 +23,7 @@ export class MediaMetadataService {
 	 */
 	public static async getMetadata<T extends MetadataType = MetadataType>(
 		type: MetadataType,
-		path: RelativePath,
+		path: ConfirmedPath,
 		detailed = false,
 		noFetch = false
 	): Promise<EitherMetadata<T> | null> {

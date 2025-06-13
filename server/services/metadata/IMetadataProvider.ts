@@ -1,4 +1,4 @@
-import { RelativePath } from "../DirectoryService";
+import { ConfirmedPath } from "../DirectoryService";
 import { EitherMetadata, MetadataDefinition } from "./MetadataTypes";
 
 /**
@@ -38,7 +38,7 @@ export abstract class IMetadataProvider<T extends MetadataDefinition = MetadataD
 	 * Determines the unique search key for
 	 * @param path 
 	 */
-	protected abstract createSearchKeyFromPath(path: RelativePath): T['SearchKey'];
+	protected abstract createSearchKeyFromPath(path: ConfirmedPath): T['SearchKey'];
 
 	// Private operations for fetching data
 	protected abstract fetchMetadata(key: T['SearchKey']): Promise<EitherMetadata<T['Type']> | null>;
@@ -47,7 +47,7 @@ export abstract class IMetadataProvider<T extends MetadataDefinition = MetadataD
 	/***************|
 	|	 Public		|
 	|***************/
-	public async getMetadata(path: RelativePath, details = false, noFetch = false): Promise<EitherMetadata<T['Type']> | null> {
+	public async getMetadata(path: ConfirmedPath, details = false, noFetch = false): Promise<EitherMetadata<T['Type']> | null> {
 		const key: T['SearchKey'] = {
 			...this.createSearchKeyFromPath(path),
 			details,

@@ -12,15 +12,15 @@ const app = express() as any;
 
 import cors from 'cors';
 import fs, { readdirSync } from 'fs';
-import { DirectoryService } from './services/DirectoryService';
+import { ConfirmedPath, DirectoryService } from './services/DirectoryService';
 import { LibraryService, Photo } from './services/LibraryService';
 import { MediaMetadataService } from './services/metadata/MetadataService';
 import { WatchProgress, WatchProgressService } from './services/WatchProgressService';
 import mime from 'mime-types';
 import { EitherMetadata } from './services/metadata/MetadataTypes';
 import { ThumbnailService } from './services/ThumbnailService';
-import ffmpeg from 'fluent-ffmpeg';
 import { ProbeService } from './services/ProbeService';
+import { useFfmpeg } from './utils/ffmpeg';
 
 const corsOptions = {};
 
@@ -41,17 +41,22 @@ app.get("/api/dir/", async function (req, res) {
 		dir = "";
 	}
 	try {
-		const { folders, files } = await DirectoryService.listDirectory(dir as string);
-		const libraryItem = await LibraryService.parseFolderToItem(dir as string, true);
+		const resolvedPath = DirectoryService.resolvePath(dir as string);
+		if (!resolvedPath) {
+			res.status(404).send("Directory not found");
+			return;
+		}
+		const { folders, files } = await DirectoryService.listDirectory(resolvedPath);
+		const libraryItem = await LibraryService.parseFolderToItem(resolvedPath, true);
 
 		return res.json({
 			libraryItem,
 			directory: {
-				files,
+				files: files.map((file) => file.name),
 				folders: (await Promise.all(folders.map(async (folder) => {
-					const libraryItem = await LibraryService.parseFolderToItem(path.join(dir as string, folder), true);
+					const libraryItem = await LibraryService.parseFolderToItem(folder.confirmedPath, true);
 					return {
-						folderName: folder,
+						folderName: folder.name,
 						libraryItem,
 					};
 				}))).sort((a, b) => a.libraryItem?.sortKey.localeCompare(b.libraryItem?.sortKey || '') || 0),
@@ -71,13 +76,17 @@ app.get("/api/stream", async function (req, res) {
 		return;
 	}
 	src = src.replaceAll('<amp>', '&');
-	const file = DirectoryService.resolvePath(src as string);
+	const resolvedPath = DirectoryService.resolvePath(src as string);
+	if (!resolvedPath) {
+		res.status(404).send("File not found");
+		return;
+	}
 
-	if (file.endsWith('.3gp')) {
+	if (resolvedPath.relativePath.endsWith('.3gp')) {
 		const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp4');
-		await new Promise<void>((resolve, reject) => {
+		await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
 			// Convert 3GP to MP4
-			ffmpeg(file)
+			ffmpeg(resolvedPath.absolutePath)
 				.output(outputFilePath)
 				.videoCodec('copy') // Copy the video stream without re-encoding
 				.audioCodec('aac')  // Encode the audio stream in AAC
@@ -99,14 +108,14 @@ app.get("/api/stream", async function (req, res) {
 	}
 
 	const streamable = ['mp4', 'mp3', 'm4b'];
-	if (!streamable.some((ext) => file.endsWith(ext))) {
+	if (!streamable.some((ext) => resolvedPath.relativePath.endsWith(ext))) {
 		res.status(400).send("File type not supported for streaming");
 		return;
 	}
 
-	fs.stat(file, function (err, stats) {
+	fs.stat(resolvedPath.absolutePath, function (err, stats) {
 		if (err) {
-			console.error(`Failed to load video file: "${file}"`)
+			console.error(`Failed to load video file: "${resolvedPath}"`)
 			console.error(err)
 			if (err.code === 'ENOENT') {
 				// 404 Error if file not found
@@ -129,8 +138,8 @@ app.get("/api/stream", async function (req, res) {
 		const chunksize = (end - start) + 1;
 
 		// Dynamically determine the MIME type
-		let mimeType = mime.lookup(file) || 'application/octet-stream';
-		if (file.endsWith('.m4b')) {
+		let mimeType = mime.lookup(resolvedPath.absolutePath) || 'application/octet-stream';
+		if (resolvedPath.relativePath.endsWith('.m4b')) {
 			mimeType = 'audio/mp4'; // or 'audio/x-m4b'
 		}
 
@@ -141,7 +150,7 @@ app.get("/api/stream", async function (req, res) {
 			"Content-Type": mimeType
 		});
 
-		const stream = fs.createReadStream(file, { start: start, end: end })
+		const stream = fs.createReadStream(resolvedPath.absolutePath, { start: start, end: end })
 			.on("open", function () {
 				stream.pipe(res);
 			}).on("error", function (err) {
@@ -162,11 +171,14 @@ app.post('/api/prepareAudio', async (req, res) => {
 		res.status(400).send("Requires index query param");
 		return;
 	}
-	const file = DirectoryService.resolvePath(src as string);
+	const resolvedPath = DirectoryService.resolvePath(src as string);
+	if (!resolvedPath) {
+		res.status(404).send("File not found");
+		return;
+	}
 	const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp3');
-	await new Promise<void>((resolve, reject) => {
-		ffmpeg(file)
-			.outputOptions(`-map 0:${index}`)
+	await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
+		ffmpeg.outputOptions(`-map 0:${index}`)
 			.outputOptions('-c:a libmp3lame')
 			.output(outputFilePath)
 			.on('end', () => {
@@ -194,11 +206,20 @@ app.post('/api/metadata', async (req, res) => {
 			});
 			return;
 		}
+		const resolvedPath = DirectoryService.resolvePath(path);
+		if (!resolvedPath) {
+			res.json({
+				error: 'File not found',
+				success: false,
+				data: null,
+			});
+			return;
+		}
 		let mediaType = type;
 		if (!mediaType) {
-			mediaType = LibraryService.determineMediaTypeFromPath(path);
+			mediaType = LibraryService.determineMediaTypeFromPath(resolvedPath.relativePath);
 		}
-		const metadata = await MediaMetadataService.getMetadata(mediaType, path, detailed);
+		const metadata = await MediaMetadataService.getMetadata(mediaType, resolvedPath, detailed);
 		res.json({
 			data: metadata,
 		})
@@ -214,7 +235,12 @@ app.post('/api/metadata', async (req, res) => {
 app.get('/api/watchProgress', async (req, res) => {
 	try {
 		const { relativePath } = req.query;
-		const progress = await WatchProgressService.getWatchProgress(relativePath);
+		const resolvedPath = DirectoryService.resolvePath(relativePath as string);
+		if (!resolvedPath) {
+			res.status(404).send("File not found");
+			return;
+		}
+		const progress = await WatchProgressService.getWatchProgress(resolvedPath);
 		res.json({
 			data: progress,
 		})
@@ -227,7 +253,13 @@ app.get('/api/watchProgress', async (req, res) => {
 app.post('/api/watchProgress', async (req, res) => {
 	try {
 		const { relativePath, progress, bookmarkId } = req.body;
-		await WatchProgressService.updateWatchProgress(relativePath, progress, bookmarkId);
+		const resolvedPath = DirectoryService.resolvePath(relativePath);
+		if (!resolvedPath) {
+			res.status(404).send("File not found");
+			return;
+		}
+
+		await WatchProgressService.updateWatchProgress(resolvedPath, progress, bookmarkId);
 		res.json({
 			success: true,
 		})
@@ -240,7 +272,12 @@ app.post('/api/watchProgress', async (req, res) => {
 app.delete('/api/watchProgress/bookmark', async (req, res) => {
 	try {
 		const { relativePath, bookmarkId } = req.body;
-		await WatchProgressService.deleteBookmark(relativePath, bookmarkId);
+		const resolvedPath = DirectoryService.resolvePath(relativePath);
+		if (!resolvedPath) {
+			res.status(404).send("File not found");
+			return;
+		}
+		await WatchProgressService.deleteBookmark(resolvedPath, bookmarkId);
 		res.json({
 			success: true,
 		})
@@ -259,8 +296,17 @@ app.delete('/api/watchProgress/bookmark', async (req, res) => {
 app.get('/api/theaterData', async (req, res) => {
 	try {
 		const { relativePath } = req.query;
-		const libraryData = await LibraryService.getLibraryForPlayable(relativePath);
-		const probe = await ProbeService.getProbeData(relativePath);
+		if (!relativePath) {
+			res.status(400).send("Requires relativePath query param");
+			return;
+		}
+		const resolvedPath = DirectoryService.resolvePath(relativePath as string);
+		if (!resolvedPath) {
+			res.status(404).send("File not found");
+			return;
+		}
+		const libraryData = await LibraryService.getLibraryForPlayable(resolvedPath);
+		const probe = await ProbeService.getProbeData(resolvedPath);
 		res.json({
 			data: {
 				playable: libraryData.playable,
@@ -294,12 +340,21 @@ app.get('/api/feed', async (req, res) => {
 			}>;
 		}>;
 
+		type ContinueWatchingItem = WatchProgress & {
+			confirmedPath: ConfirmedPath;
+			isUpNext?: boolean;
+		}
+
 		// Continue Watching
-		const watchItems = await WatchProgressService.getContinueWatchingList();
+		// Make sure cached items still exist!!!
+		const watchItems: ContinueWatchingItem[] = await WatchProgressService.getContinueWatchingList().map((progress) => ({
+			...progress,
+			confirmedPath: DirectoryService.resolvePath(progress.relativePath),
+		})).filter(i => i.confirmedPath) as ContinueWatchingItem[];
 		const lastFinishedEpisode = await WatchProgressService.getLastFinishedEpisode();
 		let nextEpisode: any = null;
-		if (lastFinishedEpisode) {
-			nextEpisode = await LibraryService.getNextEpisode(lastFinishedEpisode.relativePath);
+		if (lastFinishedEpisode && DirectoryService.resolvePath(lastFinishedEpisode.relativePath)) {
+			nextEpisode = await LibraryService.getNextEpisode(DirectoryService.resolvePath(lastFinishedEpisode.relativePath)!);
 		}
 		if (nextEpisode) {
 			watchItems.unshift({ ...nextEpisode, isUpNext: true });
@@ -308,15 +363,15 @@ app.get('/api/feed', async (req, res) => {
 			feedLists.push({
 				title: "Continue Watching",
 				type: "continue-watching",
-				items: await Promise.all(watchItems.map(async (item: any) => ({
+				items: await Promise.all(watchItems.map(async (item) => ({
 					title: LibraryService.parseNamePieces(item.relativePath).name,
 					relativePath: item.relativePath,
 					watchProgress: item,
 					metadata: MediaMetadataService.getMetadata(
 						LibraryService.determineMediaTypeFromPath(item.relativePath) as any,
-						item.relativePath,
+						item.confirmedPath,
 					),
-					libraryItem: await LibraryService.getLibraryForPlayable(item.relativePath),
+					libraryItem: await LibraryService.getLibraryForPlayable(item.confirmedPath),
 					isUpNext: item.isUpNext,
 				}))),
 			});
@@ -326,7 +381,7 @@ app.get('/api/feed', async (req, res) => {
 		const libraries = await LibraryService.getRootLibraries();
 		const photoLibraries = libraries.filter((library) => library.libraryType === 'photos');
 		const allPhotos = (await Promise.all(photoLibraries.map(async (library) => {
-			const { files } = await LibraryService.getFlatTree(library.name);
+			const { files } = await LibraryService.getFlatTree(library.confirmedPath);
 			return files;
 		}))).flat().sort((a, b) => {
 			if (!a.takenAt) {
@@ -406,7 +461,11 @@ app.get('/api/rootLibraries', async (req, res) => {
 app.get('/api/rootLibrary/:name/flat', async (req, res) => {
 	try {
 		const { name } = req.params;
-		const items = await LibraryService.getFlatTree(name);
+		const resolvedPath = DirectoryService.resolvePath(name);
+		if (!resolvedPath) {
+			throw Error('No such folder')
+		}
+		const items = await LibraryService.getFlatTree(resolvedPath);
 		res.json({
 			success: true,
 			data: items,
@@ -424,6 +483,10 @@ app.get('/api/subtitles', async (req, res) => {
 	try {
 		const { path: relativePath, index } = req.query;
 		const fullPath = DirectoryService.resolvePath(relativePath as string);
+		if (!fullPath) {
+			res.status(404).send("File not found");
+			return;
+		}
 		const probe = await ProbeService.getProbeData(fullPath);
 
 		const subtitleStream = probe.full.streams[index];
@@ -432,25 +495,28 @@ app.get('/api/subtitles', async (req, res) => {
 			if (subtitleStream.codec_name === 'mov_text') {
 				const subtitleIndex = subtitleStream.index;
 				const outputFilePath = path.join(__dirname, '../dist/assets/output.vtt');
-				ffmpeg(DirectoryService.resolvePath(relativePath))
-					.outputOptions(`-map 0:${subtitleIndex}`)
-					.outputOptions('-c:s webvtt')
-					.save(outputFilePath)
-					.on('end', () => {
-						// set cors header
-						res.setHeader('Access-Control-Allow-Origin', '*');
-						res.setHeader('Content-Type', 'text/vtt');
-						res.sendFile(outputFilePath, (err) => {
-							if (err) {
-								console.error("Error while sending subtitle file:", err);
-								res.status(500).send("Error sending subtitle file");
-							}
+
+				useFfmpeg(fullPath.absolutePath, (ffmpeg) => {
+					ffmpeg.outputOptions(`-map 0:${subtitleIndex}`)
+						.outputOptions('-c:s webvtt')
+						.save(outputFilePath)
+						.on('end', () => {
+							// set cors header
+							res.setHeader('Access-Control-Allow-Origin', '*');
+							res.setHeader('Content-Type', 'text/vtt');
+							res.sendFile(outputFilePath, (err) => {
+								if (err) {
+									console.error("Error while sending subtitle file:", err);
+									res.status(500).send("Error sending subtitle file");
+								}
+							});
+						})
+						.on('error', (err) => {
+							console.error("Error while extracting subtitles:", err);
+							res.status(500).send("Error extracting subtitles");
 						});
-					})
-					.on('error', (err) => {
-						console.error("Error while extracting subtitles:", err);
-						res.status(500).send("Error extracting subtitles");
-					});
+				});
+
 			}
 			else if (subtitleStream.codec_name === 'dvd_subtitle') {
 				// extract to .idx and .sub, then recognize with tesseract
@@ -458,59 +524,61 @@ app.get('/api/subtitles', async (req, res) => {
 				const outFile = path.join(__dirname, '../dist/assets/temp.sup');
 
 				// Extract VobSub subtitles
-				ffmpeg(fullPath)
-					.outputOptions(`-map 0:${subtitleIndex}`)
-					.outputOptions('-c:s copy') // Copy the subtitle stream without re-encoding
-					.output(outFile) // Output the .idx file
-					.on('end', async () => {
-						try {
-							console.log("VobSub subtitles extracted successfully");
-							// Perform OCR on the extracted subtitles
-							// const ocrResult = await tesseract.recognize(subFilePath, 'eng');
+				useFfmpeg(fullPath.absolutePath, (ffmpeg) => {
+					ffmpeg.outputOptions(`-map 0:${subtitleIndex}`)
+						.outputOptions('-c:s copy') // Copy the subtitle stream without re-encoding
+						.output(outFile) // Output the .idx file
+						.on('end', async () => {
+							try {
+								console.log("VobSub subtitles extracted successfully");
+								// Perform OCR on the extracted subtitles
+								// const ocrResult = await tesseract.recognize(subFilePath, 'eng');
 
-							// console.log("OCR Result:", ocrResult.data.text);
+								// console.log("OCR Result:", ocrResult.data.text);
 
-							// Send the OCR result as plain text
-							res.setHeader('Access-Control-Allow-Origin', '*');
-							res.setHeader('Content-Type', 'text/plain');
-							// res.send(ocrResult.data.text);
-							res.send(200);
-						} catch (ocrError) {
-							console.error("Error during OCR processing:", ocrError);
-							res.status(500).send("Error during OCR processing");
-						}
-					})
-					.on('error', (ffmpegError) => {
-						console.error("Error while extracting VobSub subtitles:", ffmpegError);
-						res.status(500).send("Error extracting VobSub subtitles");
-					})
-					.run();
+								// Send the OCR result as plain text
+								res.setHeader('Access-Control-Allow-Origin', '*');
+								res.setHeader('Content-Type', 'text/plain');
+								// res.send(ocrResult.data.text);
+								res.send(200);
+							} catch (ocrError) {
+								console.error("Error during OCR processing:", ocrError);
+								res.status(500).send("Error during OCR processing");
+							}
+						})
+						.on('error', (ffmpegError) => {
+							console.error("Error while extracting VobSub subtitles:", ffmpegError);
+							res.status(500).send("Error extracting VobSub subtitles");
+						})
+						.run();
+				})
+
 			}
 			else if (subtitleStream.codec_name === 'bin_data') {
 				// Log the binary data as text
 				// use ffmpeg to pass the data into a buffer and send it as text
 				const subtitleIndex = subtitleStream.index;
 				const outputFilePath = path.join(__dirname, '../dist/assets/output.txt');
-				ffmpeg(DirectoryService.resolvePath(relativePath))
-					.outputOptions(`-map 0:${subtitleIndex}`)
-					.outputOptions('-f srt') // Output format as SRT
-					.save(outputFilePath)
-					.on('end', () => {
-						// set cors header
-						res.setHeader('Access-Control-Allow-Origin', '*');
-						res.setHeader('Content-Type', 'text/plain');
-						res.sendFile(outputFilePath, (err) => {
-							if (err) {
-								console.error("Error while sending subtitle file:", err);
-								res.status(500).send("Error sending subtitle file");
-							}
+				useFfmpeg(fullPath.absolutePath, (ffmpeg) => {
+					ffmpeg.outputOptions(`-map 0:${subtitleIndex}`)
+						.outputOptions('-f srt') // Output format as SRT
+						.save(outputFilePath)
+						.on('end', () => {
+							// set cors header
+							res.setHeader('Access-Control-Allow-Origin', '*');
+							res.setHeader('Content-Type', 'text/plain');
+							res.sendFile(outputFilePath, (err) => {
+								if (err) {
+									console.error("Error while sending subtitle file:", err);
+									res.status(500).send("Error sending subtitle file");
+								}
+							});
+						})
+						.on('error', (err) => {
+							console.error("Error while extracting subtitles:", err);
+							res.status(500).send("Error extracting subtitles");
 						});
-					})
-					.on('error', (err) => {
-						console.error("Error while extracting subtitles:", err);
-						res.status(500).send("Error extracting subtitles");
-					})
-					;
+				});
 			}
 			else {
 				res.status(400).send("Unsupported subtitle format: " + subtitleStream.codec_name);
@@ -550,15 +618,20 @@ app.use('/api/media', (req, res) => {
 app.use('/api/thumb', (req, res) => {
 	const relativePath = req.path;
 	const { width } = req.query;
+	const resolvedPath = DirectoryService.resolvePath(relativePath);
+	if (!resolvedPath) {
+		res.status(404).send("File not found");
+		return;
+	}
 	(async () => {
 		// Gifs don't work if sharp resizes them, so just send he og file.
 		// Consider using gif-encode in the future if gifs are too large and still need to be resized.
-		if (relativePath.endsWith('.gif')) {
-			res.sendFile(DirectoryService.resolvePath(relativePath));
+		if (resolvedPath.relativePath.endsWith('.gif')) {
+			res.sendFile(resolvedPath.absolutePath);
 			return;
 		}
 		try {
-			const thumbnailBuffer = await ThumbnailService.streamThumbnail(relativePath, !isNaN(width) ? parseInt(width as string) : undefined);
+			const thumbnailBuffer = await ThumbnailService.streamThumbnail(resolvedPath, !isNaN(width) ? parseInt(width as string) : undefined);
 			res.setHeader('Content-Type', 'image/jpeg');
 			res.send(thumbnailBuffer);
 		} catch (err) {
