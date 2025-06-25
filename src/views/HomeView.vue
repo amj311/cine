@@ -4,6 +4,7 @@ import MediaCard from '@/components/MediaCard.vue';
 import { useApiStore } from '@/stores/api.store';
 import GalleryFileFrame from '@/components/GalleryFileFrame.vue';
 import Slideshow from '@/components/Slideshow.vue';
+import MetadataLoader from '@/components/MetadataLoader.vue';
 
 const feed = ref<any[]>([]);
 
@@ -99,6 +100,47 @@ function openSlideshow(files: any[], firstFile?: any) {
 						</div>
 					</template>
 
+					<template v-if="feedRow.type === 'cinema-items'">
+						<h3>{{ feedRow.title }}</h3>
+						<div class="feed-scroll-wrapper">
+							<Scroll class="feed-scroll">
+								<div class="feed-row-items-list">
+									<div
+										class="feed-row-card-wrapper"
+										:class="item.type"
+										v-for="item in feedRow.items"
+										:key="item.relativePath"
+									>
+										<MetadataLoader :media="item.libraryItem"><template #default="{ metadata }">
+											<!-- <MediaCard
+												v-if="item.libraryItem.playable?.type === 'album' || item.libraryItem.playable?.type === 'audiobook'"
+												clickable
+												:action="() => $router.push({ name: 'browse', query: { path: item.libraryItem.playable.relativePath } })"
+												:imageUrl="item.libraryItem.playable.cover_thumb"
+												:imagePosition="'top'"
+												:progress="item.watchProgress"
+												:aspectRatio="'square'"
+												:title="item.libraryItem.playable.title"
+												:subtitle="`${timeRemaining(item.watchProgress)} left`"
+											>
+												<template #fallbackIcon>💿</template>
+											</MediaCard> -->
+											<MediaCard
+												:imageUrl="metadata?.poster_thumb"
+												:aspectRatio="'tall'"
+												:title="item.title"
+												:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+												:progress="item.watchProgress"
+											>
+												<template #fallbackIcon>🎞️</template>
+											</MediaCard>
+										</template></MetadataLoader>
+									</div>
+								</div>
+							</Scroll>
+						</div>
+					</template>
+
 					<template v-else-if="feedRow.type === 'photos'">
 						<h3>{{ feedRow.title }}</h3>
 						<div class="photo-grid mt-3">
@@ -154,9 +196,15 @@ function openSlideshow(files: any[], firstFile?: any) {
 			min-width: calc(var(--baseWidth) * var(--mult));
 			max-width: calc(var(--baseWidth) * var(--mult));
 		}
-
 	}
 
+
+	&.cinema-items .feed-row-card-wrapper {
+		--baseWidth: min(8rem, 30vw);
+		width: var(--baseWidth);
+		min-width: var(--baseWidth);
+		max-width: var(--baseWidth);
+	}
 
 	&.photos .photo-grid {
 		display: grid;

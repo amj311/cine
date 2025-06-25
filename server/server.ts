@@ -333,7 +333,7 @@ app.get('/api/feed', async (req, res) => {
 				title?: string;
 				subtitle?: string;
 				relativePath: string;
-				metadata?: EitherMetadata;
+				metadata?: EitherMetadata | null;
 				watchProgress?: WatchProgress;
 				libraryItem?: any;
 				isUpNext?: boolean;
@@ -377,8 +377,52 @@ app.get('/api/feed', async (req, res) => {
 			});
 		}
 
-		// identify photo libraries
 		const libraries = await LibraryService.getRootLibraries();
+
+
+		// New Movies and shows!
+		// Need to get filestats for all items
+		const mediaTypes = ['movies', 'tv'];
+		const mediaLibraries = libraries.filter((library) => mediaTypes.includes(library.libraryType));
+		console.log("Media Libraries:", libraries.map((l) => l));
+		const allMediaItems = (await Promise.all(mediaLibraries.map(async (library) => {
+			const { items } = await LibraryService.getFlatTree(library.confirmedPath);
+			// async filestats for each file
+			return await Promise.all(items.map(async (item) => {
+				if (!['movie', 'series'].includes(item.type)) {
+					return null; // Skip folders
+				}
+				const fullPath = DirectoryService.resolvePath(item.relativePath)?.absolutePath!;
+				const stat = await fs.promises.stat(fullPath).catch(() => null);
+				return {
+					...item,
+					createdAt: stat ? stat.birthtime : null, // Use birthtime for creation
+				}
+			}));
+		}))).flat().filter(i => !!i).sort((a, b) => {
+			if (!a.createdAt) {
+				return 1;
+			}
+			if (!b.createdAt) {
+				return -1;
+			}
+			return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+		});
+		const newItems = allMediaItems.slice(0, 10).map((item) => ({
+			title: item.name,
+			relativePath: item.relativePath,
+			metadata: item?.metadata,
+			libraryItem: item,
+		}));
+		if (newItems.length > 0) {
+			feedLists.push({
+				title: "New Movies and Shows",
+				type: "cinema-items",
+				items: newItems,
+			});
+		}
+
+		// identify photo libraries
 		const photoLibraries = libraries.filter((library) => library.libraryType === 'photos');
 		const allPhotos = (await Promise.all(photoLibraries.map(async (library) => {
 			const { files } = await LibraryService.getFlatTree(library.confirmedPath);
