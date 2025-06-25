@@ -62,7 +62,7 @@ const numHiddenBreadcrumbs = computed(() => Math.max(0, navPathItems.value.lengt
 const hiddenBreadcrumbs = computed(() => (navPathItems.value.slice(0, numHiddenBreadcrumbs.value)));
 const visibleBreadcrumbs = computed(() => (navPathItems.value.slice(numHiddenBreadcrumbs.value)));
 
-const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1]?.label || queryPathStore.currentFile)
+const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1]?.label || removeExtensionsFromFileName(queryPathStore.currentFile!))
 </script>
 
 <template>
