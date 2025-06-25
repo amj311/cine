@@ -272,9 +272,9 @@ export class LibraryService {
 					trackTotal: probe?.trackTotal,
 					duration: probe?.duration,
 					name: title,
-					fileName: file,
-					relativePath: path + '/' + file,
-					sortKey: (probe?.trackNumber ? probe.trackNumber + '_' : '') + file,
+					fileName: file.name,
+					relativePath: path.relativePath + '/' + file.name,
+					sortKey: (probe?.trackNumber ? probe.trackNumber + '_' : '') + file.name,
 					listName: title,
 					chapters: probe?.chapters
 				} as any;
@@ -331,8 +331,8 @@ export class LibraryService {
 				title: firstTrackProbe?.album,
 				artist: firstTrackProbe?.album_artist || firstTrackProbe?.artist,
 				genre: firstTrackProbe?.genre,
-				cover_thumb: `/thumb/${path + '/' + children.files[0]}?width=300`,
-				cover: `/thumb/${path + '/' + children.files[0]}?width=500`,
+				cover_thumb: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=300`,
+				cover: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=500`,
 				relativePath: path.relativePath,
 				folderName: folderName,
 				metadata: null,

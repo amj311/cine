@@ -85,6 +85,10 @@ export class DirectoryService {
 			throw new Error('Absolute path is not within MEDIA_DIR');
 		}
 
-		return absolutePath.slice(MEDIA_DIR.length + 1) as RelativePath;
+		let finalPath = absolutePath.slice(MEDIA_DIR.length) as RelativePath;
+		if (finalPath.startsWith('/')) {
+			finalPath = finalPath.slice(1) as RelativePath;
+		}
+		return finalPath as RelativePath;
 	}
 }

@@ -145,10 +145,14 @@ function openSlideshow(files: any[], firstFile?: any) {
 	&.continue-watching .feed-row-card-wrapper {
 		--baseWidth: min(15rem, max(8rem, 30vw));
 		width: var(--baseWidth);
+		min-width: var(--baseWidth);
+		max-width: var(--baseWidth);
 
 		&.album, &.audiobook {
 			--mult: 0.66;
 			width: calc(var(--baseWidth) * var(--mult));
+			min-width: calc(var(--baseWidth) * var(--mult));
+			max-width: calc(var(--baseWidth) * var(--mult));
 		}
 
 	}
