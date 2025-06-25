@@ -384,7 +384,6 @@ app.get('/api/feed', async (req, res) => {
 		// Need to get filestats for all items
 		const mediaTypes = ['movies', 'tv'];
 		const mediaLibraries = libraries.filter((library) => mediaTypes.includes(library.libraryType));
-		console.log("Media Libraries:", libraries.map((l) => l));
 		const allMediaItems = (await Promise.all(mediaLibraries.map(async (library) => {
 			const { items } = await LibraryService.getFlatTree(library.confirmedPath);
 			// async filestats for each file
