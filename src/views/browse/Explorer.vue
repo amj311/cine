@@ -119,7 +119,7 @@ const items = computed(() => {
 										:imageUrl="folder.libraryItem.cover_thumb"
 										:aspectRatio="'square'"
 										:title="folder.libraryItem.title"
-										:subtitle="folder.libraryItem.artist"
+										:subtitle="folder.libraryItem.artist || folder.libraryItem.author"
 										:progress="folder.libraryItem.watchProgress"
 										:action="() => queryPathStore.enterDirectory(folder.folderName)"
 									>
