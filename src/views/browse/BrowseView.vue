@@ -106,27 +106,27 @@ watch(
 		<div style="height: 100%;" :style="longLoading ? { opacity: 0.5, transition: '500ms' } : {}">
 			<KeepAlive :include="['Explorer', 'MovieLibraryPage', 'PhotoLibraryPage']">
 				<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'photos'">
-					<PhotoLibraryPage :libraryItem="libraryItem" />
+					<PhotoLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'movies'">
-					<MovieLibraryPage :libraryItem="libraryItem" :folders="directory!.folders" />
+					<MovieLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :folders="directory!.folders" />
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
-					<MoviePage :libraryItem="libraryItem" />
+					<MoviePage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'series'">
-					<SeriesPage :libraryItem="libraryItem" />
+					<SeriesPage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'album'">
-					<AlbumPage :libraryItem="libraryItem" :directory="directory" />
+					<AlbumPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :directory="directory" />
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'audiobook'">
-					<AudiobookPage :libraryItem="libraryItem" :directory="directory" />
+					<AudiobookPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :directory="directory" />
 				</template>
 
 				<template v-else>
