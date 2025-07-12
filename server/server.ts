@@ -21,6 +21,7 @@ import { EitherMetadata } from './services/metadata/MetadataTypes';
 import { ThumbnailService } from './services/ThumbnailService';
 import { ProbeService } from './services/ProbeService';
 import { useFfmpeg } from './utils/ffmpeg';
+import { getBuildNumber } from './utils/versionService';
 
 const corsOptions = {};
 
