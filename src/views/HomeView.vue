@@ -69,8 +69,21 @@ function openSlideshow(files: any[], firstFile?: any) {
 										v-for="item in feedRow.items"
 										:key="item.relativePath"
 									>
+										<!-- Failure case -->
 										<MediaCard
-											v-if="item.libraryItem.playable?.type === 'album' || item.libraryItem.playable?.type === 'audiobook'"
+											v-if="!item.libraryItem.playable || !item.libraryItem.parentLibrary"
+											clickable
+											:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+											:progress="item.watchProgress"
+											:aspectRatio="'wide'"
+											:title="item.title"
+											:subtitle="`${timeRemaining(item.watchProgress)} left`"
+										>
+											<template #fallbackIcon>💿</template>
+										</MediaCard>
+
+										<MediaCard
+											v-else-if="item.libraryItem.playable.type === 'album' || item.libraryItem.playable.type === 'audiobook'"
 											clickable
 											:action="() => $router.push({ name: 'browse', query: { path: item.libraryItem.playable.relativePath } })"
 											:imageUrl="item.libraryItem.playable.cover_thumb"
@@ -84,7 +97,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 										</MediaCard>
 										<MediaCard
 											v-else
-											:imageUrl="item.libraryItem.playable?.still_thumb || item.libraryItem.parentLibrary?.metadata?.background_thumb || item.libraryItem.parentLibrary?.metadata?.poster_thumb"
+											:imageUrl="item.libraryItem.playable.still_thumb || item.libraryItem.parentLibrary.metadata?.background_thumb || item.libraryItem.parentLibrary?.metadata?.poster_thumb"
 											:imagePosition="'top'"
 											:playSrc="item.relativePath"
 											:progress="item.watchProgress"

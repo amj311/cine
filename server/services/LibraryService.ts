@@ -590,24 +590,25 @@ export class LibraryService {
 
 
 	public static async getLibraryForPlayable(path: ConfirmedPath) {
-		let parentLibrary;
 		let playable: Playable | null = null;
 
-		// find the parent which contains a name and year
-		const ancestors = path.relativePath.split('/').slice(0, -1);
-		const parentFolder = ancestors.reverse().find((folder) => {
-			const { name, year } = LibraryService.parseNamePieces(folder);
-			return !!name && !!year;
-		});
-
-		if (parentFolder) {
-			const parentPath = DirectoryService.resolvePath(path.relativePath.split(parentFolder)[0] + parentFolder)!;
-			parentLibrary = await LibraryService.parseFolderToItem(parentPath, true) as LibraryItem;
-			if (!parentLibrary) {
-				console.warn(`No parent library found for ${path}`);
-				return {};
+		const ancestors = path.relativePath.split('/').slice(0, -1).reduce((paths, thisPath) => {
+			const lastPath = paths[paths.length - 1];
+			const currentPath = lastPath ? lastPath.append(thisPath) : DirectoryService.resolvePath(thisPath)!;
+			return [...paths, currentPath];
+		}, [] as Array<ConfirmedPath>).reverse();
+		let parentLibrary;
+		for (const ancestor of ancestors) {
+			const item = await LibraryService.parseFolderToItem(ancestor, true, true);
+			if (item && item.type !== 'folder') {
+				parentLibrary = item;
+				break;
 			}
+		}
+
+		if (parentLibrary) {
 			// Identify playable within the parent library
+			console.log(`Searching for playable in parent library: ${parentLibrary.relativePath}`);
 			playable = (parentLibrary.extras as Array<Extra>)?.find((extra) => path.relativePath === extra.relativePath) || null;
 			if (!playable && parentLibrary.type === 'movie') {
 				playable = (parentLibrary as Movie).movie.relativePath === path.relativePath ? parentLibrary.movie : null;

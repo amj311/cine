@@ -63,16 +63,22 @@ export class DirectoryService {
 	}
 
 	static async listDirectory(dirPath: ConfirmedPath) {
-		const files = (await readdir(dirPath.absolutePath, { withFileTypes: true })).map((f) => {
-			return {
-				isDirectory: f.isDirectory(),
-				name: f.name,
-				confirmedPath: dirPath.append(f.name),
-			};
-		});
-		const dirs = files.filter((file) => file.isDirectory);
-		const filesOnly = files.filter((file) => !file.isDirectory);
-		return { folders: dirs, files: filesOnly };
+		try {
+			const files = (await readdir(dirPath.absolutePath, { withFileTypes: true })).map((f) => {
+				return {
+					isDirectory: f.isDirectory(),
+					name: f.name,
+					confirmedPath: dirPath.append(f.name),
+				};
+			});
+			const dirs = files.filter((file) => file.isDirectory);
+			const filesOnly = files.filter((file) => !file.isDirectory);
+			return { folders: dirs, files: filesOnly };
+		}
+		catch (err) {
+			console.error("Error reading directory:", err, new Error().stack);
+			return { folders: [], files: [] };
+		}
 	}
 
 	public static getRelativePath(absolutePath: string): RelativePath {
