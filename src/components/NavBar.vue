@@ -2,6 +2,7 @@
 	setup
 	lang="ts"
 >
+import { getBuildNumber } from '@/services/versionService';
 import { useAppNavigationStore } from '@/stores/appNavigation.store';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 import Button from 'primevue/button';
@@ -70,6 +71,7 @@ const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1
 		<div class="top">
 			<div class="logo" tabindex="0" @click="() => { expandMobileNav = false; $router.push({ name: 'home' }) }">
 				<Logo :width="125" />
+				<div class="build-version">v{{ getBuildNumber() }}</div>
 			</div>
 
 			<div v-if="useMobileNav" style="flex-grow: 1; min-width: 0;">
@@ -182,6 +184,7 @@ const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1
 }
 
 .logo {
+	position: relative;
 	perspective: 80px;
 	cursor: pointer;
 
@@ -191,9 +194,30 @@ const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1
 		transform-style: preserve-3d;
 		pointer-events: none;
 	}
-	&:hover svg {
+	&:hover svg, &:active svg {
 		transform: rotateX(-360deg);
 	}
+
+	.build-version {
+		position: absolute;
+		bottom: 50%;
+		left: 0;
+		font-size: 0.8rem;
+		opacity: 0;
+	}
+
+
+	&:hover, &:focus {
+		svg {
+			transform: rotateX(-360deg);
+		}
+		.build-version {
+			opacity: .8;
+			bottom: -1.2rem;
+			transition: 1s ease-in-out 5s;
+		}
+	}
+
 }
 
 .breadcrumbs {
