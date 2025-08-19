@@ -143,10 +143,16 @@ const resumable = computed(() => {
 	return isSeries.value ? episodeToPlay.value : props.libraryItem.movie;
 })
 const resumeTime = computed(() => {
-	if (resumable.value?.watchProgress?.percentage < 90) {
+	if (resumable.value?.watchProgress && resumable.value.watchProgress.percentage < 90) {
 		return resumable.value?.watchProgress.time;
 	}
 	return 0;
+});
+const playText = computed(() => {
+	if (isSeries.value) {
+		return `${ resumeTime.value ? 'Resume' : 'Play' } S${ episodeToPlay.value?.seasonNumber }:E${ episodeToPlay.value?.episodeNumber }`;
+	}
+	return `${ resumeTime.value ? `Resume (${Math.round(resumable.value.watchProgress.percentage)}%)` : 'Play' }`;
 });
 
 watch(
@@ -200,7 +206,7 @@ watch(
 						data-focus-priority="1"
 					>
 						<i class="pi pi-play" />
-						{{ resumeTime ? `Resume (${Math.round(resumable.watchProgress.percentage)}%)` : 'Play' }}
+						{{ playText }}
 					</Button>
 					<Button
 						v-if="resumeTime"
