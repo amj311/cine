@@ -13,6 +13,7 @@ const props = defineProps<{
 		folders: { folderName: string; libraryItem }[];
 		files: string[];
 	};
+	libraryItem: any; // libraryItem
 }>();
 
 const queryPathStore = useQueryPathStore();
@@ -144,6 +145,13 @@ const items = computed(() => {
 							</MediaCard>
 						</template>
 					</div>
+				</div>
+
+				<div v-if="libraryItem.extras?.length > 0">	
+					<br />
+					<br />
+					<h2>Extras</h2>
+					<ExtrasList :extras="libraryItem.extras" />
 				</div>
 			</template>
 

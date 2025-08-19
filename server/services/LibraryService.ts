@@ -116,6 +116,7 @@ type Collection = LibraryItemData & {
 	type: 'collection',
 	name: string,
 	children: Array<RelativePath>,
+	extras?: Array<Extra>,
 }
 
 
@@ -370,6 +371,12 @@ export class LibraryService {
 		const allChildrenAreMedia = children.folders.length > 0 && children.folders.every((folder) => Boolean(LibraryService.parseNamePieces(folder.name).year));
 		if (allChildrenAreMedia) {
 			const childrenPaths = children.folders.map((folder) => folder.confirmedPath.relativePath);
+			// Allow collections to have extras - video files at the root of the collection folder
+			let extras: Extra[] = [];
+			if (detailed) {
+				const extraVideos = children.files.filter((file) => !childrenPaths.includes(file.confirmedPath.relativePath));
+				extras = LibraryService.prepareExtras(extraVideos.map((file) => file.name), path);
+			}
 			return {
 				type: 'collection',
 				name,
@@ -379,6 +386,7 @@ export class LibraryService {
 				metadata: null,
 				sortKey: LibraryService.createSortKey(folderName),
 				listName: name,
+				extras,
 			};
 		}
 

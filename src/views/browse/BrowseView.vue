@@ -133,6 +133,7 @@ watch(
 					<Explorer v-if="directory"
 						:exploreMode="exploreMode"
 						:directory="directory"
+						:libraryItem="libraryItem"
 					/>
 				</template>
 			</KeepAlive>
