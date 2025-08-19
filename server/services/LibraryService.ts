@@ -602,10 +602,10 @@ export class LibraryService {
 			// Identify playable within the parent library
 			playable = (parentLibrary.extras as Array<Extra>)?.find((extra) => path.relativePath === extra.relativePath) || null;
 			if (!playable && parentLibrary.type === 'movie') {
-				playable = (parentLibrary as Movie).relativePath === path.relativePath ? parentLibrary.movie : null;
+				playable = (parentLibrary as Movie).movie.relativePath === path.relativePath ? parentLibrary.movie : null;
 			}
 			if (!playable && parentLibrary.type === 'series') {
-				playable = (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => path.equals(episodeFile.relativePath)) || null;
+				playable = (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => path.relativePath === episodeFile.relativePath) || null;
 			}
 		}
 		else {
