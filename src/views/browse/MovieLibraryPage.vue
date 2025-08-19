@@ -91,7 +91,7 @@ function timeRemaining(watchProgress: any) {
 						</Button>
 					</h3>
 					<div class="categories-scroll-wrapper">
-						<Scroll class="categories-scroll">
+						<Scroll>
 							<div class="categories-row-items-list">
 								<div
 									class="categories-row-card-wrapper"

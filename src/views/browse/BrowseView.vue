@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onBeforeMount, watch, nextTick } from 'vue';
 import { useQueryPathStore } from '@/stores/queryPath.store';
-import MoviePage from '@/views/browse/MoviePage.vue';
-import SeriesPage from '@/views/browse/SeriesPage.vue';
 import Explorer from '@/views/browse/Explorer.vue';
 import Scroll from '@/components/Scroll.vue';
 import { useRoute } from 'vue-router';
@@ -12,6 +10,7 @@ import { useApiStore } from '@/stores/api.store';
 import PhotoLibraryPage from './PhotoLibraryPage.vue';
 import AlbumPage from './AlbumPage.vue';
 import AudiobookPage from './AudiobookPage.vue';
+import CinemaPage from './CinemaPage.vue';
 
 const route = useRoute();
 const api = useApiStore().api;
@@ -114,11 +113,11 @@ watch(
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
-					<MoviePage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
+					<CinemaPage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'series'">
-					<SeriesPage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
+					<CinemaPage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'album'">

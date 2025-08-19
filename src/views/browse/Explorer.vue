@@ -74,7 +74,7 @@ const items = computed(() => {
 							<MetadataLoader
 								:media="folder.libraryItem"
 							>
-								<template #default="{ metadata }">
+								<template #default="{ metadata, isLoadingMetadata }">
 									<MediaCard
 										clickable
 										:imageUrl="metadata?.poster_thumb"
@@ -83,6 +83,7 @@ const items = computed(() => {
 										:subtitle="folder.libraryItem.year"
 										:progress="folder.libraryItem.movie?.watchProgress"
 										:action="() => queryPathStore.enterDirectory(folder.folderName)"
+										:loading="isLoadingMetadata"
 									>
 										<template #fallbackIcon>🎞️</template>
 									</MediaCard>
@@ -94,7 +95,7 @@ const items = computed(() => {
 							<MetadataLoader
 								:media="folder.libraryItem"
 							>
-								<template #default="{ metadata }">
+								<template #default="{ metadata, isLoadingMetadata }">
 									<MediaCard
 										clickable
 										:imageUrl="metadata?.poster_thumb"
@@ -103,6 +104,7 @@ const items = computed(() => {
 										:subtitle="`${folder.libraryItem.numSeasons} Season${folder.libraryItem.numSeasons.length ? 's' : ''}`"
 										:progress="folder.libraryItem.movie?.watchProgress"
 										:action="() => queryPathStore.enterDirectory(folder.folderName)"
+										:loading="isLoadingMetadata"
 									>
 										<template #fallbackIcon>📺</template>
 									</MediaCard>
@@ -114,7 +116,7 @@ const items = computed(() => {
 							<MetadataLoader
 								:media="folder.libraryItem"
 							>
-								<template #default="{ metadata }">
+								<template #default="{ metadata, isLoadingMetadata }">
 									<MediaCard
 										clickable
 										:imageUrl="folder.libraryItem.cover_thumb"
@@ -123,6 +125,7 @@ const items = computed(() => {
 										:subtitle="folder.libraryItem.artist || folder.libraryItem.author"
 										:progress="folder.libraryItem.watchProgress"
 										:action="() => queryPathStore.enterDirectory(folder.folderName)"
+										:loading="isLoadingMetadata"
 									>
 										<template #fallbackIcon>💿</template>
 									</MediaCard>

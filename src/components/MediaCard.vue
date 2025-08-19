@@ -18,6 +18,7 @@ const props = defineProps<{
 	playSrc?: string;
 	clickable?: boolean;
 	action?: () => void;
+	loading?: boolean;
 }>();
 
 
@@ -70,6 +71,8 @@ const imageError = ref<any>(null);
 			<div v-if="playSrc" class="overlay">
 				<div class="play-button"><i class="pi pi-play" /></div>
 			</div>
+
+			<Skeleton v-if="loading" width="100%" height="100%" />
 		</div>
 		<div v-if="title || subtitle" class="mt-1 p-1">
 			<div v-if="title" class="title">{{ title }}</div>

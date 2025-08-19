@@ -61,7 +61,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 					<template v-if="feedRow.type === 'continue-watching'">
 						<h3>{{ feedRow.title }}</h3>
 						<div class="feed-scroll-wrapper">
-							<Scroll class="feed-scroll">
+							<Scroll>
 								<div class="feed-row-items-list">
 									<div
 										class="feed-row-card-wrapper"
@@ -116,7 +116,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 					<template v-if="feedRow.type === 'cinema-items'">
 						<h3>{{ feedRow.title }}</h3>
 						<div class="feed-scroll-wrapper">
-							<Scroll class="feed-scroll">
+							<Scroll>
 								<div class="feed-row-items-list">
 									<div
 										class="feed-row-card-wrapper"
@@ -124,7 +124,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 										v-for="item in feedRow.items"
 										:key="item.relativePath"
 									>
-										<MetadataLoader :media="item.libraryItem"><template #default="{ metadata }">
+										<MetadataLoader :media="item.libraryItem"><template #default="{ metadata, isLoadingMetadata }">
 											<!-- <MediaCard
 												v-if="item.libraryItem.playable?.type === 'album' || item.libraryItem.playable?.type === 'audiobook'"
 												clickable
@@ -144,6 +144,7 @@ function openSlideshow(files: any[], firstFile?: any) {
 												:title="item.title"
 												:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
 												:progress="item.watchProgress"
+												:loading="isLoadingMetadata"
 											>
 												<template #fallbackIcon>🎞️</template>
 											</MediaCard>

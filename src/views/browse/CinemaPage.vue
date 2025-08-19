@@ -3,10 +3,12 @@
 	lang="ts"
 >
 import { useRouter } from 'vue-router';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
+import ExtrasList from '@/components/ExtrasList.vue';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
+import Skeleton from 'primevue/skeleton';
 
 const router = useRouter();
 const props = defineProps<{
@@ -32,12 +34,17 @@ async function loadMetadata() {
 	}
 }
 
-loadMetadata();
-
+onBeforeMount(() => {
+	loadMetadata();
+});
 onBeforeUnmount(() => {
 	backgroundStore.clearBackgroundUrl();
 	backgroundStore.clearPosterUrl();
 });
+
+
+const isSeries = computed(() => props.libraryItem.type === 'series');
+
 
 function playVideo(path: string, startTime?: number) {
 	router.push({
@@ -51,18 +58,25 @@ function playVideo(path: string, startTime?: number) {
 
 function formatRuntime(minutes: number) {
 	const hours = Math.floor(minutes / 60);
-	const minutesOver = minutes % 60;
+	const minutesOver = Math.floor(minutes % 60);
 	if (hours === 0) {
 		return `${minutesOver}min`;
 	}
 	return `${hours}hr ${minutesOver}min`;
 }
 
+/***************
+ * SERIES SEASONS & EPISODES
+ */
 
-// Combine libraryItem.season with matching metadata from metadata.seasons
+ // Combine libraryItem.season with matching metadata from metadata.seasons
+const episodeToPlay = ref<any>(null);
 const activeSeason = ref(metadata.value?.seasons[0] || null);
 
 const mergedSeasons = computed(() => {
+	if (!isSeries.value ) {
+		return [];
+	}
 	const seasons = props.libraryItem.seasons.map((season: any) => {
 		const metadataSeason = metadata.value?.seasons.find((s: any) => s.seasonNumber === season.seasonNumber);
 		return {
@@ -91,7 +105,6 @@ const mergedSeasons = computed(() => {
 	return seasons;
 });
 
-const episodeToPlay = ref<any>(null);
 
 watch(() => mergedSeasons.value, determineEpisodeToPlay, { immediate: true, deep: true });
 
@@ -113,11 +126,11 @@ function determineEpisodeToPlay() {
 			score,
 		};
 	}).filter((episode: any) => episode.score > 0).reverse();
-	const episode = scored[0] || mergedSeasons.value[0].episodes[0];
-
+	const episode = scored[0] || mergedSeasons.value[0]?.episodes[0] || null;
+	
 	// Use this opportunity to update the active season based on the last watched episode
 	activeSeason.value =
-		mergedSeasons.value.find((season: any) => season.seasonNumber === episode.seasonNumber)
+		mergedSeasons.value.find((season: any) => season.seasonNumber === episode?.seasonNumber)
 		// Or select the first season that is not specials
 		|| mergedSeasons.value.find((season: any) => season.seasonNumber !== 0)
 		|| mergedSeasons.value[0];
@@ -125,90 +138,115 @@ function determineEpisodeToPlay() {
 	episodeToPlay.value = episode;
 };
 
+
+const resumable = computed(() => {
+	return isSeries.value ? episodeToPlay.value : props.libraryItem.movie;
+})
 const resumeTime = computed(() => {
-	if (episodeToPlay.value?.watchProgress?.percentage < 90) {
-		return episodeToPlay.value?.watchProgress.time;
+	if (resumable.value?.watchProgress?.percentage < 90) {
+		return resumable.value?.watchProgress.time;
 	}
 	return 0;
 });
 
-
 watch(
 	() => useWatchProgressStore().lastWatchProgress,
 	(lastProgress) => {
-		// find matching episode in mergedSeasons
-		const episode = mergedSeasons.value.flatMap((season: any) => season.episodes).find((episode: any) => episode.relativePath === lastProgress?.relativePath);
-		if (episode) {
-			episode.watchProgress = lastProgress.progress;
-			episodeToPlay.value = episode;
+		const media = isSeries.value
+			? mergedSeasons.value.flatMap((season: any) => season.episodes).find((episode: any) => episode.relativePath === lastProgress?.relativePath)
+			: props.libraryItem.movie;
+		if (media) {
+			media.watchProgress = lastProgress.progress;
+			if (isSeries.value) {
+				episodeToPlay.value = media;
+			}
 		}
 	}
 )
-
 
 </script>
 
 <template>
 	<Scroll>
-		<div class="series-page pl-3 pr-2">
+		<div class="cinema-page pl-3 pr-2">
 			<div class="top-wrapper">
 				<div>
-				<div class="poster-wrapper">
-					<MediaCard
-						:imageUrl="metadata?.poster_full"
-					/>
+					<div class="poster-wrapper">
+						<MediaCard
+							:imageUrl="metadata?.poster_full"
+							:progress="resumable?.watchProgress"
+							:loading="isLoadingMetadata"
+						/>
+					</div>
 				</div>
-			</div>
 
 				<div class="left-side" :style="{ flexGrow: 1 }">
+
 					<h1 class="title line-clamp-3">{{ libraryItem.name }}</h1>
-					<div style="display: flex; column-gap: 10px; flex-wrap: wrap;">
+					<div style="display: flex; column-gap: 10px; flex-wrap: wrap; align-items: center;">
 						<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
 						<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
 						<span v-if="metadata?.content_rating">{{ metadata.content_rating }}</span>
 					</div>
 
-
 					<br />
-					<StarRating v-if="!isNaN(metadata?.rating)" :rating="metadata.rating" :votes="metadata.votes" />
+					<StarRating :rating="metadata?.rating || 0" :votes="metadata?.votes || 0" />
 
 					<br />
 					<Button
+						:size="'large'"
 						class="play-button"
-						@click="() => playVideo(episodeToPlay?.relativePath, resumeTime)"
+						@click="() => playVideo(resumable.relativePath, resumeTime)"
+						data-focus-priority="1"
 					>
 						<i class="pi pi-play" />
-						{{ resumeTime ? 'Resume' : 'Play' }} S{{ episodeToPlay?.seasonNumber }}:E{{ episodeToPlay?.episodeNumber }}
+						{{ resumeTime ? `Resume (${Math.round(resumable.watchProgress.percentage)}%)` : 'Play' }}
 					</Button>
 					<Button
 						v-if="resumeTime"
 						:size="'large'"
 						variant="text"
 						severity="contrast"
-						@click="() => playVideo(episodeToPlay.relativePath, episodeToPlay.startTime)"
+						@click="() => playVideo(resumable.relativePath, resumable.startTime || 0)"
 					>
 						<i class="pi pi-replay" />
 					</Button>
 
 					<div class="hide-md" style="max-width: 50em;">
 						<br />
-						<p class="line-clamp-4">{{ metadata?.overview }}</p>
+						<template v-if="isLoadingMetadata">
+							<Skeleton width="100%" height="20px" class="my-1" />
+							<Skeleton width="100%" height="20px" class="my-1" />
+							<Skeleton width="100%" height="20px" class="my-1" />
+							<Skeleton width="33%" height="20px" class="my-1" />
+						</template>
+						<template v-else>
+						<p class="line-clamp-3">{{ metadata?.overview }}</p>
 						<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
+						</template>
 					</div>
 				</div>
 			</div>
 		
-			<div class="show-lg">
-				<p>{{ metadata?.overview }}</p>
-				<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
+			<div class="show-sm">
+				<template v-if="isLoadingMetadata">
+					<Skeleton width="100%" height="20px" class="my-1" />
+					<Skeleton width="100%" height="20px" class="my-1" />
+					<Skeleton width="100%" height="20px" class="my-1" />
+					<Skeleton width="33%" height="20px" class="my-1" />
+				</template>
+				<template v-else>
+					<p>{{ metadata?.overview }}</p>
+					<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
+				</template>
 			</div>
 
-			<div v-if="metadata?.credits">
+			<div v-if="isLoadingMetadata || metadata?.credits">
 				<h2>Cast & Crew</h2>
-				<PeopleList :people="metadata.credits" />
+				<PeopleList :loading="isLoadingMetadata" :people="metadata?.credits" />
 			</div>
 
-			<div>
+			<div v-if="isSeries">
 				<h2 class="mb-2">Episodes</h2>
 				<div class="season-wrapper">
 					<div class="selection">
@@ -223,7 +261,7 @@ watch(
 							{{ season.name || `Season ${ season.seasonNumber }` }}
 						</Button>
 					</div>
-					<div class="season-details">
+					<div class="season-details" v-if="activeSeason">
 						<p>{{ activeSeason.overview }}</p>
 						<div class="episodes-list flex flex-column gap-3">
 							<template v-for="(episode, i) in activeSeason.episodes" :key="episode.relativePath">
@@ -236,16 +274,26 @@ watch(
 											:playSrc="episode.relativePath"
 											:overrideStartTime="episode.startTime"
 											:progress="episode.watchProgress"
+											:loading="isLoadingMetadata"
 										/>
 									</div>
-									<div class="episode-info">
+									<div class="episode-info flex-grow-1">
 										<h3>{{ episode.name }}{{ episode.version ? ` (${episode.version})` : '' }}</h3>
 										<div style="display: flex; gap: 10px; flex-wrap: wrap;">
 											<span>Ep. {{ episode.episodeNumber }}</span>
 											<span v-if="episode.runtime">{{ formatRuntime(episode.runtime) }}</span>
 											<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
 										</div>
-										<p>{{ episode.overview }}</p>
+										
+										<p>
+											<template v-if="isLoadingMetadata">
+												<Skeleton width="100%" height="20px" class="my-1" />
+												<Skeleton width="33%" height="20px" class="my-1" />
+											</template>
+											<template v-else>
+												{{ episode.overview }}
+											</template>
+										</p>
 									</div>
 								</div>
 							</template>
@@ -267,7 +315,7 @@ watch(
 	scoped
 >
 
-.show-lg {
+.show-sm {
 	display: none;
 }
 
@@ -275,16 +323,12 @@ watch(
 	.hide-md {
 		display: none;
 	}
-	.show-lg {
+	.show-sm {
 		display: block;
-	}
-	.title {
-		font-size: 1.5em;
 	}
 }
 
-
-.series-page {
+.cinema-page {
 	display: flex;
 	flex-direction: column;
 	gap: 30px;
