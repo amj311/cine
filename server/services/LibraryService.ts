@@ -600,12 +600,13 @@ export class LibraryService {
 				return {};
 			}
 			// Identify playable within the parent library
-			playable = (parentLibrary as Movie).extras?.find((extra) => path.equals(extra.relativePath)) || null;
+			console.log(path.relativePath, parentLibrary.extras)
+			playable = (parentLibrary.extras as Array<Extra>)?.find((extra) => path.relativePath === extra.relativePath) || null;
 			if (!playable && parentLibrary.type === 'movie') {
-				playable = parentLibrary.movie.relativePath === path.relativePath ? parentLibrary.movie : null;
+				playable = (parentLibrary as Movie).relativePath === path.relativePath ? parentLibrary.movie : null;
 			}
 			if (!playable && parentLibrary.type === 'series') {
-				playable = parentLibrary.seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => path.equals(episodeFile.relativePath)) || null;
+				playable = (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => path.equals(episodeFile.relativePath)) || null;
 			}
 		}
 		else {
