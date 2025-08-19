@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Update and increment build number before deployment
-./update-build-number.sh
+./update-build-number.sh --commit
 echo "Deploying with build number $(cat version.json | grep -o '"buildNumber": [0-9]*' | grep -o '[0-9]*')"
 
 # load env vars from file if present

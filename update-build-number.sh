@@ -18,6 +18,6 @@ echo "Build number updated to $NEW_BUILD"
 # Optionally commit the updated version file to git
 if [ "$1" = "--commit" ]; then
   git add version.json
-  git commit -m "Bump build number to $NEW_BUILD"
+  git commit -m "build $NEW_BUILD"
   echo "Committed change to git"
 fi
