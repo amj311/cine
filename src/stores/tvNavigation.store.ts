@@ -381,7 +381,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		const SIGNIFICANCE_THRESHOLD = 25;
 		const EVENTS_CAP = 100;
 
-		lastFewMouseMovements.push({ x: event.movementY, y: event.movementY });
+		lastFewMouseMovements.push({ x: event.movementX, y: event.movementY });
 
 		if (lastFewMouseMovements.length > EVENTS_CAP) {
 			console.log('Too many non-linear mouse movements. Not a TV.');
@@ -434,7 +434,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 
 		detectedTv.value = true;
 
-		let shouldDoTvNav = true;
+		let shouldDoTvNav = false; // disabling focus-based tv nav
 
 		const localStorageKey = 'tvNavigationPreference.2';
 
