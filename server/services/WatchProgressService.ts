@@ -123,6 +123,7 @@ export class WatchProgressService {
 	 */
 	public static getLastFinishedEpisode(): WatchProgress | null {
 		const recent = WatchProgressService.getAllRecentlyWatched();
+		console.log(recent)
 		const episodesOnly = WatchProgressService.filterOutExtraEpisodes(recent).filter((item) => WatchProgressService.isEpisode(item.relativePath));
 		if (episodesOnly.length === 0) {
 			return null;

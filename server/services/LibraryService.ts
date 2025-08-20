@@ -640,12 +640,15 @@ export class LibraryService {
 			return null;
 		}
 		const allEpisodes = (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).flatMap((episodeFile) => episodeFile.episodes);
-		const currentEpisodeIndex = allEpisodes?.findIndex((episode) => path.equals(episode.relativePath));
+		const currentEpisodeIndex = allEpisodes?.findIndex((episode) => path.relativePath === episode.relativePath);
 		if (currentEpisodeIndex === undefined || currentEpisodeIndex === -1) {
 			return null;
 		}
 		const nextEpisode = allEpisodes?.[currentEpisodeIndex + 1];
-		return nextEpisode || null;
+		return nextEpisode ? {
+			...nextEpisode,
+			confirmedPath: DirectoryService.resolvePath(nextEpisode.relativePath)!,
+		} : null;
 	}
 
 	/*********

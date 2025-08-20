@@ -24,7 +24,7 @@ onBeforeMount(() => {
 
 function playableName(playable: any, parentLibraryItem: any) {
 	if (playable.type === 'episodeFile') {
-		return parentLibraryItem.name + ' ' + playable.name;
+		return `"${playable.name}" ${parentLibraryItem.name}`;
 	}
 	return playable.name;
 }
@@ -49,6 +49,16 @@ function openSlideshow(files: any[], firstFile?: any) {
 	if (slideshow.value) {
 		slideshow.value.open(files, firstFile);
 	}
+}
+
+
+function formatRuntime(minutes: number) {
+	const hours = Math.floor(minutes / 60);
+	const minutesOver = Math.floor(minutes % 60);
+	if (hours === 0) {
+		return `${minutesOver}min`;
+	}
+	return `${hours}hr ${minutesOver}min`;
 }
 
 </script>
@@ -103,9 +113,14 @@ function openSlideshow(files: any[], firstFile?: any) {
 											:progress="item.watchProgress"
 											:aspectRatio="'wide'"
 											:title="playableName(item.libraryItem.playable, item.libraryItem.parentLibrary)"
-											:subtitle="item.isUpNext ? 'Up Next' : `${timeRemaining(item.watchProgress)} left`"
+											:subtitle="item.isUpNext ? (item.probe?.full?.format?.duration ? formatRuntime(item.probe?.full?.format?.duration) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
 										>
 											<template #fallbackIcon>🎞️</template>
+											<template #poster v-if="item.isUpNext">
+												<div class="h-full w-full flex align-items-end justify-content-start p-2">
+													<div class="border-round p-2 bg-gray-700">Up Next</div>
+												</div>
+											</template>
 										</MediaCard>
 									</div>
 								</div>

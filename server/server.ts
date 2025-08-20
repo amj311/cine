@@ -312,7 +312,7 @@ app.get('/api/theaterData', async (req, res) => {
 			data: {
 				playable: libraryData.playable,
 				parentLibrary: libraryData.parentLibrary,
-				probe: probe.glossary,
+				probe: probe?.glossary,
 			},
 		})
 	}
@@ -372,6 +372,7 @@ app.get('/api/feed', async (req, res) => {
 						LibraryService.determineMediaTypeFromPath(item.relativePath) as any,
 						item.confirmedPath,
 					),
+					probe: await ProbeService.getProbeData(item.confirmedPath),
 					libraryItem: await LibraryService.getLibraryForPlayable(item.confirmedPath),
 					isUpNext: item.isUpNext,
 				}))),
@@ -533,7 +534,7 @@ app.get('/api/subtitles', async (req, res) => {
 		}
 		const probe = await ProbeService.getProbeData(fullPath);
 
-		const subtitleStream = probe.full.streams[index];
+		const subtitleStream = probe?.full.streams[index];
 
 		if (subtitleStream && (subtitleStream.codec_type === 'subtitle' || subtitleStream.tags?.handler_name === 'SubtitleHandler')) {
 			if (subtitleStream.codec_name === 'mov_text') {

@@ -79,7 +79,7 @@ export class ProbeService {
 	 * 
 	 * @param filePath 
 	 */
-	public static async getProbeData(filePath: ConfirmedPath): Promise<ProbeData> {
+	public static async getProbeData(filePath: ConfirmedPath): Promise<ProbeData | null> {
 		try {
 			const cachedProbe = ProbeService.getCachedProbe(filePath.relativePath);
 			if (cachedProbe) {
@@ -87,7 +87,9 @@ export class ProbeService {
 			}
 
 			const probeData = await ProbeService.probeFile(filePath.absolutePath);
-			ProbeService.cacheProbe(filePath.relativePath, probeData);
+			if (probeData) {
+				ProbeService.cacheProbe(filePath.relativePath, probeData);
+			}
 			return probeData;
 		}
 		catch (err) {
@@ -100,48 +102,56 @@ export class ProbeService {
 	 * Probes the file using ffprobe and returns the data.
 	 * @param filePath 
 	 */
-	private static async probeFile(filePath: AbsolutePath): Promise<ProbeData> {
-		return new Promise((resolve, reject) => {
-			ffmpeg.ffprobe(filePath, ['-show_chapters'], (err, data) => {
-				if (err) {
-					console.error("Error while probing file:", err);
-					reject(err);
-					return;
-				}
-				const probeData: ProbeData = {
-					glossary: {
-						subtitles: [],
-						audio: []
-					},
-					full: data
-				};
-				if (data && data.streams) {
-					for (const stream of data.streams) {
-						const handler_name = stream.tags?.handler_name;
-						if (stream.codec_type === 'subtitle' || stream.codec_name === 'mov_text' || handler_name === 'SubtitleHandler') {
-							const language = stream.tags?.language;
-							let name = `${language} (${stream.codec_long_name})`;
-							if (handler_name && handler_name !== 'SubtitleHandler') {
-								name = handler_name;
+	private static async probeFile(filePath: AbsolutePath): Promise<ProbeData | null> {
+		let probeData: ProbeData | null = null;
+		try {
+			probeData = await new Promise((resolve, reject) => {
+				ffmpeg.ffprobe(filePath, ['-show_chapters'], (err, data) => {
+					if (err) {
+						console.error("Error while probing file:", err);
+						reject(err);
+						return;
+					}
+					const probeData: ProbeData = {
+						glossary: {
+							subtitles: [],
+							audio: []
+						},
+						full: data
+					};
+					if (data && data.streams) {
+						for (const stream of data.streams) {
+							const handler_name = stream.tags?.handler_name;
+							if (stream.codec_type === 'subtitle' || stream.codec_name === 'mov_text' || handler_name === 'SubtitleHandler') {
+								const language = stream.tags?.language;
+								let name = `${language} (${stream.codec_long_name})`;
+								if (handler_name && handler_name !== 'SubtitleHandler') {
+									name = handler_name;
+								}
+								probeData.glossary.subtitles.push({
+									index: stream.index,
+									format: stream.codec_name,
+									name,
+								});
 							}
-							probeData.glossary.subtitles.push({
-								index: stream.index,
-								format: stream.codec_name,
-								name,
-							});
-						}
-						else if (stream.codec_type === 'audio') {
-							probeData.glossary.audio.push({
-								index: stream.index,
-								format: stream.codec_name,
-								name: stream.tags?.handler_name,
-							});
+							else if (stream.codec_type === 'audio') {
+								probeData.glossary.audio.push({
+									index: stream.index,
+									format: stream.codec_name,
+									name: stream.tags?.handler_name,
+								});
+							}
 						}
 					}
-				}
-				resolve(probeData);
+					resolve(probeData);
+				});
 			});
-		});
+			return probeData;
+		}
+		catch (err) {
+			console.error("Error while probing file:", err);
+			return null;
+		}
 	}
 
 	private static cacheProbe(path: RelativePath, probe: ProbeData) {
