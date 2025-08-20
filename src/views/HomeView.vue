@@ -113,7 +113,7 @@ function formatRuntime(minutes: number) {
 											:progress="item.watchProgress"
 											:aspectRatio="'wide'"
 											:title="playableName(item.libraryItem.playable, item.libraryItem.parentLibrary)"
-											:subtitle="item.isUpNext ? (item.probe?.full?.format?.duration ? formatRuntime(item.probe?.full?.format?.duration) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
+											:subtitle="item.isUpNext ? (item.probe?.full?.format?.duration ? formatRuntime(item.probe?.full?.format?.duration / 60) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
 										>
 											<template #fallbackIcon>🎞️</template>
 											<template #poster v-if="item.isUpNext">
