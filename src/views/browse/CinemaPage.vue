@@ -158,9 +158,13 @@ const playText = computed(() => {
 watch(
 	() => useWatchProgressStore().lastWatchProgress,
 	(lastProgress) => {
-		const media = isSeries.value
-			? mergedSeasons.value.flatMap((season: any) => season.episodes).find((episode: any) => episode.relativePath === lastProgress?.relativePath)
-			: props.libraryItem.movie;
+		let media;
+		if (isSeries.value) {
+			media = mergedSeasons.value.flatMap((season: any) => season.episodes).find((episode: any) => episode.relativePath === lastProgress?.relativePath);
+		} else {
+			// only update for the main movie, ot for extras
+			media = lastProgress?.relativePath === resumable.value.relativePath ? resumable.value : null;
+		}
 		if (media) {
 			media.watchProgress = lastProgress.progress;
 			if (isSeries.value) {
