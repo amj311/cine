@@ -89,6 +89,11 @@ export class WatchProgressService {
 		return relativePath.toLowerCase().includes("/season ");
 	}
 
+	/**
+	 * Filters watch list items to only a single episode per series.
+	 * @param list
+	 * @returns 
+	 */
 	private static filterOutExtraEpisodes(list: WatchProgress[]): WatchProgress[] {
 		const seenSeries = new Set<string>();
 		const continueWatching = list.filter((item) => {
@@ -121,14 +126,10 @@ export class WatchProgressService {
 	 * Finds an episode that is the most recently watched of a series and was also finished.
 	 * @param list The list of watched items to check.
 	 */
-	public static getLastFinishedEpisode(): WatchProgress | null {
+	public static getLastFinishedEpisodes(cnt = 2): WatchProgress[] {
 		const recent = WatchProgressService.getAllRecentlyWatched();
-		console.log(recent)
 		const episodesOnly = WatchProgressService.filterOutExtraEpisodes(recent).filter((item) => WatchProgressService.isEpisode(item.relativePath));
-		if (episodesOnly.length === 0) {
-			return null;
-		}
 		const lastFinished = episodesOnly.filter((item) => item.percentage >= 90);
-		return lastFinished[0] || null;
+		return lastFinished.slice(0, cnt);
 	}
 }

@@ -608,7 +608,6 @@ export class LibraryService {
 
 		if (parentLibrary) {
 			// Identify playable within the parent library
-			console.log(`Searching for playable in parent library: ${parentLibrary.relativePath}`);
 			playable = (parentLibrary.extras as Array<Extra>)?.find((extra) => path.relativePath === extra.relativePath) || null;
 			if (!playable && parentLibrary.type === 'movie') {
 				playable = (parentLibrary as Movie).movie.relativePath === path.relativePath ? parentLibrary.movie : null;

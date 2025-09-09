@@ -3,12 +3,14 @@
 	lang="ts"
 >
 import { useRouter } from 'vue-router';
-import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
 import ExtrasList from '@/components/ExtrasList.vue';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import Skeleton from 'primevue/skeleton';
+import { GetListByKeyword } from 'youtube-search-api';
+import { useApiStore } from '@/stores/api.store';
 
 const router = useRouter();
 const props = defineProps<{
@@ -33,6 +35,7 @@ async function loadMetadata() {
 		isLoadingMetadata.value = false;
 	}
 }
+
 
 onBeforeMount(() => {
 	loadMetadata();
@@ -174,6 +177,49 @@ watch(
 	}
 )
 
+const ytAudio = ref<HTMLAudioElement | null>(null);
+const ytCanPlay = ref(false);
+const ytIsplaying = ref(false);
+
+function fadeIn(event: Event) {
+	const el = event.target as HTMLAudioElement;
+	if (!el) return;
+	ytIsplaying.value = true;
+	el.volume = 0;
+	const maxVolume = 0.5; // Max volume level
+	const fadeDuration = 10000; // Duration of the fade-in in milliseconds
+	const stepDuration = 100; // Interval duration in milliseconds
+	const stepAmount = (maxVolume / fadeDuration) * stepDuration;
+	const interval = setInterval(() => {
+		el.volume += stepAmount;
+		if (el.volume >= maxVolume) {
+			el.volume = maxVolume;
+			clearInterval(interval);
+		}
+	}, stepDuration);
+}
+
+function stopYtAudio() {
+	if (ytAudio.value) {
+		ytAudio.value.pause();
+		ytAudio.value.currentTime = 0;
+		ytIsplaying.value = false;
+	}
+}
+function playYtAudio() {
+	if (ytAudio.value && ytCanPlay.value) {
+		ytAudio.value.play().catch(err => {
+			console.warn("Error playing yt audio:", err);
+		});
+	}
+}
+onUnmounted(() => {
+	if (ytAudio.value) {
+		ytAudio.value.volume = 0;
+		ytAudio.value.pause();
+	}
+});
+
 </script>
 
 <template>
@@ -203,24 +249,35 @@ watch(
 					<StarRating :rating="metadata?.rating || 0" :votes="metadata?.votes || 0" />
 
 					<br />
-					<Button
-						:size="'large'"
-						class="play-button"
-						@click="() => playVideo(resumable.relativePath, resumeTime)"
-						data-focus-priority="1"
-					>
-						<i class="pi pi-play" />
-						{{ playText }}
-					</Button>
-					<Button
-						v-if="resumeTime"
-						:size="'large'"
-						variant="text"
-						severity="contrast"
-						@click="() => playVideo(resumable.relativePath, resumable.startTime || 0)"
-					>
-						<i class="pi pi-replay" />
-					</Button>
+					<div class="flex align-items-center">
+						<Button
+							:size="'large'"
+							class="play-button"
+							@click="() => playVideo(resumable.relativePath, resumeTime)"
+							data-focus-priority="1"
+						>
+							<i class="pi pi-play" />
+							{{ playText }}
+						</Button>
+						<Button
+							v-if="resumeTime"
+							:size="'large'"
+							variant="text"
+							severity="contrast"
+							@click="() => playVideo(resumable.relativePath, resumable.startTime || 0)"
+						>
+							<i class="pi pi-replay" />
+						</Button>
+						<Button
+							v-if="ytCanPlay"
+							:icon="ytIsplaying ? 'pi pi-volume-up pi-spin' : 'pi pi-volume-up'"
+							:size="'large'"
+							variant="text"
+							severity="contrast"
+							@click="() => (ytIsplaying ? stopYtAudio() : playYtAudio())"
+						/>
+					</div>
+					
 
 					<div class="hide-md" style="max-width: 50em;">
 						<br />
@@ -316,6 +373,10 @@ watch(
 				<h2>Extras</h2>
 				<ExtrasList :extras="libraryItem.extras" />
 			</div>
+
+			<audio ref="ytAudio" :src="useApiStore().apiUrl + '/stream-yt-search?q=' + encodeURIComponent(`${libraryItem.name} ${libraryItem.year} theme`)" controls autoplay @canplay="ytCanPlay = true" @play="fadeIn" hidden>
+				Your browser does not support the audio element.
+			</audio>
 		</div>
 	</Scroll>
 </template>

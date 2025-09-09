@@ -11,7 +11,7 @@ import express from 'express';
 const app = express() as any;
 
 import cors from 'cors';
-import fs, { readdirSync } from 'fs';
+import fs, { readdirSync, watch } from 'fs';
 import { ConfirmedPath, DirectoryService } from './services/DirectoryService';
 import { LibraryService, Photo } from './services/LibraryService';
 import { MediaMetadataService } from './services/metadata/MetadataService';
@@ -22,6 +22,9 @@ import { ThumbnailService } from './services/ThumbnailService';
 import { ProbeService } from './services/ProbeService';
 import { useFfmpeg } from './utils/ffmpeg';
 import { getBuildNumber } from './utils/versionService';
+import { GetListByKeyword } from 'youtube-search-api';
+import ytdl from '@distube/ytdl-core'
+import ffmpeg from 'fluent-ffmpeg';
 
 const corsOptions = {};
 
@@ -69,6 +72,48 @@ app.get("/api/dir/", async function (req, res) {
 		res.status(500).send("Error reading directory");
 	}
 });
+
+app.get('/api/stream-yt-search', async (req, res) => {
+	try {
+		const { q } = req.query;
+		if (!q) {
+			res.status(400).send("Requires q query param");
+			return;
+		}
+		const results = await GetListByKeyword(q as string, false, 20);
+		const filteredResults = results.items.filter(item => item.type === 'video');
+		const topResult = filteredResults[0];
+		if (!topResult) {
+			res.status(404).send("No results found");
+			return;
+		}
+		const url = `https://www.youtube.com/watch?v=${topResult.id}`;
+		const outputFilePath = path.join(__dirname, '../dist/assets/yt.mp3');
+
+		ytdl.getInfo(url).then(info => {
+			ytdl.downloadFromInfo(info, { quality: 'lowest' }).pipe(fs.createWriteStream(outputFilePath))
+				.on('finish', () => {
+					res.sendFile(outputFilePath, (err) => {
+						if (err) {
+							console.error("Error while sending converted file:", err);
+							res.status(500).send("Error sending converted file");
+						}
+					});
+				})
+				.on('error', (err) => {
+					console.error("Error writing yt stream to file:", err);
+					res.status(500).send("Error processing YouTube video");
+				});
+		})
+	} catch (err) {
+		console.error(err)
+		if (!res.headersSent) {
+			res.writeHead(500)
+			res.end('internal system error')
+		}
+	}
+});
+
 
 app.get("/api/stream", async function (req, res) {
 	let { src } = req.query;
@@ -352,14 +397,15 @@ app.get('/api/feed', async (req, res) => {
 			...progress,
 			confirmedPath: DirectoryService.resolvePath(progress.relativePath),
 		})).filter(i => i.confirmedPath) as ContinueWatchingItem[];
-		const lastFinishedEpisode = await WatchProgressService.getLastFinishedEpisode();
-		let nextEpisode: any = null;
-		if (lastFinishedEpisode && DirectoryService.resolvePath(lastFinishedEpisode.relativePath)) {
-			nextEpisode = await LibraryService.getNextEpisode(DirectoryService.resolvePath(lastFinishedEpisode.relativePath)!);
-		}
-		if (nextEpisode) {
-			watchItems.unshift({ ...nextEpisode, isUpNext: true });
-		}
+		const lastFinishedEpisodes = await WatchProgressService.getLastFinishedEpisodes();
+		await Promise.all(lastFinishedEpisodes.map(async ep => {
+			if (ep && DirectoryService.resolvePath(ep.relativePath)) {
+				const nextEpisode = await LibraryService.getNextEpisode(DirectoryService.resolvePath(ep.relativePath)!);
+				if (nextEpisode) {
+					watchItems.unshift({ ...nextEpisode, isUpNext: true } as any);
+				}
+			}
+		}));
 		if (watchItems.length > 0) {
 			feedLists.push({
 				title: "Continue Watching",
@@ -474,7 +520,6 @@ app.get('/api/feed', async (req, res) => {
 				items: pastPhotos,
 			});
 		}
-
 
 		res.json({
 			success: true,
