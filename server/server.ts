@@ -25,6 +25,7 @@ import { getBuildNumber } from './utils/versionService';
 import { GetListByKeyword } from 'youtube-search-api';
 import ytdl from '@distube/ytdl-core'
 import ffmpeg from 'fluent-ffmpeg';
+import axios from 'axios';
 
 const corsOptions = {};
 
@@ -80,7 +81,7 @@ app.get('/api/stream-yt-search', async (req, res) => {
 			res.status(400).send("Requires q query param");
 			return;
 		}
-		const results = await GetListByKeyword(q as string, false, 20);
+		const results = await GetListByKeyword(q, false, 20);
 		const filteredResults = results.items.filter(item => item.type === 'video');
 		const topResult = filteredResults[0];
 		if (!topResult) {

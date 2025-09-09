@@ -11,6 +11,7 @@ import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import Skeleton from 'primevue/skeleton';
 import { GetListByKeyword } from 'youtube-search-api';
 import { useApiStore } from '@/stores/api.store';
+import axios from 'axios';
 
 const router = useRouter();
 const props = defineProps<{
@@ -37,7 +38,7 @@ async function loadMetadata() {
 }
 
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
 	loadMetadata();
 });
 onBeforeUnmount(() => {
@@ -186,7 +187,7 @@ function fadeIn(event: Event) {
 	if (!el) return;
 	ytIsplaying.value = true;
 	el.volume = 0;
-	const maxVolume = 0.5; // Max volume level
+	const maxVolume = 0.25; // Max volume level
 	const fadeDuration = 10000; // Duration of the fade-in in milliseconds
 	const stepDuration = 100; // Interval duration in milliseconds
 	const stepAmount = (maxVolume / fadeDuration) * stepDuration;
@@ -374,7 +375,7 @@ onUnmounted(() => {
 				<ExtrasList :extras="libraryItem.extras" />
 			</div>
 
-			<audio ref="ytAudio" :src="useApiStore().apiUrl + '/stream-yt-search?q=' + encodeURIComponent(`${libraryItem.name} ${libraryItem.year} theme`)" controls autoplay @canplay="ytCanPlay = true" @play="fadeIn" hidden>
+			<audio ref="ytAudio" :src="useApiStore().apiUrl + '/stream-yt-search?q=' + (`${libraryItem.name} ${libraryItem.year} music ost main theme`).replace(/[&?=/]/g, '')" controls autoplay @canplay="ytCanPlay = true" @play="fadeIn" hidden>
 				Your browser does not support the audio element.
 			</audio>
 		</div>
