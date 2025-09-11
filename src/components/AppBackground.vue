@@ -114,7 +114,7 @@ const showCustomBackgrounds = computed(() => {
 		right: 0;
 		bottom: 0;
 		background-size: cover;
-		background-position: center;
+		background-position: top;
 		background-repeat: no-repeat;
 		background-image: url(@/assets/bg.jpg);
 		filter: blur(50px);
