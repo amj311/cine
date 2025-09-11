@@ -13,6 +13,7 @@
 	],
 	"compilerOptions": {
 		"noImplicitAny": false,
-		"allowUnreachableCode": true
+		"allowUnreachableCode": true,
+		"lib": ["es2021", "DOM"],
 	}
 }

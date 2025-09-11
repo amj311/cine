@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeMount, ref, watch } from 'vue';
 import MediaCard from '@/components/MediaCard.vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
 import { useApiStore } from '@/stores/api.store';
+import SelectButton from 'primevue/selectbutton';
+import InputText from 'primevue/inputtext';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -26,6 +28,18 @@ onBeforeMount(async () => {
 	await loadItems();
 });
 
+const filterMode = ref<string>('Categories');
+// Don't allow removing the option by clicking it agian
+watch(filterMode, (newVal, oldVal) => {
+	if (!newVal) {
+		nextTick(() => {
+			filterMode.value = oldVal;
+		});
+	}
+});
+
+const movies = computed(() => allItems.value.filter(item => item.type === 'movie'));
+
 const categoryOrder: Record<string, number> = {};
 function initializeRandomOrder() {
 	props.folders.forEach((folder) => {
@@ -45,10 +59,7 @@ const categories = computed(() => {
 
 function collectCategorySamples() {
 	const categoriesMap: Record<string, Array<any>> = {};
-	allItems.value.forEach((item) => {
-		if (item.type !== 'movie') {
-			return;
-		}
+	movies.value.forEach((item) => {
 		// cacetgory is the first level under the library
 		const itemCategoryRelativePath = item.relativePath.split('/').slice(0, 2).join('/');
 		if (!categoriesMap[itemCategoryRelativePath]) {
@@ -63,26 +74,50 @@ function collectCategorySamples() {
 	categorySampling.value = categoriesMap;
 };
 
-/**
- * "xhr ymin" format
- * @param watchProgress 
- */
-function timeRemaining(watchProgress: any) {
-	const time = watchProgress.time;
-	const duration = watchProgress.duration;
-	const remainingTime = duration - time;
-	const hours = Math.floor(remainingTime / 3600);
-	const minutes = Math.floor((remainingTime % 3600) / 60);
 
-	return `${hours ? (hours + 'hr ') : '' }${minutes}min`;
-}
+
+const letterGroups = computed(() => {
+	const groups: Record<string, Array<any>> = {};
+	movies.value.forEach((item) => {
+		const firstLetter = item.sortKey.charAt(0).toUpperCase();
+		if (!groups[firstLetter]) {
+			groups[firstLetter] = [];
+		}
+		groups[firstLetter]!.push(item);
+	});
+	return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([letter, items]) => ({
+		letter,
+		items: items.sort((a, b) => a.sortKey.localeCompare(b.sortKey)),
+	})) as Array<{ letter: string; items: Array<any> }>;
+});
+
+const searchTerm = ref<string>('');
+const filteredItems = computed(() => {
+	return movies.value.filter(item => !searchTerm.value || item.name.toLowerCase().replaceAll(/[^\d\w\s]/g, '').includes(searchTerm.value.toLowerCase().replaceAll(/[^\d\w\s]/g, '')));
+});
 
 </script>
 
 <template>
 	<Scroll>
 		<div class="movies-page mt-3 pl-3">
-			<div class="categories flex flex-column gap-3">
+
+			<div class="filters mb-4 flex justify-content-center">
+					<SelectButton v-model="filterMode" :options="['Categories', 'A - Z', 'search']" size="large">
+						<template #option="{ option }">
+							<div v-if="option === 'search'" class="flex align-items-center gap-2">
+								<i class="pi pi-search absolute 	" />
+								<div class="absolute pl-4 pointer-events-none" v-if="filterMode !== 'search'">Search</div>
+								<div class="search-container" :class="{ on: filterMode === 'search' }">
+									<InputText v-model="searchTerm" placeholder="Search" name="search" size="small" class="border-none p-0 pl-4 bg-transparent w-full" style="color: inherit;" />
+								</div>
+							</div>
+							<span v-else>{{ option }}</span>
+						</template>
+					</SelectButton>
+			</div>
+
+			<div v-if="filterMode === 'Categories'" class="categories flex flex-column gap-3">
 				<div class="categories-row" v-for="categoriesRow in categories" :key="categoriesRow.relativePath">
 					<h3>
 						{{ categoriesRow.name }}
@@ -94,7 +129,7 @@ function timeRemaining(watchProgress: any) {
 						<Scroll>
 							<div class="categories-row-items-list">
 								<div
-									class="categories-row-card-wrapper"
+									class="card-wrapper"
 									v-for="item in categorySampling[categoriesRow.relativePath]"
 								>
 									<MetadataLoader
@@ -128,11 +163,91 @@ function timeRemaining(watchProgress: any) {
 					</div>
 				</div>
 			</div>
+
+			<div v-if="filterMode === 'A - Z'">
+				<div
+					class="mb-6"
+					v-for="group in letterGroups"
+					:key="group.letter"
+				>
+					<div class="mb-2">
+						<span class="text-5xl font-bold">{{ group.letter }}</span>
+						<span class="text-sm text-600 ml-2">({{ group.items.length }})</span>
+					</div>
+
+					<div class="flex flex-wrap gap-3">
+						<div
+							class="card-wrapper"
+							v-for="item in group.items"
+							:key="item.relativePath"
+						>
+							<MetadataLoader
+								:media="item"
+							>
+								<template #default="{ metadata }">
+									<MediaCard
+										:key="item.relativePath"
+										:imageUrl="metadata?.poster_thumb"
+										:progress="item.watchProgress"
+										:aspectRatio="'tall'"
+										:title="item.name"
+										:subtitle="item.year"
+										:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+									>
+										<template #fallbackIcon>🎬</template>
+									</MediaCard>
+								</template>
+							</MetadataLoader>
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div v-if="filterMode === 'search'">
+				<h3 v-if="searchTerm">Showing {{ filteredItems.length }} results for '{{ searchTerm }}':</h3>
+				<h3 v-else>All {{ movies.length }} movies:</h3>
+				<div class="mt-3">
+					<div class="flex flex-wrap gap-3">
+						<div
+							class="card-wrapper"
+							v-for="item in filteredItems"
+							:key="item.relativePath"
+						>
+							<MetadataLoader
+								:media="item"
+							>
+								<template #default="{ metadata }">
+									<MediaCard
+										:key="item.relativePath"
+										:imageUrl="metadata?.poster_thumb"
+										:progress="item.watchProgress"
+										:aspectRatio="'tall'"
+										:title="item.name"
+										:subtitle="item.year"
+										:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+									>
+										<template #fallbackIcon>🎬</template>
+									</MediaCard>
+								</template>
+							</MetadataLoader>
+						</div>
+					</div>
+				</div>
+			</div>
+
+
 		</div>
 	</Scroll>
 </template>
 
 <style scoped lang="scss">
+
+.card-wrapper {
+	width: min(7rem, 20vw);
+	min-width: min(7rem, 20vw);
+}
+
 .categories-row {
 	--padding: 15px;
 
@@ -151,10 +266,19 @@ function timeRemaining(watchProgress: any) {
 		display: flex;
 		gap: 15px;
 	}
+}
 
-	.categories-row-card-wrapper {
-		width: min(7rem, 20vw);
-		min-width: min(7rem, 20vw);
+
+.search-container {
+	color: inherit;
+	transition: width 500ms;
+	min-width: 0;
+	width: 5.5rem;
+	opacity: 0;
+
+	&.on {
+		opacity: 1;
+		width: 10rem;
 	}
 }
 

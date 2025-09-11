@@ -12,6 +12,7 @@ import Skeleton from 'primevue/skeleton';
 import { GetListByKeyword } from 'youtube-search-api';
 import { useApiStore } from '@/stores/api.store';
 import axios from 'axios';
+import { useTvNavigationStore } from '@/stores/tvNavigation.store';
 
 const router = useRouter();
 const props = defineProps<{
@@ -375,7 +376,7 @@ onUnmounted(() => {
 				<ExtrasList :extras="libraryItem.extras" />
 			</div>
 
-			<audio ref="ytAudio" :src="useApiStore().apiUrl + '/stream-yt-search?q=' + (`${libraryItem.name} ${libraryItem.year} music ost main theme`).replace(/[&?=/]/g, '')" controls autoplay @canplay="ytCanPlay = true" @play="fadeIn" hidden>
+			<audio ref="ytAudio" :src="useApiStore().apiUrl + '/stream-yt-search?q=' + (`${libraryItem.name} ${libraryItem.year} music ost main theme`).replace(/[&?=/]/g, '')" controls :autoplay="useTvNavigationStore().detectedTv" @canplay="ytCanPlay = true" @play="fadeIn" hidden>
 				Your browser does not support the audio element.
 			</audio>
 		</div>
