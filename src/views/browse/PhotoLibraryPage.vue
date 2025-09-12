@@ -204,11 +204,10 @@ const showMenu = ref(false);
 				<br />
 			</Scroll> -->
 		</div>
-		<div class="track" @mouseenter="showMenu = true" @mouseleave="showMenu = false">
+		<div class="track" @mousemove="showMenu = true" @mouseleave="showMenu = false">
 			<div class="track-anchor-item"
 				v-for="(anchor, i) in trackAnchors"
 				:style="{ top: anchor.percent + '%', height: ((trackAnchors[i+1]?.percent || 100) - anchor.percent) + '%' }"
-				tabindex="0"
 			>
 				<div class="tick"></div>
 			</div>
@@ -234,7 +233,7 @@ const showMenu = ref(false);
 
 <style scoped lang="scss">
 .photos-page {
-	--track-width: 15px;
+	--track-width: 20px;
 	height: 100%;
 	position: relative;
 	padding-left: 5px;
@@ -260,7 +259,6 @@ const showMenu = ref(false);
 			right: 0;
 			width: 100%;
 			white-space: nowrap;
-			cursor: pointer;
 
 			.tick {
 				position: absolute;
