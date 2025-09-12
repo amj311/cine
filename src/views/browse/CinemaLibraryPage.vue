@@ -38,7 +38,7 @@ watch(filterMode, (newVal, oldVal) => {
 	}
 });
 
-const movies = computed(() => allItems.value.filter(item => item.type === 'movie'));
+const cinemaItems = computed(() => allItems.value.filter(item => item.type === 'cinema'));
 
 const categoryOrder: Record<string, number> = {};
 function initializeRandomOrder() {
@@ -54,14 +54,22 @@ const categories = computed(() => {
 			order: categoryOrder[folder.libraryItem.relativePath] || 100,
 		}))
 		.filter(item => ['collection', 'folder'].includes(item.type))
+		// Support items at the root level, w/o category
+		.concat({
+			name: 'Uncategorized',
+			relativePath: props.libraryItem.relativePath,
+			folderName: '',
+			order: 9999,
+			type: 'library',
+		})
 		.sort((a, b) => a.order - b.order);
 });
 
 function collectCategorySamples() {
 	const categoriesMap: Record<string, Array<any>> = {};
-	movies.value.forEach((item) => {
-		// cacetgory is the first level under the library
-		const itemCategoryRelativePath = item.relativePath.split('/').slice(0, 2).join('/');
+	cinemaItems.value.forEach((item) => {
+		// category is the first level under the library, that is NOT the folder name
+		const itemCategoryRelativePath = item.relativePath.replace('/' + item.folderName, '').split('/').slice(0, 2).join('/');
 		if (!categoriesMap[itemCategoryRelativePath]) {
 			categoriesMap[itemCategoryRelativePath] = [];
 		}
@@ -78,7 +86,7 @@ function collectCategorySamples() {
 
 const letterGroups = computed(() => {
 	const groups: Record<string, Array<any>> = {};
-	movies.value.forEach((item) => {
+	cinemaItems.value.forEach((item) => {
 		const firstLetter = item.sortKey.charAt(0).toUpperCase();
 		if (!groups[firstLetter]) {
 			groups[firstLetter] = [];
@@ -93,14 +101,14 @@ const letterGroups = computed(() => {
 
 const searchTerm = ref<string>('');
 const filteredItems = computed(() => {
-	return movies.value.filter(item => !searchTerm.value || item.name.toLowerCase().replaceAll(/[^\d\w\s]/g, '').includes(searchTerm.value.toLowerCase().replaceAll(/[^\d\w\s]/g, '')));
+	return cinemaItems.value.filter(item => !searchTerm.value || item.name.toLowerCase().replaceAll(/[^\d\w\s]/g, '').includes(searchTerm.value.toLowerCase().replaceAll(/[^\d\w\s]/g, '')));
 });
 
 </script>
 
 <template>
 	<Scroll>
-		<div class="movies-page mt-3 pl-3">
+		<div class="cinema-page mt-3 pl-3">
 
 			<div class="filters mb-4 flex justify-content-center">
 					<SelectButton v-model="filterMode" :options="['Categories', 'A - Z', 'search']" size="large">
@@ -118,50 +126,52 @@ const filteredItems = computed(() => {
 			</div>
 
 			<div v-if="filterMode === 'Categories'" class="categories flex flex-column gap-3">
-				<div class="categories-row" v-for="categoriesRow in categories" :key="categoriesRow.relativePath">
-					<h3>
-						{{ categoriesRow.name }}
-						<Button variant="text" severity="contrast" @click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })">
-							<i class="pi pi-angle-right" />
-						</Button>
-					</h3>
-					<div class="categories-scroll-wrapper">
-						<Scroll>
-							<div class="categories-row-items-list">
-								<div
-									class="card-wrapper"
-									v-for="item in categorySampling[categoriesRow.relativePath]"
-								>
-									<MetadataLoader
-										:media="item"
+				<template v-for="categoriesRow in categories" :key="categoriesRow.relativePath">
+					<div class="categories-row" v-if="categorySampling[categoriesRow.relativePath] && categorySampling[categoriesRow.relativePath].length" :key="categoriesRow.relativePath">
+						<h3>
+							{{ categoriesRow.name }}
+							<Button variant="text" severity="contrast" @click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })">
+								<i class="pi pi-angle-right" />
+							</Button>
+						</h3>
+						<div class="categories-scroll-wrapper">
+							<Scroll>
+								<div class="categories-row-items-list">
+									<div
+										class="card-wrapper"
+										v-for="item in categorySampling[categoriesRow.relativePath]"
 									>
-										<template #default="{ metadata }">
-											<MediaCard
-												:key="item.relativePath"
-												:imageUrl="metadata?.poster_thumb"
-												:progress="item.watchProgress"
-												:aspectRatio="'tall'"
-												:title="item.name"
-												:subtitle="item.year"
-												:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
-											>
-												<template #fallbackIcon>🎬</template>
-											</MediaCard>
-										</template>
-									</MetadataLoader>
+										<MetadataLoader
+											:media="item"
+										>
+											<template #default="{ metadata }">
+												<MediaCard
+													:key="item.relativePath"
+													:imageUrl="metadata?.poster_thumb"
+													:progress="item.watchProgress"
+													:aspectRatio="'tall'"
+													:title="item.name"
+													:subtitle="item.year"
+													:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+												>
+													<template #fallbackIcon>🎬</template>
+												</MediaCard>
+											</template>
+										</MetadataLoader>
+									</div>
+									<Button variant="text" severity="contrast"
+										class="px-4"
+										style="white-space: nowrap; min-width: 10em"
+										@click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })"
+									>
+										View All
+										<i class="pi pi-angle-right" />
+									</Button>
 								</div>
-								<Button variant="text" severity="contrast"
-									class="px-4"
-									style="white-space: nowrap; min-width: 10em"
-									@click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })"
-								>
-									View All
-									<i class="pi pi-angle-right" />
-								</Button>
-							</div>
-						</Scroll>
+							</Scroll>
+						</div>
 					</div>
-				</div>
+				</template>
 			</div>
 
 			<div v-if="filterMode === 'A - Z'">
@@ -206,7 +216,7 @@ const filteredItems = computed(() => {
 
 			<div v-if="filterMode === 'search'">
 				<h3 v-if="searchTerm">Showing {{ filteredItems.length }} results for '{{ searchTerm }}':</h3>
-				<h3 v-else>All {{ movies.length }} movies:</h3>
+				<h3 v-else>All {{ cinemaItems.length }} titles:</h3>
 				<div class="mt-3">
 					<div class="flex flex-wrap gap-3">
 						<div
@@ -250,10 +260,6 @@ const filteredItems = computed(() => {
 
 .categories-row {
 	--padding: 15px;
-
-	h2 {
-		// margin-bottom: 10px;
-	}
 
 	.categories-scroll-wrapper {
 		margin: 0 calc(-1 * var(--padding));

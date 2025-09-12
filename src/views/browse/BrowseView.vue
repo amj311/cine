@@ -5,12 +5,12 @@ import Explorer from '@/views/browse/Explorer.vue';
 import Scroll from '@/components/Scroll.vue';
 import { useRoute } from 'vue-router';
 import DropdownMenu from '@/components/utils/DropdownMenu.vue';
-import MovieLibraryPage from './MovieLibraryPage.vue';
+import CinemaLibraryPage from './CinemaLibraryPage.vue';
 import { useApiStore } from '@/stores/api.store';
 import PhotoLibraryPage from './PhotoLibraryPage.vue';
 import AlbumPage from './AlbumPage.vue';
 import AudiobookPage from './AudiobookPage.vue';
-import CinemaPage from './CinemaPage.vue';
+import CinemaItemPage from './CinemaItemPage.vue';
 
 const route = useRoute();
 const api = useApiStore().api;
@@ -103,21 +103,17 @@ watch(
 <template>
 	<div style="height: 100%; position: relative">
 		<div style="height: 100%;" :style="longLoading ? { opacity: 0.5, transition: '500ms' } : {}">
-			<KeepAlive :include="['Explorer', 'MovieLibraryPage', 'PhotoLibraryPage']">
+			<KeepAlive :include="['Explorer', 'CinemaLibraryPage', 'PhotoLibraryPage']">
 				<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'photos'">
 					<PhotoLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
 				</template>
 
-				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'movies'">
-					<MovieLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :folders="directory!.folders" />
+				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'cinema'">
+					<CinemaLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :folders="directory!.folders" />
 				</template>
 
-				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'movie'">
-					<CinemaPage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
-				</template>
-
-				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'series'">
-					<CinemaPage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
+				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'cinema'">
+					<CinemaItemPage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'album'">

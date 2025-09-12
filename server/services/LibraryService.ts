@@ -32,12 +32,19 @@ type Extra = Playable & {
 	still_thumb: string,
 }
 
-type Movie = LibraryItemData & {
-	type: 'movie',
+type CinemaItem = LibraryItemData & {
+	type: 'cinema',
+	cinemaType: 'movie' | 'series',
 	name: string,
 	year: string,
-	movie: Playable,
 	extras?: Array<Extra>,
+	metadata: EitherMetadata | null,
+}
+
+type Movie = CinemaItem & {
+	type: 'cinema',
+	cinemaType: 'movie',
+	movie: Playable,
 	metadata: EitherMetadata<'movie'> | null,
 }
 
@@ -57,10 +64,9 @@ type Episode = Playable & {
 	startTime?: number,
 }
 
-type Series = LibraryItemData & {
-	type: 'series',
-	name: string,
-	year: string,
+type Series = CinemaItem & {
+	type: 'cinema',
+	cinemaType: 'series',
 	numSeasons: number,
 	// Seasons are a map because they may not be in order or all present
 	seasons?: Array<{
@@ -68,7 +74,6 @@ type Series = LibraryItemData & {
 		episodeFiles: Array<EpisodeFile>,
 	}>,
 	metadata: EitherMetadata<'series'> | null,
-	extras?: Array<Extra>,
 }
 
 
@@ -131,7 +136,7 @@ type Folder = LibraryItemData & {
 /** A library is a root-level entity containing all of one type of media */
 type Library = LibraryItemData & {
 	type: 'library',
-	libraryType: 'tv' | 'movies' | 'photos' | 'audio',
+	libraryType: 'cinema' | 'photos' | 'audio',
 	name: string,
 	children: Array<RelativePath>,
 	confirmedPath: ConfirmedPath,
@@ -205,7 +210,8 @@ export class LibraryService {
 				}
 
 				return {
-					type: 'series',
+					type: 'cinema',
+					cinemaType: 'series',
 					name,
 					year,
 					relativePath: path.relativePath,
@@ -234,7 +240,8 @@ export class LibraryService {
 				const { version: movieVersion } = LibraryService.parseNamePieces(movieFile.name);
 
 				return {
-					type: 'movie',
+					type: 'cinema',
+					cinemaType: 'movie',
 					name,
 					year,
 					relativePath: path.relativePath,
@@ -609,10 +616,10 @@ export class LibraryService {
 		if (parentLibrary) {
 			// Identify playable within the parent library
 			playable = (parentLibrary.extras as Array<Extra>)?.find((extra) => path.relativePath === extra.relativePath) || null;
-			if (!playable && parentLibrary.type === 'movie') {
+			if (!playable && parentLibrary.cinemaType === 'movie') {
 				playable = (parentLibrary as Movie).movie.relativePath === path.relativePath ? parentLibrary.movie : null;
 			}
-			if (!playable && parentLibrary.type === 'series') {
+			if (!playable && parentLibrary.cinemaType === 'series') {
 				playable = (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => path.relativePath === episodeFile.relativePath) || null;
 			}
 		}
@@ -717,11 +724,7 @@ export class LibraryService {
 			// Identify cinema folders by release-year folders
 			for (const folder of folders) {
 				if (LibraryService.parseNamePieces(folder.name).year) {
-					const { folders: cinemaFolders } = await DirectoryService.listDirectory(folder.confirmedPath);
-					if (cinemaFolders.find(cinemaFolder => cinemaFolder.name.toLowerCase().includes('season'))) {
-						return 'tv';
-					}
-					return 'movies'
+					return 'cinema'
 				}
 			}
 			for (const folder of folders) {

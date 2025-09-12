@@ -5,6 +5,7 @@ import { useApiStore } from '@/stores/api.store';
 import GalleryFileFrame from '@/components/GalleryFileFrame.vue';
 import Slideshow from '@/components/Slideshow.vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
+import CinemaMediaCard from '@/components/CinemaMediaCard.vue';
 
 const feed = ref<any[]>([]);
 
@@ -87,7 +88,7 @@ function formatRuntime(minutes: number) {
 											:progress="item.watchProgress"
 											:aspectRatio="'wide'"
 											:title="item.title"
-											:subtitle="`${timeRemaining(item.watchProgress)} left`"
+											:subtitle="`${timeRemaining(item.watchProgress)} leftzz`"
 										>
 											<template #fallbackIcon>💿</template>
 										</MediaCard>
@@ -139,31 +140,7 @@ function formatRuntime(minutes: number) {
 										v-for="item in feedRow.items"
 										:key="item.relativePath"
 									>
-										<MetadataLoader :media="item.libraryItem"><template #default="{ metadata, isLoadingMetadata }">
-											<!-- <MediaCard
-												v-if="item.libraryItem.playable?.type === 'album' || item.libraryItem.playable?.type === 'audiobook'"
-												clickable
-												:action="() => $router.push({ name: 'browse', query: { path: item.libraryItem.playable.relativePath } })"
-												:imageUrl="item.libraryItem.playable.cover_thumb"
-												:imagePosition="'top'"
-												:progress="item.watchProgress"
-												:aspectRatio="'square'"
-												:title="item.libraryItem.playable.title"
-												:subtitle="`${timeRemaining(item.watchProgress)} left`"
-											>
-												<template #fallbackIcon>💿</template>
-											</MediaCard> -->
-											<MediaCard
-												:imageUrl="metadata?.poster_thumb"
-												:aspectRatio="'tall'"
-												:title="item.title"
-												:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
-												:progress="item.watchProgress"
-												:loading="isLoadingMetadata"
-											>
-												<template #fallbackIcon>🎞️</template>
-											</MediaCard>
-										</template></MetadataLoader>
+										<CinemaMediaCard :libraryItem="item.libraryItem" />
 									</div>
 								</div>
 							</Scroll>

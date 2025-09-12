@@ -513,13 +513,13 @@ app.get('/api/feed', async (req, res) => {
 
 		// // New Movies and shows!
 		// Need to get filestats for all items
-		const mediaTypes = ['movies', 'tv'];
+		const mediaTypes = ['cinema'];
 		const mediaLibraries = libraries.filter((library) => mediaTypes.includes(library.libraryType));
 		const allMediaItems = (await Promise.all(mediaLibraries.map(async (library) => {
 			const { items } = await LibraryService.getFlatTree(library.confirmedPath);
 			// async filestats for each file
 			return await Promise.all(items.map(async (item) => {
-				if (!['movie', 'series'].includes(item.type)) {
+				if (!['cinema'].includes(item.type)) {
 					return null; // Skip folders
 				}
 				const fullPath = DirectoryService.resolvePath(item.relativePath)?.absolutePath!;
@@ -538,12 +538,13 @@ app.get('/api/feed', async (req, res) => {
 			}
 			return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 		});
-		const newItems = allMediaItems.slice(0, 10).map((item) => ({
-			title: item.name,
+		const newItems = await Promise.all(allMediaItems.slice(0, 10).map(async (item) => ({
+			libraryItem: {
+				...item,
+				watchProgress: await WatchProgressService.getWatchProgress(DirectoryService.resolvePath(item.relativePath)!),
+			},
 			relativePath: item.relativePath,
-			metadata: item?.metadata,
-			libraryItem: item,
-		}));
+		})));
 		if (newItems.length > 0) {
 			feedLists.push({
 				title: "New Movies and Shows",

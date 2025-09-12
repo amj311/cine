@@ -70,7 +70,7 @@ const items = computed(() => {
 						v-for="folder in items"
 						:key="folder.libraryItem.relativePath"
 					>
-						<template v-if="folder.libraryItem.type === 'movie'">
+						<template v-if="folder.libraryItem.cinemaType === 'movie'">
 							<MetadataLoader
 								:media="folder.libraryItem"
 							>
@@ -91,7 +91,7 @@ const items = computed(() => {
 							</MetadataLoader>
 						</template>
 
-						<template v-if="folder.libraryItem.type === 'series'">
+						<template v-if="folder.libraryItem.cinemaType === 'series'">
 							<MetadataLoader
 								:media="folder.libraryItem"
 							>

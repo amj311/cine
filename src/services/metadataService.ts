@@ -10,7 +10,7 @@ export class MetadataService {
 		try {
 			const api = useApiStore().api;
 			const { data } = await api.post("/metadata", {
-				type: media.type,
+				type: media.cinemaType,
 				path: media.relativePath,
 				detailed,
 			});

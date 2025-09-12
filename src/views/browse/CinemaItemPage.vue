@@ -48,7 +48,7 @@ onBeforeUnmount(() => {
 });
 
 
-const isSeries = computed(() => props.libraryItem.type === 'series');
+const isSeries = computed(() => props.libraryItem.cinemaType === 'series');
 
 
 function playVideo(path: string, startTime?: number) {
@@ -376,7 +376,7 @@ onUnmounted(() => {
 				<ExtrasList :extras="libraryItem.extras" />
 			</div>
 
-			<audio ref="ytAudio" :src="useApiStore().apiUrl + '/stream-yt-search?q=' + (`${libraryItem.name} ${libraryItem.year} music ost main theme`).replace(/[&?=/]/g, '')" controls :autoplay="useTvNavigationStore().detectedTv" @canplay="ytCanPlay = true" @play="fadeIn" hidden>
+			<audio ref="ytAudio" :src="useApiStore().apiUrl + '/stream-yt-search?q=' + (`${libraryItem.name} ${libraryItem.year} music ost main theme`).replace(/[&?=/]/g, '')" controls :autoplay="useTvNavigationStore().detectedTv" @canplay="ytCanPlay = true" @play="fadeIn" @pause="ytIsplaying = false" @ended="ytIsplaying = false" hidden>
 				Your browser does not support the audio element.
 			</audio>
 		</div>
