@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeMount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useApiStore } from '@/stores/api.store';
 import GalleryFileFrame, { type GalleryFile } from '@/components/GalleryFileFrame.vue';
 import Slideshow from '@/components/Slideshow.vue';
-import VirtualScroll, { type VirtualScrollRow } from '@/components/VirtualScroll.vue';
+import VirtualScroll, { type VirtualScrollRow, type VirtualScrollRowWithPosition } from '@/components/VirtualScroll.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -78,7 +78,8 @@ const timelineRows = computed<Array<VirtualScrollRow>>(() => {
 	timelineDays.value.forEach((day) => {
 		rows.push({
 			height: 100,
-			key: day.date + 'header',
+			key: day.date.replaceAll(' ', '-') + 'header',
+			persist: true,
 			data: {
 				isHeader: true,
 				date: day.date,
@@ -121,11 +122,25 @@ function scrollToAnchor(anchor) {
 	virtualScroller.value?.scrollToRow(anchor.row);
 }
 
-const topRow = computed(() => virtualScroller.value?.inRangeRows[0]);
+
+const topLabel = ref<VirtualScrollRowWithPosition | null>(null);
+
+function findTopLabel() {
+	if (!virtualScroller.value?.scrollArea) {
+		return;
+	}
+	const scrollBottom = (virtualScroller.value.scrollArea.scrollTop || 0) + (virtualScroller.value.scrollArea.clientHeight || 0)/2;
+	topLabel.value = virtualScroller.value.persistRows.find((row, i, rows) => {
+		// find the first where the next is below the scroll bottom
+		const next = rows[i + 1];
+		return !next || next.top > scrollBottom;
+	}) || null;
+}
+
 
 
 const showClosestLabel = ref(false);
-const showClosestLabelTime = 1000;
+const showClosestLabelTime = 2000;
 const hideClosestLabelTimeout = ref<number | null>(null);
 function doShowClosestLabel() {
 	if (hideClosestLabelTimeout.value) {
@@ -137,7 +152,7 @@ function doShowClosestLabel() {
 	}, showClosestLabelTime);
 }
 
-watch(() => topRow.value?.data?.date, (newValue) => {
+watch(() => topLabel.value?.data?.date, (newValue) => {
 	if (newValue) {
 		doShowClosestLabel();
 	}
@@ -149,6 +164,8 @@ function openSlideshow(file: GalleryFile) {
 	slideshow.value?.open(filesInOrder, file);
 }
 
+const showMenu = ref(false);
+
 </script>
 
 <template>
@@ -158,7 +175,7 @@ function openSlideshow(file: GalleryFile) {
 				<Lazy>
 					<template #default="{ inRange }"> -->
 						<!-- <div class="gallery flex flex-column gap-6 mt-3" ref="trackWrapper"> -->
-							<VirtualScroll ref="virtualScroller" :rows="timelineRows">
+							<VirtualScroll v-if="timelineRows && timelineRows.length > 0" ref="virtualScroller" :rows="timelineRows" :onScroll="findTopLabel">
 								<template #row="{ data }" :key="day.date" class="date-row" :data-track-anchor="day.date">
 									<div class="pl-2 pb-2 pr-2 h-full">
 										<h2 v-if="data.isHeader" class="mt-7">{{ data.date }}</h2>
@@ -187,18 +204,27 @@ function openSlideshow(file: GalleryFile) {
 				<br />
 			</Scroll> -->
 		</div>
-		<div class="track">
+		<div class="track" @mouseenter="showMenu = true" @mouseleave="showMenu = false">
 			<div class="track-anchor-item"
 				v-for="(anchor, i) in trackAnchors"
-				@click="() => scrollToAnchor(anchor)"
 				:style="{ top: anchor.percent + '%', height: ((trackAnchors[i+1]?.percent || 100) - anchor.percent) + '%' }"
 				tabindex="0"
 			>
-				<div class="label">{{ anchor.label }}</div>
 				<div class="tick"></div>
 			</div>
-			<div class="label scroll-marker" v-show="showClosestLabel && topRow" :style="{ top: topRow?.topPercent + '%' }">
-				{{ topRow?.data.date }}
+			<div class="label scroll-marker" v-show="showClosestLabel && topLabel" :style="{ top: topLabel?.topPercent + '%' }">
+				{{ topLabel?.data.date }}
+			</div>
+			<div class="menu-wrapper absolute h-full right-0 overflow-hidden pointer-events-none">
+				<div class="menu h-full shadow-1 bg-soft border-round-xl" :class="{ open: showMenu }">
+					<Scroll>
+						<div class="flex flex-column align-items-end p-2">
+							<Button v-for="anchor in trackAnchors" :key="anchor.label" text severity="contrast" size="small" tabindex="0" @click="() => { scrollToAnchor(anchor); (showMenu = false) }">
+								<div class="white-space-nowrap">{{ anchor.label }}</div>
+							</Button>
+						</div>
+					</Scroll>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -246,14 +272,19 @@ function openSlideshow(file: GalleryFile) {
 				border-radius: 50%;
 				background-color: var(--color-contrast);
 			}
-			&:hover, &:focus {
-				.label {
-					opacity: 1;
-				}
+		}
+
+		.menu {
+			pointer-events: all !important;
+			translate: 100%;
+			transition: 500ms;
+
+			&.open{
+				translate: none;
 			}
 		}
 
-		.label {
+		.scroll-marker {
 			position: absolute;
 			top: 0;
 			left: 0;
@@ -265,15 +296,9 @@ function openSlideshow(file: GalleryFile) {
 			border-radius: 5px;
 			font-size: 1.2em;
 			text-align: center;
-			opacity: 0;
-			transition: opacity 0.3s;
 			pointer-events: none;
 			white-space: nowrap;
-
-			&.scroll-marker {
-				opacity: 1;
-				transition: all 300ms ease-in-out;
-			}
+			transition: all 500ms ease-in-out;
 		}
 	}
 }

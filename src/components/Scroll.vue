@@ -52,7 +52,7 @@ function doHoverScroll(event: MouseEvent) {
 		return;
 	}
 	// First find out if the mouse is the sides of a scroll area
-	const edgeMargin = 30;
+	const edgeMargin = 50;
 	const scrollArea = event.currentTarget as HTMLElement;
 	const rect = scrollArea.getBoundingClientRect();
 	const mouseX = event.clientX - rect.left;

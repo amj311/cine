@@ -399,6 +399,10 @@ onUnmounted(() => {
 	.show-sm {
 		display: block;
 	}
+
+	.title {
+		font-size: 1.5em;
+	}
 }
 
 .cinema-page {

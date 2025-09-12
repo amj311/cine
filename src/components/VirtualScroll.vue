@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import Scroll from './Scroll.vue';
 
 export type VirtualScrollRow = {
 	height: number;
 	key?: string;
 	data?: any;
+	persist?: boolean; // if true, this row will always be rendered. Useful for group labels. Use sparingly
 };
 
-type VirtualScrollRowWithPosition = {
+export type VirtualScrollRowWithPosition = {
 	top: number;
 	topPercent: number;
 	bottom: number;
@@ -16,6 +17,7 @@ type VirtualScrollRowWithPosition = {
 
 const props = defineProps<{
 	rows: Array<VirtualScrollRow>;
+	onScroll?: () => void;
 }>();
 
 const wrapper = ref<HTMLDivElement>();
@@ -39,25 +41,48 @@ const allRows = computed<Array<VirtualScrollRowWithPosition>>(() => {
 });
 
 const updateDelay = 500;
-let lastBounceTime = 0;
+const maxScrollThreshold = 50; // px
+// let lastBounceTime = 0;
+let lastScrollTop = 0;
 
 const updateTimeout = ref<number | null>(null);
 function debounceUpdate() {
-	lastBounceTime = Date.now();
+	// lastBounceTime = Date.now();
 	if (!updateTimeout.value) {
 		updateTimeout.value = window.setTimeout(() => {
-			updateScrollRange();
+			if (props.onScroll) {
+				props.onScroll();
+			}
 			updateTimeout.value = null;
 			// If the last bounce time is more than the delay, we can safely assume that the user has stopped scrolling
-			if (lastBounceTime + updateDelay < Date.now()) {
+			// const noBouncesForDelayTime = lastBounceTime + updateDelay < Date.now();
+			// Also allow very small changes in scrollTop as well
+			const scrollDelta = Math.abs((scrollArea.value?.scrollTop || 0) - lastScrollTop);
+			const isSlowScroll = scrollDelta <= maxScrollThreshold;
+			if (isSlowScroll) {
 				// debounceUpdate();
+				updateScrollRange();
+			}
+			else {
+				lastScrollTop = scrollArea.value?.scrollTop || 0;
+				debounceUpdate();
 			}
 		}, updateDelay);
 	}
 	
 }
 
-const inRangeRows = ref<Array<VirtualScrollRowWithPosition>>([]);
+watch(() => allRows.value, () => {
+	debounceUpdate();
+}, { deep: true });
+
+const persistRows = computed(() => {
+	return allRows.value.filter(row => row.persist);
+});
+const variableRows = computed(() => {
+	return allRows.value.filter(row => !row.persist);
+});
+const renderRows = ref<Array<VirtualScrollRowWithPosition>>([]);
 let previousFinalSearchIndex = 0;
 let upperRange = 0;
 let lowerRange = 0;
@@ -70,7 +95,7 @@ function updateScrollRange() {
 		return;
 	}
 	setRange();
-	const startingIndex = Math.min(previousFinalSearchIndex, allRows.value.length - 1);
+	const startingIndex = Math.min(previousFinalSearchIndex, variableRows.value.length - 1);
 
 	// Scan updates in both directions from the starting index
 	const { foundRows: upRows, finalIndex: upFinalIndex } = updateInDirection('up', startingIndex);
@@ -86,7 +111,7 @@ function updateScrollRange() {
 		previousFinalSearchIndex = 0;
 	}
 	
-	inRangeRows.value = [...upRows, ...downRows].sort((a, b) => {
+	renderRows.value = [...persistRows.value, ...upRows, ...downRows].sort((a, b) => {
 		return a.top - b.top;
 	});
 }
@@ -116,21 +141,21 @@ function updateInDirection(
 	}
 
 	function isIndexOutOfBounds(index: number): boolean {
-		if (index < 0 || index >= allRows.value.length) {
+		if (index < 0 || index >= variableRows.value.length) {
 			return true;
 		}
 		return false;
 	}
 
 	function evaluateIndex(index: number) {
-		if (!allRows.value) {
+		if (!variableRows.value) {
 			return {
 				isInRange: false,
 				wasInRange: false,
 				isRangeInDirection: false,
 			};
 		}
-		const row = allRows.value[index];
+		const row = variableRows.value[index];
 		const distance = distanceFromRange(row);
 		const isInRange = distance === 0;
 		let isRangeInDirection = true;
@@ -219,8 +244,8 @@ function distanceFromRange(row: VirtualScrollRowWithPosition): number {
 }
 
 onMounted(() => {
-	scrollArea.value?.addEventListener('scroll', debounceUpdate);
-	scrollArea.value?.addEventListener('resize', debounceUpdate);
+	scrollArea.value?.addEventListener('scroll', debounceUpdate, { passive: true });
+	scrollArea.value?.addEventListener('resize', debounceUpdate, { passive: true });
 	debounceUpdate();
 });
 
@@ -231,7 +256,8 @@ onBeforeUnmount(() => {
 
 defineExpose({
 	allRows,
-	inRangeRows,
+	persistRows,
+	renderRows,
 	scrollArea,
 	scrollToRow(row: VirtualScrollRowWithPosition) {
 		if (!scrollArea.value) {
@@ -250,7 +276,7 @@ defineExpose({
 	<div style="height: 100%">
 		<Scroll ref="scrollerRef">
 			<div ref="wrapper" class="lazy-wrapper" :style="{ height: totalHeight + 'px' }">
-				<div v-for="row in inRangeRows" :key="row.key" class="row-wrapper" :style="{ height: row.height + 'px', top: row.top + 'px' }">
+				<div v-for="row in renderRows" :key="row.key" :id="'virtual-row-' + row.key" class="row-wrapper" :style="{ height: row.height + 'px', top: row.top + 'px' }">
 					<slot name="row" :data="row.data" />
 				</div>
 			</div>
