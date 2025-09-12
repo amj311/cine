@@ -10,6 +10,8 @@ const props = defineProps<{
 	relativePath: string;
 	title?: string;
 	close?: () => void;
+	onPlay?: () => void;
+	onPause?: () => void;
 	onEnd?: () => void;
 	onLoadedData?: (data: any) => void;
 	hideControls?: boolean;
@@ -73,6 +75,16 @@ defineExpose({
 })
 
 onMounted(() => {
+	videoRef.value?.addEventListener('play', () => {
+		if (props.onPlay) {
+			props.onPlay();
+		}
+	});
+	videoRef.value?.addEventListener('pause', () => {
+		if (props.onPause) {
+			props.onPause();
+		}
+	});
 	videoRef.value?.addEventListener('ended', () => {
 		if (props.onEnd) {
 			props.onEnd();
@@ -218,9 +230,9 @@ const audioMenuItems = computed(() => {
 		<div class="overlay top-fade"></div>
 		<div class="top-left overlay w-full">
 			<Button v-if="close" variant="text" severity="contrast" icon="pi pi-arrow-left" @click="close" />
-			<div>{{ title }}</div>
+			<div class="text-ellipsis">{{ title }}</div>
 			<div class="flex-grow-1"></div>
-			<div class="audio-select" v-if="props.audio?.length">
+			<div class="audio-select" v-if="props.audio && props.audio.length > 1">
 				<DropdownMenu :model="audioMenuItems"><Button variant="text" severity="contrast" :icon="'pi pi-headphones'" /></DropdownMenu>
 			</div>
 		</div>

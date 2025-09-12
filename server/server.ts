@@ -29,32 +29,91 @@ import axios from 'axios';
 
 const corsOptions = {};
 
+// Safe response helper to prevent double responses
+const safeResponse = {
+	send: (res: any, statusCode: number, data?: any) => {
+		if (!res.headersSent) {
+			if (data) {
+				res.status(statusCode).json(data);
+			} else {
+				res.sendStatus(statusCode);
+			}
+		}
+	},
+	json: (res: any, data: any, statusCode = 200) => {
+		if (!res.headersSent) {
+			res.status(statusCode).json(data);
+		}
+	},
+	error: (res: any, message: string, statusCode = 500) => {
+		if (!res.headersSent) {
+			res.status(statusCode).json({ error: message });
+		}
+	}
+};
+
 app.use(cors(corsOptions));
 app.use(json());
 app.use(urlencoded({ extended: false }));
+
+// Request logging middleware
+// app.use((req: any, res: any, next: any) => {
+// 	const start = Date.now();
+
+// 	// Log request
+// 	console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+
+// 	// Override res.end to log response
+// 	const originalEnd = res.end;
+// 	res.end = function (...args: any[]) {
+// 		const duration = Date.now() - start;
+// 		console.log(`${req.method} ${req.url} - ${res.statusCode} - ${duration}ms`);
+// 		originalEnd.apply(this, args);
+// 	};
+
+// 	next();
+// });
+
+// Request timeout middleware
+app.use((req: any, res: any, next: any) => {
+	// Set timeout for all requests (30 seconds)
+	req.setTimeout(30000, () => {
+		if (!res.headersSent) {
+			res.status(408).json({ error: 'Request timeout' });
+		}
+	});
+
+	res.setTimeout(30000, () => {
+		if (!res.headersSent) {
+			res.status(408).json({ error: 'Response timeout' });
+		}
+	});
+
+	next();
+});
 
 app.get('/health', (_, res) => res.sendStatus(200));
 
 // get directory at relative path from media dir
 app.get("/api/dir/", async function (req, res) {
-	let { dir } = req.query;
-	if (!dir) {
-		res.status(400).send("Requires dir query param");
-		return;
-	}
-	if (dir === "/") {
-		dir = "";
-	}
 	try {
+		let { dir } = req.query;
+		if (!dir) {
+			return safeResponse.error(res, "Requires dir query param", 400);
+		}
+		if (dir === "/") {
+			dir = "";
+		}
+
 		const resolvedPath = DirectoryService.resolvePath(dir as string);
 		if (!resolvedPath) {
-			res.status(404).send("Directory not found");
-			return;
+			return safeResponse.error(res, "Directory not found", 404);
 		}
+
 		const { folders, files } = await DirectoryService.listDirectory(resolvedPath);
 		const libraryItem = await LibraryService.parseFolderToItem(resolvedPath, true);
 
-		return res.json({
+		return safeResponse.json(res, {
 			libraryItem,
 			directory: {
 				files: files.map((file) => file.name),
@@ -67,10 +126,9 @@ app.get("/api/dir/", async function (req, res) {
 				}))).sort((a, b) => a.libraryItem?.sortKey.localeCompare(b.libraryItem?.sortKey || '') || 0),
 			},
 		});
-	}
-	catch (err) {
+	} catch (err) {
 		console.error(err);
-		res.status(500).send("Error reading directory");
+		safeResponse.error(res, "Error reading directory");
 	}
 });
 
@@ -94,23 +152,31 @@ app.get('/api/stream-yt-search', async (req, res) => {
 		ytdl.getInfo(url).then(info => {
 			ytdl.downloadFromInfo(info, { quality: 'lowest' }).pipe(fs.createWriteStream(outputFilePath))
 				.on('finish', () => {
-					res.sendFile(outputFilePath, (err) => {
-						if (err) {
-							console.error("Error while sending converted file:", err);
-							res.status(500).send("Error sending converted file");
-						}
-					});
+					if (!res.headersSent) {
+						res.sendFile(outputFilePath, (err) => {
+							if (err && !res.headersSent) {
+								console.error("Error while sending converted file:", err);
+								res.status(500).send("Error sending converted file");
+							}
+						});
+					}
 				})
 				.on('error', (err) => {
 					console.error("Error writing yt stream to file:", err);
-					res.status(500).send("Error processing YouTube video");
+					if (!res.headersSent) {
+						res.status(500).send("Error processing YouTube video");
+					}
 				});
-		})
+		}).catch(err => {
+			console.error("Error getting YouTube info:", err);
+			if (!res.headersSent) {
+				res.status(500).send("Error processing YouTube video");
+			}
+		});
 	} catch (err) {
 		console.error(err)
 		if (!res.headersSent) {
-			res.writeHead(500)
-			res.end('internal system error')
+			res.status(500).send("Internal system error");
 		}
 	}
 });
@@ -146,7 +212,7 @@ app.get("/api/stream", async function (req, res) {
 				.run();
 		});
 		res.sendFile(outputFilePath, (err) => {
-			if (err) {
+			if (err && !res.headersSent) {
 				console.error("Error while sending converted file:", err);
 				res.status(500).send("Error sending converted file");
 			}
@@ -168,7 +234,7 @@ app.get("/api/stream", async function (req, res) {
 				// 404 Error if file not found
 				return res.sendStatus(404);
 			}
-			res.end(err);
+			return res.status(500).send("Error loading file");
 		}
 
 		const range = req.headers.range;
@@ -202,7 +268,9 @@ app.get("/api/stream", async function (req, res) {
 				stream.pipe(res);
 			}).on("error", function (err) {
 				console.error("Error reading stream!", err)
-				res.end(err);
+				if (!res.headersSent) {
+					res.status(500).send("Error reading file");
+				}
 			});
 	});
 });
@@ -237,9 +305,13 @@ app.post('/api/prepareAudio', async (req, res) => {
 			.run();
 	}).catch((err) => {
 		console.error("Error while sending converted file:", err);
-		res.status(500).send("Error sending converted file");
+		if (!res.headersSent) {
+			res.status(500).send("Error sending converted file");
+		}
 	});
-	res.send(200);
+	if (!res.headersSent) {
+		res.sendStatus(200);
+	}
 });
 
 app.post('/api/metadata', async (req, res) => {
@@ -273,7 +345,9 @@ app.post('/api/metadata', async (req, res) => {
 	}
 	catch (err) {
 		console.error(err)
-		res.send(500)
+		if (!res.headersSent) {
+			res.status(500).send("Internal server error");
+		}
 	}
 });
 
@@ -294,7 +368,9 @@ app.get('/api/watchProgress', async (req, res) => {
 	}
 	catch (err) {
 		console.error(err)
-		res.send(500)
+		if (!res.headersSent) {
+			res.status(500).send("Internal server error");
+		}
 	}
 });
 app.post('/api/watchProgress', async (req, res) => {
@@ -313,7 +389,9 @@ app.post('/api/watchProgress', async (req, res) => {
 	}
 	catch (err) {
 		console.error(err)
-		res.send(500)
+		if (!res.headersSent) {
+			res.status(500).send("Internal server error");
+		}
 	}
 });
 app.delete('/api/watchProgress/bookmark', async (req, res) => {
@@ -331,7 +409,9 @@ app.delete('/api/watchProgress/bookmark', async (req, res) => {
 	}
 	catch (err) {
 		console.error(err)
-		res.send(500)
+		if (!res.headersSent) {
+			res.status(500).send("Internal server error");
+		}
 	}
 });
 
@@ -364,7 +444,9 @@ app.get('/api/theaterData', async (req, res) => {
 	}
 	catch (err) {
 		console.error(err)
-		res.send(500)
+		if (!res.headersSent) {
+			res.status(500).send("Internal server error");
+		}
 	}
 });
 
@@ -529,7 +611,9 @@ app.get('/api/feed', async (req, res) => {
 	}
 	catch (err) {
 		console.error(err)
-		res.send(500)
+		if (!res.headersSent) {
+			res.status(500).send("Internal server error");
+		}
 	}
 });
 
@@ -736,10 +820,71 @@ app.get('*', (req, res) => {
 	res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
+// Global error handler middleware
+app.use((err: any, req: any, res: any, next: any) => {
+	console.error('Global error handler caught:', err);
+
+	// If response already sent, delegate to default Express error handler
+	if (res.headersSent) {
+		return next(err);
+	}
+
+	// Send error response
+	res.status(500).json({
+		error: 'Internal server error',
+		message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+	});
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+	console.error('Uncaught Exception:', err);
+	// Log the error but don't exit the process immediately
+	// Consider using a proper logging service in production
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+	// Log the error but don't exit the process
+});
+
 const port = process.env.PORT || 5000;
-app.listen(port, () => {
+const server = app.listen(port, () => {
 	console.log(`Listening on port ${port}`);
+	console.log(`Process ID: ${process.pid}`);
+	console.log(`Node.js version: ${process.version}`);
 
 	// Setup slow jobs
-
 });
+
+// Graceful shutdown handling
+const gracefulShutdown = (signal: string) => {
+	console.log(`Received ${signal}. Starting graceful shutdown...`);
+
+	server.close(() => {
+		console.log('HTTP server closed.');
+		process.exit(0);
+	});
+
+	// Force shutdown after 10 seconds
+	setTimeout(() => {
+		console.error('Could not close connections in time, forcefully shutting down');
+		process.exit(1);
+	}, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Log memory usage periodically (optional, for debugging)
+if (process.env.NODE_ENV === 'development') {
+	setInterval(() => {
+		const memUsage = process.memoryUsage();
+		console.log('Memory usage:', {
+			rss: Math.round(memUsage.rss / 1024 / 1024) + ' MB',
+			heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + ' MB',
+			heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + ' MB'
+		});
+	}, 60000); // Every minute
+}

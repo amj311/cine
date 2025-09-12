@@ -222,14 +222,6 @@ onMounted(async () => {
 	pauseTvMode();
 	attemptAutoFullscreen();
 
-	if ('wakeLock' in navigator) {
-		try {
-			wakeLock = await navigator.wakeLock.request('screen');
-		} catch (e) {
-			console.error("Failed to acquire wake lock", e);
-		}
-	}
-
 	// Setup fullscreen exit handling
 	useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
 
@@ -253,11 +245,7 @@ onBeforeUnmount(async () => {
 		} catch (e) {}
 	}
 
-	// release wake lock
-	if (wakeLock) {
-		await wakeLock.release();
-		wakeLock = null;
-	}
+	releaseWakeLock();
 
 	useFullscreenStore().removeFullscreenChangeListener(navigateBackOnFullscreenExit);
 	// unlock screen orientation
@@ -268,8 +256,33 @@ onBeforeUnmount(async () => {
 	}
 });
 
+function requestWakeLock() {
+	if ('wakeLock' in navigator) {
+		(navigator as any).wakeLock.request('screen')
+			.then((lock: WakeLockSentinel) => {
+				wakeLock = lock;
+				wakeLock.addEventListener('release', () => {
+					wakeLock = null;
+				});
+			})
+			.catch((err: any) => {
+				console.error(`${err.name}, ${err.message}`);
+			});
+	}
+}
+
+function releaseWakeLock() {
+	if (wakeLock) {
+		wakeLock.release()
+			.then(() => {
+				wakeLock = null;
+			});
+	}
+}
+
 function onEnd() {
 	hasEnded.value = true;
+	releaseWakeLock();
 	if (playable.value?.type !== 'episodeFile' || !nextEpisodeFile.value) {
 		carefulBackNav();
 	}
@@ -329,7 +342,7 @@ const title = computed(() => {
 	if (playable.value?.type === 'episodeFile') {
 		const metadataName = currentEpisodeMetadata.value?.name;
 		const nameIsNotEpisodeNumber = metadataName && !metadataName.toLowerCase().match(/episode \d{1,3}/);
-		return `${parentLibrary.value?.name} ${playable.value?.name}` + (nameIsNotEpisodeNumber ? ` "${metadataName}"` : '');
+		return (nameIsNotEpisodeNumber ? `"${metadataName}" ` : '') + `${playable.value?.name} - ${parentLibrary.value?.name}`;
 	}
 	return playable.value.name;
 });
@@ -379,6 +392,8 @@ const loadingBackground = computed(() => {
 			ref="playerRef"
 			:relativePath="mediaPath"
 			:onLoadedData="() => hasLoaded = true"
+			:onPlay="requestWakeLock"
+			:onPause="releaseWakeLock"
 			:onEnd="onEnd"
 			:subtitles="probe?.subtitles"
 			:audio="probe?.audio"
