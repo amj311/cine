@@ -222,6 +222,8 @@ onMounted(async () => {
 	pauseTvMode();
 	attemptAutoFullscreen();
 
+	requestWakeLock();
+
 	// Setup fullscreen exit handling
 	useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
 
@@ -256,27 +258,20 @@ onBeforeUnmount(async () => {
 	}
 });
 
-function requestWakeLock() {
+async function requestWakeLock() {
 	if ('wakeLock' in navigator) {
-		(navigator as any).wakeLock.request('screen')
-			.then((lock: WakeLockSentinel) => {
-				wakeLock = lock;
-				wakeLock.addEventListener('release', () => {
-					wakeLock = null;
-				});
-			})
-			.catch((err: any) => {
-				console.error(`${err.name}, ${err.message}`);
-			});
+		try {
+			wakeLock = await navigator.wakeLock.request('screen');
+		} catch (e) {
+			console.error("Failed to acquire wake lock", e);
+		}
 	}
 }
 
-function releaseWakeLock() {
+async function releaseWakeLock() {
 	if (wakeLock) {
-		wakeLock.release()
-			.then(() => {
-				wakeLock = null;
-			});
+		await wakeLock.release();
+		wakeLock = null;
 	}
 }
 

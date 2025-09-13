@@ -88,7 +88,7 @@ function formatRuntime(minutes: number) {
 											:progress="item.watchProgress"
 											:aspectRatio="'wide'"
 											:title="item.title"
-											:subtitle="`${timeRemaining(item.watchProgress)} leftzz`"
+											:subtitle="`${timeRemaining(item.watchProgress)} left`"
 										>
 											<template #fallbackIcon>💿</template>
 										</MediaCard>
