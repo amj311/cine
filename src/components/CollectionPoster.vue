@@ -31,11 +31,11 @@ onBeforeMount(() => {
 		:src="url"
 		:style="{
 			position: 'absolute',
-			width: `85%`,
+			width: `calc(100% - ${25 * Math.min(3, posters.length - 1)}px)`,
 			borderRadius: '5px',
-			top: `${i * 10}px`,
-			left: `${i * 10}px`,
-			zIndex: 10 - i,
+			top: `${i * 25}px`,
+			left: `${i * 25}px`,
+			zIndex: i,
 			boxShadow: '0 0 5px rgba(0, 0, 0, 0.5)',
 		}"
 	/>

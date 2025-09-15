@@ -353,7 +353,6 @@ const nextEpisodeMetadata = computed(() => {
 	const episode = parentLibrary.value?.metadata?.seasons
 		.find((season: any) => season.seasonNumber === nextEpisodeFile.value.seasonNumber)?.episodes
 		.find((episode: any) => episode.episodeNumber === nextEpisodeFile.value?.firstEpisodeNumber);
-	console.log("Next episode metadata", episode);
 	return episode;
 });
 const nextEpisodeTitle = computed(() => {
@@ -423,9 +422,10 @@ const loadingBackground = computed(() => {
 	height: 100%;
 	position: relative;
 	background-image: none;
-	background-size: cover;
+	background-size: contain;
 	background-position: center;
 	background-repeat: no-repeat;
+	background-color: black;
 	/* single transparent image to allow transition effect on bg load */
 	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC);
 	transition: background-image 500ms;
