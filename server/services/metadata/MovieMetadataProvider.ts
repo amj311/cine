@@ -20,11 +20,12 @@ export class MovieMetadataProvider extends IMetadataProvider<MovieMetadata> {
 	protected createSearchKeyFromPath(path: ConfirmedPath) {
 		// Split the path into file segments, and find one with a (year) in it
 		const movieFileName = path.relativePath.split('/').find(s => s.match(/\(\d{4}\)/))!;
-		const { name, year } = LibraryService.parseNamePieces(movieFileName);
+		const { name, year, imdbId } = LibraryService.parseNamePieces(movieFileName);
 
 		return {
 			name,
 			year: year || '',
+			imdbId: imdbId || '',
 		}
 	}
 

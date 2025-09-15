@@ -24,12 +24,26 @@ export class TmdbApi {
 
 	public async getMetadataBySearch(searchParams, entity: 'tv' | 'movie') {
 		const api = await this.getApi();
+		console.log('Searching TMDB for', searchParams);
 		const { data } = await api.get('/search/' + entity, {
 			params: {
 				query: searchParams.name,
 				year: searchParams.year,
+
 			}
 		});
+		// Can't do simple search by imdb, so we have to look deeper to be that specific
+		// lok at just the first two results. Less likely that THREE are in conflict.
+		if (searchParams.imdbId) {
+			const details = await Promise.all(
+				data.results.slice(0, 2).map(r => this.getDetailsById(entity + '/' + r.id))
+			);
+			const match = details.find(d => d.imdb_id === searchParams.imdbId);
+			if (match) {
+				return match;
+			}
+		}
+
 		const result = data.results[0];
 		return result || null;
 	}

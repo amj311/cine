@@ -14,6 +14,9 @@ type LibraryItemData = {
 	listName: string,
 	sortKey: string,
 	metadata: EitherMetadata | null,
+	imdbId?: string,
+	extras?: Array<Extra>,
+	cinemaType?: 'movie' | 'series',
 }
 
 type Playable = {
@@ -192,12 +195,13 @@ type LibraryFile = Photo | Video | Audio;
 export class LibraryService {
 	public static async parseFolderToItem(path: ConfirmedPath, detailed = false, withMetadata = true): Promise<LibraryItem> {
 		const folderName = path.relativePath.split('/').pop() || path.relativePath;
-		const { name, year } = LibraryService.parseNamePieces(folderName);
+		const { name, year, imdbId } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
 
 
 		// Take care of series and movies first
 		if (year) {
+			console.log({ name, year, imdbId });
 			// Search for "Season" folders
 			const allSeasonFolders = children.folders.filter((folder) => folder.name.toLowerCase().includes('season'));
 			if (allSeasonFolders.length > 0) {
@@ -214,6 +218,7 @@ export class LibraryService {
 					cinemaType: 'series',
 					name,
 					year,
+					imdbId: imdbId || undefined,
 					relativePath: path.relativePath,
 					folderName: folderName,
 					seasons,
@@ -227,8 +232,8 @@ export class LibraryService {
 
 			// Identify movie when a child item has the same name and year
 			const movieFile = children.files.find((file) => {
-				const { name: folderName, year: fileYear } = LibraryService.parseNamePieces(file.name);
-				return file.name.endsWith('.mp4') && folderName === name && fileYear === year;
+				const { name: mediaName, year: fileYear } = LibraryService.parseNamePieces(file.name);
+				return file.name.endsWith('.mp4') && mediaName === name && fileYear === year;
 			});
 			if (movieFile) {
 				let extras: Extra[] = [];
@@ -244,6 +249,7 @@ export class LibraryService {
 					cinemaType: 'movie',
 					name,
 					year,
+					imdbId: imdbId || undefined,
 					relativePath: path.relativePath,
 					folderName: folderName,
 					movie: {
@@ -671,10 +677,15 @@ export class LibraryService {
 
 		const versionRegExp = RegExp(/.version(?<version>[^\.]{1,50})\./g);
 		const version = versionRegExp.exec(nameOrPath)?.groups?.version?.replaceAll('_', ' ').trim() || null;
+
+		const imdbRegExp = RegExp(/.imdb-(?<imdbId>tt\d{7,8})/g);
+		const imdbId = imdbRegExp.exec(nameOrPath)?.groups?.imdbId?.trim() || null;
+
 		return {
 			name: titleBeforeYear,
 			year,
 			version,
+			imdbId,
 		}
 	}
 
