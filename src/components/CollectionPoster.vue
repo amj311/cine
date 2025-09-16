@@ -7,7 +7,7 @@ const props = defineProps<{
 }>();
 
 const metadata = ref<any[]>([]);
-const posters = computed(() => metadata.value.map((item) => item.poster_thumb).filter(Boolean));
+const posters = computed(() => metadata.value.map((item) => item.poster_thumb).filter(Boolean).slice(0, 4));
 const previewSlots = computed(() => {
 	if (posters.value.length === 1) {
 		const width = '100%';
@@ -60,7 +60,7 @@ onBeforeMount(() => {
 
 <template>
 	<img
-		v-for="url, i in posters.slice(0, 4)"
+		v-for="url, i in posters"
 		:src="url"
 		:style="{
 			position: 'absolute',
