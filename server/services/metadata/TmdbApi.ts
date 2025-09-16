@@ -24,7 +24,6 @@ export class TmdbApi {
 
 	public async getMetadataBySearch(searchParams, entity: 'tv' | 'movie') {
 		const api = await this.getApi();
-		console.log('Searching TMDB for', searchParams);
 		const { data } = await api.get('/search/' + entity, {
 			params: {
 				query: searchParams.name,

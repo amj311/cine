@@ -8,6 +8,39 @@ const props = defineProps<{
 
 const metadata = ref<any[]>([]);
 const posters = computed(() => metadata.value.map((item) => item.poster_thumb).filter(Boolean));
+const previewSlots = computed(() => {
+	if (posters.value.length === 1) {
+		const width = '100%';
+		return [
+			{ top: '0', left: '0', width },
+		];
+	}
+	if (posters.value.length === 2) {
+		const width = '75%';
+		return [
+			{ top: '0', left: '0', width },
+			{ bottom: '0', right: '0', width },
+		];
+	}
+	if (posters.value.length === 3) {
+		const width = '75%';
+		return [
+			{ top: '0', left: '0', width },
+			{ top: '12%', right: '0', width },
+			{ bottom: '0', left: '12%', width },
+		];
+	}
+	if (posters.value.length === 4) {
+		const width = '75%';
+		return [
+			{ top: '0', left: '0', width },
+			{ top: '8%', right: '4%', width },
+			{ bottom: '8%', left: '4%', width },
+			{ bottom: '0', right: '0', width },
+		];
+	}
+	return [];
+});
 
 async function loadMetadata() {
 	metadata.value = (await Promise.all(
@@ -27,16 +60,14 @@ onBeforeMount(() => {
 
 <template>
 	<img
-		v-for="url, i in posters.slice(0, 3)"
+		v-for="url, i in posters.slice(0, 4)"
 		:src="url"
 		:style="{
 			position: 'absolute',
-			width: `calc(100% - ${25 * Math.min(3, posters.length - 1)}px)`,
 			borderRadius: '5px',
-			top: `${i * 25}px`,
-			left: `${i * 25}px`,
 			zIndex: i,
 			boxShadow: '0 0 5px rgba(0, 0, 0, 0.5)',
+			...previewSlots[i],
 		}"
 	/>
 </template>

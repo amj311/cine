@@ -201,7 +201,6 @@ export class LibraryService {
 
 		// Take care of series and movies first
 		if (year) {
-			console.log({ name, year, imdbId });
 			// Search for "Season" folders
 			const allSeasonFolders = children.folders.filter((folder) => folder.name.toLowerCase().includes('season'));
 			if (allSeasonFolders.length > 0) {
