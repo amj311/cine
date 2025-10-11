@@ -478,6 +478,7 @@ app.get('/api/feed', async (req, res) => {
 		// Make sure cached items still exist!!!
 		const watchItems: ContinueWatchingItem[] = await WatchProgressService.getContinueWatchingList().map((progress) => ({
 			...progress,
+			watchedAt: progress.watchedAt,
 			confirmedPath: DirectoryService.resolvePath(progress.relativePath),
 		})).filter(i => i.confirmedPath) as ContinueWatchingItem[];
 		const lastFinishedEpisodes = await WatchProgressService.getLastFinishedEpisodes();
@@ -485,7 +486,7 @@ app.get('/api/feed', async (req, res) => {
 			if (ep && DirectoryService.resolvePath(ep.relativePath)) {
 				const nextEpisode = await LibraryService.getNextEpisode(DirectoryService.resolvePath(ep.relativePath)!);
 				if (nextEpisode) {
-					watchItems.unshift({ ...nextEpisode, isUpNext: true } as any);
+					watchItems.unshift({ ...nextEpisode, watchedAt: ep.watchedAt, isUpNext: true } as any);
 				}
 			}
 		}));
@@ -493,10 +494,11 @@ app.get('/api/feed', async (req, res) => {
 			feedLists.push({
 				title: "Continue Watching",
 				type: "continue-watching",
-				items: await Promise.all(watchItems.map(async (item) => ({
+				items: (await Promise.all(watchItems.map(async (item) => ({
 					title: LibraryService.parseNamePieces(item.relativePath).name,
 					relativePath: item.relativePath,
 					watchProgress: item,
+					watchedAt: item.watchedAt,
 					metadata: MediaMetadataService.getMetadata(
 						LibraryService.determineMediaTypeFromPath(item.relativePath) as any,
 						item.confirmedPath,
@@ -504,7 +506,7 @@ app.get('/api/feed', async (req, res) => {
 					probe: await ProbeService.getProbeData(item.confirmedPath),
 					libraryItem: await LibraryService.getLibraryForPlayable(item.confirmedPath),
 					isUpNext: item.isUpNext,
-				}))),
+				})))).sort((a, b) => b.watchedAt - a.watchedAt),
 			});
 		}
 
@@ -529,11 +531,11 @@ app.get('/api/feed', async (req, res) => {
 					createdAt: stat ? stat.birthtime : null, // Use birthtime for creation
 				}
 			}));
-		}))).flat().filter(i => !!i).sort((a, b) => {
-			if (!a.createdAt) {
+		}))).flat().filter(i => !!i && ((Date.now() - (i.createdAt?.getTime() || 0)) < 1000 * 60 * 60 * 24 * 30)).sort((a, b) => {
+			if (!a?.createdAt) {
 				return 1;
 			}
-			if (!b.createdAt) {
+			if (!b?.createdAt) {
 				return -1;
 			}
 			return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();

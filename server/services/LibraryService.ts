@@ -621,7 +621,7 @@ export class LibraryService {
 		if (parentLibrary) {
 			// Identify playable within the parent library
 			playable = (parentLibrary.extras as Array<Extra>)?.find((extra) => path.relativePath === extra.relativePath) || null;
-			if (!playable && parentLibrary.cinemaType === 'movie') {
+			if (!playable && 'movie' in parentLibrary) {
 				playable = (parentLibrary as Movie).movie.relativePath === path.relativePath ? parentLibrary.movie : null;
 			}
 			if (!playable && parentLibrary.cinemaType === 'series') {
@@ -717,7 +717,7 @@ export class LibraryService {
 
 	private static async determineMediaTypeInLibrary(path: ConfirmedPath): Promise<Library['libraryType'] | null> {
 		// recursivle search for first descendent that matches a media description
-		async function findMediaWithin(path: ConfirmedPath) {
+		async function findMediaWithin(path: ConfirmedPath): Promise<Library['libraryType'] | null> {
 			const { folders, files } = await DirectoryService.listDirectory(path);
 			if (folders.length === 0 && files.length === 0) {
 				return null;
@@ -743,6 +743,7 @@ export class LibraryService {
 					return mediaType;
 				}
 			}
+			return null;
 		}
 		return await findMediaWithin(path);
 	}
