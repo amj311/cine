@@ -66,7 +66,7 @@ onMounted(() => {
 		pinchZoom = new PinchZoom(mediaFrame.value, {
 			draggableUnzoomed: false,
 			minZoom: 1,
-			maxZoom: 5,
+			maxZoom: 10,
 			onZoomUpdate: (event: any) => {
 				isZooming.value = event.zoomFactor > 1;
 			},
@@ -105,7 +105,7 @@ const showThumbnail = computed(() => {
 				:alt="file.fileName" 
 				style="width: 100%; height: 100%;"
 				:style="{ objectFit }"
-				:class="{ 'blurred': !hiResReady && loadSequence }"
+				:class="{ 'blurred': !hiResReady && loadSequence?.includes('blur') }"
 			/>
 			<VideoPlayer
 				v-else-if="file.fileType === 'video'"
