@@ -189,7 +189,7 @@ const showMenu = ref(false);
 												:id="file.relativePath"
 												@click="openSlideshow(file)"
 											>
-												<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" />
+												<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" :loadSequence="['blur', 'small']" />
 												<div class="overlay">
 													<i v-if="file.fileType === 'video'" class="play-icon pi pi-play" />
 												</div>
@@ -204,7 +204,7 @@ const showMenu = ref(false);
 				<br />
 			</Scroll> -->
 		</div>
-		<div class="track" @mousemove="showMenu = true" @mouseleave="showMenu = false">
+		<div class="track" @click="showMenu = true" @mousemove="showMenu = true" @mouseleave="showMenu = false">
 			<div class="track-anchor-item"
 				v-for="(anchor, i) in trackAnchors"
 				:style="{ top: anchor.percent + '%', height: ((trackAnchors[i+1]?.percent || 100) - anchor.percent) + '%' }"

@@ -17,15 +17,17 @@ const props = defineProps<{
 	hideControls?: boolean;
 	autoplay?: boolean;
 	size?: 'small' | 'medium' | 'large';
-	sequentialLoad?: boolean;
 	zoom?: boolean;
 	thumbnail?: boolean;
+	loadSequence?: Array<'blur' | 'small' | 'medium' | 'large'>;
 }>();
 
 const sizeWidths = {
+	blur: 5	,
 	small: 200,
 	medium: 800,
 	large: 1200,
+	xlarge: 2400,
 };
 const sizeWidth = computed(() => {
 	return sizeWidths[props.size || 'small'] || 200;
@@ -36,10 +38,10 @@ function maxWidth(width: number) {
 }
 
 const lowResUrl = computed(() => {
-	return useApiStore().apiUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(props.sequentialLoad ? 200 : sizeWidth.value);
+	return useApiStore().apiUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(sizeWidths[props.loadSequence?.[0] || ''] || sizeWidth.value);
 });
 const hiResUrl = computed(() => {
-	const HI_RES_WIDTH = 2400;
+	const HI_RES_WIDTH = sizeWidths[props.loadSequence?.[1] || 'xlarge'];
 	return useApiStore().apiUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(HI_RES_WIDTH);
 });
 
@@ -49,7 +51,7 @@ let pinchZoom: any = null;
 const isZooming = ref(false);
 
 onMounted(() => {
-	if (props.sequentialLoad && props.file.fileType === 'photo') {
+	if (props.loadSequence) {
 		const img = new Image();
 		img.src = hiResUrl.value;
 		img.onload = () => {
@@ -64,6 +66,7 @@ onMounted(() => {
 		pinchZoom = new PinchZoom(mediaFrame.value, {
 			draggableUnzoomed: false,
 			minZoom: 1,
+			maxZoom: 5,
 			onZoomUpdate: (event: any) => {
 				isZooming.value = event.zoomFactor > 1;
 			},
@@ -101,7 +104,8 @@ const showThumbnail = computed(() => {
 				:src="hiResReady ? hiResUrl : lowResUrl" 
 				:alt="file.fileName" 
 				style="width: 100%; height: 100%;"
-				:style="{ objectFit }" 
+				:style="{ objectFit }"
+				:class="{ 'blurred': !hiResReady && loadSequence }"
 			/>
 			<VideoPlayer
 				v-else-if="file.fileType === 'video'"
@@ -116,4 +120,8 @@ const showThumbnail = computed(() => {
 </template>
 
 <style scoped lang="scss">
+.blurred {
+	filter: blur(20px);
+	transition: filter 0.5s ease;
+}
 </style>

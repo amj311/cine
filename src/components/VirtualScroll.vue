@@ -41,7 +41,7 @@ const allRows = computed<Array<VirtualScrollRowWithPosition>>(() => {
 });
 
 const updateDelay = 500;
-const maxScrollThreshold = 50; // px
+const maxScrollThreshold = 200; // px
 // let lastBounceTime = 0;
 let lastScrollTop = 0;
 
