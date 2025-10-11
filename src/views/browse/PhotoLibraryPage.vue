@@ -189,7 +189,7 @@ const showMenu = ref(false);
 												:id="file.relativePath"
 												@click="openSlideshow(file)"
 											>
-												<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" :loadSequence="['blur', 'small']" />
+												<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" />
 												<div class="overlay">
 													<i v-if="file.fileType === 'video'" class="play-icon pi pi-play" />
 												</div>

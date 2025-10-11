@@ -84,7 +84,7 @@ function collectCategorySamples() {
 };
 
 
-const cinemaType = ref<'all' | 'movie' | 'series'>('series');
+const cinemaType = ref<'all' | 'movie' | 'series'>('all');
 const filteredItems = computed(() => {
 	if (cinemaType.value === 'all') {
 		return cinemaItems.value;
