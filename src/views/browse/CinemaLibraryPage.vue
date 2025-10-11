@@ -5,6 +5,7 @@ import MetadataLoader from '@/components/MetadataLoader.vue';
 import { useApiStore } from '@/stores/api.store';
 import SelectButton from 'primevue/selectbutton';
 import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -83,10 +84,17 @@ function collectCategorySamples() {
 };
 
 
+const cinemaType = ref<'all' | 'movie' | 'series'>('series');
+const filteredItems = computed(() => {
+	if (cinemaType.value === 'all') {
+		return cinemaItems.value;
+	}
+	return cinemaItems.value.filter(item => item.cinemaType === cinemaType.value);
+});
 
 const letterGroups = computed(() => {
 	const groups: Record<string, Array<any>> = {};
-	cinemaItems.value.forEach((item) => {
+	filteredItems.value.forEach((item) => {
 		const firstLetter = item.sortKey.charAt(0).toUpperCase();
 		if (!groups[firstLetter]) {
 			groups[firstLetter] = [];
@@ -99,8 +107,9 @@ const letterGroups = computed(() => {
 	})) as Array<{ letter: string; items: Array<any> }>;
 });
 
+
 const searchTerm = ref<string>('');
-const filteredItems = computed(() => {
+const seachedItems = computed(() => {
 	return cinemaItems.value.filter(item => !searchTerm.value || item.name.toLowerCase().replaceAll(/[^\d\w\s]/g, '').includes(searchTerm.value.toLowerCase().replaceAll(/[^\d\w\s]/g, '')));
 });
 
@@ -113,8 +122,16 @@ const filteredItems = computed(() => {
 			<div class="filters mb-4 flex justify-content-center">
 					<SelectButton v-model="filterMode" :options="['Categories', 'A - Z', 'search']" size="large">
 						<template #option="{ option }">
-							<div v-if="option === 'search'" class="flex align-items-center gap-2">
-								<i class="pi pi-search absolute 	" />
+							<div v-if="option === 'A - Z'" class="flex align-items-center gap-2 white-space-nowrap">
+								<div>A - Z</div>
+								<select v-if="filterMode === 'A - Z'" v-model="cinemaType" size="small" class="border-none bg-transparent w-full" style="color: inherit;" @click.stop>
+									<option value="all">All</option>
+									<option value="movie">Movies</option>
+									<option value="series">Series</option>
+								</select>
+							</div>
+							<div v-else-if="option === 'search'" class="flex align-items-center gap-2">
+								<i class="pi pi-search absolute" />
 								<div class="absolute pl-4 pointer-events-none" v-if="filterMode !== 'search'">Search</div>
 								<div class="search-container" :class="{ on: filterMode === 'search' }">
 									<InputText v-model="searchTerm" placeholder="Search" name="search" size="small" class="border-none p-0 pl-4 bg-transparent w-full" style="color: inherit;" />
@@ -215,13 +232,13 @@ const filteredItems = computed(() => {
 
 
 			<div v-if="filterMode === 'search'">
-				<h3 v-if="searchTerm">Showing {{ filteredItems.length }} results for '{{ searchTerm }}':</h3>
+				<h3 v-if="searchTerm">Showing {{ seachedItems.length }} results for '{{ searchTerm }}':</h3>
 				<h3 v-else>All {{ cinemaItems.length }} titles:</h3>
 				<div class="mt-3">
 					<div class="flex flex-wrap gap-3">
 						<div
 							class="card-wrapper"
-							v-for="item in filteredItems"
+							v-for="item in seachedItems"
 							:key="item.relativePath"
 						>
 							<MetadataLoader
