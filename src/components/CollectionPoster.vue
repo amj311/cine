@@ -59,18 +59,28 @@ onBeforeMount(() => {
 </script>
 
 <template>
-	<img
-		v-for="url, i in posters"
-		:src="url"
-		:style="{
-			position: 'absolute',
-			borderRadius: '5px',
-			zIndex: i,
-			boxShadow: '0 0 5px rgba(0, 0, 0, 0.5)',
-			...previewSlots[i],
-		}"
-	/>
+	<div class="collection-poster">
+		<img
+			v-for="url, i in posters"
+			:src="url"
+			:style="{
+				position: 'absolute',
+				borderRadius: '5px',
+				zIndex: i,
+				boxShadow: '0 0 5px rgba(0, 0, 0, 0.5)',
+				...previewSlots[i],
+			}"
+		/>
+	</div>
 </template>
 
 <style scoped>
+.collection-poster {
+	position: absolute;
+	--inset: 10%;
+	top: var(--inset);
+	left: var(--inset);
+	width: var(--inset);
+	height: var(--inset);
+}
 </style>
