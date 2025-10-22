@@ -80,7 +80,7 @@ onBeforeMount(() => {
 	--inset: 10%;
 	top: var(--inset);
 	left: var(--inset);
-	width: var(--inset);
-	height: var(--inset);
+	bottom: var(--inset);
+	right: var(--inset);
 }
 </style>
