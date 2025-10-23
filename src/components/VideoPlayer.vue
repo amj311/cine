@@ -3,6 +3,7 @@ import { useApiStore } from '@/stores/api.store';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
 import { defineProps, ref, computed, onMounted, watch } from 'vue';
+import MediaTimer from './MediaTimer.vue';
 
 const toast = useToast();
 
@@ -69,38 +70,34 @@ defineExpose({
 		videoRef.value!.currentTime = time;
 	},
 
-	play() {
-		videoRef.value?.play();
+	async play() {
+		await videoRef.value?.play();
 	},
 })
 
 onMounted(() => {
-	videoRef.value?.addEventListener('play', () => {
-		if (props.onPlay) {
-			props.onPlay();
+	videoRef.value?.addEventListener('loadeddata', () => {
+		if (props.onLoadedData) {
+			props.onLoadedData(videoRef.value);
 		}
 	});
-	videoRef.value?.addEventListener('pause', () => {
+	videoRef.value?.addEventListener('pause', async () => {
+		await secondaryAudioPlayer.value?.pause();
 		if (props.onPause) {
 			props.onPause();
+		}
+	});
+	videoRef.value?.addEventListener('play', async () => {
+		await secondaryAudioPlayer.value?.play();
+		secondaryAudioPlayer.value!.currentTime = videoRef.value!.currentTime;
+		if (props.onPlay) {
+			props.onPlay();
 		}
 	});
 	videoRef.value?.addEventListener('ended', () => {
 		if (props.onEnd) {
 			props.onEnd();
 		}
-	});
-	videoRef.value?.addEventListener('loadeddata', () => {
-		if (props.onLoadedData) {
-			props.onLoadedData(videoRef.value);
-		}
-	});
-	videoRef.value?.addEventListener('pause', () => {
-		secondaryAudioPlayer.value?.pause();
-	});
-	videoRef.value?.addEventListener('play', () => {
-		secondaryAudioPlayer.value?.play();
-		secondaryAudioPlayer.value!.currentTime = videoRef.value!.currentTime;
 	});
 	videoRef.value?.addEventListener('seeked', () => {
 		if (secondaryAudioPlayer.value) {
@@ -153,12 +150,12 @@ watch(secondaryAudio, (audio) => {
 	}
 }, { immediate: true });
 
-function turnOffSecondaryAudio() {
+async function turnOffSecondaryAudio() {
 	if (!videoRef.value) {
 		return;
 	}
 	videoRef.value.muted = false;
-	secondaryAudioPlayer.value?.pause();
+	await secondaryAudioPlayer.value?.pause();
 	secondaryAudioPlayer.value!.src = '';
 }
 async function turnOnSecondaryAudio(audio) {
@@ -180,7 +177,7 @@ async function turnOnSecondaryAudio(audio) {
 				index: audio.index,
 			});
 			audioPlayer.src = useApiStore().apiUrl + '/assets/conversion.mp3';
-			audioPlayer.play();
+			await audioPlayer.play();
 			audioPlayer.currentTime = videoRef.value.currentTime;
 			videoRef.value.muted = true;
 			loadingAudio.value = false;
@@ -218,28 +215,45 @@ const audioMenuItems = computed(() => {
 		},
 	}));
 });
+
+const showTimer = ref(false);
+function toggleTimer() {
+	showTimer.value = !showTimer.value;
+}
+
 </script>
 
 <template>
 	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls': showControls }">
-		<video ref="videoRef" class="video-player" :controls="!hideControls" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous">
+		<video ref="videoRef" class="video-player" :controls="!hideControls" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous" allow>
 			<source :src="videoUrl" :type="'video/mp4'" />
 			<track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" />
 		</video>
 		<audio ref="secondaryAudioPlayer" type="audio/mp3" />
 		<div class="overlay top-fade"></div>
-		<div class="top-left overlay w-full">
-			<Button v-if="close" variant="text" severity="contrast" icon="pi pi-arrow-left" @click="close" />
-			<div class="text-ellipsis">{{ title }}</div>
-			<div class="flex-grow-1"></div>
-			<div class="audio-select" v-if="props.audio && props.audio.length > 1">
-				<DropdownMenu :model="audioMenuItems"><Button variant="text" severity="contrast" :icon="'pi pi-headphones'" /></DropdownMenu>
+		<div class="top-controls w-full flex flex-column justify-content-end">
+			<div class="overlay flex align-items-center gap-2">
+				<Button v-if="close" variant="text" severity="contrast" icon="pi pi-arrow-left" @click="close" />
+				<div class="text-ellipsis">{{ title }}</div>
+				<div class="flex-grow-1"></div>
+				<div class="flex align-items-center">
+					<div class="timer-trigger" @click="toggleTimer">
+						<Button :text="showTimer ? false : true" :severity="showTimer ? 'secondary' : 'contrast'" :icon="'pi pi-stopwatch'" />
+					</div>
+					<div class="audio-select" v-if="props.audio && props.audio.length > 1">
+						<DropdownMenu :model="audioMenuItems"><Button variant="text" severity="contrast" :icon="'pi pi-headphones'" /></DropdownMenu>
+					</div>
+				</div>
+			</div>
+			<div v-if="showTimer" class="flex align-items-start">
+				<div class="flex-grow-1"></div>
+				<div><MediaTimer :mediaEl="videoRef" :inPlayer="true" /></div>
 			</div>
 		</div>
 	</div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .wrapper {
 	position: relative;
 	width: 100%;
@@ -273,14 +287,16 @@ const audioMenuItems = computed(() => {
 		left: 0;
 	}
 
-	.top-left {
+	.top-controls {
 		position: absolute;
 		top: 0px;
 		left: 00px;
 		z-index: 1000;
-		display: flex;
-		gap: .5em;
-		align-items: center;
+		pointer-events: none;
+
+		> div {
+			pointer-events: all;
+		}
 	}
 }
 </style>

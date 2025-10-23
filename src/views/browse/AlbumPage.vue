@@ -41,14 +41,14 @@ onMounted(() => {
 
 const totalTime = computed(() => props.libraryItem?.tracks.reduce((acc: number, track: any) => acc + track.duration, 0) || 0);
 
-function playTrack(track: any, time: number = 0) {
+async function playTrack(track: any, time: number = 0) {
 	if (currentTrack.value === track && !time) {
 		return;
 	}
 	currentTrack.value = track;
 	if (audio.value) {
 		audio.value.src = useApiStore().apiUrl + '/stream?src=' + track.relativePath;
-		audio.value.play();
+		await audio.value.play();
 		audio.value.currentTime = time;
 
 		// set device media image
@@ -66,11 +66,11 @@ function playTrack(track: any, time: number = 0) {
 
 			navigator.mediaSession.setActionHandler('previoustrack', backTrack);
 			navigator.mediaSession.setActionHandler('nexttrack', playNextTrack);
-			navigator.mediaSession.setActionHandler('play', () => {
-				audio.value?.play();
+			navigator.mediaSession.setActionHandler('play', async () => {
+				await audio.value?.play();
 			});
-			navigator.mediaSession.setActionHandler('pause', () => {
-				audio.value?.pause();
+			navigator.mediaSession.setActionHandler('pause', async () => {
+				await audio.value?.pause();
 			});
 			// seek
 			navigator.mediaSession.setActionHandler('seekbackward', (details) => {

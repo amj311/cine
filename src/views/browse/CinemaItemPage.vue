@@ -201,24 +201,24 @@ function fadeIn(event: Event) {
 	}, stepDuration);
 }
 
-function stopYtAudio() {
+async function stopYtAudio() {
 	if (ytAudio.value) {
-		ytAudio.value.pause();
+		await ytAudio.value.pause();
 		ytAudio.value.currentTime = 0;
 		ytIsplaying.value = false;
 	}
 }
-function playYtAudio() {
+async function playYtAudio() {
 	if (ytAudio.value && ytCanPlay.value) {
-		ytAudio.value.play().catch(err => {
+		await ytAudio.value.play().catch(err => {
 			console.warn("Error playing yt audio:", err);
 		});
 	}
 }
-onUnmounted(() => {
+onUnmounted(async () => {
 	if (ytAudio.value) {
 		ytAudio.value.volume = 0;
-		ytAudio.value.pause();
+		await ytAudio.value.pause();
 	}
 });
 

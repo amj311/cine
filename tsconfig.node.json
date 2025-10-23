@@ -16,6 +16,7 @@
 		"moduleResolution": "Bundler",
 		"types": ["node"],
 
-		"allowUnreachableCode": true
+		"allowUnreachableCode": true,
+		"noImplicitAny": false
 	}
 }

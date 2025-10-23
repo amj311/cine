@@ -78,6 +78,9 @@ async function loadMediaData(pathToLoad: string) {
 		if (parentLibrary.value.metadata?.background) {
 			useBackgroundStore().setBackgroundUrl(parentLibrary.value.metadata.background);
 		}
+
+		// consider this a new movie and reset the timer
+		await api.put('/timer/reset');
 	} catch (error) {
 		console.error('Error loading media data', error);
 	} finally {

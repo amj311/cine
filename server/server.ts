@@ -773,6 +773,9 @@ app.get('/api/subtitles', async (req, res) => {
 	}
 });
 
+import timerRoute from './routes/timer.route'
+app.use('/api/timer', timerRoute);
+
 
 
 

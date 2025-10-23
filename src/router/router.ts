@@ -18,6 +18,11 @@ const router = createRouter({
 			path: '/play',
 			name: 'play',
 			component: () => import('@/views/MovieTheater.vue'),
+		},
+		{
+			path: '/remote',
+			name: 'remote',
+			component: () => import('@/views/RemoteControlView.vue'),
 		}
 	],
 	scrollBehavior: (to, from) => {

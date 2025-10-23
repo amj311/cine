@@ -52,7 +52,7 @@ onBeforeUnmount(() => {
 const isM4b = computed(() => props.libraryItem?.chapterStrategy === 'chapters');
 const totalTime = computed(() => isM4b.value ? props.libraryItem?.chapters[0]?.trackDuration : props.libraryItem?.chapters.reduce((acc: number, chapter: any) => acc + chapter.duration, 0));
 
-function playChapter(chapter: any, time: number = chapter.trackStartOffset || 0) {
+async function playChapter(chapter: any, time: number = chapter.trackStartOffset || 0) {
 	if (currentChapter.value === chapter && !time) {
 		return;
 	}
@@ -65,7 +65,7 @@ function playChapter(chapter: any, time: number = chapter.trackStartOffset || 0)
 	currentChapter.value = chapter;
 	if (audio.value) {
 		audio.value.src = useApiStore().apiUrl + ('/stream?src=') + currentTrack.value!.relativePath;
-		audio.value.play();
+		await audio.value.play();
 		audio.value.currentTime = time;
 		startProgressUpdate();
 
@@ -84,11 +84,11 @@ function playChapter(chapter: any, time: number = chapter.trackStartOffset || 0)
 
 			navigator.mediaSession.setActionHandler('previoustrack', backChapter);
 			navigator.mediaSession.setActionHandler('nexttrack', playNextChapter);
-			navigator.mediaSession.setActionHandler('play', () => {
-				audio.value?.play();
+			navigator.mediaSession.setActionHandler('play', async () => {
+				await audio.value?.play();
 			});
-			navigator.mediaSession.setActionHandler('pause', () => {
-				audio.value?.pause();
+			navigator.mediaSession.setActionHandler('pause', async () => {
+				await audio.value?.pause();
 			});
 			// seek
 			navigator.mediaSession.setActionHandler('seekbackward', (details) => {
