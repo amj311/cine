@@ -169,11 +169,13 @@ function openSlideshow(file: GalleryFile) {
 
 const showMenu = ref(false);
 function openSidebar() {
-	nextTick(() => {
-		showMenu.value = true;
-		const buttonEl = document.querySelector('button#sidebar_button__' + normLabel(topLabel.value?.data.date));
-		buttonEl?.scrollIntoView({ behavior: 'smooth' });
-	})
+	if (!showMenu.value) {
+		setTimeout(() => {
+				showMenu.value = true;
+				const buttonEl = document.querySelector('button#sidebar_button__' + normLabel(topLabel.value?.data.date));
+				buttonEl?.scrollIntoView({ behavior: 'smooth' });
+		}, 300)
+	}
 }
 
 function normLabel(date) {
@@ -223,7 +225,7 @@ function normLabel(date) {
 				<div class="menu h-full shadow-1 bg-soft border-round-xl" :class="{ open: showMenu }">
 					<Scroll ref="sidebarScrollRef">
 						<div class="flex flex-column align-items-end p-2">
-							<Button v-for="anchor in trackAnchors" :key="anchor.label" :id="'sidebar_button__' + normLabel(anchor.label)" :text="anchor.label === topLabel?.data?.date ? false : true" :severity="anchor.label === topLabel?.data?.date ? 'secondary' : 'contrast'" size="large" tabindex="0" @click="() => { scrollToAnchor(anchor); (showMenu = false) }">
+							<Button v-for="anchor in trackAnchors" :key="anchor.label" :id="'sidebar_button__' + normLabel(anchor.label)" :variant="anchor.label === topLabel?.data?.date ? 'outlined' : 'text'" severity="contrast" size="" tabindex="0" @click.stop="() => { scrollToAnchor(anchor); (showMenu = false) }">
 								<div class="white-space-nowrap">{{ anchor.label }}</div>
 							</Button>
 						</div>
