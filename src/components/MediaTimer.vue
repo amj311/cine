@@ -3,7 +3,7 @@
 	lang="ts"
 >
 import { useApiStore } from '@/stores/api.store';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 
 const defaultTotal = 30;
 
@@ -88,7 +88,7 @@ onMounted(async () => {
 		pause();
 	});
 
-	timerRef.value?.addEventListener('mouseenter', () => mouseIn.value = true);
+	timerRef.value?.addEventListener('mouseenter', () => nextTick(() => mouseIn.value = true));
 	timerRef.value?.addEventListener('mouseleave', () => mouseIn.value = false);
 
 	await fetchTimerState();

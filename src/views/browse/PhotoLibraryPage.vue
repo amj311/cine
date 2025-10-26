@@ -4,6 +4,7 @@ import { useApiStore } from '@/stores/api.store';
 import GalleryFileFrame, { type GalleryFile } from '@/components/GalleryFileFrame.vue';
 import Slideshow from '@/components/Slideshow.vue';
 import VirtualScroll, { type VirtualScrollRow, type VirtualScrollRowWithPosition } from '@/components/VirtualScroll.vue';
+import Scroll from '@/components/Scroll.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -158,6 +159,8 @@ watch(() => topLabel.value?.data?.date, (newValue) => {
 	}
 });
 
+const sidebarScrollRef = ref<InstanceType<typeof Scroll>>();
+
 const slideshow = ref<InstanceType<typeof Slideshow>>();
 function openSlideshow(file: GalleryFile) {
 	const filesInOrder = timelineDays.value.flatMap((day) => day.items);
@@ -165,46 +168,48 @@ function openSlideshow(file: GalleryFile) {
 }
 
 const showMenu = ref(false);
+function openSidebar() {
+	nextTick(() => {
+		showMenu.value = true;
+		const buttonEl = document.querySelector('button#sidebar_button__' + normLabel(topLabel.value?.data.date));
+		buttonEl?.scrollIntoView({ behavior: 'smooth' });
+	})
+}
+
+function normLabel(date) {
+	return date.replaceAll(/[\W]/g, '');
+}
 
 </script>
 
 <template>
 	<div class="photos-page">
 		<div class="gallery-side">
-			<!-- <Scroll ref="scrollerRef">
-				<Lazy>
-					<template #default="{ inRange }"> -->
-						<!-- <div class="gallery flex flex-column gap-6 mt-3" ref="trackWrapper"> -->
-							<VirtualScroll v-if="timelineRows && timelineRows.length > 0" ref="virtualScroller" :rows="timelineRows" :onScroll="findTopLabel">
-								<template #row="{ data }" :key="day.date" class="date-row" :data-track-anchor="day.date">
-									<div class="pl-2 pb-2 pr-2 h-full">
-										<h2 v-if="data.isHeader" class="mt-7">{{ data.date }}</h2>
-										<div v-else class="photo-grid flex flex-row gap-2 h-full">
-											<div
-												class="photo-cell lazy-load"
-												:style="{ height: '100%', width: `${100 / itemsPerRow}%` }"
-												tabindex="0"
-												v-for="file in data.items"
-												:key="file.relativePath"
-												:id="file.relativePath"
-												@click="openSlideshow(file)"
-											>
-												<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" />
-												<div class="overlay">
-													<i v-if="file.fileType === 'video'" class="play-icon pi pi-play" />
-												</div>
-											</div>
-										</div>
-									</div>
-								</template>
-							</VirtualScroll>
-						<!-- </div> -->
-					<!-- </template> -->
-				<!-- </Lazy>
-				<br />
-			</Scroll> -->
+			<VirtualScroll v-if="timelineRows && timelineRows.length > 0" ref="virtualScroller" :rows="timelineRows" :onScroll="findTopLabel">
+				<template #row="{ data }" :key="day.date" class="date-row" :data-track-anchor="day.date">
+					<div class="pl-2 pb-2 pr-2 h-full">
+						<h2 v-if="data.isHeader" class="mt-7">{{ data.date }}</h2>
+						<div v-else class="photo-grid flex flex-row gap-2 h-full">
+							<div
+								class="photo-cell lazy-load"
+								:style="{ height: '100%', width: `${100 / itemsPerRow}%` }"
+								tabindex="0"
+								v-for="file in data.items"
+								:key="file.relativePath"
+								:id="file.relativePath"
+								@click="openSlideshow(file)"
+							>
+								<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" />
+								<div class="overlay">
+									<i v-if="file.fileType === 'video'" class="play-icon pi pi-play" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</template>
+			</VirtualScroll>
 		</div>
-		<div class="track" @click="showMenu = true" @mousemove="showMenu = true" @mouseleave="showMenu = false">
+		<div class="track" @click="openSidebar" @touchstart="openSidebar" @mouseenter="openSidebar" @mouseleave="showMenu = false">
 			<div class="track-anchor-item"
 				v-for="(anchor, i) in trackAnchors"
 				:style="{ top: anchor.percent + '%', height: ((trackAnchors[i+1]?.percent || 100) - anchor.percent) + '%' }"
@@ -216,9 +221,9 @@ const showMenu = ref(false);
 			</div>
 			<div class="menu-wrapper absolute h-full right-0 overflow-hidden pointer-events-none">
 				<div class="menu h-full shadow-1 bg-soft border-round-xl" :class="{ open: showMenu }">
-					<Scroll>
+					<Scroll ref="sidebarScrollRef">
 						<div class="flex flex-column align-items-end p-2">
-							<Button v-for="anchor in trackAnchors" :key="anchor.label" text severity="contrast" size="small" tabindex="0" @click="() => { scrollToAnchor(anchor); (showMenu = false) }">
+							<Button v-for="anchor in trackAnchors" :key="anchor.label" :id="'sidebar_button__' + normLabel(anchor.label)" :text="anchor.label === topLabel?.data?.date ? false : true" :severity="anchor.label === topLabel?.data?.date ? 'secondary' : 'contrast'" size="large" tabindex="0" @click="() => { scrollToAnchor(anchor); (showMenu = false) }">
 								<div class="white-space-nowrap">{{ anchor.label }}</div>
 							</Button>
 						</div>
