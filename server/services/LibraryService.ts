@@ -628,7 +628,7 @@ export class LibraryService {
 				playable = (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => path.relativePath === episodeFile.relativePath) || null;
 			}
 		}
-		else {
+		if (!playable) {
 			playable = await LibraryService.parseFolderToItem(path) as Playable;
 		}
 

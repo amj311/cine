@@ -15,6 +15,8 @@ import MediaCard from '@/components/MediaCard.vue';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
 import { useApiStore } from '@/stores/api.store';
+import DropdownMenu from '@/components/utils/DropdownMenu.vue';
+import InputNumber from 'primevue/inputnumber';
 
 const router = useRouter();
 const api = useApiStore().api;
@@ -279,6 +281,9 @@ async function releaseWakeLock() {
 }
 
 function onEnd() {
+	if (willAutoplay.value) {
+		return doAutoplay();
+	}
 	hasEnded.value = true;
 	releaseWakeLock();
 	if (playable.value?.type !== 'episodeFile' || !nextEpisodeFile.value) {
@@ -374,6 +379,22 @@ const loadingBackground = computed(() => {
 	return currentEpisodeMetadata.value?.still_full || parentLibrary.value?.metadata?.background;
 });
 
+
+
+/****************
+ * AUTOPLAY
+ */
+const autoplayTimes = ref(2);
+const willAutoplay = computed(() => autoplayTimes.value > 0 && nextEpisodeFile.value);
+
+function doAutoplay() {
+	if (!willAutoplay.value) {
+		return;
+	}
+	playMedia(nextEpisodeFile.value!.relativePath, true);
+	autoplayTimes.value -= 1;
+}
+
 </script>
 
 <template>
@@ -394,7 +415,22 @@ const loadingBackground = computed(() => {
 			:onEnd="onEnd"
 			:subtitles="probe?.subtitles"
 			:audio="probe?.audio"
-		/>
+		>
+			<template #buttons>
+				<DropdownMenu>
+					<div class="autoplay" @click="">
+						<Button :text="willAutoplay ? false : true" :severity="willAutoplay ? 'secondary' : 'contrast'">
+							<span class="material-symbols-outlined">autoplay</span>
+							{{ autoplayTimes || '' }}
+						</Button>
+					</div>
+					<template #start>
+						&nbsp;Autoplay:&nbsp;
+						<InputNumber v-model="autoplayTimes" showButtons buttonLayout="horizontal" fluid :min="0" class="max-w-8rem text-right" />
+					</template>
+				</DropdownMenu>
+			</template>
+		</VideoPlayer>
 		<div class="loading" v-if="!hasLoaded">
 			<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
 		</div>
@@ -410,7 +446,10 @@ const loadingBackground = computed(() => {
 				</div>
 			</div>
 			<div>
-				<div>Play Next</div>
+				<div class="flex align-items-ceter gap-1">
+					<span v-if="willAutoplay" class="material-symbols-outlined">autoplay</span>
+					{{ willAutoplay ? 'Playing' : 'Play' }} Next
+				</div>
 				<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
 			</div>
 		</div>

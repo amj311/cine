@@ -158,66 +158,68 @@ function leaveRestPasswordMode() {
 				</InputGroup>
 
 
-				<template v-if="state.mode === 'signup'">
-					<Button
-						size="large"
-						severity="primary"
-						@click="createEmailUser"
-						:loading="state.isLoading"
-						class="w-full my-3 justify-content-around"
-					>
-						Create Account
-					</button>
-					<small>
-						Already have an account?
-						<span
-							class="text-link"
-							@click="state.mode = 'login'"
+				<div class="flex flex-column align-items-center gap-2">
+					<template v-if="state.mode === 'signup'">
+						<Button
+							size="large"
+							severity="primary"
+							@click="createEmailUser"
+							:loading="state.isLoading"
+							class="w-full my-3 justify-content-around"
+						>
+							Create Account
+						</button>
+						<small>
+							Already have an account?
+							<span
+								class="text-link"
+								@click="state.mode = 'login'"
+							>
+								Sign in
+							</span>
+						</small>
+					</template>
+					<template v-else-if="state.mode === 'login'">
+						<Button
+							size="large"
+							severity="primary"
+							@click="loginWithEmail"
+							:loading="state.isLoading"
+							class="w-full my-3 justify-content-around"
 						>
 							Sign in
-						</span>
-					</small>
-				</template>
-				<template v-else-if="state.mode === 'login'">
-					<Button
-						size="large"
-						severity="primary"
-						@click="loginWithEmail"
-						:loading="state.isLoading"
-						class="w-full my-3 justify-content-around"
-					>
-						Sign in
-					</button>
-					<small>
-						New here?
-						<span
-							class="text-link"
-							@click="state.mode = 'signup'"
-						>
-							Create account
-						</span>
-					</small>
-					<small>
-						<span
-							class="text-link"
-							@click="state.mode = 'reset_password'"
-						>
-							Forgot password?
-						</span>
-					</small>
-				</template>
-				<template v-else-if="state.mode === 'reset_password'">
-					<Button
-						size="large"
-						v-if="!state.hasSentEmail"
-						@click="sendPasswordResetEmail"
-						class="w-full my-3 justify-content-around"
-					>Send Email</button>
-					<small>Back to <span
-							class="text-link"
-							@click="leaveRestPasswordMode"
-						>Sign in</span></small>
-				</template>
+						</button>
+						<small>
+							New here?
+							<span
+								class="text-link"
+								@click="state.mode = 'signup'"
+							>
+								Create account
+							</span>
+						</small>
+						<small>
+							<span
+								class="text-link"
+								@click="state.mode = 'reset_password'"
+							>
+								Forgot password?
+							</span>
+						</small>
+					</template>
+					<template v-else-if="state.mode === 'reset_password'">
+						<Button
+							size="large"
+							v-if="!state.hasSentEmail"
+							@click="sendPasswordResetEmail"
+							class="w-full my-3 justify-content-around"
+						>Send Email</button>
+						<small>Back to <span
+								class="text-link"
+								@click="leaveRestPasswordMode"
+							>Sign in</span></small>
+					</template>
+				</div>
 			</form>
 		</div>
 		<!-- GOOGLE SIGN-IN NOT WORKING!!!!
