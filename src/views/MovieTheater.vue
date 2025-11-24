@@ -384,8 +384,9 @@ const loadingBackground = computed(() => {
 /****************
  * AUTOPLAY
  */
-const autoplayTimes = ref(2);
-const willAutoplay = computed(() => autoplayTimes.value > 0 && nextEpisodeFile.value);
+const autoplayTimes = ref(0);
+const canAutoplay = computed(() => Boolean(nextEpisodeFile.value));
+const willAutoplay = computed(() => autoplayTimes.value > 0 && canAutoplay.value);
 
 function doAutoplay() {
 	if (!willAutoplay.value) {
@@ -417,7 +418,7 @@ function doAutoplay() {
 			:audio="probe?.audio"
 		>
 			<template #buttons>
-				<DropdownMenu>
+				<DropdownMenu v-if="canPlay">
 					<div class="autoplay" @click="">
 						<Button :text="willAutoplay ? false : true" :severity="willAutoplay ? 'secondary' : 'contrast'">
 							<span class="material-symbols-outlined">autoplay</span>
