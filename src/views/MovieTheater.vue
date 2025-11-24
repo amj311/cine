@@ -386,7 +386,7 @@ const loadingBackground = computed(() => {
  */
 const autoplayTimes = ref(0);
 const canAutoplay = computed(() => Boolean(nextEpisodeFile.value));
-const willAutoplay = computed(() => autoplayTimes.value > 0 && canAutoplay.value);
+const willAutoplay = computed(() => autoplayTimes.value > 0 && canAutoplay.value && !hasEnded.value);
 
 function playNext() {
 	autoplayTimes.value = Math.max(0, autoplayTimes.value - 1);
@@ -445,8 +445,11 @@ function playNext() {
 			</div>
 			<div>
 				<div class="flex align-items-ceter gap-1">
-					<span v-if="willAutoplay" class="material-symbols-outlined">autoplay</span>
-					{{ willAutoplay ? 'Playing' : 'Play' }} Next
+					<span v-if="willAutoplay">
+						<span class="material-symbols-outlined">autoplay</span>
+						Autoplay ({{ autoplayTimes }})
+					</span>
+					<span v-else>Play Next</span>
 				</div>
 				<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
 			</div>
