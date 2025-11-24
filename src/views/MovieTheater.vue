@@ -282,7 +282,7 @@ async function releaseWakeLock() {
 
 function onEnd() {
 	if (willAutoplay.value) {
-		return doAutoplay();
+		return playNext();
 	}
 	hasEnded.value = true;
 	releaseWakeLock();
@@ -388,12 +388,9 @@ const autoplayTimes = ref(0);
 const canAutoplay = computed(() => Boolean(nextEpisodeFile.value));
 const willAutoplay = computed(() => autoplayTimes.value > 0 && canAutoplay.value);
 
-function doAutoplay() {
-	if (!willAutoplay.value) {
-		return;
-	}
+function playNext() {
+	autoplayTimes.value = Math.max(0, autoplayTimes.value - 1);
 	playMedia(nextEpisodeFile.value!.relativePath, true);
-	autoplayTimes.value -= 1;
 }
 
 </script>
@@ -418,7 +415,7 @@ function doAutoplay() {
 			:audio="probe?.audio"
 		>
 			<template #buttons>
-				<DropdownMenu v-if="canPlay">
+				<DropdownMenu v-if="canAutoplay">
 					<div class="autoplay" @click="">
 						<Button :text="willAutoplay ? false : true" :severity="willAutoplay ? 'secondary' : 'contrast'">
 							<span class="material-symbols-outlined">autoplay</span>
@@ -435,7 +432,7 @@ function doAutoplay() {
 		<div class="loading" v-if="!hasLoaded">
 			<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
 		</div>
-		<div v-if="showNextEpisodeCard" class="next-episode-card" :class="{ full: hasEnded }" @click="() => playMedia(nextEpisodeFile?.relativePath, true)">
+		<div v-if="showNextEpisodeCard" class="next-episode-card" :class="{ full: hasEnded }" @click="playNext">
 			<div class="play-icon">
 				<div class="w-full">
 					<MediaCard
