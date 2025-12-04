@@ -17,7 +17,7 @@ const router = createRouter({
 		{
 			path: '/play',
 			name: 'play',
-			component: () => import('@/views/MovieTheater.vue'),
+			component: () => import('@/views/MovieTheater/MovieTheater.vue'),
 		},
 		{
 			path: '/remote',

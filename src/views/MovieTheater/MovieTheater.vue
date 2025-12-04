@@ -17,6 +17,8 @@ import { useToast } from 'primevue/usetoast';
 import { useApiStore } from '@/stores/api.store';
 import DropdownMenu from '@/components/utils/DropdownMenu.vue';
 import InputNumber from 'primevue/inputnumber';
+import { useScrubberStore } from './scrubber.store';
+import ScrubSettings from './ScrubSettings.vue';
 
 const router = useRouter();
 const api = useApiStore().api;
@@ -26,7 +28,6 @@ queryPathStore.updatePathFromQuery();
 
 const mediaPath = ref(queryPathStore.currentPath || '')
 const playerRef = ref<InstanceType<typeof VideoPlayer>>();
-const theaterRef = ref<InstanceType<typeof HTMLElement>>();
 const didAutoFullscreen = ref(false);
 const hasLoaded = ref(false);
 const hasEnded = ref(false);
@@ -214,9 +215,14 @@ async function playMedia(pathToLoad: string, restart = false) {
 	playerProgress.value = playerRef.value?.getProgress();
 	hasEnded.value = false;
 	hasLoaded.value = false;
+
 	await loadMediaData(pathToLoad);
 	if (!restart) {
 		await initialProgress();
+	}
+
+	if (playerRef.value?.videoRef) {
+		await useScrubberStore().initForMedia(pathToLoad, playerRef.value.videoRef);
 	}
 }
 
@@ -238,6 +244,14 @@ onMounted(async () => {
 	// 		await (screen.orientation as any).lock('landscape');
 	// 	} catch (e) {}
 	// }
+
+	// to update scrubs when using arrow keys or taps to seek
+	const seekEvents = ['keydown', 'touchend'];
+	for (const event of seekEvents) {
+		playerRef.value?.$el.addEventListener(event, () => {
+			useScrubberStore().scheduleScrub();
+		})
+	}
 })
 
 onBeforeUnmount(async () => {
@@ -340,7 +354,7 @@ const title = computed(() => {
 		return playable.value.name + " - " + parentLibrary.value.folderName;
 	}
 	if (playable.value?.type === 'movie') {
-		return playable.value.name;
+		return `${playable.value.name} (${playable.value.year})`;
 	}
 	if (playable.value?.type === 'episodeFile') {
 		const metadataName = currentEpisodeMetadata.value?.name;
@@ -393,65 +407,105 @@ function playNext() {
 	playMedia(nextEpisodeFile.value!.relativePath, true);
 }
 
+
+/*************
+ * SCRUBBING
+ */
+
+const showScrubPanel = ref(false);
+
+function toggleScrubMenu() {
+	showScrubPanel.value = !showScrubPanel.value;
+}
+
 </script>
 
 <template>
-	<div ref="theaterRef" class="movie-theater" :style="{ backgroundImage: loadingBackground ? `url(${loadingBackground})` : undefined }">
-		<VideoPlayer
-			v-if="mediaPath"
-			v-show="showPlayer"
-			:title="title"
-			:close="carefulBackNav"
-			:autoplay="true"
-			:controls="true"
-			:key="mediaPath"
-			ref="playerRef"
-			:relativePath="mediaPath"
-			:onLoadedData="() => hasLoaded = true"
-			:onPlay="requestWakeLock"
-			:onPause="releaseWakeLock"
-			:onEnd="onEnd"
-			:subtitles="probe?.subtitles"
-			:audio="probe?.audio"
-		>
-			<template #buttons>
-				<DropdownMenu v-if="canAutoplay">
-					<div class="autoplay" @click="">
-						<Button :text="willAutoplay ? false : true" :severity="willAutoplay ? 'secondary' : 'contrast'">
-							<span class="material-symbols-outlined">autoplay</span>
-							{{ autoplayTimes || '' }}
-						</Button>
-					</div>
-					<template #start>
-						&nbsp;Autoplay:&nbsp;
-						<InputNumber v-model="autoplayTimes" showButtons buttonLayout="horizontal" fluid :min="0" class="max-w-8rem text-right" />
-					</template>
-				</DropdownMenu>
-			</template>
-		</VideoPlayer>
-		<div class="loading" v-if="!hasLoaded">
-			<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
-		</div>
-		<div v-if="showNextEpisodeCard" class="next-episode-card" :class="{ full: hasEnded }" @click="playNext">
-			<div class="play-icon">
-				<div class="w-full">
-					<MediaCard
-						:imageUrl="nextEpisodeMetadata.still_full"
-						:aspectRatio="'wide'"
+	<div class="theater-wrapper">
+		<div class="movie-theater" :style="{ backgroundImage: loadingBackground ? `url(${loadingBackground})` : undefined }">
+			<VideoPlayer
+				v-if="mediaPath"
+				v-show="showPlayer"
+				:title="title"
+				:close="carefulBackNav"
+				:autoplay="true"
+				:controls="true"
+				:key="mediaPath"
+				ref="playerRef"
+				:relativePath="mediaPath"
+				:onLoadedData="() => hasLoaded = true"
+				:onPlay="requestWakeLock"
+				:onPause="releaseWakeLock"
+				:onEnd="onEnd"
+				:subtitles="probe?.subtitles"
+				:audio="probe?.audio"
+			>
+				<template #buttons>
+					<!-- SCRUB BUTTON -->
+					<Button
+						:text="useScrubberStore().isScrubbing ? false : true"
+						:severity="useScrubberStore().isScrubbing ? 'secondary' : 'contrast'"
+						@click="toggleScrubMenu"
 					>
-						<template #fallbackIcon><i class="pi pi-play" /></template>
-					</MediaCard>
+						<span class="material-symbols-outlined">mop</span>
+					</Button>
+
+					<!-- AUTOPLAY BUTTON -->
+					<DropdownMenu v-if="canAutoplay">
+						<div class="autoplay" @click="">
+							<Button :text="willAutoplay ? false : true" :severity="willAutoplay ? 'secondary' : 'contrast'">
+								<span class="material-symbols-outlined">autoplay</span>
+								{{ autoplayTimes || '' }}
+							</Button>
+						</div>
+						<template #start>
+							&nbsp;Autoplay:&nbsp;
+							<InputNumber v-model="autoplayTimes" showButtons buttonLayout="horizontal" fluid :min="0" class="max-w-8rem text-right" />
+						</template>
+					</DropdownMenu>
+				</template>
+			</VideoPlayer>
+			<div class="loading" v-if="!hasLoaded">
+				<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
+			</div>
+			<div v-if="showNextEpisodeCard" class="next-episode-card" :class="{ full: hasEnded }" @click="playNext">
+				<div class="play-icon">
+					<div class="w-full">
+						<MediaCard
+							:imageUrl="nextEpisodeMetadata.still_full"
+							:aspectRatio="'wide'"
+						>
+							<template #fallbackIcon><i class="pi pi-play" /></template>
+						</MediaCard>
+					</div>
+				</div>
+				<div>
+					<div class="flex align-items-ceter gap-1">
+						<span v-if="willAutoplay">
+							<span class="material-symbols-outlined">autoplay</span>
+							Autoplay ({{ autoplayTimes }})
+						</span>
+						<span v-else>Play Next</span>
+					</div>
+					<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
 				</div>
 			</div>
-			<div>
-				<div class="flex align-items-ceter gap-1">
-					<span v-if="willAutoplay">
-						<span class="material-symbols-outlined">autoplay</span>
-						Autoplay ({{ autoplayTimes }})
-					</span>
-					<span v-else>Play Next</span>
+		</div>
+
+		<div class="right-panel" :class="{ ['md:w-23rem w-full']: showScrubPanel }">
+			<!-- Non-shrinking contents -->
+			<div class="panel-content md:w-23rem w-full">
+				<div class="flex flex-column gap-2 h-full">
+					<div class="flex align-items-center gap-1">
+						<Button icon="pi pi-times" text severity="secondary" @click="toggleScrubMenu" />
+						<h3>Media Scrubs</h3>
+						<div class="flex-grow-1"></div>
+						<ToggleSwitch :defaultValue="useScrubberStore().isScrubbing" @click="useScrubberStore().toggleScrubbing" :disabled="!useScrubberStore().activeProfile" />
+					</div>
+					<div class="flex-grow-1 overflow-y-auto">
+						<ScrubSettings :playable="playable" />
+					</div>
 				</div>
-				<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
 			</div>
 		</div>
 	</div>
@@ -461,6 +515,31 @@ function playNext() {
 	lang="scss"
 	scoped
 >
+.theater-wrapper {
+	height: 100%;
+	position: relative;
+	display: flex;
+
+	.right-panel {
+		flex-shrink: 0;
+		width: 0;
+		background: var(--color-background);
+		transition: width 200ms;
+
+		position: relative;
+		overflow: hidden;
+
+		.panel-content {
+			position: absolute;
+			height: 100%;
+			overflow-y: auto;
+			overflow-x: hidden;
+
+			padding: 1em;
+		}
+	}
+}
+
 .movie-theater {
 	height: 100%;
 	position: relative;

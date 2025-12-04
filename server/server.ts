@@ -773,8 +773,12 @@ app.get('/api/subtitles', async (req, res) => {
 	}
 });
 
+
+// Sub Routes
 import timerRoute from './routes/timer.route'
+import scrubRoute from './routes/scrub.route'
 app.use('/api/timer', timerRoute);
+app.use('/api/scrub', scrubRoute);
 
 
 
@@ -860,8 +864,6 @@ const server = app.listen(port, () => {
 	console.log(`Listening on port ${port}`);
 	console.log(`Process ID: ${process.pid}`);
 	console.log(`Node.js version: ${process.version}`);
-
-	// Setup slow jobs
 });
 
 // Graceful shutdown handling

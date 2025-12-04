@@ -59,6 +59,7 @@ const goodType = computed(() => {
 });
 
 defineExpose({
+	videoRef,
 	getProgress() {
 		if (!videoRef.value) {
 			console.warn("Video element is not rendered yet")

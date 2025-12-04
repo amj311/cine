@@ -28,6 +28,7 @@
 		"pinch-zoom-js": "^2.3.5",
 		"sharp": "^0.34.1",
 		"tsx": "^4.19.2",
+		"uuid": "^13.0.0",
 		"youtube-search-api": "^2.0.1"
 	},
 	"devDependencies": {
