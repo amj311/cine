@@ -11,9 +11,11 @@ services:
       - "com.docker.compose.project=cine"
     environment:
       - MEDIA_DIR=/media/
+      - DATA_DIR=/data/
     ports:
       - 3401:5000
 
     volumes:
       - /Media/Media:/media
       # - /Users/Arthur/__media_test__:/media # for local prod
+      - /Media/__op_data:/data
