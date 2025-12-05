@@ -246,7 +246,7 @@ onMounted(async () => {
 	// }
 
 	// to update scrubs when using arrow keys or taps to seek
-	const seekEvents = ['keydown', 'touchend'];
+	const seekEvents = ['keydown', 'touch', 'click'];
 	for (const event of seekEvents) {
 		playerRef.value?.$el.addEventListener(event, () => {
 			useScrubberStore().scheduleScrub();
@@ -492,10 +492,10 @@ function toggleScrubMenu() {
 			</div>
 		</div>
 
-		<div class="menu-panel" :class="{ ['md:w-23rem w-full flex-grow-1 h-full']: showScrubPanel }">
+		<div class="menu-panel" :class="{ ['md:w-23rem w-full md:h-full open']: showScrubPanel }">
 			<!-- Non-shrinking contents -->
 			<div class="panel-content md:w-23rem w-full">
-				<div class="flex flex-column gap-2">
+				<div class="flex flex-column gap-2 h-full">
 					<div class="flex align-items-center gap-1">
 						<Button icon="pi pi-times" text severity="secondary" @click="toggleScrubMenu" />
 						<h3>Media Scrubs</h3>
@@ -529,6 +529,11 @@ function toggleScrubMenu() {
 
 		position: relative;
 		overflow: hidden;
+
+		&.open {
+			/* height ratio on skinny screen */
+			flex-grow: 3;
+		}
 
 		.panel-content {
 			position: absolute;

@@ -29,7 +29,7 @@ watch(() => [msValue.value, parts.value, min, max], () => msValue.value = Math.m
 		:
 		<InputNumber v-model="parts.s" showButtons buttonLayout="vertical" size="small" :max="59" :min="0" />
 		.
-		<InputNumber v-model="parts.ms" showButtons buttonLayout="vertical" size="small" :max="999" :min="0" :step="100" />
+		<InputNumber v-model="parts.ms" showButtons buttonLayout="vertical" size="small" :max="999" :min="0" :step="10" />
 		<div class="flex justify-content-center flex-grow-1">
 			<Button text severity="secondary" icon="pi pi-step-forward" @click="() => msValue! += 500" />
 		</div>

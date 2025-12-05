@@ -94,6 +94,11 @@ export const useScrubberStore = defineStore('Scrubber', () => {
 		scheduleScrub();
 	}
 
+	function stopScrubbing() {
+		cancelScrub();
+		isScrubbing.value = false;
+	}
+
 	/** Scrubbing will continue, but the current timeout will be cleared */
 	function cancelScrub() {
 		nextScrub.value = null;
@@ -107,10 +112,10 @@ export const useScrubberStore = defineStore('Scrubber', () => {
 		if (scheduledTimeout) {
 			clearTimeout(scheduledTimeout);
 		}
-		// Get the scrub with the soonest start time
-		nextScrub.value = scrubs.value.find(scrub => scrub.start_time_ms >= getMediaMs()) || null;
+		// Get the scrub with the soonest end time (catches if we're in the middle of one)
+		nextScrub.value = scrubs.value.find(scrub => scrub.end_time_ms > getMediaMs() + 1) || null;
 		if (nextScrub.value) {
-			scheduledTimeout = setTimeout(doScrub, nextScrub.value.start_time_ms - getMediaMs());
+			scheduledTimeout = setTimeout(doScrub, Math.max(0, nextScrub.value.start_time_ms - getMediaMs()));
 		}
 		console.log("Next scrub", nextScrub.value);
 	}
@@ -147,10 +152,10 @@ export const useScrubberStore = defineStore('Scrubber', () => {
 		mediaEl,
 
 		startScrubbing,
+		stopScrubbing,
 		toggleScrubbing() {
 			if (isScrubbing.value) {
-				cancelScrub();
-				isScrubbing.value = false;
+				stopScrubbing();
 			}
 			else {
 				startScrubbing();

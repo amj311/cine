@@ -41,6 +41,13 @@ function goTo(ms: number) {
 	}
 }
 
+function goToScrubTime(ms: number) {
+	if (scrubStore.mediaEl) {
+		scrubStore.stopScrubbing();
+		goTo(ms);
+	}
+}
+
 function playScrub(scrub: Scrub) {
 	if (scrubStore.mediaEl) {
 		goTo(scrub.start_time_ms - 2000);
@@ -109,14 +116,14 @@ function discardChanges() {
 									Start
 									<DurationInput
 										v-model="scrub.start_time_ms"
-										@click="() => goTo(scrub.start_time_ms)"
+										@click="() => goToScrubTime(scrub.start_time_ms)"
 									/>
 								</div>
 								<div>
 									End
 									<DurationInput
 										v-model="scrub.end_time_ms"
-										@click="() => goTo(scrub.end_time_ms)"
+										@click="() => goToScrubTime(scrub.end_time_ms)"
 										:min="scrub.start_time_ms + 500"
 									/>
 								</div>
