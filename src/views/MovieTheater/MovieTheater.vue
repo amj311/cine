@@ -246,7 +246,7 @@ onMounted(async () => {
 	// }
 
 	// to update scrubs when using arrow keys or taps to seek
-	const seekEvents = ['keydown', 'touch', 'click'];
+	const seekEvents = ['keyup', 'touch', 'click'];
 	for (const event of seekEvents) {
 		playerRef.value?.$el.addEventListener(event, () => {
 			useScrubberStore().scheduleScrub();
