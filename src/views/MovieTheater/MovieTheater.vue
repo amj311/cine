@@ -421,8 +421,8 @@ function toggleScrubMenu() {
 </script>
 
 <template>
-	<div class="theater-wrapper">
-		<div class="movie-theater" :style="{ backgroundImage: loadingBackground ? `url(${loadingBackground})` : undefined }">
+	<div class="theater-wrapper md:flex-row flex-column">
+		<div class="movie-theater flex-grow-1" :style="{ backgroundImage: loadingBackground ? `url(${loadingBackground})` : undefined }">
 			<VideoPlayer
 				v-if="mediaPath"
 				v-show="showPlayer"
@@ -492,10 +492,10 @@ function toggleScrubMenu() {
 			</div>
 		</div>
 
-		<div class="right-panel" :class="{ ['md:w-23rem w-full']: showScrubPanel }">
+		<div class="menu-panel" :class="{ ['md:w-23rem w-full flex-grow-1 h-full']: showScrubPanel }">
 			<!-- Non-shrinking contents -->
 			<div class="panel-content md:w-23rem w-full">
-				<div class="flex flex-column gap-2 h-full">
+				<div class="flex flex-column gap-2">
 					<div class="flex align-items-center gap-1">
 						<Button icon="pi pi-times" text severity="secondary" @click="toggleScrubMenu" />
 						<h3>Media Scrubs</h3>
@@ -520,11 +520,12 @@ function toggleScrubMenu() {
 	position: relative;
 	display: flex;
 
-	.right-panel {
+	.menu-panel {
 		flex-shrink: 0;
 		width: 0;
+		height: 0;
 		background: var(--color-background);
-		transition: width 200ms;
+		transition: all 200ms;
 
 		position: relative;
 		overflow: hidden;
@@ -541,7 +542,6 @@ function toggleScrubMenu() {
 }
 
 .movie-theater {
-	height: 100%;
     width: 100%;
 	position: relative;
 	background-image: none;
