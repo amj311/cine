@@ -1,6 +1,7 @@
 import { existsSync } from 'fs';
 import { readdir } from 'fs/promises';
 import path from 'path';
+import { decodeMediaPath } from '../utils/miscUtils';
 
 /**
  * A unique identifier for every file/folder based on its path from MEDIA_DIR
@@ -44,7 +45,7 @@ export class DirectoryService {
 	 * @returns 
 	 */
 	static resolvePath(anyPath: string): ConfirmedPath | undefined {
-		const decodedPath = decodeURIComponent(anyPath);
+		const decodedPath = decodeMediaPath(anyPath);
 		if (!process.env.MEDIA_DIR) {
 			throw new Error('MEDIA_DIR environment variable is not set');
 		}

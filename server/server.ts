@@ -188,7 +188,6 @@ app.get("/api/stream", async function (req, res) {
 		res.status(400).send("Requires src query param");
 		return;
 	}
-	src = src.replaceAll('<amp>', '&');
 	const resolvedPath = DirectoryService.resolvePath(src as string);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");

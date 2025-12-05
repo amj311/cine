@@ -10,21 +10,27 @@ const route = express.Router({ mergeParams: true });
 route.get('/media', async (req, res) => {
 	const { relativePath } = req.query;
 
-	const mediaPath = DirectoryService.resolvePath(relativePath as string);
-	if (!mediaPath) {
-		throw new Error("Must provide valid relativePath");
+	try {
+		const mediaPath = DirectoryService.resolvePath(relativePath as string);
+		if (!mediaPath) {
+			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(relativePath as string)}`);
+		}
+
+		const media = await LibraryService.getLibraryForPlayable(mediaPath);
+
+		if (!media.playable) {
+			throw new Error(`Could not find playable for path ${relativePath}`);
+		}
+
+		res.send({
+			success: true,
+			data: await ScrubService.getProfileForMedia(media.playable),
+		});
 	}
-
-	const media = await LibraryService.getLibraryForPlayable(mediaPath);
-
-	if (!media.playable) {
-		throw new Error(`Could not find playable for path ${relativePath}`);
+	catch (e) {
+		console.error(e);
+		res.sendStatus(500);
 	}
-
-	res.send({
-		success: true,
-		data: await ScrubService.getProfileForMedia(media.playable),
-	});
 });
 
 
@@ -35,21 +41,27 @@ route.get('/media', async (req, res) => {
 route.post('/media', async (req, res) => {
 	const { relativePath } = req.query;
 
-	const mediaPath = DirectoryService.resolvePath(relativePath as string);
-	if (!mediaPath) {
-		throw new Error("Must provide valid relativePath");
+	try {
+		const mediaPath = DirectoryService.resolvePath(relativePath as string);
+		if (!mediaPath) {
+			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(relativePath as string)}`);
+		}
+
+		const media = await LibraryService.getLibraryForPlayable(mediaPath);
+
+		if (!media.playable) {
+			throw new Error(`Could not find playable for path ${relativePath}`);
+		}
+
+		res.send({
+			success: true,
+			data: await ScrubService.createProfileForMedia(media.playable),
+		});
 	}
-
-	const media = await LibraryService.getLibraryForPlayable(mediaPath);
-
-	if (!media.playable) {
-		throw new Error(`Could not find playable for path ${relativePath}`);
+	catch (e) {
+		console.error(e);
+		res.sendStatus(500);
 	}
-
-	res.send({
-		success: true,
-		data: await ScrubService.createProfileForMedia(media.playable),
-	});
 });
 
 
@@ -59,11 +71,18 @@ route.post('/media', async (req, res) => {
 route.put('/', async (req, res) => {
 	const profile = req.body;
 
-	await ScrubService.updateProfile(profile);
+	try {
+		await ScrubService.updateProfile(profile);
 
-	res.send({
-		success: true,
-	});
+		res.send({
+			success: true,
+		});
+	}
+	catch (e) {
+		console.error(e);
+		res.sendStatus(500);
+	}
+
 });
 
 export default route;

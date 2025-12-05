@@ -4,6 +4,7 @@ import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
 import { defineProps, ref, computed, onMounted, watch } from 'vue';
 import MediaTimer from './MediaTimer.vue';
+import { encodeMediaPath } from '@/utils/miscUtils';
 
 const toast = useToast();
 
@@ -45,7 +46,7 @@ function updateShowControlsTimeout() {
 } 
 
 const videoRef = ref<HTMLVideoElement>();
-const videoUrl = computed(() => useApiStore().apiUrl + '/stream?src=' + props.relativePath.split('&').join('<amp>'))
+const videoUrl = computed(() => useApiStore().apiUrl + '/stream?src=' + encodeMediaPath(props.relativePath));
 const secondaryAudioPlayer = ref<HTMLAudioElement>();
 
 const supportedVideoTypes = [
@@ -123,7 +124,7 @@ const subtitleTracks = computed(() => {
 	return props.subtitles.map((track, i) => ({
 		index: track.index,
 		label: track.name || 'Subtitle ' + (i + 1),
-		url: useApiStore().apiUrl + '/subtitles?path=' + props.relativePath + '&index=' + track.index,
+		url: useApiStore().apiUrl + '/subtitles?path=' + encodeMediaPath(props.relativePath) + '&index=' + track.index,
 	}));
 });
 

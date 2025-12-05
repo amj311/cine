@@ -52,3 +52,17 @@ export function episodeTag({ seasonNumber, episodeNumber }) {
 	return `S${seasonNumber}:E${String(episodeNumber).padStart(2, '0')}`
 }
 
+
+
+
+
+
+
+
+export function encodeMediaPath(path: string) {
+	return encodeURIComponent(path.split('&').join('<amp>'));
+}
+
+export function decodeMediaPath(path: string) {
+	return decodeURIComponent(path.split('<amp>').join('&'));
+}

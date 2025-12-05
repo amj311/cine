@@ -30,12 +30,15 @@ export type Scrub = {
 const ScrubStore = new Store<'scrubs', ScrubProfile>('scrubs');
 
 export class ScrubService {
-	private static createScrubKey(target: ScrubTarget) {
-		const norm = (val: any) => {
-			let newVal = (val !== undefined && val !== null) ? String(val) : '<empty>';
-			return newVal.replaceAll(/[\W\S]/g, '');
+	private static norm(val: any) {
+		if (val === undefined || val === null) {
+			return '<empty>';
 		}
-		return `name__${norm(target.name)}::year__${norm(target.year)}::season__${norm(target.seasonNumber)}::episode__${norm(target.episodeNumber)}::version__${norm(target.version)}`;
+		return String(val).replaceAll(/[ _:]/g, '');
+	}
+
+	private static createScrubKey(target: ScrubTarget) {
+		return `name__${this.norm(target.name)}::year__${this.norm(target.year)}::season__${this.norm(target.seasonNumber)}::episode__${this.norm(target.episodeNumber)}::version__${this.norm(target.version)}`;
 	}
 
 	private static createTargetForMedia(media: AnyPlayable): ScrubTarget {

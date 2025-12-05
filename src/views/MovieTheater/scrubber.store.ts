@@ -1,7 +1,7 @@
 import { computed, ref, watch, type Ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useApiStore } from '@/stores/api.store';
-import { msToSec, secToMs } from '@/utils/miscUtils';
+import { encodeMediaPath, msToSec, secToMs } from '@/utils/miscUtils';
 import { v4 as uuid } from 'uuid';
 
 export type Scrub = {
@@ -51,7 +51,9 @@ export const useScrubberStore = defineStore('Scrubber', () => {
 	async function loadProfileForPath() {
 		try {
 			loadingProfile.value = true;
-			const { data } = await useApiStore().api.get('/scrub/media?relativePath=' + relativePath.value);
+			activeProfile.value = null;
+			savedProfile.value = '';
+			const { data } = await useApiStore().api.get('/scrub/media?relativePath=' + encodeMediaPath(relativePath.value));
 			activeProfile.value = data.data;
 			savedProfile.value = JSON.stringify(activeProfile.value);
 			if (scrubs.value.length > 0) {
