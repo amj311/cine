@@ -23,6 +23,11 @@ function startInterval() {
 	}, 1000)
 }
 
+function runTimer() {
+	TimerState.running = true;
+	startInterval();
+}
+
 route.get('/', (req, res) => {
 	res.send({
 		success: true,
@@ -31,13 +36,13 @@ route.get('/', (req, res) => {
 });
 
 route.put('/add', (req, res) => {
-	TimerState.running = true;
 	TimerState.timeLeft += req.body.time;
 
-
+	// Increase total time if necessary
 	if (TimerState.timeLeft > TimerState.totalTime) {
 		TimerState.totalTime = TimerState.timeLeft;
 	}
+	runTimer();
 
 	res.send({
 		success: true,
@@ -46,13 +51,11 @@ route.put('/add', (req, res) => {
 })
 
 route.put('/start', (req, res) => {
-	TimerState.running = true;
-
 	if (req.body.timeLeft) {
 		TimerState.totalTime = req.body.timeLeft;
 		TimerState.timeLeft = req.body.timeLeft;
 	}
-	startInterval();
+	runTimer();
 
 	res.send({
 		success: true,

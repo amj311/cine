@@ -6,6 +6,7 @@ import { useApiStore } from '@/stores/api.store';
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 
 const defaultTotal = 30;
+const addAmount = 10;
 
 const { mediaEl, inPlayer = false } = defineProps<{
 	mediaEl?: HTMLMediaElement;
@@ -47,7 +48,7 @@ async function pauseTimerOnly() {
 /** 1 Second Total time is used to indicate the timer in a neutral state */
 const hasRun = computed(() => timerState.value.totalTime !== 1);
 
-async function restart() {
+async function start() {
 	const { data } = await useApiStore().api.put('/timer/start', { timeLeft: defaultTotal });
 	timerState.value = data.data;
 	mediaEl?.play();
@@ -57,15 +58,16 @@ async function reset() {
 	timerState.value = data.data;
 }
 
-async function start(timeLeft?: number) {
+async function unpause(timeLeft?: number) {
 	const { data } = await useApiStore().api.put('/timer/start', { timeLeft });
 	timerState.value = data.data;
 	mediaEl?.play();
 }
 
 async function addTime() {
-	const { data } = await useApiStore().api.put('/timer/add', { time: 5 });
+	const { data } = await useApiStore().api.put('/timer/add', { time: addAmount });
 	timerState.value = data.data;
+	mediaEl?.play();
 }
 
 let interval = null as any;
@@ -80,7 +82,7 @@ onMounted(async () => {
 	});
 	mediaEl?.addEventListener('play', () => {
 		if (pausedByMedia.value) {
-			start();
+			unpause();
 		}
 	});
 	mediaEl?.addEventListener('ended', () => {
@@ -103,6 +105,22 @@ onUnmounted(() => {
 
 const buttonActive = ref(false);
 
+
+const status = computed(() => {
+	if (!hasRun.value) {
+		return 'unstarted';
+	}
+	if (!timerState.value.running && timerState.value.timeLeft) {
+		return 'paused';
+	}
+	if (!timerState.value.timeLeft) {
+		return 'ended';
+	}
+	else {
+		return 'running';
+	}
+});
+
 async function handleClick() {
 	if (inPlayer && !mouseIn.value) {
 		return;
@@ -113,17 +131,22 @@ async function handleClick() {
 		buttonActive.value = false;
 	}, 150);
 
-	if (timerState.value.running) {
-		await addTime();
-	}
-	else if (!hasRun.value) {
-		await restart();
-	}
-	else if (timerState.value.timeLeft) {
-		await start();
-	}
-	else {
-		await restart();
+	switch (status.value) {
+		case 'paused':
+			await unpause();
+			break;
+
+		case 'unstarted':
+			await start();
+			break;
+
+		case 'ended':
+		case 'running':
+			await addTime();
+			break;
+	
+		default:
+			break;
 	}
 }
 
@@ -183,10 +206,9 @@ const qrUrl = computed(() => "https://api.qrserver.com/v1/create-qr-code/?data="
 					fill="var(--color-heading)"
 				>
 					<template v-if="loading"></template>
-					<template v-else-if="timerState.running">+ Add Time</template>
-					<template v-else-if="hasRun && timerState.timeLeft">Continue</template>
-					<template v-else-if="hasRun">Restart</template>
-					<template v-else>Start</template>
+					<template v-else-if="status === 'unstarted'">Start</template>
+					<template v-else-if="status === 'paused'">Continue</template>
+					<template v-else-if="status === 'running' || status === 'ended'">+ Add Time</template>
 				</text>
 			</svg>
 			<!-- Small svg icons for player -->
@@ -194,9 +216,7 @@ const qrUrl = computed(() => "https://api.qrserver.com/v1/create-qr-code/?data="
 			<div class="absolute top-50 left-50" style="translate: -50% -50%; color: #fff">
 				<div v-if="inPlayer && mouseIn">
 					<template v-if="loading"></template>
-					<template v-else-if="timerState.running"><i class="pi pi-plus" /></template>
-					<template v-else-if="hasRun && timerState.timeLeft"><i class="pi pi-play" /></template>
-					<template v-else-if="hasRun"><i class="pi pi-replay" /></template>
+					<template v-else-if="status === 'running' || status === 'ended'"><i class="pi pi-plus" /></template>
 					<template v-else><i class="pi pi-play" /></template>
 				</div>
 				<template v-if="loading"><i class="pi pi-spin pi-spinner"></i></template>
@@ -206,7 +226,7 @@ const qrUrl = computed(() => "https://api.qrserver.com/v1/create-qr-code/?data="
 		<div class="other-buttons flex align-items-center gap-1">
 			<Button v-if="inPlayer" @click="showPhoneQR = true" icon="pi pi-mobile" severity="secondary" size="large" />
 			<Button v-if="hasRun && timerState.running" @click="pauseTimerOnly" icon="pi pi-pause" severity="secondary" size="large" label="Pause Timer" />
-			<Button v-if="hasRun && !timerState.running && timerState.timeLeft" @click="reset" icon="pi pi-stop" severity="secondary" size="large" label="Cancel" />
+			<Button v-if="hasRun" @click="reset" icon="pi pi-stop" severity="secondary" size="large" label="Cancel" />
 		</div>
 	</div>
 
