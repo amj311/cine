@@ -775,9 +775,11 @@ app.get('/api/subtitles', async (req, res) => {
 
 // Sub Routes
 import timerRoute from './routes/timer.route'
-import scrubRoute from './routes/scrub.route'
 app.use('/api/timer', timerRoute);
+import scrubRoute from './routes/scrub.route'
 app.use('/api/scrub', scrubRoute);
+import surpriseRoute from './routes/surprise.route'
+app.use('/api/surprise', surpriseRoute);
 
 
 

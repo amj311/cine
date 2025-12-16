@@ -6,6 +6,7 @@ import { AbsolutePath, ConfirmedPath, DirectoryService, RelativePath } from "./D
 import { MediaMetadataService } from "./metadata/MetadataService";
 import { EitherMetadata } from "./metadata/MetadataTypes";
 import { ProbeService } from "./ProbeService";
+import { SurpriseRecord, SurpriseService } from "./SurpriseService";
 import { WatchProgress, WatchProgressService } from "./WatchProgressService";
 
 type LibraryItemData = {
@@ -17,6 +18,7 @@ type LibraryItemData = {
 	imdbId?: string,
 	extras?: Array<Extra>,
 	cinemaType?: 'movie' | 'series',
+	surprise?: SurpriseRecord,
 }
 
 export type Playable = {
@@ -245,6 +247,7 @@ export class LibraryService {
 					extras,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
+					surprise: SurpriseService.getSurprise(path),
 				};
 			}
 
@@ -285,6 +288,7 @@ export class LibraryService {
 					metadata: withMetadata ? await MediaMetadataService.getMetadata('movie', path, detailed, true) : null,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
+					surprise: SurpriseService.getSurprise(path),
 				};
 			}
 		}
@@ -359,6 +363,7 @@ export class LibraryService {
 							trackStartOffset: chapter.start_time || 0,
 						}));
 					}) || undefined,
+					surprise: SurpriseService.getSurprise(path),
 				}
 			}
 			return {
@@ -377,6 +382,7 @@ export class LibraryService {
 				listName: firstTrackProbe?.album || name,
 				fileName: path.absolutePath,
 				tracks: tracks || undefined,
+				surprise: SurpriseService.getSurprise(path),
 			};
 		}
 

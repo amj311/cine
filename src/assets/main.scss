@@ -116,6 +116,11 @@ h1, h2, h3, h4, h5, h6 {
 
 :root {
 	--p-text-color: var(--color-text) !important;
-	--p-content-background: transparent !important;
+	--p-content-background: var(--color-background) !important;
 	--p-content-border-color: var(--color-background-mute) !important;
+	--p-overlay-modal-background: var(--color-background-soft) !important;
+	--p-overlay-modal-border-color: var(--color-background-mute) !important;
+	
+	--p-form-field-color: var(--color-text) !important;
+	--p-form-field-background: var(--color-background-mute) !important;
 }

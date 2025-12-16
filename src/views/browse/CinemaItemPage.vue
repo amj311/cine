@@ -13,6 +13,11 @@ import { GetListByKeyword } from 'youtube-search-api';
 import { useApiStore } from '@/stores/api.store';
 import axios from 'axios';
 import { useTvNavigationStore } from '@/stores/tvNavigation.store';
+import { encodeMediaPath } from '@/utils/miscUtils';
+import type Dialog from 'primevue/dialog';
+import type ToggleSwitch from 'primevue/toggleswitch';
+import type DatePicker from 'primevue/datepicker';
+import InputText from 'primevue/inputtext';
 
 const router = useRouter();
 const props = defineProps<{
@@ -222,6 +227,36 @@ onUnmounted(async () => {
 	}
 });
 
+
+
+/*************
+ * SURPRISES
+ */
+const showSurpriseSettings = ref(false);
+const draftSurprise = ref(props.libraryItem.surprise || {});
+const savingSurprise = ref(false);
+async function upsertSurprise() {
+	try {
+		savingSurprise.value = true;
+		await useApiStore().api.post('/surprise', {
+			relativePath: props.libraryItem.relativePath,
+			record: draftSurprise.value.enabled ? draftSurprise.value : null,
+		});
+		props.libraryItem.surprise = draftSurprise.value;
+		showSurpriseSettings.value = false;
+	}
+	catch (e) {
+		console.log(e);
+	}
+	finally {
+		savingSurprise.value = false;
+	}
+}
+function cancelSurpriseEdits() {
+	draftSurprise.value = props.libraryItem.surprise || {};
+	showSurpriseSettings.value = false;
+}
+
 </script>
 
 <template>
@@ -277,6 +312,13 @@ onUnmounted(async () => {
 							variant="text"
 							severity="contrast"
 							@click="() => (ytIsplaying ? stopYtAudio() : playYtAudio())"
+						/>
+						<Button
+							:icon="'pi pi-gift'"
+							:size="'large'"
+							variant="text"
+							severity="contrast"
+							@click="showSurpriseSettings = true"
 						/>
 					</div>
 					
@@ -338,13 +380,14 @@ onUnmounted(async () => {
 									<div class="episode-poster-wrapper">
 										<MediaCard
 											:imageUrl="episode.still_thumb"
-											:fallbackIcon="'📺'"
 											:aspectRatio="'wide'"
 											:playSrc="episode.relativePath"
 											:overrideStartTime="episode.startTime"
 											:progress="episode.watchProgress"
 											:loading="isLoadingMetadata"
-										/>
+										>
+											<template #fallbackIcon>📺</template>
+										</MediaCard>
 									</div>
 									<div class="episode-info flex-grow-1">
 										<h3>{{ episode.name }}{{ episode.version ? ` (${episode.version})` : '' }}</h3>
@@ -381,6 +424,42 @@ onUnmounted(async () => {
 			</audio>
 		</div>
 	</Scroll>
+
+
+	<Dialog
+		:visible="showSurpriseSettings"
+		:closable="false"
+		class="w-20rem"
+	>
+		<template #header>
+			<div class="flex align-items-center gap-3 w-full">
+				<h3>Keep this a surprise!</h3>
+				<div class="flex-grow-1" />
+				<ToggleSwitch v-model="draftSurprise.enabled" />
+			</div>
+		</template>
+		<p>Hide the details of this media until it is opened, or don't let it open until a future date!</p>
+
+		<div
+			style="display: grid; grid-template-columns: 1fr 3fr; gap: .5em; align-items: center;"
+			:class="{ 'opacity-50 pointer-events-none': !draftSurprise.enabled }"	
+		>
+			<label>PIN</label>
+			<div>
+				<InputText v-model="draftSurprise.pin" />
+			</div>
+
+			<label>Until</label>
+			<div>
+				<DatePicker v-model="draftSurprise.until" />
+			</div>
+		</div>
+
+		<div class="mt-4 flex align-items center justify-content-end">
+			<Button label="Cancel" text severity="secondary" @click="cancelSurpriseEdits" />
+			<Button label="Save" @click="upsertSurprise" />
+		</div>
+	</Dialog>
 </template>
 
 <style

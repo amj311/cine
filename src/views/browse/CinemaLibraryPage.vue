@@ -170,6 +170,7 @@ const seachedItems = computed(() => {
 													:title="item.name"
 													:subtitle="item.year"
 													:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+													:surprise="item.surprise"
 												>
 													<template #fallbackIcon>🎬</template>
 												</MediaCard>
@@ -220,6 +221,7 @@ const seachedItems = computed(() => {
 										:title="item.name"
 										:subtitle="item.year"
 										:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+										:surprise="item.surprise"
 									>
 										<template #fallbackIcon>🎬</template>
 									</MediaCard>
@@ -253,6 +255,7 @@ const seachedItems = computed(() => {
 										:title="item.name"
 										:subtitle="item.year"
 										:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+										:surprise="item.surprise"
 									>
 										<template #fallbackIcon>🎬</template>
 									</MediaCard>

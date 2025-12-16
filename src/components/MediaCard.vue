@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import ProgressBar from '@/components/ProgressBar.vue'
 import { useApiStore } from '@/stores/api.store';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import type CountdownVue from './Countdown.vue';
+import InputText from 'primevue/inputtext';
 const router = useRouter();
 
 const props = defineProps<{
@@ -19,6 +23,11 @@ const props = defineProps<{
 	clickable?: boolean;
 	action?: () => void;
 	loading?: boolean;
+	surprise?: {
+		relativePath: string,
+		until: string,
+		pin?: string,
+	}
 }>();
 
 
@@ -35,7 +44,7 @@ function playVideo() {
 	})
 }
 
-const onClick = computed(() => {
+const normalAction = computed(() => {
 	if (props.action) {
 		return props.action;
 	}
@@ -43,8 +52,54 @@ const onClick = computed(() => {
 		return playVideo;
 	}
 	return undefined;
+})
+const onClick = computed(() => {
+	if (hideSurprise.value && canRevealSurprise.value && !revealedSurprise.value) {
+		return revealSurprise;
+	}
+	if (hideSurprise.value && !ignoreSurprise.value) {
+		return () => showSurpriseModal.value = true;
+	}
+	return normalAction.value;
 });
 
+const revealedSurprise = ref(false);
+const hideSurprise = computed(() => props.surprise && !revealedSurprise.value);
+const showSurpriseModal = ref(false);
+const ignoreSurprise = ref(false);
+const showPinInput = ref(false);
+const draftPin = ref('');
+function bypassSurprise() {
+	if (draftPin.value === props.surprise?.pin) {
+		goToSurprise();
+	}
+}
+function goToSurprise() {
+	ignoreSurprise.value = true;
+	if (typeof normalAction.value === 'function') {
+		normalAction.value();
+	}
+	showSurpriseModal.value = false;
+	ignoreSurprise.value = false;
+	draftPin.value = '';
+	showPinInput.value = false;
+}
+const canRevealSurprise = computed(() => {
+	if (!props.surprise || !props.surprise.until) return;
+	const revealDateStr = new Date(props.surprise.until).toISOString().slice(0, 10); // 2025-12-25
+	const nowDateStr = new Date().toISOString().slice(0, 10); // 2025-12-25
+	return nowDateStr >= revealDateStr;
+})
+
+async function revealSurprise() {
+	if (!props.surprise) return;
+	revealedSurprise.value = true;
+	await useApiStore().api.post('/surprise', {
+		relativePath: props.surprise.relativePath,
+		record: null
+	});
+}
+ 
 const imageError = ref<any>(null);
 </script>
 
@@ -52,34 +107,54 @@ const imageError = ref<any>(null);
 	<div class="media-card" :class="{ clickable: onClick }" @click="onClick" :tabindex="onClick ? 0 : -1">
 		<div
 			class="poster"
-			:class="aspectRatio || 'tall'"
+			:class="{ [aspectRatio || 'tall']: true, surprise, revealed: revealedSurprise }"
 		>	
-			<div v-if="$slots.fallbackIcon" class="fallback-icon bg-soft">
-				<slot name="fallbackIcon" />
+			<div class="poster-content">
+				<div v-if="$slots.fallbackIcon" class="fallback-icon bg-soft">
+					<slot name="fallbackIcon" />
+				</div>
+
+				<img v-if="imageUrl && !imageError" :src="useApiStore().resolve(imageUrl)" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" @error="(err) => imageError = err" />
+
+				<div v-if="$slots.poster" class="custom-poster">
+					<slot name="poster" />
+				</div>
+
+				<div v-if="progress?.percentage" class="progress-bar-wrapper">
+					<ProgressBar :progress="progress.percentage" />
+				</div>
+
+				<div v-if="playSrc" class="overlay">
+					<div class="play-button"><i class="pi pi-play" /></div>
+				</div>
 			</div>
 
-			<img v-if="imageUrl && !imageError" :src="useApiStore().resolve(imageUrl)" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" @error="(err) => imageError = err" />
-
-			<div v-if="$slots.poster" class="custom-poster">
-				<slot name="poster" />
-			</div>
-
-			<div v-if="progress?.percentage" class="progress-bar-wrapper">
-				<ProgressBar :progress="progress.percentage" />
-			</div>
-
-			<div v-if="playSrc" class="overlay">
-				<div class="play-button"><i class="pi pi-play" /></div>
+			<div v-if="surprise" class="surprise-gift flex align-items-center h-full">
+				<img src="@/assets/gift.png" style="width: 100%" />
 			</div>
 
 			<Skeleton v-if="loading" width="100%" height="100%" />
 		</div>
 		<div v-if="title || subtitle" class="mt-1 p-1">
-			<div v-if="title" class="title">{{ title }}</div>
-			<div v-if="subtitle" class="subtitle" style="opacity: .7">{{ subtitle }}</div>
-
+			<div v-if="title" class="title">{{ hideSurprise ? 'Surprise!' : title }}</div>
+			<div v-if="subtitle" class="subtitle" style="opacity: .7">{{ hideSurprise ? (canRevealSurprise ? 'Open now!' : 'Coming soon') : subtitle }}</div>
 		</div>
 	</div>
+
+
+	<Dialog
+		:visible="showSurpriseModal"
+		:closable="false"
+		class="w-25rem"
+	>
+		<div class="flex flex-column align-items-center gap-4">
+			<img src="@/assets/gift.png" style="width: 80%" @click="showPinInput = true" />
+			<InputText v-model="draftPin" v-if="showPinInput" @keydown.enter="bypassSurprise" placeholder="Enter PIN" />
+			<div>This media will open in...</div>
+			<div class="text-5xl"><Countdown :endMs="new Date(surprise!.until).getTime()" /></div>
+			<Button text severity="secondary" label="Come back later" @click="showSurpriseModal = false" />
+		</div>
+	</Dialog>
 </template>
 
 <style scoped lang="scss">
@@ -158,6 +233,12 @@ const imageError = ref<any>(null);
 		aspect-ratio: 1/1;
 	}
 
+	.poster-content {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+	}
+
 	.custom-poster {
 		position: absolute;
 		top: 0;
@@ -179,6 +260,32 @@ const imageError = ref<any>(null);
 		position: absolute;
 		bottom: 0;
 		width: 100%;
+	}
+
+
+
+	&.surprise {
+		.poster-content {
+			opacity: 0;
+		}
+
+		.surprise-gift {
+
+		}
+
+
+		&.revealed {
+			.poster-content {
+				opacity: 1;
+				transition: 500ms 1000ms;
+			}
+
+			.surprise-gift {
+				transform: scale(1.5);
+				translate: 0 -150%;
+				transition: transform 1000ms, translate 500ms 1000ms;
+			}
+		}
 	}
 }
 
