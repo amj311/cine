@@ -148,7 +148,7 @@ const imageError = ref<any>(null);
 		class="w-25rem"
 	>
 		<div class="flex flex-column align-items-center gap-4">
-			<img src="@/assets/gift.png" style="width: 80%" @click="showPinInput = true" />
+			<img src="@/assets/gift.png" style="width: 70%; max-height: 35vh;" @click="showPinInput = true" />
 			<InputText v-model="draftPin" v-if="showPinInput" @keydown.enter="bypassSurprise" placeholder="Enter PIN" />
 			<div>This media will open in...</div>
 			<div class="text-5xl"><Countdown :endMs="new Date(surprise!.until).getTime()" /></div>
