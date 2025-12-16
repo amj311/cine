@@ -33,7 +33,8 @@ const DigitItem = computed(() => defineComponent({
 	},
 	computed: {
 		digitsTrack() {
-			return Array(20).fill(0).map((_, i) => direction === 'up' ? (i) % 10 : 9 - ((i) % 10));
+			const array = Array(20).fill(0).map((_, i) => (i) % 10);
+			return direction === 'up' ? array : array.reverse();
 		},
 		currentTrackIdx() {
 			return this.digitsTrack.indexOf(this.digit);

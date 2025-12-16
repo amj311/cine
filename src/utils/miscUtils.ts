@@ -9,6 +9,7 @@ export function msToSec(ms: number) {
 }
 
 type TimeParts = {
+	d?: number,
 	h?: number,
 	m?: number,
 	s?: number,
@@ -18,9 +19,13 @@ type TimeParts = {
 const MS_IN_S = 1000;
 const MS_IN_M = MS_IN_S * 60;
 const MS_IN_H = MS_IN_M * 60;
+const MS_IN_D = MS_IN_H * 24;
 
 export function msToTimeParts(ms: number): TimeParts {
 	let remaining = ms;
+	const d = Math.floor(remaining / MS_IN_D);
+	const daysInMs = d * MS_IN_D;
+	remaining -= daysInMs;
 	const h = Math.floor(remaining / MS_IN_H);
 	const hoursInMs = h * MS_IN_H;
 	remaining -= hoursInMs;
@@ -32,6 +37,7 @@ export function msToTimeParts(ms: number): TimeParts {
 	remaining -= secondsInMs;
 
 	return {
+		d,
 		h,
 		m,
 		s,

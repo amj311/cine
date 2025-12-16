@@ -14,7 +14,7 @@ const remaining = ref(computeRemaining());
 function computeRemaining() {
 	return Math.max(0, props.endMs - Date.now());
 }
-const pieces = computed(() =>  msToTimeParts(remaining.value));
+const pieces = computed(() => msToTimeParts(remaining.value));
 let interval;
 
 onMounted(() => {
@@ -27,6 +27,10 @@ onBeforeUnmount(() => {
 
 <template>
 	<div class="countdown flex align-items-center gap-1">
+		<template v-if="pieces.d">
+			<DigitTicker :qty="pieces.d || 0" direction="down" />
+			:
+		</template>
 		<DigitTicker :qty="pieces.h || 0" :pad="2" direction="down" />
 		:
 		<DigitTicker :qty="pieces.m || 0" :pad="2" direction="down" />
