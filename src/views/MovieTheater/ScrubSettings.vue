@@ -2,21 +2,7 @@
 	setup
 	lang="ts"
 >
-import { useQueryPathStore } from '@/stores/queryPath.store'
-import VideoPlayer from '@/components/VideoPlayer.vue'
-import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
-import { MetadataService } from '@/services/metadataService';
-import { useRoute, useRouter } from 'vue-router';
-import { useTvNavigationStore } from '@/stores/tvNavigation.store';
-import { useBackgroundStore } from '@/stores/background.store';
-import { usePageTitleStore } from '@/stores/pageTitle.store';
-import { useFullscreenStore } from '@/stores/fullscreenStore.store';
-import MediaCard from '@/components/MediaCard.vue';
-import { useWatchProgressStore } from '@/stores/watchProgress.store';
-import { useToast } from 'primevue/usetoast';
-import { useApiStore } from '@/stores/api.store';
-import DropdownMenu from '@/components/utils/DropdownMenu.vue';
-import InputNumber from 'primevue/inputnumber';
+import { ref, computed } from 'vue';
 import { type Scrub, useScrubberStore } from './scrubber.store';
 import { episodeTag, msToSec, msToTimestamp, secToMs } from '@/utils/miscUtils';
 import Accordion from 'primevue/accordion';

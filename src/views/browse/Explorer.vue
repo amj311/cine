@@ -84,6 +84,7 @@ const items = computed(() => {
 										:progress="folder.libraryItem.movie?.watchProgress"
 										:action="() => queryPathStore.enterDirectory(folder.folderName)"
 										:loading="isLoadingMetadata"
+										:surprise="folder.libraryItem.surprise"
 									>
 										<template #fallbackIcon>🎞️</template>
 									</MediaCard>
@@ -105,6 +106,7 @@ const items = computed(() => {
 										:progress="folder.libraryItem.movie?.watchProgress"
 										:action="() => queryPathStore.enterDirectory(folder.folderName)"
 										:loading="isLoadingMetadata"
+										:surprise="folder.libraryItem.surprise"
 									>
 										<template #fallbackIcon>📺</template>
 									</MediaCard>
@@ -126,6 +128,7 @@ const items = computed(() => {
 										:progress="folder.libraryItem.watchProgress"
 										:action="() => queryPathStore.enterDirectory(folder.folderName)"
 										:loading="isLoadingMetadata"
+										:surprise="folder.libraryItem.surprise"
 									>
 										<template #fallbackIcon>💿</template>
 									</MediaCard>

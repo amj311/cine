@@ -22,6 +22,7 @@ const props = defineProps<{
 				:action="() => $router.push({ name: 'browse', query: { path: libraryItem.relativePath } })"
 				:progress="libraryItem.watchProgress"
 				:loading="isLoadingMetadata"
+				:surprise="libraryItem.surprise"
 			>
 				<template #fallbackIcon>🎞️</template>
 			</MediaCard>

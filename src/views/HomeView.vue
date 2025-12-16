@@ -89,6 +89,7 @@ function formatRuntime(minutes: number) {
 											:aspectRatio="'wide'"
 											:title="item.title"
 											:subtitle="`${timeRemaining(item.watchProgress)} left`"
+											:surprise="item.libraryItem.parentLibrary.surprise"
 										>
 											<template #fallbackIcon>💿</template>
 										</MediaCard>
@@ -103,6 +104,7 @@ function formatRuntime(minutes: number) {
 											:aspectRatio="'square'"
 											:title="item.libraryItem.playable.title"
 											:subtitle="`${timeRemaining(item.watchProgress)} left`"
+											:surprise="item.libraryItem.parentLibrary.surprise"
 										>
 											<template #fallbackIcon>💿</template>
 										</MediaCard>
@@ -115,6 +117,7 @@ function formatRuntime(minutes: number) {
 											:aspectRatio="'wide'"
 											:title="playableName(item.libraryItem.playable, item.libraryItem.parentLibrary)"
 											:subtitle="item.isUpNext ? (item.probe?.full?.format?.duration ? formatRuntime(item.probe?.full?.format?.duration / 60) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
+											:surprise="item.libraryItem.parentLibrary.surprise"
 										>
 											<template #fallbackIcon>🎞️</template>
 											<template #poster v-if="item.isUpNext">
