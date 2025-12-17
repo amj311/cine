@@ -333,21 +333,24 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 
 			<div v-if="isSeries">
 				<h2 class="mb-2">Episodes</h2>
-				<div class="season-wrapper">
-					<div class="selection">
-						<Button
-							v-for="season in mergedSeasons"
-							:key="season.seasonNumber"
-							class="season-button"
-							severity="secondary"
-							:variant="activeSeason.seasonNumber === season.seasonNumber ? '' : 'text'"
-							@click="() => activeSeason = season"
-						>
-							{{ season.name }}
-						</Button>
+				<div class="season-wrapper" :class="{ 'tv': useTvNavigationStore().detectedTv }">
+					<div class="selection-wrapper">
+						<div class="selection">
+							<Button
+								v-for="season in mergedSeasons"
+								:key="season.seasonNumber"
+								class="season-button"
+								severity="secondary"
+								:variant="activeSeason.seasonNumber === season.seasonNumber ? '' : 'text'"
+								@click="() => activeSeason = season"
+							>
+								{{ season.name }}
+							</Button>
+							
+							<p v-if="activeSeason.overview">{{ activeSeason.overview }}</p>
+						</div>
 					</div>
-					<div class="season-details flex flex-column gap-4 pt-3" v-if="activeSeason">
-						<div v-if="activeSeason.overview">{{ activeSeason.overview }}</div>
+					<div class="season-details flex flex-column gap-4" v-if="activeSeason">
 						<div class="episodes-list flex flex-column gap-4">
 							<template v-for="(episode, i) in activeSeason.episodes" :key="episode.relativePath">
 								<div class="episode-item">
@@ -461,4 +464,27 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 		flex: 0 0 13rem;
 	}
 }
+
+
+.season-wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+
+	&.tv {
+		flex-direction: row;
+		gap: 3rem;
+
+		.selection-wrapper {
+			flex: 1 0 20rem;
+		}
+
+		.selection {
+			position: sticky;
+			top: 1rem;
+		}
+	}
+
+}
+
 </style>
