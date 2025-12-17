@@ -514,7 +514,7 @@ app.get('/api/feed', async (req, res) => {
 
 		// // New Movies and shows!
 		// Need to get filestats for all items
-		const mediaTypes = ['', 'audio'];
+		const mediaTypes = ['cinema', 'audio'];
 		const mediaLibraries = libraries.filter((library) => mediaTypes.includes(library.libraryType));
 		const allMediaItems = (await Promise.all(mediaLibraries.map(async (library) => {
 			const { items } = await LibraryService.getFlatTree(library.confirmedPath);

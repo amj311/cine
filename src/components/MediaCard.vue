@@ -271,12 +271,14 @@ const imageError = ref<any>(null);
 
 		.surprise-gift img {
 			position: absolute;
-			top: 0;
-			left: 0;
+			top: 50%;
+			left: 50%;
 			width: 100%;
 			height: 100%;
 			object-fit: contain;
 			object-position: center center;
+			max-width: 8em;
+			translate: -50% -50%;
 		}
 
 		&.revealed {
