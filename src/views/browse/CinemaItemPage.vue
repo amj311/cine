@@ -346,9 +346,9 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 							{{ season.name }}
 						</Button>
 					</div>
-					<div class="season-details flex flex-column gap-4" v-if="activeSeason">
-						<div>{{ activeSeason.overview }}</div>
-						<div class="episodes-list flex flex-column gap-3">
+					<div class="season-details flex flex-column gap-4 pt-3" v-if="activeSeason">
+						<div v-if="activeSeason.overview">{{ activeSeason.overview }}</div>
+						<div class="episodes-list flex flex-column gap-4">
 							<template v-for="(episode, i) in activeSeason.episodes" :key="episode.relativePath">
 								<div class="episode-item">
 									<div class="episode-poster-wrapper">
@@ -371,7 +371,7 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 											<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
 										</div>
 										
-										<p>
+										<div class="mt-3 line-clamp-4">
 											<template v-if="isLoadingMetadata">
 												<Skeleton width="100%" height="20px" class="my-1" />
 												<Skeleton width="33%" height="20px" class="my-1" />
@@ -379,11 +379,12 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 											<template v-else>
 												{{ episode.overview }}
 											</template>
-										</p>
+										</div>
 									</div>
 								</div>
 							</template>
 						</div>
+						
 						<div v-if="activeSeason.extras?.length > 0">	
 							<h3>{{ activeSeason.name }} Extras</h3>
 							<ExtrasList :extras="activeSeason.extras" />
@@ -453,11 +454,11 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 
 .episode-item {
 	display: flex;
-	gap: 20px;
+	gap: 1rem;
+	max-width: 50rem;
 
 	.episode-poster-wrapper {
-		width: min(200px, 30vw);
-		min-width: min(200px, 30vw);
+		flex: 0 0 13rem;
 	}
 }
 </style>
