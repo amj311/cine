@@ -518,10 +518,8 @@ app.get('/api/feed', async (req, res) => {
 		const mediaLibraries = libraries.filter((library) => mediaTypes.includes(library.libraryType));
 		const allMediaItems = (await Promise.all(mediaLibraries.map(async (library) => {
 			const { items } = await LibraryService.getFlatTree(library.confirmedPath);
-			console.log(items.map(i => i.relativePath))
 			// async filestats for each file
 			return await Promise.all(items.map(async (item, i) => {
-				console.log(i, item.name)
 				if (!['cinema', 'audiobook'].includes(item.type)) {
 					return null; // Skip folders
 				}
