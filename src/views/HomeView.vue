@@ -181,7 +181,7 @@ function formatRuntime(minutes: number) {
 <style scoped lang="scss">
 .feed-row {
 	--padding: 15px;
-	padding: var(--padding);
+	padding: 0 var(--padding) var(--padding) var(--padding);
 
 	.feed-scroll-wrapper {
 		margin: 0 calc(-1 * var(--padding));
