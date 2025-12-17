@@ -215,7 +215,7 @@ function formatRuntime(minutes: number) {
 		max-width: var(--baseWidth);
 
 		&.album, &.audiobook {
-			--mult: 1.33;
+			--mult: 1.50;
 			width: calc(var(--baseWidth) * var(--mult));
 			min-width: calc(var(--baseWidth) * var(--mult));
 			max-width: calc(var(--baseWidth) * var(--mult));
