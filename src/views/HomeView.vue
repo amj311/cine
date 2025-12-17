@@ -194,7 +194,7 @@ function formatRuntime(minutes: number) {
 	}
 
 	&.continue-watching .feed-row-card-wrapper {
-		--baseWidth: min(15rem, max(8rem, 30vw));
+		--baseWidth: min(35vh, 15rem, max(8rem, 30vw));
 		width: var(--baseWidth);
 		min-width: var(--baseWidth);
 		max-width: var(--baseWidth);

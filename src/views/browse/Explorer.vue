@@ -192,13 +192,13 @@ const items = computed(() => {
 <style scoped lang="scss">
 .folder-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(min(10rem, 27vh), 1fr));
 	gap: 15px;
 	margin-bottom: 30px;
 }
 .item-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(min(7rem, 19vh), 1fr));
 	gap: 15px;
 }
 .grid-tile {

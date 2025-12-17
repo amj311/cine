@@ -274,8 +274,8 @@ const seachedItems = computed(() => {
 <style scoped lang="scss">
 
 .card-wrapper {
-	width: min(7rem, 20vw);
-	min-width: min(7rem, 20vw);
+	width: min(min(7rem, 19vh), 20vw);
+	min-width: min(min(7rem, 19vh), 20vw);
 }
 
 .categories-row {
