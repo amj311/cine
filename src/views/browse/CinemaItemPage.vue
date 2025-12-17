@@ -331,11 +331,6 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 				</template>
 			</div>
 
-			<div v-if="isLoadingMetadata || metadata?.credits">
-				<h2>Cast & Crew</h2>
-				<PeopleList :loading="isLoadingMetadata" :people="metadata?.credits" />
-			</div>
-
 			<div v-if="isSeries">
 				<h2 class="mb-2">Episodes</h2>
 				<div class="season-wrapper">
@@ -395,6 +390,11 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 						</div>
 					</div>
 				</div>
+			</div>
+
+			<div v-if="isLoadingMetadata || metadata?.credits">
+				<h2>Cast & Crew</h2>
+				<PeopleList :loading="isLoadingMetadata" :people="metadata?.credits" />
 			</div>
 
 			<div v-if="libraryItem.extras?.length > 0">	
