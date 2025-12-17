@@ -142,7 +142,7 @@ const seachedItems = computed(() => {
 					</SelectButton>
 			</div>
 
-			<div v-if="filterMode === 'Categories'" class="categories flex flex-column gap-3">
+			<div v-if="filterMode === 'Categories'" class="categories flex flex-column gap-1">
 				<template v-for="categoriesRow in categories" :key="categoriesRow.relativePath">
 					<div class="categories-row" v-if="categorySampling[categoriesRow.relativePath] && categorySampling[categoriesRow.relativePath].length" :key="categoriesRow.relativePath">
 						<h3>
@@ -194,7 +194,7 @@ const seachedItems = computed(() => {
 
 			<div v-if="filterMode === 'A - Z'">
 				<div
-					class="mb-6"
+					class="mb-4"
 					v-for="group in letterGroups"
 					:key="group.letter"
 				>
