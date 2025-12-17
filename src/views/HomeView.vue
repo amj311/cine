@@ -9,13 +9,18 @@ import LibraryItemCard from '@/components/LibraryItemCard.vue';
 
 const feed = ref<any[]>([]);
 
+const loadingFeed = ref(false);
 async function loadFeed() {
 	try {
+		loadingFeed.value = true;
 		const { data } = await useApiStore().api.get('/feed');
 		feed.value = data.data;
 	}
 	catch (error) {
 		console.error('Error loading feed:', error);
+	}
+	finally {
+		loadingFeed.value = false;
 	}
 }
 
@@ -67,6 +72,11 @@ function formatRuntime(minutes: number) {
 <template>
 	<div class="home-view h-full">
 		<div class="feed h-full">
+			<div v-if="loadingFeed" class="w-full flex justify-content-center align-items-center gap-2 m-8">
+				<i class="pi pi-spinner spin" />
+				Loading...
+			</div>
+
 			<Scroll>
 				<div class="feed-row" v-for="feedRow in feed" :class="feedRow.type" :key="feedRow.type">
 					<template v-if="feedRow.type === 'continue-watching'">
