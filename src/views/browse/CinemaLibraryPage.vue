@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeMount, ref, watch } from 'vue';
-import MediaCard from '@/components/MediaCard.vue';
-import MetadataLoader from '@/components/MetadataLoader.vue';
 import { useApiStore } from '@/stores/api.store';
 import SelectButton from 'primevue/selectbutton';
 import InputText from 'primevue/inputtext';
-import Select from 'primevue/select';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -158,24 +155,7 @@ const seachedItems = computed(() => {
 										class="card-wrapper"
 										v-for="item in categorySampling[categoriesRow.relativePath]"
 									>
-										<MetadataLoader
-											:media="item"
-										>
-											<template #default="{ metadata }">
-												<MediaCard
-													:key="item.relativePath"
-													:imageUrl="metadata?.poster_thumb"
-													:progress="item.watchProgress"
-													:aspectRatio="'tall'"
-													:title="item.name"
-													:subtitle="item.year"
-													:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
-													:surprise="item.surprise"
-												>
-													<template #fallbackIcon>🎬</template>
-												</MediaCard>
-											</template>
-										</MetadataLoader>
+										<LibraryItemCard :libraryItem="item" />
 									</div>
 									<Button variant="text" severity="contrast"
 										class="px-4"
@@ -209,24 +189,7 @@ const seachedItems = computed(() => {
 							v-for="item in group.items"
 							:key="item.relativePath"
 						>
-							<MetadataLoader
-								:media="item"
-							>
-								<template #default="{ metadata }">
-									<MediaCard
-										:key="item.relativePath"
-										:imageUrl="metadata?.poster_thumb"
-										:progress="item.watchProgress"
-										:aspectRatio="'tall'"
-										:title="item.name"
-										:subtitle="item.year"
-										:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
-										:surprise="item.surprise"
-									>
-										<template #fallbackIcon>🎬</template>
-									</MediaCard>
-								</template>
-							</MetadataLoader>
+							<LibraryItemCard :libraryItem="item" />
 						</div>
 					</div>
 				</div>
@@ -243,24 +206,7 @@ const seachedItems = computed(() => {
 							v-for="item in seachedItems"
 							:key="item.relativePath"
 						>
-							<MetadataLoader
-								:media="item"
-							>
-								<template #default="{ metadata }">
-									<MediaCard
-										:key="item.relativePath"
-										:imageUrl="metadata?.poster_thumb"
-										:progress="item.watchProgress"
-										:aspectRatio="'tall'"
-										:title="item.name"
-										:subtitle="item.year"
-										:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
-										:surprise="item.surprise"
-									>
-										<template #fallbackIcon>🎬</template>
-									</MediaCard>
-								</template>
-							</MetadataLoader>
+							<LibraryItemCard :libraryItem="item" />
 						</div>
 					</div>
 				</div>

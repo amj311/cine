@@ -6,6 +6,8 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useBackgroundStore } from '@/stores/background.store';
 import { useApiStore } from '@/stores/api.store';
 import { useWatchProgressStore, type WatchProgress } from '@/stores/watchProgress.store';
+import type DropdownMenuVue from '@/components/utils/DropdownMenu.vue';
+import type SurpriseModal from '@/components/SurpriseModal.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -404,6 +406,16 @@ const lastWatched = computed<Bookmark>(() => {
 	};
 })
 
+const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
+
+const menuItems = [{
+	label: 'Surprise',
+	icon: 'pi pi-gift',
+	command: () => {
+		surpriseModal.value?.open();
+	},
+}]
+
 </script>
 
 <template>
@@ -416,8 +428,11 @@ const lastWatched = computed<Bookmark>(() => {
 					:progress="lastWatched || libraryItem?.watchProgress"
 				/>
 			</div>
-			<div>
-				<h3 class="mb-2">{{ libraryItem.title }}</h3>
+			<div class="flex flex-column align-items-center gap-2">
+				<div class="flex align-items-center gap-2">
+					<h3>{{ libraryItem.title }}</h3>
+					<DropdownMenu :model="menuItems"><Button size="small" variant="text" severity="contrast" :icon="'pi pi-ellipsis-v'" /></DropdownMenu>
+				</div>
 				<div class="flex align-items-center justify-content-center">
 					<span v-if="libraryItem.author">{{ libraryItem.author }}&nbsp;-&nbsp;</span>
 					<span v-if="libraryItem.year">{{ libraryItem.year }}&nbsp;-&nbsp;</span>
@@ -493,6 +508,8 @@ const lastWatched = computed<Bookmark>(() => {
 			</div>
 		</div>
 	</div>
+
+	<SurpriseModal ref="surpriseModal" :libraryItem="libraryItem" />
 </template>
 
 <style

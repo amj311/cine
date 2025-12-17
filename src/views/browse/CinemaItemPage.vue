@@ -18,6 +18,7 @@ import type Dialog from 'primevue/dialog';
 import type ToggleSwitch from 'primevue/toggleswitch';
 import type DatePicker from 'primevue/datepicker';
 import InputText from 'primevue/inputtext';
+import type SurpriseModal from '@/components/SurpriseModal.vue';
 
 const router = useRouter();
 const props = defineProps<{
@@ -89,10 +90,11 @@ const mergedSeasons = computed(() => {
 	}
 	const seasons = props.libraryItem.seasons.map((season: any) => {
 		const metadataSeason = metadata.value?.seasons.find((s: any) => s.seasonNumber === season.seasonNumber);
+		const name = season.seasonNumber === 0 ? 'Specials' : (season.name || `Season ${ season.seasonNumber }`);
 		return {
 			...season,
 			...metadataSeason,
-			name: season.seasonNumber === 0 ? 'Specials' : season.name,
+			name,
 			episodes: season.episodeFiles.flatMap((file: any) => file.episodes).map(episode => {
 				const metadataEpisode = metadataSeason?.episodes.find((e: any) => e.episodeNumber === episode.episodeNumber);
 				return {
@@ -232,30 +234,7 @@ onUnmounted(async () => {
 /*************
  * SURPRISES
  */
-const showSurpriseSettings = ref(false);
-const draftSurprise = ref(props.libraryItem.surprise || {});
-const savingSurprise = ref(false);
-async function upsertSurprise() {
-	try {
-		savingSurprise.value = true;
-		await useApiStore().api.post('/surprise', {
-			relativePath: props.libraryItem.relativePath,
-			record: draftSurprise.value.enabled ? draftSurprise.value : null,
-		});
-		props.libraryItem.surprise = draftSurprise.value;
-		showSurpriseSettings.value = false;
-	}
-	catch (e) {
-		console.log(e);
-	}
-	finally {
-		savingSurprise.value = false;
-	}
-}
-function cancelSurpriseEdits() {
-	draftSurprise.value = props.libraryItem.surprise || {};
-	showSurpriseSettings.value = false;
-}
+const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 
 </script>
 
@@ -318,7 +297,7 @@ function cancelSurpriseEdits() {
 							:size="'large'"
 							variant="text"
 							severity="contrast"
-							@click="showSurpriseSettings = true"
+							@click="surpriseModal?.open"
 						/>
 					</div>
 					
@@ -369,11 +348,11 @@ function cancelSurpriseEdits() {
 							:variant="activeSeason.seasonNumber === season.seasonNumber ? '' : 'text'"
 							@click="() => activeSeason = season"
 						>
-							{{ season.name || `Season ${ season.seasonNumber }` }}
+							{{ season.name }}
 						</Button>
 					</div>
-					<div class="season-details" v-if="activeSeason">
-						<p>{{ activeSeason.overview }}</p>
+					<div class="season-details flex flex-column gap-4" v-if="activeSeason">
+						<div>{{ activeSeason.overview }}</div>
 						<div class="episodes-list flex flex-column gap-3">
 							<template v-for="(episode, i) in activeSeason.episodes" :key="episode.relativePath">
 								<div class="episode-item">
@@ -410,6 +389,10 @@ function cancelSurpriseEdits() {
 								</div>
 							</template>
 						</div>
+						<div v-if="activeSeason.extras?.length > 0">	
+							<h3>{{ activeSeason.name }} Extras</h3>
+							<ExtrasList :extras="activeSeason.extras" />
+						</div>
 					</div>
 				</div>
 			</div>
@@ -426,40 +409,7 @@ function cancelSurpriseEdits() {
 	</Scroll>
 
 
-	<Dialog
-		:visible="showSurpriseSettings"
-		:closable="false"
-		class="w-20rem"
-	>
-		<template #header>
-			<div class="flex align-items-center gap-3 w-full">
-				<h3>Keep this a surprise!</h3>
-				<div class="flex-grow-1" />
-				<ToggleSwitch v-model="draftSurprise.enabled" />
-			</div>
-		</template>
-		<p>Hide the details of this media until it is opened, or don't let it open until a future date!</p>
-
-		<div
-			style="display: grid; grid-template-columns: 1fr 3fr; gap: .5em; align-items: center;"
-			:class="{ 'opacity-50 pointer-events-none': !draftSurprise.enabled }"	
-		>
-			<label>PIN</label>
-			<div>
-				<InputText v-model="draftSurprise.pin" />
-			</div>
-
-			<label>Until</label>
-			<div>
-				<DatePicker v-model="draftSurprise.until" />
-			</div>
-		</div>
-
-		<div class="mt-4 flex align-items center justify-content-end">
-			<Button label="Cancel" text severity="secondary" @click="cancelSurpriseEdits" />
-			<Button label="Save" @click="upsertSurprise" />
-		</div>
-	</Dialog>
+	<SurpriseModal ref="surpriseModal" :libraryItem="libraryItem" />
 </template>
 
 <style

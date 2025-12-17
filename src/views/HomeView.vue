@@ -5,7 +5,7 @@ import { useApiStore } from '@/stores/api.store';
 import GalleryFileFrame from '@/components/GalleryFileFrame.vue';
 import Slideshow from '@/components/Slideshow.vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
-import CinemaMediaCard from '@/components/CinemaMediaCard.vue';
+import LibraryItemCard from '@/components/LibraryItemCard.vue';
 
 const feed = ref<any[]>([]);
 
@@ -132,18 +132,18 @@ function formatRuntime(minutes: number) {
 						</div>
 					</template>
 
-					<template v-if="feedRow.type === 'cinema-items'">
+					<template v-if="feedRow.type === 'new-items'">
 						<h3>{{ feedRow.title }}</h3>
 						<div class="feed-scroll-wrapper">
 							<Scroll>
 								<div class="feed-row-items-list">
 									<div
 										class="feed-row-card-wrapper"
-										:class="item.type"
+										:class="item.libraryItem.type"
 										v-for="item in feedRow.items"
-										:key="item.relativePath"
+										:key="item.libraryItem.relativePath"
 									>
-										<CinemaMediaCard :libraryItem="item.libraryItem" />
+										<LibraryItemCard :libraryItem="item.libraryItem" />
 									</div>
 								</div>
 							</Scroll>
@@ -208,11 +208,18 @@ function formatRuntime(minutes: number) {
 	}
 
 
-	&.cinema-items .feed-row-card-wrapper {
+	&.new-items .feed-row-card-wrapper {
 		--baseWidth: min(8rem, 30vw);
 		width: var(--baseWidth);
 		min-width: var(--baseWidth);
 		max-width: var(--baseWidth);
+
+		&.album, &.audiobook {
+			--mult: 1.33;
+			width: calc(var(--baseWidth) * var(--mult));
+			min-width: calc(var(--baseWidth) * var(--mult));
+			max-width: calc(var(--baseWidth) * var(--mult));
+		}
 	}
 
 	&.photos .photo-grid {

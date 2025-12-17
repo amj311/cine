@@ -78,6 +78,9 @@ export class Store<N extends namespace = namespace, T = any> {
 
 		await DataService.post(this.namespace, datum);
 	}
+	public async delete(key: string) {
+		await DataService.delete(this.namespace, key);
+	}
 }
 
 export type Datum<T = any> = {
@@ -254,13 +257,21 @@ class DataService {
 		return await Array.from(Object.values(space));
 	}
 
-	private static async doUpdate(namespace: namespace, datum: Datum) {
+	private static async doUpdate(namespace: namespace, key: datumKey, datum: Datum | undefined) {
 		await this.touchNamespace(namespace);
-		this.storeData[namespace][datum.key] = datum;
+		if (datum) {
+			this.storeData[namespace][key] = datum;
+		}
+		else {
+			delete this.storeData[namespace][key];
+		}
 		this.updates += 1;
 	}
 
 	public static async post(namespace: namespace, datum: Datum) {
-		await this.doUpdate(namespace, datum);
+		await this.doUpdate(namespace, datum.key, datum);
+	}
+	public static async delete(namespace: namespace, key: datumKey) {
+		await this.doUpdate(namespace, key, undefined);
 	}
 }

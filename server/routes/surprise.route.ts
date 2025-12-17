@@ -17,10 +17,10 @@ route.post('/', async (req, res) => {
 		}
 
 		if (record) {
-			SurpriseService.updateSurprise(mediaPath, record);
+			await SurpriseService.updateSurprise(mediaPath, record);
 		}
 		else {
-			SurpriseService.deleteSurprise(mediaPath);
+			await SurpriseService.deleteSurprise(mediaPath);
 		}
 
 		res.send({

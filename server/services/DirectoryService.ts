@@ -71,7 +71,7 @@ export class DirectoryService {
 					name: f.name,
 					confirmedPath: dirPath.append(f.name),
 				};
-			});
+			}).filter(f => f.name !== '.DS_Store');
 			const dirs = files.filter((file) => file.isDirectory);
 			const filesOnly = files.filter((file) => !file.isDirectory);
 			return { folders: dirs, files: filesOnly };

@@ -3,6 +3,7 @@ import ProgressBar from '@/components/ProgressBar.vue'
 import { useApiStore } from '@/stores/api.store';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import MediaCard from './MediaCard.vue';
 const router = useRouter();
 
 const props = defineProps<{
@@ -15,16 +16,61 @@ const props = defineProps<{
 	<MetadataLoader :media="libraryItem">
 		<template #default="{ metadata, isLoadingMetadata }">
 			<MediaCard
+				v-if="libraryItem.cinemaType === 'movie'"
 				:imageUrl="metadata?.poster_thumb"
 				:aspectRatio="'tall'"
 				:title="libraryItem.name"
-				:subtitle="libraryItem.seasons ? (`${libraryItem.seasons.length} Season${libraryItem.seasons.length > 1 ? 's' : ''}`) : 	libraryItem.year"
+				:subtitle="libraryItem.year"
 				:action="() => $router.push({ name: 'browse', query: { path: libraryItem.relativePath } })"
 				:progress="libraryItem.watchProgress"
 				:loading="isLoadingMetadata"
 				:surprise="libraryItem.surprise"
 			>
 				<template #fallbackIcon>🎞️</template>
+			</MediaCard>
+
+			<MediaCard
+				v-if="libraryItem.cinemaType === 'series'"
+				clickable
+				:imageUrl="metadata?.poster_thumb"
+				:aspectRatio="'tall'"
+				:title="libraryItem.name"
+				:subtitle="`${libraryItem.numSeasons} Season${libraryItem.numSeasons.length ? 's' : ''}`"
+				:progress="libraryItem.movie?.watchProgress"
+				:action="() => $router.push({ name: 'browse', query: { path: libraryItem.relativePath } })"
+				:loading="isLoadingMetadata"
+				:surprise="libraryItem.surprise"
+			>
+				<template #fallbackIcon>📺</template>
+			</MediaCard>
+
+			<MediaCard
+				v-if="libraryItem.type === 'album' || libraryItem.type === 'audiobook'"
+				clickable
+				:imageUrl="libraryItem.cover_thumb"
+				:aspectRatio="'square'"
+				:title="libraryItem.title"
+				:subtitle="libraryItem.artist || libraryItem.author"
+				:progress="libraryItem.watchProgress"
+				:action="() => $router.push({ name: 'browse', query: { path: libraryItem.relativePath } })"
+				:loading="isLoadingMetadata"
+				:surprise="libraryItem.surprise"
+			>
+				<template #fallbackIcon>💿</template>
+			</MediaCard>
+
+			<MediaCard
+				v-if="libraryItem.type === 'collection'"
+				clickable
+				:aspectRatio="'tall'"
+				:title="libraryItem.name"
+				:subtitle="`${libraryItem.children.length} items`"
+				:action="() => $router.push({ name: 'browse', query: { path: libraryItem.relativePath } })"
+			>
+				<template #poster v-if="libraryItem.children.length">
+					<CollectionPoster :paths="libraryItem.children" />
+				</template>
+				<template #fallbackIcon v-else>🗂️</template>
 			</MediaCard>
 		</template>
 	</MetadataLoader>

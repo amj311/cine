@@ -18,7 +18,7 @@ type LibraryItemData = {
 	imdbId?: string,
 	extras?: Array<Extra>,
 	cinemaType?: 'movie' | 'series',
-	surprise?: SurpriseRecord,
+	surprise?: SurpriseRecord | null,
 }
 
 export type Playable = {
@@ -90,12 +90,14 @@ type Series = CinemaItem & {
 	type: 'cinema',
 	cinemaType: 'series',
 	numSeasons: number,
-	// Seasons are a map because they may not be in order or all present
-	seasons?: Array<{
-		seasonNumber: number,
-		episodeFiles: Array<EpisodeFile>,
-	}>,
+	seasons?: Array<Season>,
 	metadata: EitherMetadata<'series'> | null,
+}
+type Season = {
+	seasonNumber: number,
+	episodeFiles: Array<EpisodeFile>,
+	// season-specific extras
+	extras: Array<Extra>,
 }
 
 
@@ -228,9 +230,10 @@ export class LibraryService {
 				const seasons = detailed ? await LibraryService.extractSeasons(allSeasonFolders.map((folder) => folder.confirmedPath), name, year) : undefined;
 				// consider files that are not in a season folder as extras
 				let extras: Extra[] = [];
+
+				// series-wide extras
 				if (detailed) {
-					const extraVideos = children.files.filter((file) => !allSeasonFolders.some((folder) => file.name.startsWith(folder.name)));
-					extras = LibraryService.prepareExtras(extraVideos.map((file) => file.name), path)
+					extras = LibraryService.prepareExtras(children.files.map((file) => file.name), path)
 				}
 
 				return {
@@ -247,7 +250,7 @@ export class LibraryService {
 					extras,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
-					surprise: SurpriseService.getSurprise(path),
+					surprise: await SurpriseService.getSurprise(path),
 				};
 			}
 
@@ -288,7 +291,7 @@ export class LibraryService {
 					metadata: withMetadata ? await MediaMetadataService.getMetadata('movie', path, detailed, true) : null,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
-					surprise: SurpriseService.getSurprise(path),
+					surprise: await SurpriseService.getSurprise(path),
 				};
 			}
 		}
@@ -325,6 +328,7 @@ export class LibraryService {
 				acc += track.duration;
 				return acc;
 			}, 0);
+
 			if (firstTrackProbe?.genre === 'Audiobook' || children.files[0].name.endsWith('.m4b')) {
 				const isMb4b = children.files[0].name.endsWith('.m4b');
 
@@ -363,7 +367,7 @@ export class LibraryService {
 							trackStartOffset: chapter.start_time || 0,
 						}));
 					}) || undefined,
-					surprise: SurpriseService.getSurprise(path),
+					surprise: await SurpriseService.getSurprise(path),
 				}
 			}
 			return {
@@ -382,7 +386,7 @@ export class LibraryService {
 				listName: firstTrackProbe?.album || name,
 				fileName: path.absolutePath,
 				tracks: tracks || undefined,
-				surprise: SurpriseService.getSurprise(path),
+				surprise: await SurpriseService.getSurprise(path),
 			};
 		}
 
@@ -504,25 +508,27 @@ export class LibraryService {
 
 
 	private static async extractSeasons(seasonFolders: Array<ConfirmedPath>, seriesName: string, year: string) {
-		const episodeFiles = await Promise.all(seasonFolders.map(async (folder) => {
-			const { files } = await DirectoryService.listDirectory(folder);
+		const seasons = new Map<number, Season>();
+
+		await Promise.all(seasonFolders.map(async (folderPath) => {
+			const { files } = await DirectoryService.listDirectory(folderPath);
 			const videoFiles = files.filter((file) => file.name.endsWith('.mp4'));
 
-			return videoFiles.map((file) => {
-				const overAllwatchProgress = WatchProgressService.getWatchProgress(file.confirmedPath);
+			const folderSeasonNumber = parseInt(folderPath.relativePath.split('/').pop()?.replace(/season /gi, '') || '');
 
-				const NumbersRegex = RegExp(/s(?<seasonNumber>\d{1,3})e(?<firstEpisodeNumber>\d{1,3})/g);
-				const numbersMatch = NumbersRegex.exec(file.name)?.groups;
-				if (!numbersMatch) {
-					console.warn(`File "${file.name}" does not match season/episode regex`);
-					return;
-				}
+			const episodes: EpisodeFile[] = [];
+			const extraFiles: typeof videoFiles = [];
+
+			const NumbersRegex = RegExp(/s(?<seasonNumber>\d{1,3})e(?<firstEpisodeNumber>\d{1,3})/g);
+
+			const createEpisode = (file: typeof videoFiles[0], numbersMatch: NonNullable<NonNullable<ReturnType<typeof NumbersRegex.exec>>['groups']>) => {
+				const overAllWatchProgress = WatchProgressService.getWatchProgress(file.confirmedPath);
 
 				const seasonNumber = parseInt(numbersMatch.seasonNumber);
 				const firstEpisodeNumber = parseInt(numbersMatch.firstEpisodeNumber);
 
 				const multipleEpisodesRegex = RegExp(/-e(?<episodeNumber>\d{1,3})/g);
-				const lastEspisodeNumber = multipleEpisodesRegex.exec(file.name)?.groups?.episodeNumber;
+				const lastEpisodeNumber = multipleEpisodesRegex.exec(file.name)?.groups?.episodeNumber;
 
 				const episodeTimesRegex = RegExp(/.e(?<episodeNumber>\d{1,3})-(?<startTime>\d{1,50})/g);
 				const timesMatch = Array.from(file.name.matchAll(episodeTimesRegex));
@@ -531,7 +537,7 @@ export class LibraryService {
 					startTime: parseInt(match.groups?.startTime || '0'),
 				}))?.sort((a, b) => a.episodeNumber - b.episodeNumber);
 
-				const hasMultipleEpisodes = lastEspisodeNumber !== undefined;
+				const hasMultipleEpisodes = lastEpisodeNumber !== undefined;
 				const hasEpisodeTimes = extraEpisodeTimes?.length > 0;
 
 				function computeEpisodeWatchProgress(
@@ -580,11 +586,11 @@ export class LibraryService {
 					watchProgress: computeEpisodeWatchProgress(
 						startTime,
 						allEpisodeTimes[i + 1]?.startTime,
-						overAllwatchProgress
+						overAllWatchProgress
 					),
 				}));
 
-				const episodeFile: EpisodeFile = {
+				return {
 					type: 'episodeFile',
 					seriesName,
 					year,
@@ -593,27 +599,47 @@ export class LibraryService {
 					firstEpisodeNumber,
 					fileName: file.name as string,
 					relativePath: file.confirmedPath.relativePath,
-					watchProgress: overAllwatchProgress,
+					watchProgress: overAllWatchProgress,
 					episodes,
-					name: lastEspisodeNumber ? `Episodes ${firstEpisodeNumber} - ${Number(lastEspisodeNumber)}` : episodeName,
-				};
-				return episodeFile;
-			}).filter((episode) => episode !== undefined);
+					name: lastEpisodeNumber ? `Episodes ${firstEpisodeNumber} - ${Number(lastEpisodeNumber)}` : episodeName,
+				} as EpisodeFile;
+			}
+
+			videoFiles.forEach((file) => {
+				const numbersMatch = RegExp(/s(?<seasonNumber>\d{1,3})e(?<firstEpisodeNumber>\d{1,3})/g).exec(file.name)?.groups;
+				if (!numbersMatch) {
+					extraFiles.push(file);
+				}
+				else {
+					episodes.push(createEpisode(file, numbersMatch))
+				}
+			});
+
+			const extras = this.prepareExtras(extraFiles.map(f => f.name), folderPath);
+			const seasonRecord = seasons.get(folderSeasonNumber) || {
+				seasonNumber: folderSeasonNumber,
+				episodeFiles: [],
+				extras: [],
+			}
+			seasonRecord.extras = extras;
+			seasons.set(folderSeasonNumber, seasonRecord);
+
+			// Just in case an episode is put in the wrong season folder but its name has the correct number
+			episodes.forEach(e => {
+				const seasonRecord = seasons.get(e.seasonNumber) || {
+					seasonNumber: e.seasonNumber,
+					episodeFiles: [],
+					extras: [],
+				}
+				seasonRecord.episodeFiles.push(e);
+				seasons.set(e.seasonNumber, seasonRecord);
+			})
 		}));
 
-		const seasons = new Map<number, Array<EpisodeFile>>();
-		episodeFiles.flat().forEach((episode) => {
-			if (!seasons.has(episode.seasonNumber)) {
-				seasons.set(episode.seasonNumber, []);
-			}
-			seasons.get(episode.seasonNumber)!.push(episode);
-		});
-
-
 		// Sort each season's episodes by episode number
-		return Array.from(seasons.entries()).map(([seasonNumber, seasonEpisodes]) => ({
-			seasonNumber,
-			episodeFiles: seasonEpisodes.sort((a, b) => a.firstEpisodeNumber - b.firstEpisodeNumber),
+		return Array.from(seasons.values()).map((season) => ({
+			...season,
+			episodeFiles: season.episodeFiles.sort((a, b) => a.firstEpisodeNumber - b.firstEpisodeNumber),
 		})).sort((a, b) => a.seasonNumber - b.seasonNumber);
 	}
 

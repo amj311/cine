@@ -2,6 +2,7 @@
  * Keeps track of the media that are being watched and not yet finished
  */
 
+import { Store } from "./DataService";
 import { ConfirmedPath, RelativePath } from "./DirectoryService";
 
 export type SurpriseRecord = {
@@ -10,18 +11,18 @@ export type SurpriseRecord = {
 	until: string,
 }
 
-const surprises = new Map<RelativePath, SurpriseRecord>();
+const surprisesStore = new Store<'surprises', SurpriseRecord>('surprises');
 
 export class SurpriseService {
-	public static updateSurprise(path: ConfirmedPath, record: SurpriseRecord): void {
-		surprises.set(path.relativePath, { ...record, relativePath: path.relativePath });
+	public static async updateSurprise(path: ConfirmedPath, record: SurpriseRecord) {
+		await surprisesStore.set(path.relativePath, { ...record, relativePath: path.relativePath });
 	}
 
-	public static getSurprise(path: ConfirmedPath): SurpriseRecord | undefined {
-		return surprises.get(path.relativePath);
+	public static async getSurprise(path: ConfirmedPath): Promise<SurpriseRecord | null> {
+		return await surprisesStore.getByKey(path.relativePath);
 	}
 
-	public static deleteSurprise(path: ConfirmedPath): void {
-		surprises.delete(path.relativePath);
+	public static async deleteSurprise(path: ConfirmedPath) {
+		await surprisesStore.delete(path.relativePath);
 	}
 }

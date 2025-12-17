@@ -4,6 +4,7 @@ import { useQueryPathStore } from '@/stores/queryPath.store';
 import { computed } from 'vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
 import CollectionPoster from '@/components/CollectionPoster.vue';
+import LibraryItemCard from '@/components/LibraryItemCard.vue';
 
 const router = useRouter();
 
@@ -70,86 +71,7 @@ const items = computed(() => {
 						v-for="folder in items"
 						:key="folder.libraryItem.relativePath"
 					>
-						<template v-if="folder.libraryItem.cinemaType === 'movie'">
-							<MetadataLoader
-								:media="folder.libraryItem"
-							>
-								<template #default="{ metadata, isLoadingMetadata }">
-									<MediaCard
-										clickable
-										:imageUrl="metadata?.poster_thumb"
-										:aspectRatio="'tall'"
-										:title="folder.libraryItem.name"
-										:subtitle="folder.libraryItem.year"
-										:progress="folder.libraryItem.movie?.watchProgress"
-										:action="() => queryPathStore.enterDirectory(folder.folderName)"
-										:loading="isLoadingMetadata"
-										:surprise="folder.libraryItem.surprise"
-									>
-										<template #fallbackIcon>🎞️</template>
-									</MediaCard>
-								</template>
-							</MetadataLoader>
-						</template>
-
-						<template v-if="folder.libraryItem.cinemaType === 'series'">
-							<MetadataLoader
-								:media="folder.libraryItem"
-							>
-								<template #default="{ metadata, isLoadingMetadata }">
-									<MediaCard
-										clickable
-										:imageUrl="metadata?.poster_thumb"
-										:aspectRatio="'tall'"
-										:title="folder.libraryItem.name"
-										:subtitle="`${folder.libraryItem.numSeasons} Season${folder.libraryItem.numSeasons.length ? 's' : ''}`"
-										:progress="folder.libraryItem.movie?.watchProgress"
-										:action="() => queryPathStore.enterDirectory(folder.folderName)"
-										:loading="isLoadingMetadata"
-										:surprise="folder.libraryItem.surprise"
-									>
-										<template #fallbackIcon>📺</template>
-									</MediaCard>
-								</template>
-							</MetadataLoader>
-						</template>
-
-						<template v-if="folder.libraryItem.type === 'album' || folder.libraryItem.type === 'audiobook'">
-							<MetadataLoader
-								:media="folder.libraryItem"
-							>
-								<template #default="{ metadata, isLoadingMetadata }">
-									<MediaCard
-										clickable
-										:imageUrl="folder.libraryItem.cover_thumb"
-										:aspectRatio="'square'"
-										:title="folder.libraryItem.title"
-										:subtitle="folder.libraryItem.artist || folder.libraryItem.author"
-										:progress="folder.libraryItem.watchProgress"
-										:action="() => queryPathStore.enterDirectory(folder.folderName)"
-										:loading="isLoadingMetadata"
-										:surprise="folder.libraryItem.surprise"
-									>
-										<template #fallbackIcon>💿</template>
-									</MediaCard>
-								</template>
-							</MetadataLoader>
-						</template>
-
-						<template v-if="folder.libraryItem.type === 'collection'">
-							<MediaCard
-								clickable
-								:aspectRatio="'tall'"
-								:title="folder.libraryItem.name"
-								:subtitle="`${folder.libraryItem.children.length} items`"
-								:action="() => queryPathStore.enterDirectory(folder.folderName)"
-							>
-								<template #poster v-if="folder.libraryItem.children.length">
-									<CollectionPoster :paths="folder.libraryItem.children" />
-								</template>
-								<template #fallbackIcon v-else>🗂️</template>
-							</MediaCard>
-						</template>
+						<LibraryItemCard :libraryItem="folder.libraryItem" />
 					</div>
 				</div>
 

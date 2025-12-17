@@ -130,7 +130,7 @@ const imageError = ref<any>(null);
 			</div>
 
 			<div v-if="surprise" class="surprise-gift flex align-items-center h-full">
-				<img src="@/assets/gift.png" style="width: 100%" />
+				<img src="@/assets/gift.png" />
 			</div>
 
 			<Skeleton v-if="loading" width="100%" height="100%" />
@@ -269,10 +269,15 @@ const imageError = ref<any>(null);
 			opacity: 0;
 		}
 
-		.surprise-gift {
-
+		.surprise-gift img {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			object-fit: contain;
+			object-position: center center;
 		}
-
 
 		&.revealed {
 			.poster-content {

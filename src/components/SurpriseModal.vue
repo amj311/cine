@@ -1,0 +1,142 @@
+<script
+	setup
+	lang="ts"
+>
+import { useRouter } from 'vue-router';
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue';
+import { MetadataService } from '@/services/metadataService';
+import { useBackgroundStore } from '@/stores/background.store';
+import ExtrasList from '@/components/ExtrasList.vue';
+import { useWatchProgressStore } from '@/stores/watchProgress.store';
+import Skeleton from 'primevue/skeleton';
+import { GetListByKeyword } from 'youtube-search-api';
+import { useApiStore } from '@/stores/api.store';
+import axios from 'axios';
+import { useTvNavigationStore } from '@/stores/tvNavigation.store';
+import { encodeMediaPath } from '@/utils/miscUtils';
+import type Dialog from 'primevue/dialog';
+import type ToggleSwitch from 'primevue/toggleswitch';
+import type DatePicker from 'primevue/datepicker';
+import InputText from 'primevue/inputtext';
+
+const props = defineProps<{
+	libraryItem: any; // libraryItem
+}>();
+
+const showSurpriseSettings = ref(false);
+const draftSurprise = ref(props.libraryItem.surprise || {});
+const savingSurprise = ref(false);
+async function upsertSurprise() {
+	try {
+		savingSurprise.value = true;
+		await useApiStore().api.post('/surprise', {
+			relativePath: props.libraryItem.relativePath,
+			record: draftSurprise.value.enabled ? draftSurprise.value : null,
+		});
+		props.libraryItem.surprise = draftSurprise.value;
+		showSurpriseSettings.value = false;
+	}
+	catch (e) {
+		console.log(e);
+	}
+	finally {
+		savingSurprise.value = false;
+	}
+}
+function cancelSurpriseEdits() {
+	draftSurprise.value = props.libraryItem.surprise || {};
+	showSurpriseSettings.value = false;
+}
+
+defineExpose({
+	open: () => showSurpriseSettings.value = true,
+})
+
+</script>
+
+<template>
+	<Dialog
+		:visible="showSurpriseSettings"
+		:closable="false"
+		class="w-20rem"
+	>
+		<template #header>
+			<div class="flex align-items-center gap-3 w-full">
+				<h3>Keep this a surprise</h3>
+				<div class="flex-grow-1" />
+				<ToggleSwitch v-model="draftSurprise.enabled" />
+			</div>
+		</template>
+		<p>Hide the details of this media until it is opened, or don't let it open until a future date</p>
+
+		<div
+			style="display: grid; grid-template-columns: 1fr 3fr; gap: .5em; align-items: center;"
+			:class="{ 'opacity-50 pointer-events-none': !draftSurprise.enabled }"	
+		>
+			<label>PIN</label>
+			<div>
+				<InputText v-model="draftSurprise.pin" />
+			</div>
+
+			<label>Until</label>
+			<div>
+				<DatePicker v-model="draftSurprise.until" />
+			</div>
+		</div>
+
+		<div class="mt-4 flex align-items center justify-content-end">
+			<Button label="Cancel" text severity="secondary" @click="cancelSurpriseEdits" />
+			<Button label="Save" @click="upsertSurprise" />
+		</div>
+	</Dialog>
+</template>
+
+<style
+	lang="scss"
+	scoped
+>
+
+.show-sm {
+	display: none;
+}
+
+@media screen and (max-width: 800px) {
+	.hide-md {
+		display: none;
+	}
+	.show-sm {
+		display: block;
+	}
+
+	.title {
+		font-size: 1.5em;
+	}
+}
+
+.cinema-page {
+	display: flex;
+	flex-direction: column;
+	gap: 30px;
+}
+
+.top-wrapper {
+	display: flex;
+	align-items: end;
+	gap: 20px;
+}
+
+.poster-wrapper {
+	width: min(225px, 30vw);
+	min-width: min(225px, 30vw);
+}
+
+.episode-item {
+	display: flex;
+	gap: 20px;
+
+	.episode-poster-wrapper {
+		width: min(200px, 30vw);
+		min-width: min(200px, 30vw);
+	}
+}
+</style>
