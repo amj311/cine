@@ -219,24 +219,17 @@ export class LibraryService {
 	static readonly itemCache = new Map<string, LibraryItem>();
 
 	public static async parseFolderToItem(path: ConfirmedPath, detailed = false, withMetadata = true): Promise<LibraryItem> {
-		const key = `${path.relativePath}_detailed_${detailed}_meta_${withMetadata}`;
-		let cached = this.itemCache.get(key);
-		if (!cached) {
-			console.log("missed cache!")
-			const item = await this.computeFolderToItem(path, detailed, withMetadata);
-			cached = item;
-			this.itemCache.set(key, item);
+		let data = this.itemCache.get(path.relativePath) || await this.computeFolderToItem(path, detailed, withMetadata);
+		// Only use cache when not doing detailed or metadata!
+		if (!detailed && !withMetadata) {
+			this.itemCache.set(path.relativePath, data);
 		}
-		else {
-			console.log("used cache!")
-		}
-		return cached;
+		return data;
 	};
 	private static async computeFolderToItem(path: ConfirmedPath, detailed = false, withMetadata = true): Promise<LibraryItem> {
 		const folderName = path.relativePath.split('/').pop() || path.relativePath;
 		const { name, year, imdbId } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
-
 
 		// Take care of series and movies first
 		if (year) {
@@ -249,7 +242,7 @@ export class LibraryService {
 
 				// series-wide extras
 				if (detailed) {
-					extras = LibraryService.prepareExtras(children.files.map((file) => file.name), path)
+					extras = await LibraryService.prepareExtras(children.files.map((file) => file.name), path)
 				}
 
 				return {
@@ -279,7 +272,7 @@ export class LibraryService {
 				let extras: Extra[] = [];
 				if (detailed) {
 					const extraVideos = children.files.filter((file) => file !== movieFile);
-					extras = LibraryService.prepareExtras(extraVideos.map((file) => file.name), path)
+					extras = await LibraryService.prepareExtras(extraVideos.map((file) => file.name), path)
 				}
 
 				const { version: movieVersion } = LibraryService.parseNamePieces(movieFile.name);
@@ -291,7 +284,7 @@ export class LibraryService {
 					version: movieVersion,
 					fileName: movieFile.name,
 					relativePath: movieFile.confirmedPath.relativePath,
-					watchProgress: WatchProgressService.getWatchProgress(movieFile.confirmedPath)
+					watchProgress: await WatchProgressService.getWatchProgress(movieFile.confirmedPath)
 				};
 
 				return {
@@ -359,7 +352,7 @@ export class LibraryService {
 					folderName: folderName,
 					metadata: null,
 					sortKey: LibraryService.createSortKey(folderName, firstTrackProbe?.year),
-					watchProgress: WatchProgressService.getWatchProgress(path),
+					watchProgress: await WatchProgressService.getWatchProgress(path),
 					name: firstTrackProbe?.album || name,
 					listName: firstTrackProbe?.album || name,
 					fileName: path.absolutePath,
@@ -397,7 +390,7 @@ export class LibraryService {
 				folderName: folderName,
 				metadata: null,
 				sortKey: LibraryService.createSortKey(folderName),
-				watchProgress: WatchProgressService.getWatchProgress(path),
+				watchProgress: await WatchProgressService.getWatchProgress(path),
 				name: firstTrackProbe?.album || name,
 				listName: firstTrackProbe?.album || name,
 				fileName: path.absolutePath,
@@ -435,7 +428,7 @@ export class LibraryService {
 			let extras: Extra[] = [];
 			if (detailed) {
 				const extraVideos = children.files.filter((file) => !childrenPaths.includes(file.confirmedPath.relativePath));
-				extras = LibraryService.prepareExtras(extraVideos.map((file) => file.name), path);
+				extras = await LibraryService.prepareExtras(extraVideos.map((file) => file.name), path);
 			}
 			return {
 				type: 'collection',
@@ -548,8 +541,8 @@ export class LibraryService {
 
 			const NumbersRegex = RegExp(/s(?<seasonNumber>\d{1,3})e(?<firstEpisodeNumber>\d{1,3})/g);
 
-			const createEpisode = (file: typeof videoFiles[0], numbersMatch: NonNullable<NonNullable<ReturnType<typeof NumbersRegex.exec>>['groups']>) => {
-				const overAllWatchProgress = WatchProgressService.getWatchProgress(file.confirmedPath);
+			const createEpisode = async (file: typeof videoFiles[0], numbersMatch: NonNullable<NonNullable<ReturnType<typeof NumbersRegex.exec>>['groups']>) => {
+				const overAllWatchProgress = await WatchProgressService.getWatchProgress(file.confirmedPath);
 
 				const seasonNumber = parseInt(numbersMatch.seasonNumber);
 				const firstEpisodeNumber = parseInt(numbersMatch.firstEpisodeNumber);
@@ -632,17 +625,17 @@ export class LibraryService {
 				} as EpisodeFile;
 			}
 
-			videoFiles.forEach((file) => {
+			await Promise.all(videoFiles.map(async (file) => {
 				const numbersMatch = RegExp(/s(?<seasonNumber>\d{1,3})e(?<firstEpisodeNumber>\d{1,3})/g).exec(file.name)?.groups;
 				if (!numbersMatch) {
 					extraFiles.push(file);
 				}
 				else {
-					episodes.push(createEpisode(file, numbersMatch))
+					episodes.push(await createEpisode(file, numbersMatch))
 				}
-			});
+			}));
 
-			const extras = this.prepareExtras(extraFiles.map(f => f.name), folderPath);
+			const extras = await this.prepareExtras(extraFiles.map(f => f.name), folderPath);
 			const seasonRecord = seasons.get(folderSeasonNumber) || {
 				seasonNumber: folderSeasonNumber,
 				episodeFiles: [],
@@ -670,8 +663,8 @@ export class LibraryService {
 		})).sort((a, b) => a.seasonNumber - b.seasonNumber);
 	}
 
-	private static prepareExtras(fileNames: string[], parentPath: ConfirmedPath): Extra[] {
-		return fileNames.filter(p => p.endsWith('.mp4')).map((file) => {
+	private static async prepareExtras(fileNames: string[], parentPath: ConfirmedPath): Promise<Extra[]> {
+		return await Promise.all(fileNames.filter(p => p.endsWith('.mp4')).map(async (file) => {
 			const { name: extraName, type: extraType } = LibraryService.getExtraNameAndType(file);
 			return {
 				type: 'extra',
@@ -679,10 +672,10 @@ export class LibraryService {
 				extraType,
 				fileName: file,
 				relativePath: parentPath.append(file).relativePath,
-				watchProgress: WatchProgressService.getWatchProgress(parentPath.append(file)),
+				watchProgress: await WatchProgressService.getWatchProgress(parentPath.append(file)),
 				still_thumb: `/thumb/${parentPath.append(file).relativePath}?width=300`
 			}
-		});
+		}));
 	}
 
 

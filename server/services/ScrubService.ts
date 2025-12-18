@@ -27,7 +27,7 @@ export type Scrub = {
 	overlay?: boolean,
 }
 
-const ScrubStore = new Store<'scrubs', ScrubProfile>('scrubs');
+const ScrubStore = new Store<ScrubProfile>('scrubs');
 
 export class ScrubService {
 	private static norm(val: any) {

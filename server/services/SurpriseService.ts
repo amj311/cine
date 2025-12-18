@@ -11,7 +11,7 @@ export type SurpriseRecord = {
 	until: string,
 }
 
-const surprisesStore = new Store<'surprises', SurpriseRecord>('surprises');
+const surprisesStore = new Store<SurpriseRecord>('surprises');
 
 export class SurpriseService {
 	public static async updateSurprise(path: ConfirmedPath, record: SurpriseRecord) {

@@ -475,7 +475,7 @@ app.get('/api/feed', async (req, res) => {
 
 		// Continue Watching
 		// Make sure cached items still exist!!!
-		const watchItems: ContinueWatchingItem[] = await WatchProgressService.getContinueWatchingList().map((progress) => ({
+		const watchItems: ContinueWatchingItem[] = (await WatchProgressService.getContinueWatchingList()).map((progress) => ({
 			...progress,
 			watchedAt: progress.watchedAt,
 			confirmedPath: DirectoryService.resolvePath(progress.relativePath),

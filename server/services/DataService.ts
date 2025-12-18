@@ -18,7 +18,7 @@ import { PromiseQueue } from '../utils/PromiseQueue';
 type namespace = string;
 type datumKey = string;
 
-export class Store<N extends namespace = namespace, T = any> {
+export class Store<T = any, N extends namespace = namespace> {
 	private versions: Map<number, StoreVersion> = new Map();
 
 	constructor(
