@@ -211,8 +211,6 @@ const seachedItems = computed(() => {
 					</div>
 				</div>
 			</div>
-
-
 		</div>
 		<br />
 	</Scroll>

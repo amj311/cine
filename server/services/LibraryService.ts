@@ -222,9 +222,13 @@ export class LibraryService {
 		const key = `${path.relativePath}_detailed_${detailed}_meta_${withMetadata}`;
 		let cached = this.itemCache.get(key);
 		if (!cached) {
+			console.log("missed cache!")
 			const item = await this.computeFolderToItem(path, detailed, withMetadata);
 			cached = item;
-			this.itemCache.set(path.relativePath, item);
+			this.itemCache.set(key, item);
+		}
+		else {
+			console.log("used cache!")
 		}
 		return cached;
 	};

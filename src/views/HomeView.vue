@@ -72,7 +72,7 @@ function formatRuntime(minutes: number) {
 <template>
 	<div class="home-view h-full">
 		<div class="feed h-full">
-			<div v-if="loadingFeed" class="w-full flex justify-content-center align-items-center gap-2 m-8">
+			<div v-if="loadingFeed" class="w-full flex justify-content-center align-items-center gap-2 p-8">
 				<i class="pi pi-spinner spin" />
 				Loading...
 			</div>
