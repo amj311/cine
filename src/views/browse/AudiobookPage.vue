@@ -531,6 +531,8 @@ const menuItems = [{
 		align-items: center;
 		text-align: center;
 		gap: 1em;
+   		padding: 0 2em;
+    	flex: 1 0 10vw;
 	}
 
 	.other-wrapper {
@@ -555,8 +557,7 @@ const menuItems = [{
 
 
 .poster-wrapper {
-	width: min(100%, 13rem);
-	min-width: min(100%, 13rem);
+	width: min(100%, 20rem);
 }
 
 .chapters-list-wrapper {
