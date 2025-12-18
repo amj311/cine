@@ -216,7 +216,19 @@ const FileTypeDictionary = {
 type LibraryFile = Photo | Video | Audio;
 
 export class LibraryService {
+	static readonly itemCache = new Map<string, LibraryItem>();
+
 	public static async parseFolderToItem(path: ConfirmedPath, detailed = false, withMetadata = true): Promise<LibraryItem> {
+		const key = `${path.relativePath}_detailed_${detailed}_meta_${withMetadata}`;
+		let cached = this.itemCache.get(key);
+		if (!cached) {
+			const item = await this.computeFolderToItem(path, detailed, withMetadata);
+			cached = item;
+			this.itemCache.set(path.relativePath, item);
+		}
+		return cached;
+	};
+	private static async computeFolderToItem(path: ConfirmedPath, detailed = false, withMetadata = true): Promise<LibraryItem> {
 		const folderName = path.relativePath.split('/').pop() || path.relativePath;
 		const { name, year, imdbId } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
@@ -452,7 +464,18 @@ export class LibraryService {
 	}
 
 
+	static readonly fileCache = new Map<string, LibraryFile | null>();
 	public static async parseFileToItem(path: ConfirmedPath): Promise<LibraryFile | null> {
+		const key = `${path.relativePath}`;
+		let cached = this.fileCache.get(key);
+		if (!cached) {
+			const item = await this.computeFileToItem(path);
+			cached = item || null;
+			this.fileCache.set(path.relativePath, item);
+		}
+		return cached;
+	}
+	private static async computeFileToItem(path: ConfirmedPath): Promise<LibraryFile | null> {
 		const fileType = FileTypeDictionary[path.relativePath.split('.').pop() as keyof typeof FileTypeDictionary];
 		if (!fileType) {
 			return null;
