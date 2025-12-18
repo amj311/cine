@@ -66,7 +66,6 @@ export class WatchProgressService {
 	 * @returns The watching progress of the media.
 	 */
 	public static async getWatchProgress(path: ConfirmedPath): Promise<WatchProgressWithBookmarks | null> {
-		console.log(await bookmarkStore.getAll())
 		const progress = await watchingStore.getByKey(path.relativePath);
 		if (progress) {
 			return {
@@ -78,7 +77,6 @@ export class WatchProgressService {
 	}
 
 	public static async deleteBookmark(path: ConfirmedPath, bookmarkId: string) {
-		console.log("DELETING BOOKMARK!")
 		const bookmarksForMedia = await bookmarkStore.getByKey(path.relativePath);
 		if (bookmarksForMedia) {
 			delete bookmarksForMedia[bookmarkId];
