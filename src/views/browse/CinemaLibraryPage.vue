@@ -214,6 +214,7 @@ const seachedItems = computed(() => {
 
 
 		</div>
+		<br />
 	</Scroll>
 </template>
 
