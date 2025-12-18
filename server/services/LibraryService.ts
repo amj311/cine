@@ -9,17 +9,44 @@ import { ProbeService } from "./ProbeService";
 import { SurpriseRecord, SurpriseService } from "./SurpriseService";
 import { WatchProgress, WatchProgressService } from "./WatchProgressService";
 
+type Stratified<B = {}, D = {}, M = {}> = {
+	base: B,
+	details: D,
+	meta: M,
+}
+type Join<S extends Stratified, T extends Partial<Stratified>> = {
+	base: S['base'] & T['base'],
+	details: S['details'] & T['details'],
+	meta: S['meta'] & T['meta'],
+}
+
+type Base<S extends Stratified> = S['base'];
+type Maybe<S extends Stratified> = S['base'] & Partial<S['details']>;
+type Full<S extends Stratified> = S['base'] & Partial<S['details']> & S['meta'];
+
 type LibraryItemData = {
 	folderName: string,
 	relativePath: RelativePath,
 	listName: string,
 	sortKey: string,
-	metadata: EitherMetadata | null,
 	imdbId?: string,
-	extras?: Array<Extra>,
 	cinemaType?: 'movie' | 'series',
-	surprise?: SurpriseRecord | null,
 }
+
+type LibraryItemStratBase = Stratified<
+	{
+		folderName: string,
+		relativePath: RelativePath,
+		listName: string,
+		sortKey: string,
+		imdbId?: string,
+	},
+	{},
+	{
+		metadata?: EitherMetadata | null,
+		surprise: SurpriseRecord | null,
+	}
+>
 
 export type Playable = {
 	type: 'movie' | 'episodeFile' | 'episode' | 'extra' | 'album' | 'audiobook',
@@ -31,7 +58,8 @@ export type Playable = {
 	version?: string | null,
 	fileName: string,
 	relativePath: RelativePath,
-	watchProgress: WatchProgress | null,
+	confirmedPath: ConfirmedPath,
+	watchProgress?: WatchProgress | null,
 }
 
 const ExtraTypes = ['behindthescenes', 'deleted', 'featurette', 'trailer'] as const;
@@ -42,27 +70,30 @@ type Extra = Playable & {
 	still_thumb: string,
 }
 
-type CinemaItem = LibraryItemData & {
-	type: 'cinema',
-	cinemaType: 'movie' | 'series',
-	name: string,
-	year: string,
-	extras?: Array<Extra>,
-	metadata: EitherMetadata | null,
-}
+type CinemaItemStrat = Join<LibraryItemStratBase, Stratified<
+	{
+		type: 'cinema',
+		cinemaType: 'movie' | 'series',
+		name: string,
+		year: string,
+	},
+	{
+		extras: Array<Extra>,
+	}
+>>
 
-type MovieCinema = CinemaItem & {
-	type: 'cinema',
+type MovieCinemaStrat = Join<CinemaItemStrat, Stratified<{
 	cinemaType: 'movie',
-	movie: Playable,
-	metadata: EitherMetadata<'movie'> | null,
-}
+	movie: MoviePlayable,
+}>>
 
 type MoviePlayable = Playable & {
 	type: 'movie',
 	name: string,
 	year: string,
 }
+
+
 
 /* A single file may span multiple episodes.
  * For simplicity represent all as any array even if they have just one
@@ -86,13 +117,6 @@ type Episode = Playable & {
 	startTime?: number,
 }
 
-type Series = CinemaItem & {
-	type: 'cinema',
-	cinemaType: 'series',
-	numSeasons: number,
-	seasons?: Array<Season>,
-	metadata: EitherMetadata<'series'> | null,
-}
 type Season = {
 	seasonNumber: number,
 	episodeFiles: Array<EpisodeFile>,
@@ -100,64 +124,85 @@ type Season = {
 	extras: Array<Extra>,
 }
 
+type SeriesCinemaStrat = Join<CinemaItemStrat, Stratified<
+	{
+		cinemaType: 'series',
+		numSeasons: number,
+	},
+	{
+		seasons: Array<Season>,
+	}
+>>
 
-type Album = LibraryItemData & Playable & {
-	type: 'album',
-	title?: string,
-	year?: string,
-	artist?: string,
-	genre?: string,
-	cover_thumb: string,
-	cover: string,
-	tracks?: Array<{
-		relativePath: RelativePath,
+type AlbumStrat = Join<LibraryItemStratBase, Stratified<
+	{
+		type: 'album',
 		title?: string,
+		year?: string,
 		artist?: string,
-		album?: string,
-		trackNumber?: number,
-		trackTotal?: number,
-		duration: number,
-	}>,
-}
+		genre?: string,
+		cover_thumb: string,
+		cover: string,
+	} & Playable,
+	{
+		tracks?: Array<{
+			relativePath: RelativePath,
+			title?: string,
+			artist?: string,
+			album?: string,
+			trackNumber?: number,
+			trackTotal?: number,
+			duration: number,
+		}>,
+	}
+>>
 
-type Audiobook = LibraryItemData & Playable & {
-	type: 'audiobook',
-	title?: string,
-	year?: string,
-	author?: string,
-	cover_thumb: string,
-	cover: string,
-	chapterStrategy: 'tracks' | 'chapters',
-	// each chapter references a file, but multiple chapters can be in one file
-	// in the case of .m4b files all chapters are in one file
-	chapters?: Array<{
-		relativePath: RelativePath,
+type AudiobookStrat = Join<LibraryItemStratBase, Stratified<
+	{
+		type: 'audiobook',
 		title?: string,
-		trackDuration: number,
-		chapterDuration: number,
-		bookStartOffset: number,
-		trackStartOffset: number, // for multiple chapters in the same track
-	}>,
-}
+		year?: string,
+		author?: string,
+		cover_thumb: string,
+		cover: string,
+		chapterStrategy: 'tracks' | 'chapters',
+	} & Playable,
+	{
+		// each chapter references a file, but multiple chapters can be in one file
+		// in the case of .m4b files all chapters are in one file
+		chapters?: Array<{
+			relativePath: RelativePath,
+			title?: string,
+			trackDuration: number,
+			chapterDuration: number,
+			bookStartOffset: number,
+			trackStartOffset: number, // for multiple chapters in the same track
+		}>,
+	}
+>>
 
-export type AnyPlayable = MoviePlayable | Episode | EpisodeFile | Album | Audiobook | Extra;
+export type AnyPlayable = MoviePlayable | Episode | EpisodeFile | Base<AlbumStrat> | Base<AudiobookStrat> | Extra;
 
 /** A collection is a specific group of media, like a movie series i.e. Harry Potter */
-type Collection = LibraryItemData & {
-	type: 'collection',
-	name: string,
-	children: Array<RelativePath>,
-	extras?: Array<Extra>,
-}
+type CollectionStrat = Join<LibraryItemStratBase, Stratified<
+	{
+		type: 'collection',
+		name: string,
+		children: Array<RelativePath>,
+	},
+	{
+		extras?: Array<Extra>,
+	}
+>>
 
 
 /** A folder is more generic than a collection and could contain anything */
-type Folder = LibraryItemData & {
+type FolderStrat = Join<LibraryItemStratBase, Stratified<{
 	type: 'folder',
 	feedOrder: number | null,
 	name: string,
 	children: Array<RelativePath>,
-}
+}>>
 
 /** A library is a root-level entity containing all of one type of media */
 type Library = LibraryItemData & {
@@ -167,10 +212,15 @@ type Library = LibraryItemData & {
 	children: Array<RelativePath>,
 	confirmedPath: ConfirmedPath,
 }
+type LibraryStrat = Join<LibraryItemStratBase, Stratified<{
+	type: 'library',
+	libraryType: 'cinema' | 'photos' | 'audio',
+	name: string,
+	children: Array<RelativePath>,
+	confirmedPath: ConfirmedPath,
+}>>
 
-type LibraryItem = MovieCinema | Series | Album | Audiobook | Collection | Folder | Library;
-
-
+type LibraryItemStrat = MovieCinemaStrat | SeriesCinemaStrat | AlbumStrat | AudiobookStrat | CollectionStrat | FolderStrat | LibraryStrat;
 
 
 
@@ -216,17 +266,34 @@ const FileTypeDictionary = {
 type LibraryFile = Photo | Video | Audio;
 
 export class LibraryService {
-	static readonly itemCache = new Map<string, LibraryItem>();
+	static readonly itemCache = new Map<string, Base<LibraryItemStrat>>();
+	static readonly itemDetailCache = new Map<string, LibraryItemStrat['details']>();
 
-	public static async parseFolderToItem(path: ConfirmedPath, detailed = false, withMetadata = true): Promise<LibraryItem> {
-		let data = this.itemCache.get(path.relativePath) || await this.computeFolderToItem(path, detailed, withMetadata);
-		// Only use cache when not doing detailed or metadata!
-		if (!detailed && !withMetadata) {
-			this.itemCache.set(path.relativePath, data);
+	public static async parseFolderToItem(path: ConfirmedPath, detailed = false, withMetadata = true): Promise<Full<LibraryItemStrat>> {
+		let base: Base<LibraryItemStrat> | undefined = this.itemCache.get(path.relativePath);
+		if (!base) {
+			const item = await this.computeFolderToItem(path);
+			base = item;
+			this.itemCache.set(path.relativePath, item);
 		}
-		return data;
+		// Add surprise for everything, but after cache
+		let item: Full<LibraryItemStrat> = {
+			...base,
+			surprise: await SurpriseService.getSurprise(path),
+		}
+
+		// Also cache details since they can be slow (episodes and audio tracks)
+		if (detailed) {
+			item = await this.joinLibraryItemDetails(path, item);
+		}
+		if (withMetadata) {
+			item = await this.joinLibraryItemMetadata(path, item);
+		}
+		await LibraryService.joinProgressDeep(item);
+		return item;
 	};
-	private static async computeFolderToItem(path: ConfirmedPath, detailed = false, withMetadata = true): Promise<LibraryItem> {
+
+	private static async computeFolderToItem(path: ConfirmedPath): Promise<Base<LibraryItemStrat>> {
 		const folderName = path.relativePath.split('/').pop() || path.relativePath;
 		const { name, year, imdbId } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
@@ -236,15 +303,6 @@ export class LibraryService {
 			// Search for "Season" folders
 			const allSeasonFolders = children.folders.filter((folder) => folder.name.toLowerCase().includes('season'));
 			if (allSeasonFolders.length > 0) {
-				const seasons = detailed ? await LibraryService.extractSeasons(allSeasonFolders.map((folder) => folder.confirmedPath), name, year) : undefined;
-				// consider files that are not in a season folder as extras
-				let extras: Extra[] = [];
-
-				// series-wide extras
-				if (detailed) {
-					extras = await LibraryService.prepareExtras(children.files.map((file) => file.name), path)
-				}
-
 				return {
 					type: 'cinema',
 					cinemaType: 'series',
@@ -253,13 +311,9 @@ export class LibraryService {
 					imdbId: imdbId || undefined,
 					relativePath: path.relativePath,
 					folderName: folderName,
-					seasons,
 					numSeasons: allSeasonFolders.length,
-					metadata: withMetadata ? await MediaMetadataService.getMetadata('series', path, detailed, true) : null,
-					extras,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
-					surprise: await SurpriseService.getSurprise(path),
 				};
 			}
 
@@ -269,12 +323,6 @@ export class LibraryService {
 				return file.name.endsWith('.mp4') && mediaName === name && fileYear === year;
 			});
 			if (movieFile) {
-				let extras: Extra[] = [];
-				if (detailed) {
-					const extraVideos = children.files.filter((file) => file !== movieFile);
-					extras = await LibraryService.prepareExtras(extraVideos.map((file) => file.name), path)
-				}
-
 				const { version: movieVersion } = LibraryService.parseNamePieces(movieFile.name);
 
 				const moviePlayable: MoviePlayable = {
@@ -284,7 +332,7 @@ export class LibraryService {
 					version: movieVersion,
 					fileName: movieFile.name,
 					relativePath: movieFile.confirmedPath.relativePath,
-					watchProgress: await WatchProgressService.getWatchProgress(movieFile.confirmedPath)
+					confirmedPath: movieFile.confirmedPath,
 				};
 
 				return {
@@ -296,11 +344,8 @@ export class LibraryService {
 					relativePath: path.relativePath,
 					folderName: folderName,
 					movie: moviePlayable,
-					extras,
-					metadata: withMetadata ? await MediaMetadataService.getMetadata('movie', path, detailed, true) : null,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
-					surprise: await SurpriseService.getSurprise(path),
 				};
 			}
 		}
@@ -310,37 +355,8 @@ export class LibraryService {
 		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioTypes.includes(file.name.split('.').pop() as AudioType));
 		if (allChildrenAreAudio) {
 			const firstTrackProbe = await ProbeService.getTrackData(children.files[0].confirmedPath);
-			const tracks = detailed ? (await Promise.all(children.files.map(async (file) => {
-				const probe = await ProbeService.getTrackData(file.confirmedPath);
-				const title = probe?.title || LibraryService.removeExtensionsFromFileName(file.name);
-				return {
-					type: 'track',
-					title,
-					artist: probe?.artist,
-					album: probe?.album,
-					year: probe?.year,
-					trackNumber: probe?.trackNumber,
-					trackTotal: probe?.trackTotal,
-					duration: probe?.duration,
-					name: title,
-					fileName: file.name,
-					relativePath: path.relativePath + '/' + file.name,
-					sortKey: (probe?.trackNumber ? probe.trackNumber + '_' : '') + file.name,
-					listName: title,
-					chapters: probe?.chapters
-				} as any;
-			}))) : undefined;
-
-			// Compute the start offset for each track
-			detailed && tracks!.reduce((acc, track) => {
-				track.startOffset = acc;
-				acc += track.duration;
-				return acc;
-			}, 0);
-
 			if (firstTrackProbe?.genre === 'Audiobook' || children.files[0].name.endsWith('.m4b')) {
 				const isMb4b = children.files[0].name.endsWith('.m4b');
-
 				return {
 					type: 'audiobook',
 					title: firstTrackProbe?.album,
@@ -349,37 +365,16 @@ export class LibraryService {
 					cover_thumb: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=300`,
 					cover: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=500`,
 					relativePath: path.relativePath,
+					confirmedPath: path,
 					folderName: folderName,
-					metadata: null,
 					sortKey: LibraryService.createSortKey(folderName, firstTrackProbe?.year),
-					watchProgress: await WatchProgressService.getWatchProgress(path),
 					name: firstTrackProbe?.album || name,
 					listName: firstTrackProbe?.album || name,
 					fileName: path.absolutePath,
 					chapterStrategy: isMb4b ? 'chapters' : 'tracks',
-					chapters: tracks?.flatMap((track) => {
-						if (!isMb4b || !track.chapters || track.chapters.length === 0) {
-							return {
-								...track,
-								trackDuration: track.duration,
-								chapterDuration: track.duration,
-								bookStartOffset: track.startOffset || 0,
-								trackStartOffset: 0,
-							}
-						}
-						return track.chapters.map((chapter: any) => ({
-							...track,
-							title: chapter['TAG:title'] || track.title,
-							trackDuration: track.duration,
-							chapterDuration: chapter.duration,
-							bookStartOffset: chapter.start_time || 0,
-							trackStartOffset: chapter.start_time || 0,
-						}));
-					}) || undefined,
-					surprise: await SurpriseService.getSurprise(path),
 				}
 			}
-			return {
+			else return {
 				type: 'album',
 				title: firstTrackProbe?.album,
 				artist: firstTrackProbe?.album_artist || firstTrackProbe?.artist,
@@ -387,15 +382,12 @@ export class LibraryService {
 				cover_thumb: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=300`,
 				cover: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=500`,
 				relativePath: path.relativePath,
+				confirmedPath: path,
 				folderName: folderName,
-				metadata: null,
 				sortKey: LibraryService.createSortKey(folderName),
-				watchProgress: await WatchProgressService.getWatchProgress(path),
 				name: firstTrackProbe?.album || name,
 				listName: firstTrackProbe?.album || name,
 				fileName: path.absolutePath,
-				tracks: tracks || undefined,
-				surprise: await SurpriseService.getSurprise(path),
 			};
 		}
 
@@ -412,7 +404,6 @@ export class LibraryService {
 					confirmedPath: path,
 					folderName: folderName,
 					children: children.folders.map((folder) => folder.confirmedPath.relativePath),
-					metadata: null,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
 				}
@@ -420,26 +411,18 @@ export class LibraryService {
 		}
 
 
-		// If all children are media, consider it a collection
+		// If all children folders are media, consider it a collection
 		const allChildrenAreMedia = children.folders.length > 0 && children.folders.every((folder) => Boolean(LibraryService.parseNamePieces(folder.name).year));
 		if (allChildrenAreMedia) {
 			const childrenPaths = children.folders.map((folder) => folder.confirmedPath.relativePath);
-			// Allow collections to have extras - video files at the root of the collection folder
-			let extras: Extra[] = [];
-			if (detailed) {
-				const extraVideos = children.files.filter((file) => !childrenPaths.includes(file.confirmedPath.relativePath));
-				extras = await LibraryService.prepareExtras(extraVideos.map((file) => file.name), path);
-			}
 			return {
 				type: 'collection',
 				name,
 				relativePath: path.relativePath,
 				folderName: folderName,
 				children: childrenPaths,
-				metadata: null,
 				sortKey: LibraryService.createSortKey(folderName),
 				listName: name,
-				extras,
 			};
 		}
 
@@ -456,8 +439,135 @@ export class LibraryService {
 			feedOrder,
 			listName: name,
 			sortKey: LibraryService.createSortKey(folderName),
-			metadata: null,
 		};
+	}
+
+
+	private static async joinLibraryItemDetails(path: ConfirmedPath, item: Full<LibraryItemStrat>): Promise<Full<LibraryItemStrat>> {
+		const children = await DirectoryService.listDirectory(path);
+
+		let details: LibraryItemStrat['details'] | undefined = this.itemDetailCache.get(path.relativePath);
+		if (!details) {
+
+			// Search for "Season" folders
+			if (item.type === 'cinema' && item.cinemaType === 'series') {
+				const allSeasonFolders = children.folders.filter((folder) => folder.name.toLowerCase().includes('season'));
+				details = {
+					extras: await LibraryService.prepareExtras(children.files.map((file) => file.name), path),
+					seasons: await LibraryService.extractSeasons(allSeasonFolders.map((folder) => folder.confirmedPath), item.name, item.year)
+				};
+			}
+			else if (item.type === 'cinema' && item.cinemaType === 'movie') {
+				const extraVideos = children.files.filter((file) => file.confirmedPath.relativePath !== item.movie.relativePath);
+				details = {
+					extras: await LibraryService.prepareExtras(extraVideos.map((file) => file.name), path)
+				}
+			}
+			else if (item.type === 'audiobook' || item.type === 'album') {
+				const tracks = await Promise.all(children.files.map(async (file) => {
+					const probe = await ProbeService.getTrackData(file.confirmedPath);
+					const title = probe?.title || LibraryService.removeExtensionsFromFileName(file.name);
+					return {
+						type: 'track',
+						title,
+						artist: probe?.artist,
+						album: probe?.album,
+						year: probe?.year,
+						trackNumber: probe?.trackNumber,
+						trackTotal: probe?.trackTotal,
+						duration: probe?.duration,
+						name: title,
+						fileName: file.name,
+						relativePath: path.relativePath + '/' + file.name,
+						sortKey: (probe?.trackNumber ? probe.trackNumber + '_' : '') + file.name,
+						listName: title,
+						chapters: probe?.chapters
+					} as any;
+				}));
+
+				// Compute the start offset for each track
+				tracks.reduce((acc, track) => {
+					track.startOffset = acc;
+					acc += track.duration;
+					return acc;
+				}, 0);
+
+				details = {
+					tracks: item.type === 'album' ? tracks : undefined,
+					chapters: item.type === 'audiobook' ? tracks.flatMap((track) => {
+						if (item.chapterStrategy === 'tracks' || !track.chapters || track.chapters.length === 0) {
+							return {
+								...track,
+								trackDuration: track.duration,
+								chapterDuration: track.duration,
+								bookStartOffset: track.startOffset || 0,
+								trackStartOffset: 0,
+							}
+						}
+						return track.chapters.map((chapter: any) => ({
+							...track,
+							title: chapter['TAG:title'] || track.title,
+							trackDuration: track.duration,
+							chapterDuration: chapter.duration,
+							bookStartOffset: chapter.start_time || 0,
+							trackStartOffset: chapter.start_time || 0,
+						}));
+					}) : undefined,
+				}
+			}
+			else if (item.type === 'collection') {
+				const childrenPaths = children.folders.map((folder) => folder.confirmedPath.relativePath);
+				// Allow collections to have extras - video files at the root of the collection folder
+				const extraVideos = children.files.filter((file) => !childrenPaths.includes(file.confirmedPath.relativePath));
+				details = {
+					extras: await LibraryService.prepareExtras(extraVideos.map((file) => file.name), path),
+				};
+			}
+			else {
+				details = {};
+			}
+
+			this.itemDetailCache.set(path.relativePath, details);
+		}
+
+		return {
+			...item,
+			...details,
+		};
+	}
+
+
+	private static async joinLibraryItemMetadata(path: ConfirmedPath, item: Full<LibraryItemStrat>, detailed = false): Promise<Full<LibraryItemStrat>> {
+		// Take care of series and movies first
+		if (item.type === 'cinema') {
+			return {
+				...item,
+				metadata: await MediaMetadataService.getMetadata(item.cinemaType, path, detailed, true),
+			};
+		}
+
+		return {
+			...item,
+			metadata: null,
+		}
+	}
+
+
+	/** Many library items have nested Playable items. This will find watchProgress for all of them. */
+	private static async joinProgressDeep(item: Record<any, any>) {
+		const diveAttributes = ['movie', 'extras', 'seasons', 'episodeFiles', 'episodes', 'chapters', 'tracks'];
+		// All items with watchProgress have confirmedPath
+		if (item.confirmedPath) {
+			item.watchProgress = await WatchProgressService.getWatchProgress(item.confirmedPath);
+		}
+		await Promise.all(Array.from(Object.keys(item)).map(async key => {
+			if (diveAttributes.includes(key) && item[key]) {
+				if (Array.isArray(item[key])) {
+					await Promise.all(item[key].map(LibraryService.joinProgressDeep));
+				}
+				else await LibraryService.joinProgressDeep(item[key]);
+			}
+		}));
 	}
 
 
@@ -505,7 +615,7 @@ export class LibraryService {
 
 
 	public static async getFlatTree(path: ConfirmedPath) {
-		const items: Array<LibraryItem> = [];
+		const items: Array<Base<LibraryItemStrat>> = [];
 		const files: Array<LibraryFile> = [];
 		async function parseDirectory(confirmedPath: ConfirmedPath) {
 			const { folders, files: childrenFiles } = await DirectoryService.listDirectory(confirmedPath);
@@ -542,7 +652,7 @@ export class LibraryService {
 			const NumbersRegex = RegExp(/s(?<seasonNumber>\d{1,3})e(?<firstEpisodeNumber>\d{1,3})/g);
 
 			const createEpisode = async (file: typeof videoFiles[0], numbersMatch: NonNullable<NonNullable<ReturnType<typeof NumbersRegex.exec>>['groups']>) => {
-				const overAllWatchProgress = await WatchProgressService.getWatchProgress(file.confirmedPath);
+				// const overAllWatchProgress = await WatchProgressService.getWatchProgress(file.confirmedPath);
 
 				const seasonNumber = parseInt(numbersMatch.seasonNumber);
 				const firstEpisodeNumber = parseInt(numbersMatch.firstEpisodeNumber);
@@ -560,29 +670,29 @@ export class LibraryService {
 				const hasMultipleEpisodes = lastEpisodeNumber !== undefined;
 				const hasEpisodeTimes = extraEpisodeTimes?.length > 0;
 
-				function computeEpisodeWatchProgress(
-					episodeStartTime: number,
-					nextEpisodeStartTime: number | undefined,
-					watchProgress: WatchProgress | null
-				): WatchProgress | null {
-					if (!watchProgress) {
-						return null;
-					}
-					if (watchProgress.time < episodeStartTime) {
-						return null;
-					}
+				// function computeEpisodeWatchProgress(
+				// 	episodeStartTime: number,
+				// 	nextEpisodeStartTime: number | undefined,
+				// 	watchProgress: WatchProgress | null
+				// ): WatchProgress | null {
+				// 	if (!watchProgress) {
+				// 		return null;
+				// 	}
+				// 	if (watchProgress.time < episodeStartTime) {
+				// 		return null;
+				// 	}
 
-					const watchTime = watchProgress.time - episodeStartTime;
-					const totalFileDuration = watchProgress.duration;
-					const epsiodeDuration = (nextEpisodeStartTime || totalFileDuration) - episodeStartTime;
-					const percentage = Math.min(watchTime / epsiodeDuration, 1) * 100;
+				// 	const watchTime = watchProgress.time - episodeStartTime;
+				// 	const totalFileDuration = watchProgress.duration;
+				// 	const epsiodeDuration = (nextEpisodeStartTime || totalFileDuration) - episodeStartTime;
+				// 	const percentage = Math.min(watchTime / epsiodeDuration, 1) * 100;
 
-					// Remember that only the percentage is made relative to the episode
-					return {
-						...watchProgress,
-						percentage: Math.round(percentage),
-					};
-				}
+				// 	// Remember that only the percentage is made relative to the episode
+				// 	return {
+				// 		...watchProgress,
+				// 		percentage: Math.round(percentage),
+				// 	};
+				// }
 
 				const allEpisodeTimes = [
 					{ episodeNumber: firstEpisodeNumber, startTime: 0 },
@@ -599,15 +709,16 @@ export class LibraryService {
 					version,
 					fileName: file.name,
 					relativePath: file.confirmedPath.relativePath,
+					confirmedPath: file.confirmedPath,
 
 					seasonNumber,
 					episodeNumber,
 					startTime,
-					watchProgress: computeEpisodeWatchProgress(
-						startTime,
-						allEpisodeTimes[i + 1]?.startTime,
-						overAllWatchProgress
-					),
+					// watchProgress: computeEpisodeWatchProgress(
+					// 	startTime,
+					// 	allEpisodeTimes[i + 1]?.startTime,
+					// 	overAllWatchProgress
+					// ),
 				}));
 
 				return {
@@ -619,7 +730,7 @@ export class LibraryService {
 					firstEpisodeNumber,
 					fileName: file.name as string,
 					relativePath: file.confirmedPath.relativePath,
-					watchProgress: overAllWatchProgress,
+					// watchProgress: overAllWatchProgress,
 					episodes,
 					name: lastEpisodeNumber ? `Episodes ${firstEpisodeNumber} - ${Number(lastEpisodeNumber)}` : episodeName,
 				} as EpisodeFile;
@@ -672,7 +783,8 @@ export class LibraryService {
 				extraType,
 				fileName: file,
 				relativePath: parentPath.append(file).relativePath,
-				watchProgress: await WatchProgressService.getWatchProgress(parentPath.append(file)),
+				confirmedPath: parentPath.append(file),
+				// watchProgress: await WatchProgressService.getWatchProgress(parentPath.append(file)),
 				still_thumb: `/thumb/${parentPath.append(file).relativePath}?width=300`
 			}
 		}));
@@ -698,12 +810,14 @@ export class LibraryService {
 
 		if (parentLibrary) {
 			// Identify playable within the parent library
-			playable = (parentLibrary.extras as Array<Extra>)?.find((extra) => path.relativePath === extra.relativePath) || null;
-			if (!playable && 'movie' in parentLibrary) {
-				playable = (parentLibrary as MovieCinema).movie.relativePath === path.relativePath ? parentLibrary.movie : null;
+			if ('extras' in parentLibrary) {
+				playable = (parentLibrary.extras as unknown as Array<Extra>)?.find((extra) => path.relativePath === extra.relativePath) || null;
 			}
-			if (!playable && parentLibrary.cinemaType === 'series') {
-				playable = (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => path.relativePath === episodeFile.relativePath) || null;
+			if (!playable && 'movie' in parentLibrary) {
+				playable = (parentLibrary as Base<MovieCinemaStrat>).movie.relativePath === path.relativePath ? parentLibrary.movie : null;
+			}
+			if (!playable && parentLibrary.type === 'cinema' && parentLibrary.cinemaType === 'series') {
+				playable = (parentLibrary as Full<SeriesCinemaStrat>).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => path.relativePath === episodeFile.relativePath) || null;
 			}
 		}
 		if (!playable) {
@@ -728,7 +842,7 @@ export class LibraryService {
 		if (!parentLibrary || !playable || playable.type !== 'episodeFile') {
 			return null;
 		}
-		const allEpisodes = (parentLibrary as Series).seasons?.flatMap((season) => season.episodeFiles).flatMap((episodeFile) => episodeFile.episodes);
+		const allEpisodes = (parentLibrary as Full<SeriesCinemaStrat>).seasons?.flatMap((season) => season.episodeFiles).flatMap((episodeFile) => episodeFile.episodes);
 		const currentEpisodeIndex = allEpisodes?.findIndex((episode) => path.relativePath === episode.relativePath);
 		if (currentEpisodeIndex === undefined || currentEpisodeIndex === -1) {
 			return null;
