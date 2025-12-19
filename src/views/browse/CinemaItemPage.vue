@@ -434,8 +434,7 @@ onUnmounted(async () => {
 }
 
 .poster-wrapper {
-	width: min(225px, 30vw);
-	min-width: min(225px, 30vw);
+	width: min(225px, 30vw, 47vh);
 }
 
 .episode-item {
