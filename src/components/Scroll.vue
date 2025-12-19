@@ -9,13 +9,10 @@ defineExpose({
 
 const isScrolling = ref(false);
 const scrollTimeout = ref<number | null>(null);
-const scrollDelay = 1000;
+const showScrollDelay = 1000;
 
 onMounted(() => {
 	scrollArea.value?.addEventListener('scroll', () => {
-		if (isScrolling.value) {
-			return;
-		}
 		if (scrollTimeout.value) {
 			clearTimeout(scrollTimeout.value);
 		}
@@ -23,7 +20,7 @@ onMounted(() => {
 
 		scrollTimeout.value = window.setTimeout(() => {
 			isScrolling.value = false;
-		}, scrollDelay);
+		}, showScrollDelay);
 	});
 
 	scrollArea.value?.addEventListener('mousemove', doHoverScroll);
@@ -41,7 +38,9 @@ onBeforeUnmount(() => {
 	}
 });
 
-const hoverScrollTime = 25;
+const hoverScrollDelta = 20;
+const maxDelta = 40;
+const hoverScrollTime = 70;
 const hoverScrollTimeout = ref<number | null>(null);
 const scrollingEdge = ref<string | null>(null);
 const screenMouseX = ref(0);
@@ -51,6 +50,9 @@ function doHoverScroll(event: MouseEvent) {
 	if (!useNavigationStore().detectedTv) {
 		return;
 	}
+
+	const startTime = Date.now();
+
 	// First find out if the mouse is the sides of a scroll area
 	const edgeMargin = 50;
 	const scrollArea = event.currentTarget as HTMLElement;
@@ -78,18 +80,19 @@ function doHoverScroll(event: MouseEvent) {
 	}
 
 	function doEdgeScroll(edge) {
-		
-		const scrollDelta = 10;
+		const timeScrolling = Date.now() - startTime;
+		const deltaMult = timeScrolling > 5000 ? 2 : 1;
+		const useDelta = Math.min(hoverScrollDelta * deltaMult, maxDelta);
 		let deltaX = 0;
 		let deltaY = 0;
 		if (edge === 'left' && scrollArea.scrollLeft > 0) {
-			deltaX = -scrollDelta;
+			deltaX = -useDelta;
 		} else if (edge === 'right' && scrollArea.scrollLeft < scrollArea.scrollWidth - scrollArea.clientWidth) {
-			deltaX = +scrollDelta;
+			deltaX = +useDelta;
 		} else if (edge === 'up' && scrollArea.scrollTop > 0) {
-			deltaY = -scrollDelta;
+			deltaY = -useDelta;
 		} else if (edge === 'down' && scrollArea.scrollTop < scrollArea.scrollHeight - scrollArea.clientHeight) {
-			deltaY = +scrollDelta;
+			deltaY = +useDelta;
 		}
 
 		if (deltaX || deltaY) {
