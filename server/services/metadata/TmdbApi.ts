@@ -74,12 +74,12 @@ export class TmdbApi {
 			genres: result.genres?.map(g => g.name),
 			runtime: result.runtime,
 			credits: [
-				...(result.credits?.cast.slice(0, 10).map((c) => ({
+				...(result.credits?.cast.slice(0, 20).map((c) => ({
 					name: c.name,
 					role: c.character,
 					photo: this.getImageUrl(c.profile_path, 'profile', 'small'),
 				})) || []),
-				...(result.credits?.crew.slice(0, 10).map((c) => ({
+				...(result.credits?.crew.slice(0, 20).map((c) => ({
 					name: c.name,
 					role: c.job,
 					photo: this.getImageUrl(c.profile_path, 'profile', 'small'),

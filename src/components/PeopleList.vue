@@ -27,7 +27,7 @@ defineProps<{
 						{{ person.name }}
 					</template>
 				</div>
-				<div class="people-role" :style="{ opacity: .7 }">
+				<div class="people-role text-ellipsis" :style="{ opacity: .7 }">
 					<template v-if="loading">
 						<Skeleton width="75px" height="20px" />
 					</template>
