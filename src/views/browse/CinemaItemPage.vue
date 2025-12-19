@@ -12,8 +12,6 @@ import Skeleton from 'primevue/skeleton';
 import { useApiStore } from '@/stores/api.store';
 import { useNavigationStore } from '@/stores/tvNavigation.store';
 import LibraryItemActions from '@/components/LibraryItemActions.vue';
-import type DropdownMenuVue from '@/components/utils/DropdownMenu.vue';
-import type LibraryItemActionsVue from '@/components/LibraryItemActions.vue';
 
 const router = useRouter();
 const props = defineProps<{

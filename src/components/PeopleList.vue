@@ -66,5 +66,10 @@ defineProps<{
 		border-radius: 50%;
 		margin-bottom: 5px;
 	}
+	
+	.people-role {
+		width: 6rem;
+		text-align: center;
+	}
 }
 </style>
