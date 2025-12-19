@@ -425,6 +425,7 @@ onUnmounted(async () => {
 	display: flex;
 	flex-direction: column;
 	gap: 30px;
+    text-shadow: 0 0 8px #0006;
 }
 
 .top-wrapper {
