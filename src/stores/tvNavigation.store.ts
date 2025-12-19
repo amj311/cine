@@ -7,7 +7,7 @@ type Direction = 'up' | 'down' | 'left' | 'right';
 export const focusAreaClass = 'tvNavigationFocusArea';
 
 
-export const useTvNavigationStore = defineStore('TvNavigation', () => {
+export const useNavigationStore = defineStore('Navigation', () => {
 	const lastMouseMove = ref({ x: 0, y: 0 });
 	const lastMousePosition = ref({ x: 0, y: 0 });
 	const lastDetectedDirection = ref<Direction | null>(null);
@@ -17,6 +17,13 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	const detectedTouch = ref(false);
 	const tvWasConfirmed = ref(false);
 	const enabled = ref(false);
+
+	const isSkinnyScreen = ref(window.innerWidth < 768);
+	function updateMobileNav() {
+		isSkinnyScreen.value = window.innerWidth < 768;
+	}
+	window.addEventListener('resize', updateMobileNav);
+	updateMobileNav();
 
 	async function handleMouseMove(event) {
 		stopScreenEdgeScroll();
@@ -403,6 +410,11 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 	let onTvDetected: (() => Promise<boolean>) | null = null;
 
 	function determineTvEnvironment(confirmationCb?: () => Promise<boolean>) {
+		if (isSkinnyScreen.value) {
+			console.log("Screen is too small to be TV");
+			return;
+		}
+
 		suggestTvModeHandler = confirmationCb || null;
 		console.log('Determining TV environment...');
 		const isTv = window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
@@ -513,6 +525,7 @@ export const useTvNavigationStore = defineStore('TvNavigation', () => {
 		engageTvMode,
 		disengageTvMode,
 
+		isSkinnyScreen,
 		detectedTv,
 		detectedTouch,
 		onTvDetected: (cb) => onTvDetected = cb,

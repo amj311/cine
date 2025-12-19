@@ -12,7 +12,7 @@ import Skeleton from 'primevue/skeleton';
 import { GetListByKeyword } from 'youtube-search-api';
 import { useApiStore } from '@/stores/api.store';
 import axios from 'axios';
-import { useTvNavigationStore } from '@/stores/tvNavigation.store';
+import { useNavigationStore } from '@/stores/tvNavigation.store';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import type Dialog from 'primevue/dialog';
 import type ToggleSwitch from 'primevue/toggleswitch';

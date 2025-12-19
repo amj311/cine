@@ -3,7 +3,7 @@
 	lang="ts"
 >
 import { RouterView, useRoute } from 'vue-router'
-import { useTvNavigationStore } from './stores/tvNavigation.store';
+import { useNavigationStore } from './stores/tvNavigation.store';
 import AppBackground from './components/AppBackground.vue';
 import { computed, onMounted, ref } from 'vue';
 import { useConfirm } from "primevue/useconfirm";
@@ -18,7 +18,7 @@ import SharedPage from './views/SharedPage.vue';
 const apiStore = useApiStore();
 
 usePageTitleStore();
-const tvNavigationStore = useTvNavigationStore();
+const tvNavigationStore = useNavigationStore();
 const showDebug = ref(false);
 
 const confirm = useConfirm();

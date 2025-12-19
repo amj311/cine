@@ -5,26 +5,17 @@
 import { getBuildNumber } from '@/services/versionService';
 import { useAppNavigationStore } from '@/stores/appNavigation.store';
 import { useQueryPathStore } from '@/stores/queryPath.store';
+import { useNavigationStore } from '@/stores/tvNavigation.store';
 import Button from 'primevue/button';
 import { computed, h, onMounted, onUnmounted, ref } from 'vue';
 
 const navStore = useAppNavigationStore();
 const lastClickedItem = ref<string | null>(null);
 
-const useMobileNav = ref(window.innerWidth < 768);
+const useMobileNav = computed(() => useNavigationStore().isSkinnyScreen);
 const expandMobileNav = ref(false);
 const queryPathStore = useQueryPathStore();
 
-function updateMobileNav() {
-	useMobileNav.value = window.innerWidth < 768;
-}
-onMounted(() => {
-	window.addEventListener('resize', updateMobileNav);
-	updateMobileNav();
-});
-onUnmounted(() => {
-	window.removeEventListener('resize', updateMobileNav);
-});
 
 const props = defineProps<{
 }>()
