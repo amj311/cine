@@ -313,7 +313,7 @@ onUnmounted(async () => {
 
 			<div v-if="isSeries">
 				<h2 class="mb-2">Episodes</h2>
-				<div class="season-wrapper" :class="{ 'wide': !useNavigationStore().isSkinnyScreen }">
+				<div class="seasons-wrapper" :class="{ 'wide': !useNavigationStore().isSkinnyScreen }">
 					<div class="selection-wrapper">
 						<div class="selection">
 							<Button
@@ -448,11 +448,15 @@ onUnmounted(async () => {
 	}
 }
 
-
-.season-wrapper {
+.seasons-wrapper {
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
+
+	.season-details {
+		flex: 1;
+		overflow: hidden;
+	}
 
 	&.wide {
 		flex-direction: row;
