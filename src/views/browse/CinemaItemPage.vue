@@ -456,6 +456,13 @@ onUnmounted(async () => {
 	.season-details {
 		flex: 1;
 		overflow: hidden;
+		--card-growth-margin: 0.5rem;
+		padding-top: var(--card-growth-margin);
+		padding-left: var(--card-growth-margin);
+		padding-right: var(--card-growth-margin);
+		margin-top: calc(-1 * var(--card-growth-margin));
+		margin-left: calc(-1 * var(--card-growth-margin));
+		margin-right: calc(-1 * var(--card-growth-margin));
 	}
 
 	&.wide {
