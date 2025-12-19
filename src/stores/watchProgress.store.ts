@@ -20,7 +20,7 @@ export type WatchProgress = {
 export const useWatchProgressStore = defineStore('WatchProgress', () => {
 	const lastWatchProgress = ref<any>(null);
 
-	async function postprogress(relativePath: string, progress: any, bookmarkId?: string, local: boolean = false) {
+	async function postProgress(relativePath: string, progress: any, bookmarkId?: string, local: boolean = false) {
 		lastWatchProgress.value = {
 			relativePath,
 			progress,
@@ -46,6 +46,16 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 		});
 	}
 
+	async function removeProgress(relativePath: string) {
+		await useApiStore().api.delete('/watchProgress', {
+			data: {
+				relativePath,
+			}
+		});
+		deleteLocalProgress(relativePath);
+	}
+
+
 	function getLocalProgress(relativePath: string) {
 		const key = `localProgress_${relativePath}`;
 		const localProgress = localStorage.getItem(key);
@@ -65,6 +75,11 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 		localStorage.setItem(key, JSON.stringify(progress));
 	}
 
+	function deleteLocalProgress(relativePath: string) {
+		const key = `localProgress_${relativePath}`;
+		localStorage.removeItem(key);
+	}
+
 	function createProgress(currentTime: number, duration: number, sub?: SubWatchProgress) {
 		return {
 			time: currentTime,
@@ -77,7 +92,8 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 
 	return {
 		lastWatchProgress,
-		postProgress: postprogress,
+		postProgress,
+		removeProgress,
 		deleteBookmark,
 		createProgress,
 		getLocalProgress,

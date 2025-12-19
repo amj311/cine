@@ -3,22 +3,17 @@
 	lang="ts"
 >
 import { useRouter } from 'vue-router';
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, onUnmounted, ref, watch } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
 import ExtrasList from '@/components/ExtrasList.vue';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import Skeleton from 'primevue/skeleton';
-import { GetListByKeyword } from 'youtube-search-api';
 import { useApiStore } from '@/stores/api.store';
-import axios from 'axios';
 import { useTvNavigationStore } from '@/stores/tvNavigation.store';
-import { encodeMediaPath } from '@/utils/miscUtils';
-import type Dialog from 'primevue/dialog';
-import type ToggleSwitch from 'primevue/toggleswitch';
-import type DatePicker from 'primevue/datepicker';
-import InputText from 'primevue/inputtext';
-import type SurpriseModal from '@/components/SurpriseModal.vue';
+import LibraryItemActions from '@/components/LibraryItemActions.vue';
+import type DropdownMenuVue from '@/components/utils/DropdownMenu.vue';
+import type LibraryItemActionsVue from '@/components/LibraryItemActions.vue';
 
 const router = useRouter();
 const props = defineProps<{
@@ -229,13 +224,6 @@ onUnmounted(async () => {
 	}
 });
 
-
-
-/*************
- * SURPRISES
- */
-const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
-
 </script>
 
 <template>
@@ -292,13 +280,7 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 							severity="contrast"
 							@click="() => (ytIsplaying ? stopYtAudio() : playYtAudio())"
 						/>
-						<Button
-							:icon="'pi pi-gift'"
-							:size="'large'"
-							variant="text"
-							severity="contrast"
-							@click="surpriseModal?.open"
-						/>
+						<LibraryItemActions :libraryItem="libraryItem" />
 					</div>
 					
 
@@ -367,11 +349,16 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 										</MediaCard>
 									</div>
 									<div class="episode-info flex-grow-1">
-										<h3>{{ episode.name }}{{ episode.version ? ` (${episode.version})` : '' }}</h3>
-										<div style="display: flex; gap: 10px; flex-wrap: wrap;">
-											<span>Ep. {{ episode.episodeNumber }}</span>
-											<span v-if="episode.runtime">{{ formatRuntime(episode.runtime) }}</span>
-											<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
+										<div class="flex align-items-center gap-2">
+											<div>
+												<h3>{{ episode.name }}{{ episode.version ? ` (${episode.version})` : '' }}</h3>
+												<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+													<span>Ep. {{ episode.episodeNumber }}</span>
+													<span v-if="episode.runtime">{{ formatRuntime(episode.runtime) }}</span>
+													<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
+												</div>
+											</div>
+											<LibraryItemActions :libraryItem="episode" />
 										</div>
 										
 										<div class="mt-3 line-clamp-4">
@@ -412,9 +399,6 @@ const surpriseModal = ref<InstanceType<typeof SurpriseModal>>();
 		</div>
 		<br />
 	</Scroll>
-
-
-	<SurpriseModal ref="surpriseModal" :libraryItem="libraryItem" />
 </template>
 
 <style

@@ -23,7 +23,7 @@ const router = createRouter({
 			path: '/remote',
 			name: 'remote',
 			component: () => import('@/views/RemoteControlView.vue'),
-		}
+		},
 	],
 	scrollBehavior: (to, from) => {
 		if (to.path === from.path) {

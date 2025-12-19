@@ -8,6 +8,7 @@ import { useApiStore } from '@/stores/api.store';
 import { useWatchProgressStore, type WatchProgress } from '@/stores/watchProgress.store';
 import type DropdownMenuVue from '@/components/utils/DropdownMenu.vue';
 import type SurpriseModal from '@/components/SurpriseModal.vue';
+import type LibraryItemActions from '@/components/LibraryItemActions.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -431,7 +432,7 @@ const menuItems = [{
 			<div class="flex flex-column align-items-center gap-2">
 				<div class="flex align-items-center gap-2">
 					<h3>{{ libraryItem.title }}</h3>
-					<DropdownMenu :model="menuItems"><Button size="small" variant="text" severity="contrast" :icon="'pi pi-ellipsis-v'" /></DropdownMenu>
+					<LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" />
 				</div>
 				<div class="flex align-items-center justify-content-center">
 					<span v-if="libraryItem.author">{{ libraryItem.author }}&nbsp;-&nbsp;</span>
@@ -508,8 +509,6 @@ const menuItems = [{
 			</div>
 		</div>
 	</div>
-
-	<SurpriseModal ref="surpriseModal" :libraryItem="libraryItem" />
 </template>
 
 <style

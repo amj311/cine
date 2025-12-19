@@ -572,6 +572,7 @@ export class LibraryService {
 
 
 	static readonly fileCache = new Map<string, LibraryFile | null>();
+
 	public static async parseFileToItem(path: ConfirmedPath): Promise<LibraryFile | null> {
 		const key = `${path.relativePath}`;
 		let cached = this.fileCache.get(key);
@@ -600,6 +601,16 @@ export class LibraryService {
 		} as LibraryFile;
 	}
 
+	public static async reloadLibraryItemData(path: ConfirmedPath) {
+		// make sure new compute is successful before wiping cache
+		const libraryItem = await this.computeFolderToItem(path);
+		if (libraryItem) {
+			this.itemCache.delete(path.relativePath);
+			this.itemCache.set(path.relativePath, libraryItem)
+			this.itemDetailCache.delete(path.relativePath);
+			return await this.parseFolderToItem(path, true);
+		}
+	}
 
 	public static async getRootLibraries() {
 		const rootLibraries = await DirectoryService.listDirectory(DirectoryService.resolvePath('/')!);

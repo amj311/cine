@@ -25,12 +25,13 @@ export class MediaMetadataService {
 		type: MetadataType,
 		path: ConfirmedPath,
 		detailed = false,
-		noFetch = false
+		noFetch = false,
+		skipCache = false,
 	): Promise<EitherMetadata<T> | null> {
 		const provider = Providers[type];
 		if (!provider) {
 			return null;
 		}
-		return await provider.getMetadata(path, detailed, noFetch);
+		return await provider.getMetadata(path, detailed, noFetch, skipCache);
 	}
 }

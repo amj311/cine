@@ -76,6 +76,12 @@ export class WatchProgressService {
 		return null;
 	}
 
+	public static async deleteWatchProgress(path: ConfirmedPath): Promise<void> {
+		await watchingStore.delete(path.relativePath);
+		await bookmarkStore.delete(path.relativePath);
+		console.log(await watchingStore.getByKey(path.relativePath))
+	}
+
 	public static async deleteBookmark(path: ConfirmedPath, bookmarkId: string) {
 		const bookmarksForMedia = await bookmarkStore.getByKey(path.relativePath);
 		if (bookmarksForMedia) {

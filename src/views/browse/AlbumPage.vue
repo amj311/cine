@@ -6,6 +6,7 @@ import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useBackgroundStore } from '@/stores/background.store';
 import { useApiStore } from '@/stores/api.store';
 import { useWatchProgressStore, type WatchProgress } from '@/stores/watchProgress.store';
+import LibraryItemActions from '@/components/LibraryItemActions.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -118,6 +119,7 @@ function playNextTrack() {
 }
 
 
+const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 </script>
 
 <template>
@@ -129,8 +131,11 @@ function playNextTrack() {
 					:aspectRatio="'square'"
 				/>
 			</div>
-			<div>
-				<h3 class="mb-2">{{ libraryItem.title }}</h3>
+			<div class="flex flex-column align-items-center gap-2">
+				<div class="flex align-items-center gap-2">
+					<h3>{{ libraryItem.title }}</h3>
+					<LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" />
+				</div>
 				<div class="flex align-items-center justify-content-center gap-2">
 					<span v-if="libraryItem.artist">{{ libraryItem.artist }}&nbsp;-&nbsp;</span>
 					<span v-if="libraryItem.year">{{ libraryItem.year }}&nbsp;-&nbsp;</span>
@@ -173,6 +178,8 @@ function playNextTrack() {
 			</div>
 		</div>
 	</div>
+
+	<LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" />
 </template>
 
 <style

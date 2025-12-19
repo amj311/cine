@@ -47,15 +47,19 @@ export abstract class IMetadataProvider<T extends MetadataDefinition = MetadataD
 	/***************|
 	|	 Public		|
 	|***************/
-	public async getMetadata(path: ConfirmedPath, details = false, noFetch = false): Promise<EitherMetadata<T['Type']> | null> {
+	public async getMetadata(path: ConfirmedPath, details = false, noFetch = false, skipCache = false): Promise<EitherMetadata<T['Type']> | null> {
 		const key: T['SearchKey'] = {
 			...this.createSearchKeyFromPath(path),
 			details,
 		};
-		const cached = this.getFromCache(key) as T;
-		if (cached || noFetch) {
-			return cached;
+
+		if (!skipCache) {
+			const cached = this.getFromCache(key) as T;
+			if (cached || noFetch) {
+				return cached;
+			}
 		}
+
 		const metadata = await this.fetchMetadata(key);
 		if (!metadata) {
 			return null;

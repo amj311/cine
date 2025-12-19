@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import express from 'express';
-const app = express() as any;
+const app = express();
 
 import cors from 'cors';
 import fs, { readdirSync, watch } from 'fs';
@@ -131,6 +131,26 @@ app.get("/api/dir/", async function (req, res) {
 		safeResponse.error(res, "Error reading directory");
 	}
 });
+
+app.post("/api/refresh", async function (req, res) {
+	try {
+		let { path } = req.query;
+		const resolvedPath = DirectoryService.resolvePath(path as string);
+		if (!resolvedPath) {
+			return safeResponse.error(res, "Directory not found", 404);
+		}
+
+		const newItem = await LibraryService.reloadLibraryItemData(resolvedPath);
+		if (newItem?.type === 'cinema') {
+			await MediaMetadataService.getMetadata(newItem.cinemaType, resolvedPath, false, true);
+		}
+
+		return safeResponse.send(res, 200);
+	} catch (err) {
+		console.error(err);
+		safeResponse.error(res, "Error reading directory");
+	}
+})
 
 app.get('/api/stream-yt-search', async (req, res) => {
 	try {
@@ -402,6 +422,26 @@ app.delete('/api/watchProgress/bookmark', async (req, res) => {
 			return;
 		}
 		await WatchProgressService.deleteBookmark(resolvedPath, bookmarkId);
+		res.json({
+			success: true,
+		})
+	}
+	catch (err) {
+		console.error(err)
+		if (!res.headersSent) {
+			res.status(500).send("Internal server error");
+		}
+	}
+});
+app.delete('/api/watchProgress', async (req, res) => {
+	try {
+		const { relativePath } = req.body;
+		const resolvedPath = DirectoryService.resolvePath(relativePath);
+		if (!resolvedPath) {
+			res.status(404).send("File not found");
+			return;
+		}
+		await WatchProgressService.deleteWatchProgress(resolvedPath);
 		res.json({
 			success: true,
 		})
