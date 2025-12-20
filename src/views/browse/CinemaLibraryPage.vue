@@ -91,8 +91,14 @@ const filteredItems = computed(() => {
 
 const letterGroups = computed(() => {
 	const groups: Record<string, Array<any>> = {};
-	filteredItems.value.forEach((item) => {
-		const firstLetter = item.sortKey.charAt(0).toUpperCase();
+	filteredItems.value.forEach((item: {sortKey: string, surprise?: any }) => {
+		let firstLetter = item.sortKey.charAt(0).toUpperCase();
+		if (!firstLetter.match(/[A-Z]/)) {
+			firstLetter = '#';
+		}
+		if (item.surprise) {
+			firstLetter = 'surprise';
+		}
 		if (!groups[firstLetter]) {
 			groups[firstLetter] = [];
 		}
@@ -179,7 +185,10 @@ const seachedItems = computed(() => {
 					:key="group.letter"
 				>
 					<div class="mb-2">
-						<span class="text-5xl font-bold">{{ group.letter }}</span>
+						<span class="text-5xl font-bold">
+							<template v-if="group.letter === 'surprise'"><i class="pi pi-gift" /></template>
+							<template v-else>{{ group.letter }}</template>
+						</span>
 						<span class="text-sm text-600 ml-2">({{ group.items.length }})</span>
 					</div>
 

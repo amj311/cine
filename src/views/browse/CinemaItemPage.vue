@@ -320,7 +320,7 @@ onUnmounted(async () => {
 								v-for="season in mergedSeasons"
 								:key="season.seasonNumber"
 								class="season-button"
-								severity="secondary"
+								severity="contrast"
 								:variant="activeSeason.seasonNumber === season.seasonNumber ? '' : 'text'"
 								@click="() => activeSeason = season"
 							>
