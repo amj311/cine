@@ -104,7 +104,11 @@ const letterGroups = computed(() => {
 		}
 		groups[firstLetter]!.push(item);
 	});
-	return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([letter, items]) => ({
+	return Object.entries(groups).sort(([a], [b]) => {
+		if (a === 'surprise') return -1;
+		if (b === 'surprise') return 1;
+		return a.localeCompare(b);
+	}).map(([letter, items]) => ({
 		letter,
 		items: items.sort((a, b) => a.sortKey.localeCompare(b.sortKey)),
 	})) as Array<{ letter: string; items: Array<any> }>;
