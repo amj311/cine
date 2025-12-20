@@ -188,6 +188,7 @@ type CollectionStrat = Join<LibraryItemStratBase, Stratified<
 	{
 		type: 'collection',
 		name: string,
+		feedOrder: number | null,
 		children: Array<RelativePath>,
 	},
 	{
@@ -411,6 +412,11 @@ export class LibraryService {
 		}
 
 
+		// Find feedOrder if specified in the folder name like ".feedorder-1"
+		const feedOrderMatch = folderName.match(/\.feedorder-(\d{1,2})/);
+		const feedOrder = feedOrderMatch ? parseInt(feedOrderMatch[1]) : null;
+
+
 		// If all children folders are media, consider it a collection
 		const allChildrenAreMedia = children.folders.length > 0 && children.folders.every((folder) => Boolean(LibraryService.parseNamePieces(folder.name).year));
 		if (allChildrenAreMedia) {
@@ -420,16 +426,13 @@ export class LibraryService {
 				name,
 				relativePath: path.relativePath,
 				folderName: folderName,
+				feedOrder,
 				children: childrenPaths,
 				sortKey: LibraryService.createSortKey(folderName),
 				listName: name,
 			};
 		}
 
-
-		// Find feedOrder if specified in the folder name like ".feedorder-1"
-		const feedOrderMatch = folderName.match(/\.feedorder-(\d{1,2})/);
-		const feedOrder = feedOrderMatch ? parseInt(feedOrderMatch[1]) : null;
 		return {
 			type: 'folder',
 			name,

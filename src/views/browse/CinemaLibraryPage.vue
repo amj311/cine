@@ -47,10 +47,11 @@ function initializeRandomOrder() {
 const categorySampling = ref<Record<string, Array<any>>>({});
 
 const categories = computed(() => {
-	return props.folders.map((folder) => ({
-			...folder.libraryItem,
-			order: categoryOrder[folder.libraryItem.relativePath] || 100,
-		}))
+	return props.folders
+		.map(i => i.libraryItem)
+		.sort((a, b) => {
+			return (b.feedOrder || 0) - (a.feedOrder || 0);
+		})
 		.filter(item => ['collection', 'folder'].includes(item.type))
 		// Support items at the root level, w/o category
 		.concat({
