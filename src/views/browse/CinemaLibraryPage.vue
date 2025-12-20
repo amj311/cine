@@ -22,7 +22,7 @@ async function loadItems() {
 	}
 }
 onBeforeMount(async () => {
-	initializeRandomOrder();
+	// initializeRandomOrder(); // no longer shuffling categories
 	await loadItems();
 });
 
