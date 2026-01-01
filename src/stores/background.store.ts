@@ -8,13 +8,15 @@ import { useApiStore } from './api.store';
 export const useBackgroundStore = defineStore('Background', () => {
 	const backgroundUrl = ref<null | string>(null);
 	const posterUrl = ref<string | null>(null);
+	const posterShape = ref<string>('wide');
 
-	function setPosterUrl(url: string) {
+	function setPosterUrl(url: string, options = { shape: 'wide' }) {
 		if (!url) {
 			posterUrl.value = null;
 			return;
 		}
 		posterUrl.value = useApiStore().resolve(url) || null;
+		posterShape.value = options.shape || 'wide';
 	}
 
 	return {
@@ -27,6 +29,7 @@ export const useBackgroundStore = defineStore('Background', () => {
 		},
 
 		posterUrl,
+		posterShape,
 		setPosterUrl,
 		clearPosterUrl() {
 			setPosterUrl('');

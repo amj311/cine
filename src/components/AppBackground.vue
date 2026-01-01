@@ -67,8 +67,9 @@ async function drawPoster(url) {
 	
 	ctx.drawImage(gradImg, 0, 0, width, height);
 
-	const yOffset = 0 - height * .8; // to lift gradient into area
-	const gradient = ctx.createRadialGradient(width, yOffset, width / 2, width, yOffset, width);
+	const shapeCoefficient = backgroundStore.posterShape === 'square' ? 0.5 : 0.8;
+	const yOffset = 0 - height * shapeCoefficient; // to lift gradient into area
+	const gradient = ctx.createRadialGradient(width, yOffset, width * .5, width, yOffset, width);
 	gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
 	gradient.addColorStop(.75, 'rgba(255, 255, 255, .75)');
 	gradient.addColorStop(1, 'rgba(255, 255, 255, 1)');

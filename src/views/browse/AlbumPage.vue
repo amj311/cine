@@ -5,7 +5,6 @@
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useBackgroundStore } from '@/stores/background.store';
 import { useApiStore } from '@/stores/api.store';
-import { useWatchProgressStore, type WatchProgress } from '@/stores/watchProgress.store';
 import LibraryItemActions from '@/components/LibraryItemActions.vue';
 
 const props = defineProps<{
@@ -17,7 +16,7 @@ const backgroundStore = useBackgroundStore();
 
 onBeforeMount(() => {
 	backgroundStore.setBackgroundUrl(props.libraryItem.cover_thumb);
-	backgroundStore.setPosterUrl(props.libraryItem.cover_thumb);
+	backgroundStore.setPosterUrl(props.libraryItem.cover_thumb, { shape: 'square' });
 })
 
 onBeforeUnmount(() => {
@@ -169,7 +168,7 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 							@click="() => playTrack(track)"
 						>
 							<div><i :class="`pi pi-${track === currentTrack ? 'volume-up' : 'play'}`" /></div>
-							<div class="number">{{ index + 1 }}</div>
+							<div class="number">{{ Number(index) + 1 }}</div>
 							<div class="title">{{ track.title }}</div>
 							<div class="duration">{{ formatRuntime(track.duration) }}</div>
 						</div>

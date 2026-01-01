@@ -19,7 +19,7 @@ const backgroundStore = useBackgroundStore();
 
 onBeforeMount(() => {
 	backgroundStore.setBackgroundUrl(props.libraryItem.cover_thumb);
-	backgroundStore.setPosterUrl(props.libraryItem.cover_thumb);
+	backgroundStore.setPosterUrl(props.libraryItem.cover_thumb, { shape: 'square' });
 })
 
 onBeforeUnmount(() => {
@@ -500,7 +500,7 @@ const menuItems = [{
 							@click="() => playChapter(chapter)"
 						>
 							<div><i :class="`pi pi-${chapter === currentChapter ? 'volume-up' : 'play'}`" /></div>
-							<div class="number">{{ index + 1 }}</div>
+							<div class="number">{{ Number(index) + 1 }}</div>
 							<div class="title">{{ chapter.title }}</div>
 							<div class="duration">{{ formatRuntime(chapter.bookStartOffset) }}</div>
 						</div>
