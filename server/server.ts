@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-import express from 'express';
+import express, { Response } from 'express';
 const app = express();
 
 import cors from 'cors';
@@ -30,25 +30,22 @@ import axios from 'axios';
 const corsOptions = {};
 
 // Safe response helper to prevent double responses
+function safeRes(res: Response) {
+	return res.headersSent ? undefined : res;
+}
 const safeResponse = {
 	send: (res: any, statusCode: number, data?: any) => {
-		if (!res.headersSent) {
-			if (data) {
-				res.status(statusCode).json(data);
-			} else {
-				res.sendStatus(statusCode);
-			}
+		if (data) {
+			safeRes(res)?.status(statusCode).json(data);
+		} else {
+			safeRes(res)?.sendStatus(statusCode);
 		}
 	},
 	json: (res: any, data: any, statusCode = 200) => {
-		if (!res.headersSent) {
-			res.status(statusCode).json(data);
-		}
+		safeRes(res)?.status(statusCode).json(data);
 	},
 	error: (res: any, message: string, statusCode = 500) => {
-		if (!res.headersSent) {
-			res.status(statusCode).json({ error: message });
-		}
+		safeRes(res)?.status(statusCode).json({ error: message });
 	}
 };
 
@@ -819,6 +816,7 @@ app.use('/api/timer', timerRoute);
 import scrubRoute from './routes/scrub.route'
 app.use('/api/scrub', scrubRoute);
 import surpriseRoute from './routes/surprise.route'
+import { safeParseInt } from './utils/miscUtils';
 app.use('/api/surprise', surpriseRoute);
 
 
@@ -839,11 +837,11 @@ app.use('/serviceworker.js', (req, res) => {
 });
 app.use('/api/media', (req, res) => {
 	const relativePath = req.path;
-	res.sendFile(DirectoryService.resolvePath(relativePath));
+	res.sendFile(DirectoryService.resolvePath(relativePath)!.absolutePath);
 });
 app.use('/api/thumb', (req, res) => {
 	const relativePath = req.path;
-	const { width } = req.query;
+	const { width, seek } = req.query;
 	const resolvedPath = DirectoryService.resolvePath(relativePath);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");
@@ -853,17 +851,17 @@ app.use('/api/thumb', (req, res) => {
 		// Gifs don't work if sharp resizes them, so just send he og file.
 		// Consider using gif-encode in the future if gifs are too large and still need to be resized.
 		if (resolvedPath.relativePath.endsWith('.gif')) {
-			res.sendFile(resolvedPath.absolutePath);
+			safeRes(res)?.sendFile(resolvedPath.absolutePath);
 			return;
 		}
 		try {
-			const thumbnailBuffer = await ThumbnailService.streamThumbnail(resolvedPath, !isNaN(width) ? parseInt(width as string) : undefined);
-			res.setHeader('Content-Type', 'image/jpeg');
-			res.send(thumbnailBuffer);
+			const thumbnailBuffer = await ThumbnailService.streamThumbnail(resolvedPath, safeParseInt(width), safeParseInt(seek));
+			safeRes(res)?.setHeader('Content-Type', 'image/jpeg');
+			safeRes(res)?.send(thumbnailBuffer);
 		} catch (err) {
 			console.error("Error while generating thumbnail for image:", relativePath);
 			console.error(err.message);
-			res.status(500).send("Error generating thumbnail");
+			safeRes(res)?.status(500).send("Error generating thumbnail");
 		}
 	})();
 });

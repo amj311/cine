@@ -11,6 +11,7 @@ const router = useRouter();
 
 const props = defineProps<{
 	imageUrl?: string;
+	fallbackImage?: string,
 	imagePosition?: 'top' | 'center' | 'bottom';
 	aspectRatio?: 'tall' | 'wide' | 'square';
 	width?: number;
@@ -113,6 +114,8 @@ const imageError = ref<any>(null);
 				<div v-if="$slots.fallbackIcon" class="fallback-icon bg-soft">
 					<slot name="fallbackIcon" />
 				</div>
+
+				<img v-if="fallbackImage" :src="useApiStore().resolve(fallbackImage)" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" />
 
 				<img v-if="imageUrl && !imageError" :src="useApiStore().resolve(imageUrl)" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" @error="(err) => imageError = err" />
 

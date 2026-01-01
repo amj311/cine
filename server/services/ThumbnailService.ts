@@ -1,5 +1,5 @@
 import { readdir, readFile } from 'fs/promises';
-import path from 'path';
+import path, { relative } from 'path';
 import { ConfirmedPath, DirectoryService, RelativePath } from './DirectoryService';
 import sharp from 'sharp';
 import { useFfmpeg } from '../utils/ffmpeg';
@@ -12,9 +12,9 @@ export class ThumbnailService {
 	 * Receives the path to a file, loads and shrinks the image with Shrp.js, and returns the result as a stream for the client to consume.
 	 * @param filePath 
 	 */
-	public static async streamThumbnail(filePath: ConfirmedPath, width: number = 300): Promise<Buffer> {
+	public static async streamThumbnail(filePath: ConfirmedPath, width: number = 300, seek = 3): Promise<Buffer> {
 		try {
-			const cachedThumbnail = this.getCachedThumbnail(filePath.relativePath, width);
+			const cachedThumbnail = this.getCachedThumbnail(filePath.relativePath, width, seek);
 			if (cachedThumbnail) {
 				return cachedThumbnail;
 			}
@@ -35,7 +35,7 @@ export class ThumbnailService {
 			let fileBuffer: Buffer = Buffer.from([]);
 			if (isVideo) {
 				// Use ffmpeg to get a frame from the video
-				fileBuffer = await ThumbnailService.getVideoFrame(filePath);
+				fileBuffer = await ThumbnailService.getVideoFrame(filePath, seek);
 			}
 			else if (isAudio) {
 				// ffpeg can extract album art from mp3 files as a video stream
@@ -60,7 +60,7 @@ export class ThumbnailService {
 					throw new Error("Failed to fix JPEG file");
 				}
 			}
-			ThumbnailService.cacheThumbnail(filePath.relativePath, width, thumbnailBuffer);
+			ThumbnailService.cacheThumbnail(filePath.relativePath, width, seek, thumbnailBuffer);
 			return thumbnailBuffer;
 		}
 		catch (err) {
@@ -106,8 +106,10 @@ export class ThumbnailService {
 				console.error("Error while processing video:", err.message);
 				reject(err);
 			})
-				.outputOptions([
+				.inputOptions([
 					`-ss ${seek || 0}`,        // Seek a bit into the video
+				])
+				.outputOptions([
 					'-frames:v 1',  // Extract only one frame
 					'-q:v 30',       // Set quality level
 					'-f image2pipe' // Output as a pipe
@@ -127,20 +129,24 @@ export class ThumbnailService {
 		});
 	};
 
-	private static cacheThumbnail(relativePath: RelativePath, width: number, buffer: Buffer) {
+	private static cacheKey(relativePath: RelativePath, width: number, seek: number) {
+		return relativePath + '_' + width + '_' + seek;
+	}
+
+	private static cacheThumbnail(relativePath: RelativePath, width: number, seek: number, buffer: Buffer) {
 		if (width > 500) {
 			// Don't cache thumbnails larger than this
 			return;
 		}
-		thumbCache.set(relativePath + width, buffer);
+		thumbCache.set(this.cacheKey(relativePath, width, seek), buffer);
 		if (thumbCache.size > MAX_CACHE_SIZE) {
 			const oldestKey = thumbCache.keys().next().value;
-			thumbCache.delete(oldestKey);
+			thumbCache.delete(oldestKey || '');
 		}
 	}
 
-	private static getCachedThumbnail(relativePath: RelativePath, width: number) {
-		const cachedThumbnail = thumbCache.get(relativePath + width);
+	private static getCachedThumbnail(relativePath: RelativePath, width: number, seek: number) {
+		const cachedThumbnail = thumbCache.get(this.cacheKey(relativePath, width, seek));
 		if (cachedThumbnail) {
 			return cachedThumbnail;
 		}

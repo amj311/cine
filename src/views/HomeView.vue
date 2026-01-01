@@ -6,6 +6,7 @@ import GalleryFileFrame from '@/components/GalleryFileFrame.vue';
 import Slideshow from '@/components/Slideshow.vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
 import LibraryItemCard from '@/components/LibraryItemCard.vue';
+import { encodeMediaPath } from '@/utils/miscUtils';
 
 const feed = ref<any[]>([]);
 
@@ -90,52 +91,59 @@ function formatRuntime(minutes: number) {
 										v-for="item in feedRow.items"
 										:key="item.relativePath"
 									>
-										<!-- Failure case -->
-										<MediaCard
-											v-if="!item.libraryItem.playable || !item.libraryItem.parentLibrary"
-											clickable
-											:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
-											:progress="item.watchProgress"
-											:aspectRatio="'wide'"
-											:title="item.title"
-											:subtitle="`${timeRemaining(item.watchProgress)} left`"
-											:surprise="item.libraryItem.parentLibrary.surprise"
-										>
-											<template #fallbackIcon>💿</template>
-										</MediaCard>
+										<MetadataLoader :media="item.libraryItem.parentLibrary" :detailed="true">
+											<template #default="{ metadata, isLoadingMetadata }">
+												<!-- Failure case -->
+												<MediaCard
+													v-if="!item.libraryItem.playable || !item.libraryItem.parentLibrary"
+													clickable
+													:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+													:progress="item.watchProgress"
+													:aspectRatio="'wide'"
+													:title="item.title"
+													:subtitle="`${timeRemaining(item.watchProgress)} left`"
+													:surprise="item.libraryItem.parentLibrary.surprise"
+												>
+													<template #fallbackIcon>💿</template>
+												</MediaCard>
 
-										<MediaCard
-											v-else-if="item.libraryItem.playable.type === 'album' || item.libraryItem.playable.type === 'audiobook'"
-											clickable
-											:action="() => $router.push({ name: 'browse', query: { path: item.libraryItem.playable.relativePath } })"
-											:imageUrl="item.libraryItem.playable.cover_thumb"
-											:imagePosition="'top'"
-											:progress="item.watchProgress"
-											:aspectRatio="'square'"
-											:title="item.libraryItem.playable.title"
-											:subtitle="`${timeRemaining(item.watchProgress)} left`"
-											:surprise="item.libraryItem.parentLibrary.surprise"
-										>
-											<template #fallbackIcon>💿</template>
-										</MediaCard>
-										<MediaCard
-											v-else
-											:imageUrl="item.libraryItem.playable.still_thumb || item.libraryItem.parentLibrary.metadata?.background_thumb || item.libraryItem.parentLibrary?.metadata?.poster_thumb"
-											:imagePosition="'top'"
-											:playSrc="item.relativePath"
-											:progress="item.watchProgress"
-											:aspectRatio="'wide'"
-											:title="playableName(item.libraryItem.playable, item.libraryItem.parentLibrary)"
-											:subtitle="item.isUpNext ? (item.probe?.full?.format?.duration ? formatRuntime(item.probe?.full?.format?.duration / 60) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
-											:surprise="item.libraryItem.parentLibrary.surprise"
-										>
-											<template #fallbackIcon>🎞️</template>
-											<template #poster v-if="item.isUpNext">
-												<div class="h-full w-full flex align-items-end justify-content-start p-2">
-													<div class="border-round p-2 bg-gray-700">Up Next</div>
-												</div>
+												<MediaCard
+													v-else-if="item.libraryItem.playable.type === 'album' || item.libraryItem.playable.type === 'audiobook'"
+													clickable
+													:action="() => $router.push({ name: 'browse', query: { path: item.libraryItem.playable.relativePath } })"
+													:imageUrl="item.libraryItem.playable.cover_thumb"
+													:imagePosition="'top'"
+													:progress="item.watchProgress"
+													:aspectRatio="'square'"
+													:title="item.libraryItem.playable.title"
+													:subtitle="`${timeRemaining(item.watchProgress)} left`"
+													:surprise="item.libraryItem.parentLibrary.surprise"
+													:loading="isLoadingMetadata"
+												>
+													<template #fallbackIcon>💿</template>
+												</MediaCard>
+												<MediaCard
+													v-else
+													:imageUrl="useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(item.libraryItem.playable.relativePath) + '?width=200&seek=' + item.watchProgress.time"
+													:fallbackImage="item.libraryItem.playable.still_thumb || metadata?.background_thumb || metadata?.poster_thumb"
+													:imagePosition="'top'"
+													:playSrc="item.relativePath"
+													:progress="item.watchProgress"
+													:aspectRatio="'wide'"
+													:title="playableName(item.libraryItem.playable, item.libraryItem.parentLibrary)"
+													:subtitle="item.isUpNext ? (item.probe?.full?.format?.duration ? formatRuntime(item.probe?.full?.format?.duration / 60) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
+													:surprise="item.libraryItem.parentLibrary.surprise"
+													:loading="isLoadingMetadata"
+												>
+													<template #fallbackIcon>🎞️</template>
+													<template #poster v-if="item.isUpNext">
+														<div class="h-full w-full flex align-items-end justify-content-start p-2">
+															<div class="border-round p-2 bg-gray-700">Up Next</div>
+														</div>
+													</template>
+												</MediaCard>
 											</template>
-										</MediaCard>
+										</MetadataLoader>
 									</div>
 								</div>
 							</Scroll>
