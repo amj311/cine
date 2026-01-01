@@ -2,18 +2,8 @@
 	setup
 	lang="ts"
 >
-import { useRouter } from 'vue-router';
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue';
-import { MetadataService } from '@/services/metadataService';
-import { useBackgroundStore } from '@/stores/background.store';
-import ExtrasList from '@/components/ExtrasList.vue';
-import { useWatchProgressStore } from '@/stores/watchProgress.store';
-import Skeleton from 'primevue/skeleton';
-import { GetListByKeyword } from 'youtube-search-api';
+import { ref } from 'vue';
 import { useApiStore } from '@/stores/api.store';
-import axios from 'axios';
-import { useNavigationStore } from '@/stores/tvNavigation.store';
-import { encodeMediaPath } from '@/utils/miscUtils';
 import type Dialog from 'primevue/dialog';
 import type ToggleSwitch from 'primevue/toggleswitch';
 import type DatePicker from 'primevue/datepicker';

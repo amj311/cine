@@ -10,6 +10,7 @@ import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
 import { AuthService } from '@/services/AuthService';
 import Logo from '@/components/Logo.vue';
+import type Message from 'primevue/message';
 
 const userStore = useUserStore();
 
@@ -31,50 +32,68 @@ const state = reactive({
 // 	useIonRouter().push(redirect || '/');
 // }
 
-async function loginWithEmail() {
+async function loginErrors(op: () => void) {
 	try {
 		state.isLoading = true;
-		await AuthService.signInWithEmail(state.email, state.password);
-		emit('authenticated');
+		await op();
 	}
 	catch (error: any) {
-		userStore.loginError = error.message;
+		const errorGroups = [
+			{
+				message: 'Check your email/password',
+				matches: [
+					'auth/invalid-email',
+					'auth/missing-password',
+					'auth/weak-password',
+					'auth/email-already-in-use',
+				],
+			},
+			{
+				message: 'Network error',
+				matches: [
+					'auth/network-request-failed',
+				],
+			}
+		]
+		for (const errorGroup of errorGroups) {
+			if (errorGroup.matches.some(m => error.message?.includes(m))) {
+				userStore.loginError = errorGroup.message;
+				return;
+			}
+		}
+
+		console.error(error.message);
+		userStore.loginError = "Unknown error";
 	}
 	finally {
 		state.isLoading = false;
-	}
-}
-async function createEmailUser() {
-	try {
-		state.isLoading = true;
-		await AuthService.createEmailUser(state.email, state.password, state.givenName, state.familyName);
-		emit('authenticated');
-	}
-	catch (error: any) {
-		userStore.loginError = error.message;
-	}
-	finally {
-		state.isLoading = false;
-	}
-}
-async function loginWithGoogle() {
-	try {
-		await AuthService.signInWithGoogle();
-		emit('authenticated');
-	}
-	catch (error: any) {
-		userStore.loginError = error.message;
 	}
 }
 
+async function loginWithEmail() {
+	loginErrors(async () => {
+		await AuthService.signInWithEmail(state.email, state.password);
+		emit('authenticated');
+	})
+}
+async function createEmailUser() {
+	loginErrors(async () => {
+		await AuthService.createEmailUser(state.email, state.password, state.givenName, state.familyName);
+		emit('authenticated');
+	})
+}
+async function loginWithGoogle() {
+	loginErrors(async () => {
+		await AuthService.signInWithGoogle();
+		emit('authenticated');
+	})
+}
+
 async function sendPasswordResetEmail() {
-	try {
+	loginErrors(async () => {
 		await AuthService.sendPasswordResetEmail(state.email);
 		state.hasSentEmail = true;
-	}
-	catch (error: any) {
-		userStore.loginError = error.message;
-	}
+	})
 }
 
 function leaveRestPasswordMode() {
@@ -83,6 +102,20 @@ function leaveRestPasswordMode() {
 	state.hasSentEmail = false;
 }
 
+
+function doFormSubmit() {
+	switch (state.mode) {
+		case 'login': {
+			loginWithEmail();
+		}
+		case 'reset_password': {
+			sendPasswordResetEmail();
+		}
+		case 'signup': {
+			createEmailUser();
+		}
+	}
+}
 </script>
 
 
@@ -92,12 +125,13 @@ function leaveRestPasswordMode() {
 		style="width: 20em"
 	>
 		<Logo class="my-5" />
-		<div
+		<Message
+			severity="error"
 			v-if="userStore.loginError"
-			class="bg-white border-round-3xl m-3"
+			class="mb-3"
 		>
 			{{ userStore.loginError }}
-		</div>
+		</Message>
 
 		<div class="flex flex-column gap-1 w-full align-items-center">
 			<p v-if="state.mode === 'reset_password'">
@@ -107,7 +141,7 @@ function leaveRestPasswordMode() {
 					shortly.</template>
 			</p>
 
-			<form>
+			<form @submit.prevent="doFormSubmit">
 				<InputText
 					v-if="!(state.mode === 'reset_password' && state.hasSentEmail)"
 					type="text"
@@ -146,15 +180,16 @@ function leaveRestPasswordMode() {
 							size="large"
 							class="w-full"
 						/>
-						<InputGroupAddon style="padding: 0; cursor: pointer">
+						<InputGroupAddon
+							style="cursor: pointer"
+							@click="state.showPassword = !state.showPassword"
+						>
 							<i
 								class="pi"
 								:class="state.showPassword ? 'pi-eye-slash' : 'pi-eye'"
-								@click="state.showPassword = !state.showPassword"
 							/>
 						</InputGroupAddon>
 					</template>
-					
 				</InputGroup>
 
 
@@ -163,9 +198,9 @@ function leaveRestPasswordMode() {
 						<Button
 							size="large"
 							severity="primary"
-							@click="createEmailUser"
 							:loading="state.isLoading"
 							class="w-full my-3 justify-content-around"
+							role="submit"
 						>
 							Create Account
 						</button>
@@ -183,9 +218,9 @@ function leaveRestPasswordMode() {
 						<Button
 							size="large"
 							severity="primary"
-							@click="loginWithEmail"
 							:loading="state.isLoading"
 							class="w-full my-3 justify-content-around"
+							role="submit"
 						>
 							Sign in
 						</button>
@@ -211,7 +246,7 @@ function leaveRestPasswordMode() {
 						<Button
 							size="large"
 							v-if="!state.hasSentEmail"
-							@click="sendPasswordResetEmail"
+							role="submit"
 							class="w-full my-3 justify-content-around"
 						>Send Email</button>
 						<small>Back to <span
@@ -220,6 +255,7 @@ function leaveRestPasswordMode() {
 							>Sign in</span></small>
 					</template>
 				</div>
+				<input type="submit" hidden />
 			</form>
 		</div>
 		<!-- GOOGLE SIGN-IN NOT WORKING!!!!

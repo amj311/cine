@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useFullscreenStore } from './fullscreenStore.store';
+import { useSettingsStore } from './settings.store';
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -8,12 +9,15 @@ export const focusAreaClass = 'tvNavigationFocusArea';
 
 
 export const useNavigationStore = defineStore('Navigation', () => {
+	// load saved settings
+	const localSettings = useSettingsStore().localSettings;
+
 	const lastMouseMove = ref({ x: 0, y: 0 });
 	const lastMousePosition = ref({ x: 0, y: 0 });
 	const lastDetectedDirection = ref<Direction | null>(null);
 	const lastKeyDown = ref<string | null>(null);
 	const lastMouseMoveTime = ref(0);
-	const detectedTv = ref(false);
+	const detectedTv = ref(localSettings.is_tv || false);
 	const detectedTouch = ref(false);
 	const tvWasConfirmed = ref(false);
 	const enabled = ref(false);
@@ -410,19 +414,21 @@ export const useNavigationStore = defineStore('Navigation', () => {
 	let onTvDetected: (() => Promise<boolean>) | null = null;
 
 	function determineTvEnvironment(confirmationCb?: () => Promise<boolean>) {
-		if (isSkinnyScreen.value) {
-			console.log("Screen is too small to be TV");
-			return;
-		}
-
 		suggestTvModeHandler = confirmationCb || null;
 		console.log('Determining TV environment...');
-		const isTv = window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
+		const isTv = localSettings.is_tv || window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
+
 		if (isTv) {
 			console.log('TV environment detected');
 			finalizeTvDetection(true);
 			return;
 		}
+
+		if (isSkinnyScreen.value) {
+			console.log("Screen is too small to be TV");
+			return;
+		}
+
 		window.addEventListener('mousemove', watchForTvMouseMove);
 		window.addEventListener('touchstart', onScreenTouch);
 	}
@@ -445,15 +451,14 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		}
 
 		detectedTv.value = true;
+		localSettings.is_tv = true;
 
-		let shouldDoTvNav = false; // disabling focus-based tv nav
-
-		const localStorageKey = 'tvNavigationPreference.2';
+		let shouldDoTvNav = localSettings.tv_nav;
 
 		if (shouldDoTvNav && suggestTvModeHandler) {
 			shouldDoTvNav = await suggestTvModeHandler();
 			if (!shouldDoTvNav) {
-				localStorage.setItem(localStorageKey, 'false');
+				localSettings.tv_nav = false;
 				console.log('TV environment was declined');
 			}
 		}
@@ -521,15 +526,28 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		lastKeyDown,
 		lastFocusedEl,
 
+		isSkinnyScreen,
+		detectedTouch,
+
 		determineTvEnvironment,
+		detectedTv,
+		onTvDetected: (cb) => onTvDetected = cb,
+		tvWasConfirmed,
+
+		setAsTv(enabled: boolean) {
+			detectedTv.value = enabled;
+		},
+		setTvNavigation(enabled: boolean) {
+			if (enabled) {
+				engageTvMode();
+			}
+			else {
+				disengageTvMode();
+			}
+		},
 		engageTvMode,
 		disengageTvMode,
 
-		isSkinnyScreen,
-		detectedTv,
-		detectedTouch,
-		onTvDetected: (cb) => onTvDetected = cb,
-		tvWasConfirmed,
 		enabled,
 
 		setFocus,

@@ -15,10 +15,10 @@ import MediaCard from '@/components/MediaCard.vue';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
 import { useApiStore } from '@/stores/api.store';
-import DropdownMenu from '@/components/utils/DropdownMenu.vue';
 import InputNumber from 'primevue/inputnumber';
 import { useScrubberStore } from './scrubber.store';
 import ScrubSettings from './ScrubSettings.vue';
+import DropdownTrigger from '@/components/utils/DropdownTrigger.vue';
 
 const router = useRouter();
 const api = useApiStore().api;
@@ -451,18 +451,25 @@ function toggleScrubMenu() {
 					</Button>
 
 					<!-- AUTOPLAY BUTTON -->
-					<DropdownMenu v-if="canAutoplay">
+					<DropdownTrigger v-if="canAutoplay">
 						<div class="autoplay" @click="">
 							<Button :text="willAutoplay ? false : true" :severity="willAutoplay ? 'secondary' : 'contrast'">
 								<span class="material-symbols-outlined">autoplay</span>
 								{{ autoplayTimes || '' }}
 							</Button>
 						</div>
-						<template #start>
-							&nbsp;Autoplay:&nbsp;
-							<InputNumber v-model="autoplayTimes" showButtons buttonLayout="horizontal" fluid :min="0" class="max-w-8rem text-right" />
+						<template #content>
+							<div class="p-2 flex-center-row">
+								&nbsp;Autoplay:&nbsp;
+								<div class="flex-center-row">
+									<Button text icon="pi pi-arrow-down" @click="autoplayTimes = Math.max(0, autoplayTimes - 1)" />
+									<div class="w-1rem text-center">{{ autoplayTimes }}</div>
+									<Button text icon="pi pi-arrow-up" @click="autoplayTimes++" />
+									<Button text icon="pi pi-times" @click="autoplayTimes = 0" />
+								</div>
+							</div>
 						</template>
-					</DropdownMenu>
+					</DropdownTrigger>
 				</template>
 			</VideoPlayer>
 			<div class="loading" v-if="!hasLoaded">

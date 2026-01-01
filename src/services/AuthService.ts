@@ -1,5 +1,5 @@
-import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type Auth, signInWithCredential, sendPasswordResetEmail } from 'firebase/auth';
+import { initializeApp } from 'firebase/app';
+import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 // import { useUserStore } from '@/stores/user.store';
 
 const firebaseConfig = {
@@ -60,6 +60,9 @@ export const AuthService = {
 			localStorage.setItem('isOwner', 'true');
 			localStorage.setItem('lastLogin', Date.now().toString());
 		}
+		else {
+			localStorage.setItem('isOwner', 'false');
+		}
 
 		this.authUser = authUser || null;
 		this.onLogInOrOut(authUser);
@@ -104,7 +107,6 @@ export const AuthService = {
 				this.info.push('signing in as owner');
 				this.setAuthUser({
 					email: import.meta.env.VITE_OWNER_EMAIL,
-					isOwner: true,
 				});
 			}
 			else {
@@ -156,8 +158,12 @@ export const AuthService = {
 
 	async signOut() {
 		try {
-			await signOut(auth);
-			this.onLogInOrOut?.call(null, null);
+			// do not log out with FiB if used bypass
+			if (!AuthService.authUser?.isOwner) {
+				await signOut(auth);
+			}
+			AuthService.setAuthUser(null);
+			AuthService.onLogInOrOut?.call(null, null);
 		} catch (error: any) {
 			throw new Error(error.message);
 		}

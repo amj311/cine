@@ -5,6 +5,7 @@ import { computed } from 'vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
 import CollectionPoster from '@/components/CollectionPoster.vue';
 import LibraryItemCard from '@/components/LibraryItemCard.vue';
+import Menu from 'primevue/menu';
 
 const router = useRouter();
 

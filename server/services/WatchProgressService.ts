@@ -129,7 +129,8 @@ export class WatchProgressService {
 	public static async getContinueWatchingList() {
 		const recent = await WatchProgressService.getAllRecentlyWatched();
 		return WatchProgressService.filterOutExtraEpisodes(recent).filter((item) => {
-			return item.percentage < 90;
+			// must be < 90% done and > 1 minute remaining
+			return item.percentage < 90 && (item.duration - item.time > 60);
 		});
 	}
 

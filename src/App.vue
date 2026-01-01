@@ -14,6 +14,8 @@ import { useUserStore } from './stores/user.store';
 import LoginPage from './views/LoginPage.vue';
 import OfflinePage from './views/OfflinePage.vue';
 import SharedPage from './views/SharedPage.vue';
+import TieredMenu from 'primevue/tieredmenu';
+import type Menu from 'primevue/menu';
 
 const apiStore = useApiStore();
 

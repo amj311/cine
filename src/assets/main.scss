@@ -1,5 +1,5 @@
 @use './base.scss';
-
+@use 'primeflex/primeflex.css';
 
 
 :root {
@@ -79,6 +79,10 @@ h1, h2, h3, h4, h5, h6 {
 	color: var(--p-primary-color);
 }
 
+.text-upper {
+	text-transform: capitalize;
+}
+
 .link {
 	color: var(--p-primary-color);
 	cursor: pointer;
@@ -112,6 +116,32 @@ h1, h2, h3, h4, h5, h6 {
 .material-symbols-outlined {
 	font-size: 1.2em;
 }
+
+
+.no-select {
+	user-select: none;
+}
+
+
+
+.flex-center-row {
+	@extend .flex;
+	@extend .align-items-center;
+}
+
+.flex-center-col {
+	@extend .flex;
+	@extend .flex-column;
+	@extend .justify-content-center;
+}
+
+.flex-center-all {
+	@extend .flex;
+	@extend .align-items-center;
+	@extend .justify-content-center;
+}
+
+
 
 
 :root {

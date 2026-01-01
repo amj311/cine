@@ -6,8 +6,12 @@ import { getBuildNumber } from '@/services/versionService';
 import { useAppNavigationStore } from '@/stores/appNavigation.store';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 import { useNavigationStore } from '@/stores/tvNavigation.store';
+import { useUserStore } from '@/stores/user.store';
 import Button from 'primevue/button';
 import { computed, h, onMounted, onUnmounted, ref } from 'vue';
+import DropdownMenu from './utils/DropdownMenu.vue';
+import SettingsModal from './SettingsModal.vue';
+import { AuthService } from '@/services/AuthService';
 
 const navStore = useAppNavigationStore();
 const lastClickedItem = ref<string | null>(null);
@@ -55,6 +59,13 @@ const hiddenBreadcrumbs = computed(() => (navPathItems.value.slice(0, numHiddenB
 const visibleBreadcrumbs = computed(() => (navPathItems.value.slice(numHiddenBreadcrumbs.value)));
 
 const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1]?.label || removeExtensionsFromFileName(queryPathStore.currentFile || ''));
+
+
+/** USER */
+const avatarInitial = computed(() => useUserStore().currentUser?.email?.[0]);
+
+
+const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 </script>
 
 <template>
@@ -119,6 +130,20 @@ const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1
 					<i class="pi pi-times" />
 				</Button>
 			</div>
+
+			<div>
+				<DropdownMenu :items="[
+					{ label: useUserStore().currentUser?.email, icon: 'pi pi-user', disabled: true },
+					{ label: 'Settings', icon: 'pi pi-cog', command: settingsModal?.open, },
+					{ label: 'Sign out', icon: 'pi pi-sign-out', command: AuthService.signOut },
+				]">
+					<div class="square w-2rem h-2rem border-circle overflow-hidden border-1 border-white-alpha-30 text-upper flex-center-all no-select bg-black-alpha-30 cursor-pointer">
+						<template v-if="avatarInitial">{{avatarInitial}}</template>
+						<i v-else class="pi pi-user"></i>
+					</div>
+				</DropdownMenu>
+			</div>
+
 		</div>
 
 		<div class="mobile-nav" :class="{ tvNavigationNoFocus: !expandMobileNav }" @click="expandMobileNav = false">
@@ -151,6 +176,8 @@ const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1
 			</div>
 		</div>
 	</div>
+
+	<SettingsModal ref="settingsModal" />
 </template>
 
 <style lang="scss">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { focusAreaClass } from '@/stores/tvNavigation.store';
 import TieredMenu from 'primevue/tieredmenu';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 
 const menu = ref<InstanceType<typeof TieredMenu>>();
 const props = defineProps<{
