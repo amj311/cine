@@ -153,12 +153,12 @@ const seachedItems = computed(() => {
 			<div v-if="filterMode === 'Categories'" class="categories flex flex-column gap-1">
 				<template v-for="categoriesRow in categories" :key="categoriesRow.relativePath">
 					<div class="categories-row" v-if="categorySampling[categoriesRow.relativePath] && categorySampling[categoriesRow.relativePath].length" :key="categoriesRow.relativePath">
-						<h3>
-							{{ categoriesRow.name }}
-							<Button variant="text" severity="contrast" @click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })">
-								<i class="pi pi-angle-right" />
-							</Button>
-						</h3>
+						<Button variant="text" severity="contrast" @click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })">
+							<h3>
+								{{ categoriesRow.name }}
+							</h3>
+							<i class="pi pi-angle-right" />
+						</Button>
 						<div class="categories-scroll-wrapper">
 							<Scroll>
 								<div class="categories-row-items-list">
