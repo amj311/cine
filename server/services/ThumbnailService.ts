@@ -111,7 +111,7 @@ export class ThumbnailService {
 				])
 				.outputOptions([
 					'-frames:v 1',  // Extract only one frame
-					'-q:v 30',       // Set quality level
+					'-q:v 80',       // Set quality level
 					'-f image2pipe' // Output as a pipe
 				])
 				.outputFormat('image2pipe') // Output format as image

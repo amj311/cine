@@ -46,6 +46,7 @@ export class DirectoryService {
 	 */
 	static resolvePath(anyPath: string): ConfirmedPath | undefined {
 		const decodedPath = decodeMediaPath(anyPath);
+		console.log("decoded", decodedPath)
 		if (!process.env.MEDIA_DIR) {
 			throw new Error('MEDIA_DIR environment variable is not set');
 		}

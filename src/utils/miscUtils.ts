@@ -70,5 +70,5 @@ export function encodeMediaPath(path: string) {
 }
 
 export function decodeMediaPath(path: string) {
-	return decodeURIComponent(path.split('<amp>').join('&'));
+	return decodeURIComponent(path).split('<amp>').join('&');
 }

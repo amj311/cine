@@ -815,7 +815,7 @@ export class LibraryService {
 		}, [] as Array<ConfirmedPath>).reverse();
 		let parentLibrary;
 		for (const ancestor of ancestors) {
-			const item = await LibraryService.parseFolderToItem(ancestor, true, false);
+			const item = await LibraryService.parseFolderToItem(ancestor, true, true);
 			if (item && item.type !== 'folder') {
 				parentLibrary = item;
 				break;
