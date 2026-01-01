@@ -91,7 +91,7 @@ function formatRuntime(minutes: number) {
 										v-for="item in feedRow.items"
 										:key="item.relativePath"
 									>
-										<MetadataLoader :media="item.libraryItem.parentLibrary" :detailed="true">
+										<MetadataLoader :media="item.libraryItem.parentLibrary">
 											<template #default="{ metadata, isLoadingMetadata }">
 												<!-- Failure case -->
 												<MediaCard
