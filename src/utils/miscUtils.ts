@@ -47,7 +47,7 @@ export function msToTimeParts(ms: number): TimeParts {
 
 export function msToTimestamp(mil: number, hideHour = false, hideMs = true) {
 	const { h, m, s, ms } = msToTimeParts(mil);
-	return `${hideHour ? '' : String(h).padStart(2, '0') + ':'}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}${(ms && !hideMs) ? '.' + String(ms).padStart(3, '0') : ''}`
+	return `${hideHour ? '' : String(h).padStart(1, '0') + ':'}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}${(ms && !hideMs) ? '.' + String(ms).padStart(3, '0') : ''}`
 }
 
 export function timePartsToMs({ h, m, s, ms }: TimeParts) {

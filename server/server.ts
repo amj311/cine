@@ -310,7 +310,6 @@ app.post('/api/prepareAudio', async (req, res) => {
 	const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp3');
 	await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
 		ffmpeg.outputOptions(`-map 0:${index}`)
-			.outputOptions('-c:a libmp3lame')
 			.output(outputFilePath)
 			.on('end', () => {
 				resolve();

@@ -124,7 +124,7 @@ function formatRuntime(minutes: number) {
 												</MediaCard>
 												<MediaCard
 													v-else
-													:imageUrl="useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(item.libraryItem.playable.relativePath) + '?width=200&seek=' + item.watchProgress.time"
+													:imageUrl="useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(item.libraryItem.playable.relativePath) + '?seek=' + item.watchProgress.time"
 													:fallbackImage="item.libraryItem.playable.still_thumb || metadata?.background_thumb || metadata?.poster_thumb"
 													:imagePosition="'top'"
 													:playSrc="item.relativePath"

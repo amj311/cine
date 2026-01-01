@@ -43,16 +43,15 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 		if (!isAppInFullscreenMode.value) {
 			return;
 		}
-		const docEl = document.documentElement as any;
 		try {
-			if (docEl.exitFullscreen) {
-				docEl.exitFullscreen();
-			} else if (docEl.mozExitFullScreen) { // Firefox
-				docEl.mozExitFullscreen();
-			} else if (docEl.webkitExitFullscreen) { // Chrome, Safari and Opera
-				docEl.webkitExitFullscreen();
-			} else if (docEl.msExitFullscreen) { // IE/Edge
-				docEl.msExitFullscreen();
+			if (document.exitFullscreen) {
+				document.exitFullscreen();
+			} else if ((document as any).mozCancelFullScreen) { // Firefox
+				(document as any).mozCancelFullScreen();
+			} else if ((document as any).webkitExitFullscreen) { // Chrome, Safari and Opera
+				(document as any).webkitExitFullscreen();
+			} else if ((document as any).msExitFullscreen) { // IE/Edge
+				(document as any).msExitFullscreen();
 			}
 		}
 		catch (err) {
@@ -61,11 +60,12 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 	}
 
 	// If auto fullscreen was successful, we should leave this page when fullscreen exits
-	document.addEventListener('fullscreenchange', onFullScreenChange, false);
-	document.addEventListener('webkitfullscreenchange', onFullScreenChange, false);
-	document.addEventListener('mozfullscreenchange', onFullScreenChange, false);
+	document.addEventListener('fullscreenchange', onFullScreenChange);
+	document.addEventListener('webkitfullscreenchange', onFullScreenChange);
+	document.addEventListener('mozfullscreenchange', onFullScreenChange);
 
-	function onFullScreenChange() {
+	function onFullScreenChange(e) {
+		console.log(document.fullscreenElement)
 		var fullscreenElement =
 			document.fullscreenElement ||
 			(document as any).mozFullScreenElement ||
@@ -114,6 +114,16 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 		}
 	});
 
+
+	function userFullscreenRequest() {
+		userWantsFullscreen.value = true;
+		goFullscreen();
+	}
+	function userExitFullscreen() {
+		userWantsFullscreen.value = false;
+		exitFullscreen();
+	}
+
 	return {
 		isAppInFullscreenMode,
 		userWantsFullscreen,
@@ -124,14 +134,17 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 		setAccidentalExitHandler(handler: () => Promise<boolean>) {
 			accidentalExitHandler = handler;
 		},
-		userFullscreenRequest() {
-			userWantsFullscreen.value = true;
-			goFullscreen();
+		userToggle() {
+			if (!isAppInFullscreenMode.value) {
+				userFullscreenRequest();
+			}
+			else {
+				console.log("exiting")
+				userExitFullscreen();
+			}
 		},
-		userExitFullscreen() {
-			userWantsFullscreen.value = false;
-			exitFullscreen();
-		},
+		userFullscreenRequest,
+		userExitFullscreen,
 		tempFullscreen(reason: string) {
 			tempFullscreenReason.value = reason;
 			goFullscreen();

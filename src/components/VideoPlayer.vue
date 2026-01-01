@@ -2,9 +2,12 @@
 import { useApiStore } from '@/stores/api.store';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
-import { defineProps, ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import MediaTimer from './MediaTimer.vue';
-import { encodeMediaPath } from '@/utils/miscUtils';
+import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
+import Slider from 'primevue/slider';
+import { useFullscreenStore } from '@/stores/fullscreenStore.store';
+import { useNavigationStore } from '@/stores/tvNavigation.store';
 
 const toast = useToast();
 
@@ -77,7 +80,33 @@ defineExpose({
 	},
 })
 
+const playingState = ref({
+	paused: false,
+	ended: false,
+	currentTime: 0,
+	progress: 0,
+});
+
+function updatePlayingState() {
+	if (!videoRef.value) {
+		return;
+	}
+	playingState.value.paused = videoRef.value.paused;
+	playingState.value.ended = videoRef.value.ended;
+	playingState.value.currentTime = videoRef.value.currentTime;
+	playingState.value.progress = videoRef.value.duration ? videoRef.value.currentTime * 100 / videoRef.value.duration : 0;
+}
+
+function loopUpdateState() {
+	window.requestAnimationFrame(() => {
+		updatePlayingState();
+		loopUpdateState();
+	})
+}
+
 onMounted(() => {
+	loopUpdateState();
+
 	videoRef.value?.addEventListener('loadeddata', () => {
 		if (props.onLoadedData) {
 			props.onLoadedData(videoRef.value);
@@ -106,16 +135,90 @@ onMounted(() => {
 			secondaryAudioPlayer.value.currentTime = videoRef.value!.currentTime;
 		}
 	});
+	videoRef.value?.addEventListener('click', togglePlay);
+	videoRef.value?.addEventListener('click', doubleClick);
 
 	updateShowControlsTimeout();
 
 	// Setup control hiding
-	const events = ['mousemove', 'keydown', 'touchstart'];
+	const events = ['mousemove', 'keydown', 'touchstart', 'seeked'];
 	events.forEach((event) => {
 		wrapperRef.value?.addEventListener(event, updateShowControlsTimeout, { passive: true });
 	});
+
+	// setup keybindings
+	window.addEventListener('keydown', windowKeyHandler);
 })
 
+onBeforeUnmount(() => {
+	window.removeEventListener('keydown', windowKeyHandler);
+})
+
+function windowKeyHandler(e) {
+	// not for TVs
+	if (useNavigationStore().detectedTv) {
+		return;
+	}
+
+	if (e.key === ' ') {
+		togglePlay();
+	}
+	if (e.key === 'ArrowLeft') {
+		skipBack();
+	}
+	if (e.key === 'ArrowRight') {
+		skipForward();
+	}
+}
+
+let lastClick = 0;
+function doubleClick() {
+	const doubleClickTime = 500;
+	if (Date.now() - lastClick < doubleClickTime) {
+		useFullscreenStore().userToggle();
+	}
+	lastClick = Date.now();
+}
+
+const isPlaying = computed(() => !playingState.value.paused && !playingState.value.ended);
+function togglePlay() {
+	if (videoRef.value?.ended || videoRef.value?.paused) {
+		videoRef.value.play();
+	}
+	else {
+		videoRef.value?.pause();
+	}
+	updateShowControlsTimeout();
+}
+
+function skipBack() {
+	if (videoRef.value) {
+		videoRef.value.currentTime -= 10;
+	}
+	updateShowControlsTimeout();
+}
+
+function skipForward() {
+	if (videoRef.value) {
+		videoRef.value.currentTime = Math.min(videoRef.value.currentTime + 10, videoRef.value.duration - 1);
+	}
+	updateShowControlsTimeout();
+}
+
+function doRangeSeek(percent: number) {
+	if (!videoRef.value) {
+		return;
+	}
+	const progress = Math.min(99.99, percent);
+	videoRef.value.currentTime = videoRef.value.duration * progress / 100;
+}
+
+const remaining = computed(() => {
+	if (!videoRef.value) {
+		return 0;
+	}
+	return videoRef.value.duration - playingState.value.currentTime;
+})
 
 const subtitleTracks = computed(() => {
 	if (!props.subtitles?.length) {
@@ -227,12 +330,14 @@ function toggleTimer() {
 
 <template>
 	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls': showControls }">
-		<video ref="videoRef" class="video-player" :controls="!hideControls" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous" allow>
+		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous" allow>
 			<source :src="videoUrl" :type="'video/mp4'" />
 			<track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" />
 		</video>
 		<audio ref="secondaryAudioPlayer" type="audio/mp3" />
-		<div class="overlay top-fade"></div>
+
+		<div class="overlay overlay-fade"></div>
+
 		<div class="top-controls w-full flex flex-column justify-content-end">
 			<div class="overlay flex align-items-center gap-2">
 				<Button v-if="close" variant="text" severity="contrast" icon="pi pi-arrow-left" @click="close" />
@@ -243,15 +348,38 @@ function toggleTimer() {
 					<div class="timer-trigger" @click="toggleTimer">
 						<Button :text="showTimer ? false : true" :severity="showTimer ? 'secondary' : 'contrast'" :icon="'pi pi-stopwatch'" />
 					</div>
-					<div class="audio-select" v-if="props.audio && props.audio.length > 1">
-						<DropdownMenu :model="audioMenuItems"><Button variant="text" severity="contrast" :icon="'pi pi-headphones'" /></DropdownMenu>
-					</div>
 				</div>
 			</div>
 			<div v-if="showTimer" class="flex align-items-start">
 				<div class="flex-grow-1"></div>
 				<div><MediaTimer :mediaEl="videoRef" :inPlayer="true" /></div>
 			</div>
+		</div>
+		<div class="center-controls overlay flex-center-row gap-4">
+			<Button class="square" text severity="contrast" @click="console.log">
+				<i class="material-symbols-outlined">fast_rewind</i>
+			</Button>
+			<div class="square border-circle w-3rem bg-white-alpha-50 flex-center-all cursor-pointer no-select" @click="togglePlay">
+				<i class="material-symbols-outlined">{{ isPlaying ? 'pause' : 'play_arrow' }}</i>
+			</div>
+			<Button class="square" text severity="contrast">
+				<i class="material-symbols-outlined">fast_forward</i>
+			</Button>
+		</div>
+		<div class="bottom-controls overlay flex-column gap-2">
+			<div class="flex-center-row">
+				<span>-{{ msToTimestamp(secToMs(remaining)) }}</span>
+				<div class="flex-grow-1" />
+				<div class="audio-select" v-if="props.audio && props.audio.length > 1">
+					<DropdownMenu :items="audioMenuItems">
+						<Button variant="text" severity="contrast"><span class="material-symbols-outlined">movie_speaker</span></Button>
+					</DropdownMenu>
+				</div>
+				<Button text severity="contrast" @click="useFullscreenStore().userToggle">
+					<span class="material-symbols-outlined">{{ useFullscreenStore().isAppInFullscreenMode ? 'fullscreen_exit' : 'fullscreen' }}</span>
+				</Button>
+			</div>
+			<input type="range" class="seeker w-full" min="0" :value="playingState.progress" @input="(e: any) => doRangeSeek(e?.target?.value)" />
 		</div>
 	</div>
 </template>
@@ -274,6 +402,13 @@ function toggleTimer() {
 		opacity: 0;
 		transition: 500ms;
 		zoom: 1.3;
+		z-index: 1000;
+		pointer-events: none;
+		filter: drop-shadow(0 0 2px #000);
+
+		> * {
+			pointer-events: all;
+		}
 	}
 	&.show-controls {
 		.overlay {
@@ -281,25 +416,35 @@ function toggleTimer() {
 		}
 	}
 
-	.top-fade {
-		background: linear-gradient(to bottom, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0));
-		height: 4rem;
-		width: 100%;
+	.overlay-fade {
+		background: linear-gradient(to bottom, rgba(0, 0, 0, .75), rgba(0, 0, 0, 0) 4em),
+			linear-gradient(to top, rgba(0, 0, 0, .75), rgba(0, 0, 0, 0) 8em);
 		position: absolute;
 		top: 0;
 		left: 0;
+		right: 0;
+		bottom: 0;
 	}
 
 	.top-controls {
 		position: absolute;
 		top: 0px;
 		left: 00px;
-		z-index: 1000;
-		pointer-events: none;
+	}
 
-		> div {
-			pointer-events: all;
-		}
+	.center-controls {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		translate: -50% -50%;
+	}
+
+	.bottom-controls {
+		position: absolute;
+		bottom: 0px;
+		left: 0px;
+		right: 0px;
+		padding: 1rem;
 	}
 }
 </style>
