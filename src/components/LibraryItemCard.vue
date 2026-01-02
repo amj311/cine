@@ -83,7 +83,7 @@ const props = defineProps<{
 	border-radius: 5px;
 	overflow: hidden;
 
-	&.clickable:hover, &:focus {
+	&.clickable:hover, &[tv-focus] {
 		cursor: pointer;
 		background-color: var(--color-background-mute);
 		border: 3px solid var(--color-background-mute);
@@ -101,7 +101,7 @@ const props = defineProps<{
 		display: none;
 	}
 
-	&:hover, &:focus {
+	&:hover, &[tv-focus] {
 		.overlay {
 			display: flex;
 			position: absolute;

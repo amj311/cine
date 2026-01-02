@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { focusAreaClass } from '@/stores/tvNavigation.store';
+import { focusAreaClass, useNavigationStore } from '@/stores/tvNavigation.store';
 import TieredMenu from 'primevue/tieredmenu';
 import { ref } from 'vue';
 
@@ -25,10 +25,19 @@ function setMenuItems() {
 	if (typeof props.items === 'function') {
 		items = props.items();
 	}
-	menuItems.value = items?.length ? items : [{
-		label: 'No actions',
-		disabled: true,
-	}]
+	menuItems.value = items?.length ? [...items] : [
+		{
+			label: 'No actions',
+			disabled: true,
+		},
+	];
+
+	if (useNavigationStore().tvNavEnabled) {
+		menuItems.value.push({
+			label: 'Cancel',
+			command: () => {},
+		})
+	}
 }
 
 </script>
@@ -37,7 +46,7 @@ function setMenuItems() {
 	<span @click="openMenu" class="trigger" v-bind="{ ...$props, ...$attrs }" tabindex="0">
 		<slot><Button :size="size" variant="text" severity="contrast" :icon="'pi pi-ellipsis-v'" /></slot>
 	</span>
-	<TieredMenu ref="menu" id="overlay_menu" :class="focusAreaClass" :popup="true" :model="menuItems" v-bind="$attrs">
+	<TieredMenu ref="menu" id="overlay_menu" :class="focusAreaClass" :popup="true" :model="menuItems.filter(Boolean)" v-bind="$attrs">
 		<template v-for="(slotFn, name) in $slots" #[name]="slotProps">
 			<slot :name="name" v-bind="slotProps" />
 		</template>

@@ -68,7 +68,7 @@ const showNavbar = computed(() => {
 
 <template>
 	<AppBackground />
-	<div class="dark-app app-wrapper" :class="{ 'tv-nav': tvNavigationStore.enabled }" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
+	<div class="dark-app app-wrapper" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
 		<template v-if="apiStore.isInitializing || !useUserStore().hasLoadedSessionData">
 			<div id="longLoading">
 				<i class="pi pi-spinner spin" />
@@ -142,11 +142,6 @@ const showNavbar = computed(() => {
 	justify-content: center;
 	align-items: center;
 	gap: .5em;
-}
-
-.tv-nav :focus {
-	outline: 2px solid var(--color-contrast) !important;
-	outline-offset: 2px !important;
 }
 
 .debug-info {

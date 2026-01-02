@@ -20,7 +20,10 @@ export const useNavigationStore = defineStore('Navigation', () => {
 	const detectedTv = ref(localSettings.is_tv || false);
 	const detectedTouch = ref(false);
 	const tvWasConfirmed = ref(false);
-	const enabled = ref(false);
+	const tvNavEnabled = ref(false);
+
+	let FOCUS_COOLDOWN = 0;
+	let lastFocusTime = 0;
 
 	const isSkinnyScreen = ref(window.innerWidth < 768);
 	function updateMobileNav() {
@@ -30,6 +33,7 @@ export const useNavigationStore = defineStore('Navigation', () => {
 	updateMobileNav();
 
 	async function handleMouseMove(event) {
+		FOCUS_COOLDOWN = 250;
 		stopScreenEdgeScroll();
 
 		lastMousePosition.value = { x: event.clientX, y: event.clientY };
@@ -77,14 +81,16 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		doScreenEdgeScroll(direction);
 	}
 
-	let edgeScrollTime = 500;
 	let edgeScrollInterval: ReturnType<typeof setInterval> | null = null;
 
 	function doScreenEdgeScroll(direction: Direction) {
+		FOCUS_COOLDOWN = 100;
+		let edgeScrollTime = FOCUS_COOLDOWN + 10;
+
 		if (edgeScrollInterval) {
 			clearInterval(edgeScrollInterval);
 		}
-		addEdgeScrollUi(direction);
+		updateEdgeScrollUi(direction);
 		edgeScrollInterval = setInterval(async () => {
 			const newEl = await moveFocus(direction);
 			if (!newEl) {
@@ -101,37 +107,18 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		removeEdgeScrollUi();
 	}
 
-	function addEdgeScrollUi(direction: Direction) {
-		removeEdgeScrollUi();
+	function createEdgeScrollUi() {
 		const newEdgeScrollUi = document.createElement('div');
 		newEdgeScrollUi.id = 'tvEdgeScrollUi';
 		newEdgeScrollUi.style.position = 'fixed';
 
 		// defaults
-		newEdgeScrollUi.style.top = '10px';
-		newEdgeScrollUi.style.bottom = '10px';
-		newEdgeScrollUi.style.left = '10px';
-		newEdgeScrollUi.style.right = '10px';
 		newEdgeScrollUi.style.display = 'flex';
 		newEdgeScrollUi.style.alignItems = 'center';
 		newEdgeScrollUi.style.justifyContent = 'center';
 		newEdgeScrollUi.style.zIndex = '9999';
 
-		if (direction === 'up') {
-			newEdgeScrollUi.style.bottom = '';
-		}
-		else if (direction === 'down') {
-			newEdgeScrollUi.style.top = '';
-		}
-		else if (direction === 'left') {
-			newEdgeScrollUi.style.right = '';
-		}
-		else if (direction === 'right') {
-			newEdgeScrollUi.style.left = '';
-		}
-
 		const scrollIcon = document.createElement('i');
-		scrollIcon.className = 'pi pi-angle-double-' + direction;
 		scrollIcon.style.fontSize = '1.5rem';
 		scrollIcon.style.color = 'white';
 		scrollIcon.style.display = 'block';
@@ -145,11 +132,45 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		newEdgeScrollUi.appendChild(scrollIcon);
 		document.body.appendChild(newEdgeScrollUi);
 	}
+	function updateEdgeScrollUi(direction: Direction) {
+		const edgeScrollUi = document.getElementById('tvEdgeScrollUi');
+		if (!edgeScrollUi) {
+			createEdgeScrollUi();
+			return updateEdgeScrollUi(direction);
+		}
+
+		// defaults
+		edgeScrollUi.style.display = 'block';
+		edgeScrollUi.style.top = '10px';
+		edgeScrollUi.style.bottom = '10px';
+		edgeScrollUi.style.left = '10px';
+		edgeScrollUi.style.right = '10px';
+
+		if (direction === 'up') {
+			edgeScrollUi.style.left = '50%';
+			edgeScrollUi.style.bottom = '';
+		}
+		else if (direction === 'down') {
+			edgeScrollUi.style.left = '50%';
+			edgeScrollUi.style.top = '';
+		}
+		else if (direction === 'left') {
+			edgeScrollUi.style.top = '50%';
+			edgeScrollUi.style.right = '';
+		}
+		else if (direction === 'right') {
+			edgeScrollUi.style.top = '50%';
+			edgeScrollUi.style.left = '';
+		}
+
+		const scrollIcon = edgeScrollUi.querySelector('i')!;
+		scrollIcon.className = 'pi pi-angle-double-' + direction;
+	}
 
 	function removeEdgeScrollUi() {
 		const edgeScrollUi = document.getElementById('tvEdgeScrollUi');
 		if (edgeScrollUi) {
-			edgeScrollUi.remove();
+			edgeScrollUi.style.display = 'none';
 		}
 	}
 
@@ -160,7 +181,10 @@ export const useNavigationStore = defineStore('Navigation', () => {
 			captureClick(event);
 			return;
 		}
+
+		FOCUS_COOLDOWN = 100;
 		let direction = '';
+
 		switch (event.key) {
 			case 'ArrowUp':
 				direction = 'up';
@@ -196,8 +220,6 @@ export const useNavigationStore = defineStore('Navigation', () => {
 	const lastFocusedEl = ref<FocusableElement | null>(null);
 
 
-	const FOCUS_COOLDOWN = 200;
-	let lastFocusTime = 0;
 	async function moveFocus(direction: Direction = 'left') {
 		if (lastFocusTime && Date.now() - lastFocusTime < FOCUS_COOLDOWN) {
 			return;
@@ -223,10 +245,20 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		for (const group of groupStack) {
 			elementToFocus = await findNextFocusFromOptions(focusGroups.get(group) || [], direction);
 			if (elementToFocus) {
-				setFocus(elementToFocus);
 				break;
 			}
 		}
+
+		// If no natural element found, look for jump rows
+		if (!elementToFocus && lastFocusedEl.value?.dataset.tvnavjumprow) {
+			const jumpEls = document.querySelectorAll<HTMLElement>(`[data-tvnavjumprow="${lastFocusedEl.value.dataset.tvnavjumprow}"]`);
+			elementToFocus = await findNextFocusFromOptions(Array.from(jumpEls), direction, true);
+		}
+
+		if (elementToFocus) {
+			setFocus(elementToFocus);
+		}
+
 		return elementToFocus;
 	}
 
@@ -248,18 +280,23 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		setFocus(focusablePriority[0]);
 	}
 	function setFocus(element: HTMLElement | null) {
+		if (lastFocusedEl.value) {
+			lastFocusedEl.value.removeAttribute('tv-focus');
+		}
 		if (element) {
 			lastFocusedEl.value = element;
-			lastFocusedEl.value.focus();
-			lastFocusedEl.value.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+			if (!lastFocusedEl.value.dataset.tvnav_noscroll) {
+				lastFocusedEl.value.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+			}
+			lastFocusedEl.value.setAttribute('tv-focus', 'true');
 		}
 	}
 
-	async function findNextFocusFromOptions(elements: HTMLElement[], direction: Direction | null) {
+	async function findNextFocusFromOptions(elements: HTMLElement[], direction: Direction | null, skipFilters = false) {
 		// If looking in a specific direction, filter the elements
 		const rowMarginOfError = 50;
 
-		const isSameRow = (active, other) => {
+		function isSameRow(active, other) {
 			return Math.abs(active.top - other.top) < rowMarginOfError || Math.abs(active.bottom - other.bottom) < rowMarginOfError;
 		}
 		const compareForInclusion = {
@@ -270,21 +307,17 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		}
 		const sidesToPrioritizeForDistance = {
 			// will compare how close these pairs of sides are in alignment
-			up: [['top', 'bottom'], ['left', 'lfet']],
+			up: [['top', 'bottom'], ['left', 'left']],
 			down: [['bottom', 'top'], ['left', 'left']],
-			left: [['top', 'top'], ['left', 'right']],
-			right: [['top', 'top'], ['right', 'left']],
+			left: [['left', 'right'], ['top', 'top']],
+			right: [['right', 'left'], ['top', 'top']],
 		}
 
 		if (direction && lastFocusedEl.value) {
 			const activeRect = lastFocusedEl.value.getBoundingClientRect();
 
-			const options = elements.map((el) => {
+			const allOptions = elements.filter(el => el !== lastFocusedEl.value).map((el) => {
 				const elRect = el.getBoundingClientRect();
-
-				if (el === lastFocusedEl.value || !compareForInclusion[direction](activeRect, elRect)) {
-					return null;
-				}
 
 				const distanceScores = sidesToPrioritizeForDistance[direction].reduce((acc, [activeSide, otherSide]) => {
 					const activeSideValue = activeRect[activeSide];
@@ -296,9 +329,12 @@ export const useNavigationStore = defineStore('Navigation', () => {
 
 				return {
 					element: el,
+					rect: elRect,
 					distanceScores,
 				}
-			}).filter(el => el !== null).sort((a, b) => {
+			});
+
+			const distanceSort = (a, b) => {
 				for (const sides of sidesToPrioritizeForDistance[direction]) {
 					const [activeSide, otherSide] = sides;
 					const aDistance = a.distanceScores[activeSide + otherSide];
@@ -311,8 +347,10 @@ export const useNavigationStore = defineStore('Navigation', () => {
 					}
 				}
 				return 0;
-			});
-			elements = options.map((option) => option.element);
+			};
+
+			const rowColOptions = allOptions.filter(o => skipFilters || compareForInclusion[direction](activeRect, o.rect)).sort(distanceSort);
+			return rowColOptions[0]?.element;
 		}
 
 		return elements[0];
@@ -321,21 +359,29 @@ export const useNavigationStore = defineStore('Navigation', () => {
 
 	// TESTING MUTATION OBSERVER!!!
 	const observer = new MutationObserver(debounceGatherFocusable);
-	observer.observe(document.body, {
-		childList: true,
-		subtree: true,
-	});
 
 
 	async function gatherFocusTargets() {
 		focusTargets.clear();
 		focusGroups.clear();
 
-		const focusElements = ['[href]', 'button', 'input', 'select', 'textarea', '[tabindex]', 'details', 'summary'];
-		const query = focusElements.map(el => el + ':not([disabled]:not([disabled="false"])):not([tabindex="-1"])').join(', ');
+		const focusElements = ['[href]', 'button', 'input', 'select', 'textarea', '[tabindex]', '.clickable', 'details', 'summary', '#overlay_menu_list li', '.p-toggleswitch'];
+		const query = focusElements.map(el => el + ':not([disabled]:not([disabled="false"])):not(.p-disabled):not([tabindex="-1"]):not(#overlay_menu_list)').join(', ');
 
-		const focusArea = document.getElementsByClassName(focusAreaClass)[0] || document.body;
-		let elements = Array.from(focusArea.querySelectorAll(query)) as Array<HTMLElement>;
+		const focusAreaSelector = ['#overlay_menu', '.p-dialog', '.' + focusAreaClass].join(', ');
+
+
+		// find highest priority focus area
+		let focusArea;
+		const focusAreaSelectors = ['#overlay_menu', '.p-dialog', '.' + focusAreaClass];
+		for (const selector of focusAreaSelectors) {
+			focusArea = document.querySelector(selector);
+			if (focusArea) break;
+		}
+
+		const searchArea = focusArea || document.body;
+
+		let elements = Array.from(searchArea.querySelectorAll(query)) as Array<HTMLElement>;
 
 		// Gather the focusGroup for each element
 		for (const el of elements) {
@@ -343,7 +389,7 @@ export const useNavigationStore = defineStore('Navigation', () => {
 			const scrollableStack: Array<HTMLElement> = [];
 			let currentElement: HTMLElement | null = el;
 			do {
-				if (currentElement.scrollHeight > currentElement.clientHeight || currentElement.scrollWidth > currentElement.clientWidth || currentElement === focusArea) {
+				if (currentElement.scrollHeight > currentElement.clientHeight || currentElement.scrollWidth > currentElement.clientWidth || currentElement === searchArea) {
 					scrollableStack.push(currentElement);
 					// Add focus target to element focusGroups
 					const newGroupEl = currentElement as ScrollElement;
@@ -352,7 +398,7 @@ export const useNavigationStore = defineStore('Navigation', () => {
 					}
 					focusGroups.get(newGroupEl)?.push(el);
 				}
-				if (currentElement === focusArea) {
+				if (currentElement === searchArea) {
 					break;
 				}
 				currentElement = currentElement.parentElement;
@@ -484,12 +530,15 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		useFullscreenStore().userFullscreenRequest();
 		event.stopPropagation();
 		event.preventDefault();
-		lastFocusedEl.value?.click();
+
+		// try to click within an element when helpful
+		const clicker = lastFocusedEl.value?.querySelector('a,input') as HTMLElement || lastFocusedEl.value;
+		clicker?.click();
 	}
 
 
 	function engageTvMode() {
-		enabled.value = true;
+		tvNavEnabled.value = true;
 
 		// create click capture element
 		const clickCapture = document.createElement('div');
@@ -509,6 +558,12 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		window.addEventListener('mouseout', handleMouseOut);
 		window.addEventListener('keydown', handleKeyDown);
 
+
+		observer.observe(document.body, {
+			childList: true,
+			subtree: true,
+		});
+		gatherFocusTargets();
 		findFocus();
 	}
 	function disengageTvMode() {
@@ -516,7 +571,8 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		window.removeEventListener('mousemove', handleMouseMove);
 		window.removeEventListener('mouseout', handleMouseOut);
 		window.removeEventListener('keydown', handleKeyDown);
-		enabled.value = false;
+		tvNavEnabled.value = false;
+		observer.disconnect();
 	}
 
 
@@ -550,8 +606,7 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		},
 		engageTvMode,
 		disengageTvMode,
-
-		enabled,
+		tvNavEnabled,
 
 		setFocus,
 	}

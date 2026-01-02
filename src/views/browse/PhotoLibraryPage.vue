@@ -327,7 +327,7 @@ function normLabel(date) {
 		border-radius: 5px;
 		cursor: pointer;
 
-		&:hover, &:focus {
+		&:hover, &[tv-focus] {
 			scale: 1.03;
 			outline: 1px solid var(--color-contrast);
 		}

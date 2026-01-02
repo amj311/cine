@@ -320,6 +320,8 @@ onUnmounted(async () => {
 								v-for="season in mergedSeasons"
 								:key="season.seasonNumber"
 								class="season-button"
+								data-tvNavJumpRow="seasons"
+								data-tvnav_noscroll="true"
 								severity="contrast"
 								:variant="activeSeason.seasonNumber === season.seasonNumber ? '' : 'text'"
 								@click="() => activeSeason = season"
@@ -336,6 +338,7 @@ onUnmounted(async () => {
 								<div class="episode-item">
 									<div class="episode-poster-wrapper">
 										<MediaCard
+											navJumpRow="seasons"
 											:imageUrl="episode.still_thumb"
 											:aspectRatio="'wide'"
 											:playSrc="episode.relativePath"
@@ -456,7 +459,7 @@ onUnmounted(async () => {
 	.season-details {
 		flex: 1;
 		overflow: hidden;
-		--card-growth-margin: 0.5rem;
+		--card-growth-margin: 0.65rem;
 		padding-top: var(--card-growth-margin);
 		padding-left: var(--card-growth-margin);
 		padding-right: var(--card-growth-margin);

@@ -133,7 +133,7 @@ let wakeLock: WakeLockSentinel | null = null;
 
 let wasTvMode = false;
 function pauseTvMode() {
-	if (useNavigationStore().enabled) {
+	if (useNavigationStore().tvNavEnabled) {
 		wasTvMode = true;
 		useNavigationStore().disengageTvMode();
 		useToast().add({
@@ -227,7 +227,7 @@ onMounted(async () => {
 	playMedia(mediaPath.value).catch((e) => {
 		console.error("Failed to load media data", e);
 	});
-	pauseTvMode();
+	// pauseTvMode();
 	// attemptAutoFullscreen();
 
 	requestWakeLock();
@@ -255,7 +255,7 @@ onBeforeUnmount(async () => {
 	clearInterval(progressUpdateInterval);
 
 	// Resume TV mode
-	resumeTvMode();
+	// resumeTvMode();
 	
 	if (didAutoFullscreen.value) {
 		try {
@@ -633,7 +633,7 @@ function onTitleClick() {
 		align-items: center;
 		gap: .5em;
 
-		&:hover, &:focus {
+		&:hover, &[tv-focus] {
 			box-shadow: 0 0 10px rgba(0, 0, 0, .3);
 		}
 

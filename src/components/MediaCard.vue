@@ -28,7 +28,8 @@ const props = defineProps<{
 		relativePath: string,
 		until: string,
 		pin?: string,
-	}
+	},
+	navJumpRow?: string,
 }>();
 
 
@@ -105,7 +106,7 @@ const imageError = ref<any>(null);
 </script>
 
 <template>
-	<div class="media-card" :class="{ clickable: onClick }" @click="onClick" :tabindex="onClick ? 0 : -1">
+	<div class="media-card" :class="{ clickable: onClick }" @click="onClick" :tabindex="onClick ? 0 : -1" :data-tvNavJumpRow="navJumpRow">
 		<div
 			class="poster"
 			:class="{ [aspectRatio || 'tall']: true, surprise, revealed: revealedSurprise }"
@@ -167,7 +168,7 @@ const imageError = ref<any>(null);
 	border-radius: 5px;
 	overflow: hidden;
 
-	&.clickable:hover, &:focus {
+	&.clickable:hover, &[tv-focus] {
 		cursor: pointer;
 		background-color: var(--color-background-mute);
 		border: 3px solid var(--color-background-mute);
@@ -185,7 +186,7 @@ const imageError = ref<any>(null);
 		display: none;
 	}
 
-	&:hover, &:focus {
+	&:hover, &[tv-focus] {
 		.overlay {
 			display: flex;
 			position: absolute;

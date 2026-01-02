@@ -5,7 +5,7 @@
 import { getBuildNumber } from '@/services/versionService';
 import { useAppNavigationStore } from '@/stores/appNavigation.store';
 import { useQueryPathStore } from '@/stores/queryPath.store';
-import { useNavigationStore } from '@/stores/tvNavigation.store';
+import { focusAreaClass, useNavigationStore } from '@/stores/tvNavigation.store';
 import { useUserStore } from '@/stores/user.store';
 import Button from 'primevue/button';
 import { computed, h, onMounted, onUnmounted, ref } from 'vue';
@@ -69,7 +69,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 </script>
 
 <template>
-	<div class="navbar" :class="{ 'mobile-expanded': expandMobileNav }">
+	<div class="navbar" :class="{ [`mobile-expanded ${focusAreaClass}`]: expandMobileNav }">
 		<div class="top">
 			<div class="logo" tabindex="0" @click="() => { expandMobileNav = false; $router.push({ name: 'home' }) }">
 				<Logo :width="125" />
@@ -197,7 +197,6 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 		align-items: center;
 		justify-content: space-between;
 		padding: 1rem 1rem;
-		gap: 0.5rem;
 	}
 }
 
@@ -225,7 +224,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 	}
 
 
-	&:hover, &:focus {
+	&:hover, &[tv-focus] {
 		svg {
 			transform: rotateX(-360deg);
 		}

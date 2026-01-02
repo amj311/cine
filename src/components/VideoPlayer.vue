@@ -149,9 +149,9 @@ onMounted(() => {
 	updateShowControlsTimeout();
 
 	// Setup control hiding
-	const events = ['mousemove', 'keydown', 'touchstart', 'seeked'];
+	const events = ['mousemove', 'keydown', 'touchstart'];
 	events.forEach((event) => {
-		wrapperRef.value?.addEventListener(event, updateShowControlsTimeout, { passive: true });
+		window.addEventListener(event, updateShowControlsTimeout, { passive: true });
 	});
 
 	// setup keybindings
@@ -371,7 +371,7 @@ function toggleTimer() {
 			<Button class="square" text severity="contrast" @click="skipBack">
 				<i class="material-symbols-outlined">fast_rewind</i>
 			</Button>
-			<div class="square border-circle w-3rem bg-white-alpha-70 flex-center-all cursor-pointer no-select" @click="togglePlay">
+			<div data-focus-priority="1" class="clickable square border-circle w-3rem bg-white-alpha-70 flex-center-all cursor-pointer no-select" @click="togglePlay">
 				<i class="material-symbols-outlined">{{ isPlaying ? 'pause' : 'play_arrow' }}</i>
 			</div>
 			<Button class="square" text severity="contrast" @click="skipForward">
