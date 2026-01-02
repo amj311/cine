@@ -226,7 +226,7 @@ onUnmounted(async () => {
 
 <template>
 	<Scroll>
-		<div class="cinema-page pl-3 pr-2">
+		<div class="cinema-page pl-3 pr-3">
 			<div class="top-wrapper">
 				<div>
 					<div class="poster-wrapper">
