@@ -1,6 +1,6 @@
 /** MediaEl currentTime 1.23456 -> 1234 */
 export function secToMs(seconds: number) {
-	return Math.round(seconds * 1000);
+	return isNaN(seconds) ? 0 : Math.round(seconds * 1000);
 }
 
 /** 1234 -> MediaEl currentTime 1.234 */

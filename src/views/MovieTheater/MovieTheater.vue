@@ -19,6 +19,7 @@ import InputNumber from 'primevue/inputnumber';
 import { useScrubberStore } from './scrubber.store';
 import ScrubSettings from './ScrubSettings.vue';
 import DropdownTrigger from '@/components/utils/DropdownTrigger.vue';
+import { encodeMediaPath } from '@/utils/miscUtils';
 
 const router = useRouter();
 const api = useApiStore().api;
@@ -55,7 +56,7 @@ const showNextEpisodeCard = computed(() => {
 });
 
 const showPlayer = computed(() => {
-	return Boolean(mediaPath.value && hasLoaded.value);
+	return Boolean(mediaPath.value);
 });
 
 
@@ -426,6 +427,7 @@ function toggleScrubMenu() {
 			<VideoPlayer
 				v-if="mediaPath"
 				v-show="showPlayer"
+				:loadingSplash="currentEpisodeMetadata?.still_full || parentLibrary?.metadata?.background || useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(queryPathStore.currentPath) + '?width=1200'"
 				:title="title"
 				:close="carefulBackNav"
 				:autoplay="true"
@@ -472,9 +474,6 @@ function toggleScrubMenu() {
 					</DropdownTrigger>
 				</template>
 			</VideoPlayer>
-			<div class="loading" v-if="!hasLoaded">
-				<i class="pi pi-spin pi-spinner" style="font-size: 3em; color: #fff;" />
-			</div>
 			<div v-if="showNextEpisodeCard" class="next-episode-card" :class="{ full: hasEnded }" @click="playNext">
 				<div class="play-icon">
 					<div class="w-full">

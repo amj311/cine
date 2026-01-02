@@ -5,7 +5,6 @@ import { useToast } from 'primevue/usetoast';
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import MediaTimer from './MediaTimer.vue';
 import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
-import Slider from 'primevue/slider';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
 import { useNavigationStore } from '@/stores/tvNavigation.store';
 
@@ -13,6 +12,7 @@ const toast = useToast();
 
 const props = defineProps<{
 	relativePath: string;
+	loadingSplash?: string,
 	title?: string;
 	close?: () => void;
 	onPlay?: () => void;
@@ -104,10 +104,14 @@ function loopUpdateState() {
 	})
 }
 
+const hasLoaded = ref(false);
+
 onMounted(() => {
 	loopUpdateState();
 
 	videoRef.value?.addEventListener('loadeddata', () => {
+		hasLoaded.value = true;
+		updatePlayingState();
 		if (props.onLoadedData) {
 			props.onLoadedData(videoRef.value);
 		}
@@ -336,6 +340,10 @@ function toggleTimer() {
 		</video>
 		<audio ref="secondaryAudioPlayer" type="audio/mp3" />
 
+		<div v-if="!hasLoaded" class="loading-splash">
+			<img v-if="loadingSplash" :src="loadingSplash" />
+			<i class="pi pi-spin pi-spinner text-7xl" />
+		</div>
 		<div class="overlay overlay-fade"></div>
 
 		<div class="top-controls w-full flex flex-column justify-content-end">
@@ -355,11 +363,11 @@ function toggleTimer() {
 				<div><MediaTimer :mediaEl="videoRef" :inPlayer="true" /></div>
 			</div>
 		</div>
-		<div class="center-controls overlay flex-center-row gap-4">
+		<div v-if="hasLoaded" class="center-controls overlay flex-center-row gap-4">
 			<Button class="square" text severity="contrast" @click="skipBack">
 				<i class="material-symbols-outlined">fast_rewind</i>
 			</Button>
-			<div class="square border-circle w-3rem bg-white-alpha-50 flex-center-all cursor-pointer no-select" @click="togglePlay">
+			<div class="square border-circle w-3rem bg-white-alpha-70 flex-center-all cursor-pointer no-select" @click="togglePlay">
 				<i class="material-symbols-outlined">{{ isPlaying ? 'pause' : 'play_arrow' }}</i>
 			</div>
 			<Button class="square" text severity="contrast" @click="skipForward">
@@ -404,7 +412,7 @@ function toggleTimer() {
 		zoom: 1.3;
 		z-index: 1000;
 		pointer-events: none;
-		filter: drop-shadow(0 0 2px #000);
+		text-shadow: 0 0 5px #0006;
 
 		> * {
 			pointer-events: all;
@@ -417,8 +425,8 @@ function toggleTimer() {
 	}
 
 	.overlay-fade {
-		background: linear-gradient(to bottom, rgba(0, 0, 0, .75), rgba(0, 0, 0, 0) 4em),
-			linear-gradient(to top, rgba(0, 0, 0, .75), rgba(0, 0, 0, 0) 8em);
+		background: linear-gradient(to bottom, rgba(0, 0, 0, .65), rgba(0, 0, 0, 0) 3em),
+			linear-gradient(to top, rgba(0, 0, 0, .65), rgba(0, 0, 0, 0) 8em);
 		position: absolute;
 		top: 0;
 		left: 0;
@@ -445,6 +453,28 @@ function toggleTimer() {
 		left: 0px;
 		right: 0px;
 		padding: 1rem;
+	}
+
+	.loading-splash {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		text-shadow: 0 0 5px #0006;
+
+		img {
+			object-fit: contain;
+			height: 100%;
+			width: 100%;
+		}
+
+		.pi-spinner {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			translate: -50% -50%;
+		}
 	}
 }
 </style>

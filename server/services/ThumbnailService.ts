@@ -106,6 +106,7 @@ export class ThumbnailService {
 				console.error("Error while processing video:", err.message);
 				reject(err);
 			})
+				// Seek on the input rather than output, but for some reason this doesn't work for album covers
 				.inputOptions(seek > 0 ? [`-ss ${seek}`] : [])
 				.outputOptions([
 					...(seek === 0 ? [`-ss ${seek}`] : []),
