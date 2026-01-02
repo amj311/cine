@@ -118,7 +118,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 					</button>
 				</template>
 			</div>
-
+ 			{{ useNavigationStore().detectedTouch }}
 			<div class="flex-grow-1" />
 
 			<div v-if="useMobileNav && expandMobileNav">
@@ -197,7 +197,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 		align-items: center;
 		justify-content: space-between;
 		padding: 1rem 1rem;
-		gap: 1em;
+		gap: 0.5rem;
 	}
 }
 

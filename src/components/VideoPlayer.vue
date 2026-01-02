@@ -189,6 +189,7 @@ function doubleClick() {
 
 const isPlaying = computed(() => !playingState.value.paused && !playingState.value.ended);
 function togglePlay() {
+	alert('togglePlay')
 	if (videoRef.value?.ended || videoRef.value?.paused) {
 		videoRef.value.play();
 	}
