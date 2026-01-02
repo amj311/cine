@@ -65,6 +65,7 @@ const goodType = computed(() => {
 
 defineExpose({
 	videoRef,
+	showControls,
 	getProgress() {
 		if (!videoRef.value) {
 			console.warn("Video element is not rendered yet")
@@ -356,7 +357,7 @@ function toggleTimer() {
 				<div class="title text-ellipsis" :class="{ clickable: onTitleClick }" @click="onTitleClick">{{ title }}</div>
 				<div class="flex-grow-1"></div>
 				<div class="flex align-items-center">
-					<slot name="buttons"></slot>
+					<slot name="topButtons"></slot>
 					<div class="timer-trigger" @click="toggleTimer">
 						<Button :text="showTimer ? false : true" :severity="showTimer ? 'secondary' : 'contrast'" :icon="'pi pi-stopwatch'" />
 					</div>
@@ -382,6 +383,7 @@ function toggleTimer() {
 			<div class="flex-center-row">
 				<span>-{{ msToTimestamp(secToMs(remaining)) }}</span>
 				<div class="flex-grow-1" />
+				<slot name="bottomButtons"></slot>
 				<div class="audio-select" v-if="props.audio && props.audio.length > 1">
 					<DropdownMenu :items="audioMenuItems">
 						<Button variant="text" severity="contrast"><span class="material-symbols-outlined">movie_speaker</span></Button>
@@ -392,6 +394,9 @@ function toggleTimer() {
 				</Button>
 			</div>
 			<input type="range" class="seeker w-full" min="0" :value="playingState.progress" @input="(e: any) => doRangeSeek(e?.target?.value)" />
+		</div>
+		<div class="cards" :class="{ lift: showControls }">
+			<slot name="cards" />
 		</div>
 	</div>
 </template>
@@ -478,6 +483,18 @@ function toggleTimer() {
 			top: 50%;
 			left: 50%;
 			translate: -50% -50%;
+		}
+	}
+
+
+	.cards {
+		position: absolute;
+		bottom: 1rem;
+		right: 1rem;
+		transition: bottom 500ms;
+
+		&.lift {
+			bottom: 7rem;
 		}
 	}
 

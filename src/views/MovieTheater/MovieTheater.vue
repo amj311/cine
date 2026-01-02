@@ -33,7 +33,10 @@ const hasLoaded = ref(false);
 const hasEnded = ref(false);
 const playerProgress = ref<any>(null); // WatchProgress type
 
-const nextEpisodeFile = computed(() => {
+const nextEpisodeFile = computed(() => findNextEpisode(1));
+const prevEpisodeFile = computed(() => findNextEpisode(-1));
+
+function findNextEpisode(delta: number) {
 	if (playable.value?.type !== 'episodeFile') {
 		return null;
 	}
@@ -43,12 +46,12 @@ const nextEpisodeFile = computed(() => {
 	if (currentIndex === undefined || currentIndex === -1) {
 		return null;
 	}
-	const nextIndex = currentIndex + 1;
+	const nextIndex = currentIndex + delta;
 	if (nextIndex >= allEpisdoes?.length) {
 		return null;
 	}
 	return allEpisdoes?.[nextIndex];
-});
+}
 
 const showNextEpisodeCard = computed(() => {
 	return Boolean(nextEpisodeFile.value && (playerProgress.value?.duration - playerProgress.value?.time < 30));
@@ -399,6 +402,9 @@ const autoplayTimes = ref(0);
 const canAutoplay = computed(() => Boolean(nextEpisodeFile.value));
 const willAutoplay = computed(() => autoplayTimes.value > 0 && canAutoplay.value && !hasEnded.value);
 
+function playPrev() {
+	playMedia(prevEpisodeFile.value!.relativePath, true);
+}
 function playNext() {
 	autoplayTimes.value = Math.max(0, autoplayTimes.value - 1);
 	playMedia(nextEpisodeFile.value!.relativePath, true);
@@ -431,7 +437,7 @@ function toggleScrubMenu() {
  * TITLE CLICK
  */
 function onTitleClick() {
-	router.push('/browse?path=' + parentLibrary.value.relativePath);
+	router.push('/browse?path=' + encodeMediaPath(parentLibrary.value.relativePath));
 }
 
 </script>
@@ -458,7 +464,7 @@ function onTitleClick() {
 				:subtitles="probe?.subtitles"
 				:audio="probe?.audio"
 			>
-				<template #buttons>
+				<template #topButtons>
 					<!-- SCRUB BUTTON -->
 					<Button
 						:text="useScrubberStore().isScrubbing ? false : true"
@@ -489,29 +495,43 @@ function onTitleClick() {
 						</template>
 					</DropdownTrigger>
 				</template>
+
+				<template #bottomButtons>
+					<!-- PREV EPISODE BUTTON -->
+					<Button v-if="prevEpisodeFile" text severity="contrast" @click="playPrev">
+						<span class="material-symbols-outlined">skip_previous</span>
+					</Button>
+					<!-- NEXT EPISODE BUTTON -->
+					<Button v-if="nextEpisodeFile" text severity="contrast" @click="playNext">
+						<span class="material-symbols-outlined">skip_next</span>
+					</Button>
+				</template>
+
+				<template #cards>
+					<Button v-if="showNextEpisodeCard" severity="secondary" class="next-episode-card" @click="playNext">
+						<div class="play-icon">
+							<div class="w-full">
+								<MediaCard
+									:imageUrl="nextEpisodeMetadata.still_full"
+									:aspectRatio="'wide'"
+								>
+									<template #fallbackIcon><i class="pi pi-play" /></template>
+								</MediaCard>
+							</div>
+						</div>
+						<div>
+							<div class="flex align-items-ceter gap-1">
+								<span v-if="willAutoplay">
+									<span class="material-symbols-outlined">autoplay</span>
+									Autoplay ({{ autoplayTimes }})
+								</span>
+								<span v-else>Play Next</span>
+							</div>
+							<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
+						</div>
+					</Button>
+				</template>
 			</VideoPlayer>
-			<div v-if="showNextEpisodeCard" class="next-episode-card" :class="{ full: hasEnded }" @click="playNext">
-				<div class="play-icon">
-					<div class="w-full">
-						<MediaCard
-							:imageUrl="nextEpisodeMetadata.still_full"
-							:aspectRatio="'wide'"
-						>
-							<template #fallbackIcon><i class="pi pi-play" /></template>
-						</MediaCard>
-					</div>
-				</div>
-				<div>
-					<div class="flex align-items-ceter gap-1">
-						<span v-if="willAutoplay">
-							<span class="material-symbols-outlined">autoplay</span>
-							Autoplay ({{ autoplayTimes }})
-						</span>
-						<span v-else>Play Next</span>
-					</div>
-					<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
-				</div>
-			</div>
 		</div>
 
 		<div class="menu-panel" :class="{ ['md:w-23rem w-full md:h-full open']: showScrubPanel }">
@@ -576,65 +596,14 @@ function onTitleClick() {
 	background-position: center;
 	background-repeat: no-repeat;
 	background-color: black;
-	/* single transparent image to allow transition effect on bg load */
-	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAAtJREFUGFdjYAACAAAFAAGq1chRAAAAAElFTkSuQmCC);
-	transition: background-image 500ms;
-	
-
-	.loading {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		translate: -50% -50%;
-		filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.2));
-	}
-
-	.overlay {
-		color: #fff !important;
-		opacity: 0;
-		transition: 500ms;
-		zoom: 1.3;
-	}
-	&.show-controls {
-		.overlay {
-			opacity: 1;
-		}
-	}
-	
-	.top-fade {
-		background: linear-gradient(to bottom, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0));
-		height: 4rem;
-		width: 100%;
-		position: absolute;
-		top: 0;
-		left: 0;
-	}
-
-	.top-left {
-		position: absolute;
-		top: 10px;
-		left: 10px;
-		z-index: 1000;
-		display: flex;
-		gap: .5em;
-		align-items: center;
-	}
 
 	.next-episode-card {
-		position: absolute;
-		bottom: 6rem;
-		right: 1rem;
-		border-radius: .5rem;
-		padding: .6rem;
-		background-color: var(--color-background-mute);
-		cursor: pointer;
-		user-select: none;
 		display: flex;
 		align-items: center;
 		gap: .5em;
 
 		&:hover, &[tv-focus] {
-			box-shadow: 0 0 10px rgba(0, 0, 0, .3);
+			box-shadow: 0 0 10px rgba(0, 0, 0, .5);
 		}
 
 		.play-icon {
