@@ -6,13 +6,14 @@ import { AuthService } from '@/services/AuthService';
 export type Host = {
 	hostname: string;
 	baseUrl: string;
+	appUrl?: string;
 	status?: 'connected' | 'failed';
 	isCustom?: boolean;
 }
 
 export const useApiStore = defineStore('Api', () => {
 	const standardHosts: Array<Host> = [
-		...(window.location.href.includes(':5') ? [{ hostname: 'Local', baseUrl: "http://localhost:5000" }] : []),
+		...(window.location.href.includes(':5') ? [{ hostname: 'Local', baseUrl: "http://localhost:5000", appUrl: "http://localhost:5173" }] : []),
 		{ hostname: 'Remote', baseUrl: import.meta.env.VITE_REMOTE_HOST_URL },
 		{ hostname: 'LAN', baseUrl: import.meta.env.VITE_LAN_HOST_URL },
 	]
@@ -76,8 +77,23 @@ export const useApiStore = defineStore('Api', () => {
 		selectedHost.value = successfulHost || null;
 		isInitializing.value = false;
 	}
-	connectToFirstAvailableHost().catch((error) => {
-		console.error('Error connecting to first available host:', error);
+	// connectToFirstAvailableHost().catch((error) => {
+	// 	console.error('Error connecting to first available host:', error);
+	// });
+
+	function hostMatchesLocation(host: Host) {
+		return host.baseUrl.includes(location.origin.split(':5')[0]);
+	}
+
+	async function connectToDomainHost() {
+		const domainHost = availableHosts.value.find(hostMatchesLocation);
+		if (domainHost) {
+			connectToHost(domainHost);
+		}
+		isInitializing.value = false;
+	}
+	connectToDomainHost().catch((error) => {
+		console.error('Error connecting to domain host:', error);
 	});
 
 	async function connectToHost(host: Host) {
@@ -85,6 +101,9 @@ export const useApiStore = defineStore('Api', () => {
 			const success = await testConnection(host);
 			if (success) {
 				selectedHost.value = host;
+				if (!hostMatchesLocation(host)) {
+					location.href = host.appUrl || host.baseUrl;
+				}
 				return true;
 			}
 		}
