@@ -430,22 +430,25 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		}
 
 		window.addEventListener('mousemove', watchForTvMouseMove);
-		window.addEventListener('touchstart', onScreenTouch);
 	}
 
 	function onScreenTouch() {
 		console.log('Screen touch detected. Not a TV environment.');
 		detectedTouch.value = true;
 		finalizeTvDetection(false);
+		window.removeEventListener('touchstart', onScreenTouch);
 	}
+	window.addEventListener('touchstart', onScreenTouch);
+
 
 	async function finalizeTvDetection(isTv: boolean) {
 		window.removeEventListener('mousemove', watchForTvMouseMove);
-		window.removeEventListener('touchstart', onScreenTouch);
 
 		if (!isTv) {
 			console.log('TV environment not detected');
 			detectedTv.value = false;
+			// also remove tv from settings
+			localSettings.is_tv = false;
 			disengageTvMode();
 			return;
 		}

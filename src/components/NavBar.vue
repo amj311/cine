@@ -118,7 +118,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 					</button>
 				</template>
 			</div>
- 			{{ useNavigationStore().detectedTouch }}
+
 			<div class="flex-grow-1" />
 
 			<div v-if="useMobileNav && expandMobileNav">
