@@ -11,6 +11,7 @@ import PhotoLibraryPage from './PhotoLibraryPage.vue';
 import AlbumPage from './AlbumPage.vue';
 import AudiobookPage from './AudiobookPage.vue';
 import CinemaItemPage from './CinemaItemPage.vue';
+import { encodeMediaPath } from '@/utils/miscUtils';
 
 const route = useRoute();
 const api = useApiStore().api;
@@ -48,7 +49,7 @@ const fetchDirectory = async () => {
 	const removeLongLoad = awaitLongLoad();
 	try {
 		loading.value = true;
-		fetchedPath = queryPathStore.currentPath || '/';
+		fetchedPath = encodeMediaPath(queryPathStore.currentPath || '/');
 	
 		// normalize paths for accurate pairing
 		const normalizedPath = queryPathStore.currentPath.replace(/[^A-Za-z0-9]/g, '');
@@ -85,7 +86,7 @@ onBeforeMount(() => {
 	fetchDirectory();
 });
 watch(
-	() => queryPathStore.currentPath,
+	() => encodeMediaPath(queryPathStore.currentPath),
 	(newPath) => {
 		// Only update if the in the 'browse' route
 		if (route?.name !== 'browse') {

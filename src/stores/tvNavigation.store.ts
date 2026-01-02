@@ -8,7 +8,7 @@ type Direction = 'up' | 'down' | 'left' | 'right';
 export const focusAreaClass = 'tvNavigationFocusArea';
 
 
-export const useNavigationStore = defineStore('Navigation', () => {
+export const useScreenStore = defineStore('Screen', () => {
 	// load saved settings
 	const localSettings = useSettingsStore().localSettings;
 
@@ -33,6 +33,11 @@ export const useNavigationStore = defineStore('Navigation', () => {
 	updateMobileNav();
 
 	async function handleMouseMove(event) {
+		const edgeDirection = detectEdge(event);
+		if (edgeDirection) {
+			return doScreenEdgeScroll(edgeDirection);
+		}
+
 		FOCUS_COOLDOWN = 250;
 		stopScreenEdgeScroll();
 
@@ -58,32 +63,37 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		}
 	}
 
-
+	function detectEdge(event): Direction | null {
+		const edgeBuffer = 2;
+		if (event.clientX <= edgeBuffer) {
+			return 'left';
+		} else if (event.clientX >= window.innerWidth - edgeBuffer) {
+			return 'right';
+		} else if (event.clientY <= edgeBuffer) {
+			return 'up';
+		} else if (event.clientY >= window.innerHeight - edgeBuffer) {
+			return 'down';
+		}
+		return null;
+	}
 
 	function handleMouseOut(event) {
 		// Assume user is pushing mouse to edge of screen to conitune scrolling
 		// Since no events will be triggered until the mouse is back in the window,
 		// We will need to continue moving focus in the last direction until a different event is fired.
-		let direction: Direction | null = null;
-		if (event.clientX <= 1) {
-			direction = 'left';
-		} else if (event.clientX >= window.innerWidth - 1) {
-			direction = 'right';
-		} else if (event.clientY <= 1) {
-			direction = 'up';
-		} else if (event.clientY >= window.innerHeight - 1) {
-			direction = 'down';
-		}
+		const direction = detectEdge(event);
+
 		if (!direction) {
 			return;
 		}
-		console.log("Mouse is out of window. Will continue scrolling:", direction);
 		doScreenEdgeScroll(direction);
 	}
 
 	let edgeScrollInterval: ReturnType<typeof setInterval> | null = null;
 
 	function doScreenEdgeScroll(direction: Direction) {
+		console.log("Mouse is out of window. Will continue scrolling:", direction);
+
 		FOCUS_COOLDOWN = 100;
 		let edgeScrollTime = FOCUS_COOLDOWN + 10;
 
@@ -286,7 +296,7 @@ export const useNavigationStore = defineStore('Navigation', () => {
 		if (element) {
 			lastFocusedEl.value = element;
 			if (!lastFocusedEl.value.dataset.tvnav_noscroll) {
-				lastFocusedEl.value.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+				lastFocusedEl.value.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
 			}
 			lastFocusedEl.value.setAttribute('tv-focus', 'true');
 		}

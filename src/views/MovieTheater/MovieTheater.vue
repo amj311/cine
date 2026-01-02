@@ -7,7 +7,7 @@ import VideoPlayer from '@/components/VideoPlayer.vue'
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useRoute, useRouter } from 'vue-router';
-import { useNavigationStore } from '@/stores/tvNavigation.store';
+import { useScreenStore } from '@/stores/tvNavigation.store';
 import { useBackgroundStore } from '@/stores/background.store';
 import { usePageTitleStore } from '@/stores/pageTitle.store';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
@@ -136,9 +136,9 @@ let wakeLock: WakeLockSentinel | null = null;
 
 let wasTvMode = false;
 function pauseTvMode() {
-	if (useNavigationStore().tvNavEnabled) {
+	if (useScreenStore().tvNavEnabled) {
 		wasTvMode = true;
-		useNavigationStore().disengageTvMode();
+		useScreenStore().disengageTvMode();
 		useToast().add({
 			severity: 'info',
 			summary: 'TV Navigation Paused',
@@ -150,7 +150,7 @@ function pauseTvMode() {
 function resumeTvMode() {
 	if (wasTvMode) {
 		wasTvMode = false;
-		useNavigationStore().engageTvMode();
+		useScreenStore().engageTvMode();
 		useToast().add({
 			severity: 'info',
 			summary: 'TV Navigation Resumed',
@@ -182,7 +182,7 @@ function navigateBackOnFullscreenExit(isFullscreen: boolean) {
 	if (router.currentRoute.value.name !== 'play') {
 		return;
 	}
-	if (useNavigationStore().detectedTv) {
+	if (useScreenStore().detectedTv) {
 		carefulBackNav();
 	}
 }
@@ -437,7 +437,7 @@ function toggleScrubMenu() {
  * TITLE CLICK
  */
 function onTitleClick() {
-	router.push('/browse?path=' + encodeMediaPath(parentLibrary.value.relativePath));
+	router.push('/browse?path=' + parentLibrary.value.relativePath);
 }
 
 </script>

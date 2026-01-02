@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { useNavigationStore } from './tvNavigation.store';
+import { useScreenStore } from './tvNavigation.store';
 
 const defaultSettings = {
 	is_tv: false,
@@ -15,8 +15,8 @@ export const useSettingsStore = defineStore('Settings', () => {
 		is_tv: localSettings.value.is_tv,
 		tv_nav: localSettings.value.tv_nav,
 	}), () => {
-		useNavigationStore().setAsTv(localSettings.value.is_tv);
-		useNavigationStore().setTvNavigation(localSettings.value.is_tv && localSettings.value.tv_nav);
+		useScreenStore().setAsTv(localSettings.value.is_tv);
+		useScreenStore().setTvNavigation(localSettings.value.is_tv && localSettings.value.tv_nav);
 	});
 
 	return {

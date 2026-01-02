@@ -3,7 +3,7 @@
 	lang="ts"
 >
 import { RouterView, useRoute } from 'vue-router'
-import { useNavigationStore } from './stores/tvNavigation.store';
+import { useScreenStore } from './stores/tvNavigation.store';
 import AppBackground from './components/AppBackground.vue';
 import { computed, onMounted, ref } from 'vue';
 import { useConfirm } from "primevue/useconfirm";
@@ -20,7 +20,7 @@ import type Menu from 'primevue/menu';
 const apiStore = useApiStore();
 
 usePageTitleStore();
-const tvNavigationStore = useNavigationStore();
+const tvNavigationStore = useScreenStore();
 const showDebug = ref(false);
 
 const confirm = useConfirm();

@@ -6,7 +6,7 @@ import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import MediaTimer from './MediaTimer.vue';
 import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
-import { useNavigationStore } from '@/stores/tvNavigation.store';
+import { useScreenStore } from '@/stores/tvNavigation.store';
 
 const toast = useToast();
 
@@ -142,7 +142,7 @@ onMounted(() => {
 		}
 	});
 	// don't pause when touching whole area on touch screen
-	if (!useNavigationStore().detectedTouch) {
+	if (!useScreenStore().detectedTouch) {
 		videoRef.value?.addEventListener('click', togglePlay);
 	}
 	videoRef.value?.addEventListener('click', doubleClick);
@@ -165,7 +165,7 @@ onBeforeUnmount(() => {
 
 function windowKeyHandler(e) {
 	// not for TVs
-	if (useNavigationStore().detectedTv) {
+	if (useScreenStore().detectedTv) {
 		return;
 	}
 

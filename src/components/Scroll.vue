@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useNavigationStore } from '@/stores/tvNavigation.store';
+import { useScreenStore } from '@/stores/tvNavigation.store';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 const scrollArea = ref<HTMLElement | null>(null);
@@ -47,7 +47,7 @@ const screenMouseX = ref(0);
 const screenMouseY = ref(0);
 
 function doHoverScroll(event: MouseEvent) {
-	if (!useNavigationStore().detectedTv) {
+	if (!useScreenStore().detectedTv) {
 		return;
 	}
 

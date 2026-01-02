@@ -10,7 +10,7 @@ import ExtrasList from '@/components/ExtrasList.vue';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import Skeleton from 'primevue/skeleton';
 import { useApiStore } from '@/stores/api.store';
-import { useNavigationStore } from '@/stores/tvNavigation.store';
+import { useScreenStore } from '@/stores/tvNavigation.store';
 import LibraryItemActions from '@/components/LibraryItemActions.vue';
 
 const router = useRouter();
@@ -312,8 +312,8 @@ onUnmounted(async () => {
 			</div>
 
 			<div v-if="isSeries">
-				<h2 class="mb-2">Episodes</h2>
-				<div class="seasons-wrapper" :class="{ 'wide': !useNavigationStore().isSkinnyScreen }">
+				<h2 class="mb-2">Seasons</h2>
+				<div class="seasons-wrapper" :class="{ 'wide': !useScreenStore().isSkinnyScreen }">
 					<div class="selection-wrapper">
 						<div class="selection">
 							<Button
@@ -394,7 +394,7 @@ onUnmounted(async () => {
 				<ExtrasList :extras="libraryItem.extras" />
 			</div>
 
-			<audio ref="ytAudio" :src="useApiStore().apiUrl + '/stream-yt-search?q=' + (`${libraryItem.name} ${libraryItem.year} music ost main theme`).replace(/[&?=/]/g, '')" controls :autoplay="useNavigationStore().detectedTv" @canplay="ytCanPlay = true" @play="fadeIn" @pause="ytIsplaying = false" @ended="ytIsplaying = false" hidden>
+			<audio ref="ytAudio" :src="useApiStore().apiUrl + '/stream-yt-search?q=' + (`${libraryItem.name} ${libraryItem.year} music ost main theme`).replace(/[&?=/]/g, '')" controls :autoplay="useScreenStore().detectedTv" @canplay="ytCanPlay = true" @play="fadeIn" @pause="ytIsplaying = false" @ended="ytIsplaying = false" hidden>
 				Your browser does not support the audio element.
 			</audio>
 		</div>

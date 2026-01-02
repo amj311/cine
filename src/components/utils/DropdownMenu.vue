@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { focusAreaClass, useNavigationStore } from '@/stores/tvNavigation.store';
+import { focusAreaClass, useScreenStore } from '@/stores/tvNavigation.store';
 import TieredMenu from 'primevue/tieredmenu';
 import { ref } from 'vue';
 
@@ -32,7 +32,7 @@ function setMenuItems() {
 		},
 	];
 
-	if (useNavigationStore().tvNavEnabled) {
+	if (useScreenStore().tvNavEnabled) {
 		menuItems.value.push({
 			label: 'Cancel',
 			command: () => {},

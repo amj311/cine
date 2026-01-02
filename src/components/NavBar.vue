@@ -5,7 +5,7 @@
 import { getBuildNumber } from '@/services/versionService';
 import { useAppNavigationStore } from '@/stores/appNavigation.store';
 import { useQueryPathStore } from '@/stores/queryPath.store';
-import { focusAreaClass, useNavigationStore } from '@/stores/tvNavigation.store';
+import { focusAreaClass, useScreenStore } from '@/stores/tvNavigation.store';
 import { useUserStore } from '@/stores/user.store';
 import Button from 'primevue/button';
 import { computed, h, onMounted, onUnmounted, ref } from 'vue';
@@ -16,7 +16,7 @@ import { AuthService } from '@/services/AuthService';
 const navStore = useAppNavigationStore();
 const lastClickedItem = ref<string | null>(null);
 
-const useMobileNav = computed(() => useNavigationStore().isSkinnyScreen);
+const useMobileNav = computed(() => useScreenStore().isSkinnyScreen);
 const expandMobileNav = ref(false);
 const queryPathStore = useQueryPathStore();
 
