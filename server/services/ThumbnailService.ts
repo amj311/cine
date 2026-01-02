@@ -12,7 +12,7 @@ export class ThumbnailService {
 	 * Receives the path to a file, loads and shrinks the image with Shrp.js, and returns the result as a stream for the client to consume.
 	 * @param filePath 
 	 */
-	public static async streamThumbnail(filePath: ConfirmedPath, width: number = 300): Promise<Buffer> {
+	public static async streamThumbnail(filePath: ConfirmedPath, width: number = 300, seek = 3): Promise<Buffer> {
 		try {
 			const cachedThumbnail = this.getCachedThumbnail(filePath.relativePath, width);
 			if (cachedThumbnail) {
@@ -35,7 +35,7 @@ export class ThumbnailService {
 			let fileBuffer: Buffer = Buffer.from([]);
 			if (isVideo) {
 				// Use ffmpeg to get a frame from the video
-				fileBuffer = await ThumbnailService.getVideoFrame(filePath);
+				fileBuffer = await ThumbnailService.getVideoFrame(filePath, seek);
 			}
 			else if (isAudio) {
 				// ffpeg can extract album art from mp3 files as a video stream
