@@ -15,7 +15,6 @@ import MediaCard from '@/components/MediaCard.vue';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
 import { useApiStore } from '@/stores/api.store';
-import InputNumber from 'primevue/inputnumber';
 import { useScrubberStore } from './scrubber.store';
 import ScrubSettings from './ScrubSettings.vue';
 import DropdownTrigger from '@/components/utils/DropdownTrigger.vue';
@@ -428,6 +427,13 @@ function toggleScrubMenu() {
 	showScrubPanel.value = !showScrubPanel.value;
 }
 
+/************
+ * TITLE CLICK
+ */
+function onTitleClick() {
+	router.push('/browse?path=' + parentLibrary.value.relativePath);
+}
+
 </script>
 
 <template>
@@ -438,6 +444,7 @@ function toggleScrubMenu() {
 				v-show="showPlayer"
 				:loadingSplash="loadSplashUrl"
 				:title="title"
+				:onTitleClick="onTitleClick"
 				:close="carefulBackNav"
 				:autoplay="true"
 				:controls="true"

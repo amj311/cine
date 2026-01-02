@@ -14,6 +14,7 @@ const props = defineProps<{
 	relativePath: string;
 	loadingSplash?: string,
 	title?: string;
+	onTitleClick?: () => void,
 	close?: () => void;
 	onPlay?: () => void;
 	onPause?: () => void;
@@ -352,7 +353,7 @@ function toggleTimer() {
 		<div class="top-controls w-full flex flex-column justify-content-end">
 			<div class="overlay flex align-items-center gap-2">
 				<Button v-if="close" variant="text" severity="contrast" icon="pi pi-arrow-left" @click="close" />
-				<div class="text-ellipsis">{{ title }}</div>
+				<div class="title text-ellipsis" :class="{ clickable: onTitleClick }" @click="onTitleClick">{{ title }}</div>
 				<div class="flex-grow-1"></div>
 				<div class="flex align-items-center">
 					<slot name="buttons"></slot>
@@ -477,6 +478,15 @@ function toggleTimer() {
 			top: 50%;
 			left: 50%;
 			translate: -50% -50%;
+		}
+	}
+
+
+	.title.clickable {
+		cursor: pointer;
+
+		&:hover {
+			text-decoration: underline;
 		}
 	}
 }
