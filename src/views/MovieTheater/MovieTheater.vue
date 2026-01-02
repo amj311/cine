@@ -180,15 +180,12 @@ function navigateBackOnFullscreenExit(isFullscreen: boolean) {
 	if (router.currentRoute.value.name !== 'play') {
 		return;
 	}
-	if (useNavigationStore().detectedTouch || useNavigationStore().detectedTv) {
+	if (useNavigationStore().detectedTv) {
 		carefulBackNav();
 	}
 }
 
 async function attemptAutoFullscreen() {
-	if (!useNavigationStore().detectedTouch) {
-		return;
-	}
 	try {
 		if (useFullscreenStore().isAppInFullscreenMode) {
 			console.log("Already in fullscreen mode");
@@ -232,12 +229,12 @@ onMounted(async () => {
 		console.error("Failed to load media data", e);
 	});
 	pauseTvMode();
-	attemptAutoFullscreen();
+	// attemptAutoFullscreen();
 
 	requestWakeLock();
 
 	// Setup fullscreen exit handling
-	useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
+	// useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
 
 	// Attempt rotate screen
 	// if ((screen.orientation as any)?.lock) {

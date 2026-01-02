@@ -65,7 +65,6 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 	document.addEventListener('mozfullscreenchange', onFullScreenChange);
 
 	function onFullScreenChange(e) {
-		console.log(document.fullscreenElement)
 		var fullscreenElement =
 			document.fullscreenElement ||
 			(document as any).mozFullScreenElement ||
@@ -139,7 +138,6 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 				userFullscreenRequest();
 			}
 			else {
-				console.log("exiting")
 				userExitFullscreen();
 			}
 		},
