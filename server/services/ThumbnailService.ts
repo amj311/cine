@@ -111,7 +111,6 @@ export class ThumbnailService {
 				.outputOptions([
 					...(seek === 0 ? [`-ss ${seek}`] : []),
 					'-frames:v 1',  // Extract only one frame
-					'-q:v 30',       // Set quality level
 					'-f image2pipe' // Output as a pipe
 				])
 				.outputFormat('image2pipe') // Output format as image

@@ -415,6 +415,18 @@ function playNext() {
 
 const showScrubPanel = ref(false);
 
+
+/****************
+ * LOADING SPLASH
+ */
+
+ const loadSplashUrl = computed(() => {
+	if (playable.value?.type === 'extra') {
+		return useApiStore().apiUrl + '/thumb/' + encodeMediaPath(queryPathStore.currentPath) + '?width=1200';
+	}
+	return currentEpisodeMetadata.value?.still_full || parentLibrary.value?.metadata?.background;
+ })
+
 function toggleScrubMenu() {
 	showScrubPanel.value = !showScrubPanel.value;
 }
@@ -427,7 +439,7 @@ function toggleScrubMenu() {
 			<VideoPlayer
 				v-if="mediaPath"
 				v-show="showPlayer"
-				:loadingSplash="currentEpisodeMetadata?.still_full || parentLibrary?.metadata?.background || useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(queryPathStore.currentPath) + '?width=1200'"
+				:loadingSplash="loadSplashUrl"
 				:title="title"
 				:close="carefulBackNav"
 				:autoplay="true"
