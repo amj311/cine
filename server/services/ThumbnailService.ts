@@ -14,10 +14,10 @@ export class ThumbnailService {
 	 */
 	public static async streamThumbnail(filePath: ConfirmedPath, width: number = 300, seek = 3): Promise<Buffer> {
 		try {
-			const cachedThumbnail = this.getCachedThumbnail(filePath.relativePath, width);
-			if (cachedThumbnail) {
-				return cachedThumbnail;
-			}
+			// const cachedThumbnail = this.getCachedThumbnail(filePath.relativePath, width);
+			// if (cachedThumbnail) {
+			// 	return cachedThumbnail;
+			// }
 
 
 			// Make sure the file is an image
@@ -111,6 +111,7 @@ export class ThumbnailService {
 				.outputOptions([
 					...(seek === 0 ? [`-ss ${seek}`] : []),
 					'-frames:v 1',  // Extract only one frame
+					'-vf scale=iw*sar:ih', // This corrects for pixel aspect ratio
 					'-f image2pipe' // Output as a pipe
 				])
 				.outputFormat('image2pipe') // Output format as image
