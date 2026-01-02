@@ -139,7 +139,10 @@ onMounted(() => {
 			secondaryAudioPlayer.value.currentTime = videoRef.value!.currentTime;
 		}
 	});
-	videoRef.value?.addEventListener('click', togglePlay);
+	// don't pause when touching whole area on touch screen
+	if (!useNavigationStore().detectedTouch) {
+		videoRef.value?.addEventListener('click', togglePlay);
+	}
 	videoRef.value?.addEventListener('click', doubleClick);
 
 	updateShowControlsTimeout();
