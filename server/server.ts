@@ -115,7 +115,7 @@ app.get("/api/dir/", async function (req, res) {
 			directory: {
 				files: files.map((file) => file.name),
 				folders: (await Promise.all(folders.map(async (folder) => {
-					const libraryItem = await LibraryService.parseFolderToItem(folder.confirmedPath, true);
+					const libraryItem = await LibraryService.parseFolderToItem(folder.confirmedPath);
 					return {
 						folderName: folder.name,
 						libraryItem,

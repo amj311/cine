@@ -24,15 +24,6 @@ type Base<S extends Stratified> = S['base'];
 type Maybe<S extends Stratified> = S['base'] & Partial<S['details']>;
 type Full<S extends Stratified> = S['base'] & Partial<S['details']> & S['meta'];
 
-type LibraryItemData = {
-	folderName: string,
-	relativePath: RelativePath,
-	listName: string,
-	sortKey: string,
-	imdbId?: string,
-	cinemaType?: 'movie' | 'series',
-}
-
 type LibraryItemStratBase = Stratified<
 	{
 		folderName: string,
@@ -45,6 +36,7 @@ type LibraryItemStratBase = Stratified<
 	{
 		metadata?: EitherMetadata | null,
 		surprise: SurpriseRecord | null,
+		children: Array<RelativePath>,
 	}
 >
 
@@ -189,7 +181,6 @@ type CollectionStrat = Join<LibraryItemStratBase, Stratified<
 		type: 'collection',
 		name: string,
 		feedOrder: number | null,
-		children: Array<RelativePath>,
 	},
 	{
 		extras?: Array<Extra>,
@@ -198,28 +189,23 @@ type CollectionStrat = Join<LibraryItemStratBase, Stratified<
 
 
 /** A folder is more generic than a collection and could contain anything */
-type FolderStrat = Join<LibraryItemStratBase, Stratified<{
-	type: 'folder',
-	feedOrder: number | null,
-	name: string,
-	children: Array<RelativePath>,
-}>>
+type FolderStrat = Join<LibraryItemStratBase, Stratified<
+	{
+		type: 'folder',
+		feedOrder: number | null,
+		name: string,
+	}
+>>
 
 /** A library is a root-level entity containing all of one type of media */
-type Library = LibraryItemData & {
-	type: 'library',
-	libraryType: 'cinema' | 'photos' | 'audio',
-	name: string,
-	children: Array<RelativePath>,
-	confirmedPath: ConfirmedPath,
-}
-type LibraryStrat = Join<LibraryItemStratBase, Stratified<{
-	type: 'library',
-	libraryType: 'cinema' | 'photos' | 'audio',
-	name: string,
-	children: Array<RelativePath>,
-	confirmedPath: ConfirmedPath,
-}>>
+type LibraryStrat = Join<LibraryItemStratBase, Stratified<
+	{
+		type: 'library',
+		libraryType: 'cinema' | 'photos' | 'audio',
+		name: string,
+		confirmedPath: ConfirmedPath,
+	}
+>>
 
 type LibraryItemStrat = MovieCinemaStrat | SeriesCinemaStrat | AlbumStrat | AudiobookStrat | CollectionStrat | FolderStrat | LibraryStrat;
 
@@ -277,10 +263,14 @@ export class LibraryService {
 			base = item;
 			this.itemCache.set(path.relativePath, item);
 		}
+
 		// Add surprise for everything, but after cache
+		const childrenDir = await DirectoryService.listDirectory(path);
+
 		let item: Full<LibraryItemStrat> = {
 			...base,
 			surprise: await SurpriseService.getSurprise(path),
+			children: childrenDir.folders.map((folder) => folder.confirmedPath.relativePath),
 		}
 
 		// Also cache details since they can be slow (episodes and audio tracks)
@@ -404,7 +394,6 @@ export class LibraryService {
 					relativePath: path.relativePath,
 					confirmedPath: path,
 					folderName: folderName,
-					children: children.folders.map((folder) => folder.confirmedPath.relativePath),
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
 				}
@@ -427,7 +416,6 @@ export class LibraryService {
 				relativePath: path.relativePath,
 				folderName: folderName,
 				feedOrder,
-				children: childrenPaths,
 				sortKey: LibraryService.createSortKey(folderName),
 				listName: name,
 			};
@@ -438,7 +426,6 @@ export class LibraryService {
 			name,
 			relativePath: path.relativePath,
 			folderName: folderName,
-			children: children.folders.map((folder) => folder.confirmedPath.relativePath),
 			feedOrder,
 			listName: name,
 			sortKey: LibraryService.createSortKey(folderName),
@@ -447,27 +434,28 @@ export class LibraryService {
 
 
 	private static async joinLibraryItemDetails(path: ConfirmedPath, item: Full<LibraryItemStrat>): Promise<Full<LibraryItemStrat>> {
-		const children = await DirectoryService.listDirectory(path);
-
+		const childrenDir = await DirectoryService.listDirectory(path);
 		let details: LibraryItemStrat['details'] | undefined = this.itemDetailCache.get(path.relativePath);
+
 		if (!details) {
+			details = {};
 
 			// Search for "Season" folders
 			if (item.type === 'cinema' && item.cinemaType === 'series') {
-				const allSeasonFolders = children.folders.filter((folder) => folder.name.toLowerCase().includes('season'));
+				const allSeasonFolders = childrenDir.folders.filter((folder) => folder.name.toLowerCase().includes('season'));
 				details = {
-					extras: await LibraryService.prepareExtras(children.files.map((file) => file.name), path),
+					extras: await LibraryService.prepareExtras(childrenDir.files.map((file) => file.name), path),
 					seasons: await LibraryService.extractSeasons(allSeasonFolders.map((folder) => folder.confirmedPath), item.name, item.year)
 				};
 			}
 			else if (item.type === 'cinema' && item.cinemaType === 'movie') {
-				const extraVideos = children.files.filter((file) => file.confirmedPath.relativePath !== item.movie.relativePath);
+				const extraVideos = childrenDir.files.filter((file) => file.confirmedPath.relativePath !== item.movie.relativePath);
 				details = {
 					extras: await LibraryService.prepareExtras(extraVideos.map((file) => file.name), path)
 				}
 			}
 			else if (item.type === 'audiobook' || item.type === 'album') {
-				const tracks = await Promise.all(children.files.map(async (file) => {
+				const tracks = await Promise.all(childrenDir.files.map(async (file) => {
 					const probe = await ProbeService.getTrackData(file.confirmedPath);
 					const title = probe?.title || LibraryService.removeExtensionsFromFileName(file.name);
 					return {
@@ -519,19 +507,17 @@ export class LibraryService {
 				}
 			}
 			else if (item.type === 'collection') {
-				const childrenPaths = children.folders.map((folder) => folder.confirmedPath.relativePath);
+				const childrenPaths = childrenDir.folders.map((folder) => folder.confirmedPath.relativePath);
 				// Allow collections to have extras - video files at the root of the collection folder
-				const extraVideos = children.files.filter((file) => !childrenPaths.includes(file.confirmedPath.relativePath));
+				const extraVideos = childrenDir.files.filter((file) => !childrenPaths.includes(file.confirmedPath.relativePath));
 				details = {
 					extras: await LibraryService.prepareExtras(extraVideos.map((file) => file.name), path),
 				};
 			}
-			else {
-				details = {};
-			}
 
-			this.itemDetailCache.set(path.relativePath, details);
+			this.itemDetailCache.set(path.relativePath, details as any);
 		}
+
 
 		return {
 			...item,
@@ -624,7 +610,7 @@ export class LibraryService {
 				libraryItem: await LibraryService.parseFolderToItem(folder.confirmedPath, true),
 			};
 		}));
-		return libraries.filter((library) => library.libraryItem?.type === 'library').map((library) => library.libraryItem) as Library[];
+		return libraries.filter((library) => library.libraryItem?.type === 'library').map((library) => library.libraryItem) as Full<LibraryStrat>[];
 	}
 
 
@@ -633,7 +619,7 @@ export class LibraryService {
 		const files: Array<LibraryFile> = [];
 		async function parseDirectory(confirmedPath: ConfirmedPath) {
 			const { folders, files: childrenFiles } = await DirectoryService.listDirectory(confirmedPath);
-			const libraryItem = await LibraryService.parseFolderToItem(confirmedPath, true);
+			const libraryItem = await LibraryService.parseFolderToItem(confirmedPath);
 			if (libraryItem) {
 				items.push(libraryItem);
 			}
@@ -921,9 +907,9 @@ export class LibraryService {
 		return 'folder';
 	}
 
-	private static async determineMediaTypeInLibrary(path: ConfirmedPath): Promise<Library['libraryType'] | null> {
+	private static async determineMediaTypeInLibrary(path: ConfirmedPath): Promise<Base<LibraryStrat>['libraryType'] | null> {
 		// recursivle search for first descendent that matches a media description
-		async function findMediaWithin(path: ConfirmedPath): Promise<Library['libraryType'] | null> {
+		async function findMediaWithin(path: ConfirmedPath): Promise<Base<LibraryStrat>['libraryType'] | null> {
 			const { folders, files } = await DirectoryService.listDirectory(path);
 			if (folders.length === 0 && files.length === 0) {
 				return null;
