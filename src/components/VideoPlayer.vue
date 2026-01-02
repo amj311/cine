@@ -2,7 +2,7 @@
 import { useApiStore } from '@/stores/api.store';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
-import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
 import MediaTimer from './MediaTimer.vue';
 import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
@@ -35,15 +35,16 @@ const props = defineProps<{
 	}>;
 }>();
 
-const wrapperRef = ref<HTMLDivElement>();
 const showControlsTime = 2500;
 const hideControlsTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 const showControls = ref(false);
-function updateShowControlsTimeout() {
+function doShowControls() {
 	if (hideControlsTimeout.value) {
 		clearTimeout(hideControlsTimeout.value);
 	}
-	showControls.value = true;
+	setTimeout(() => {
+		showControls.value = true;
+	}, 100)
 	hideControlsTimeout.value = setTimeout(() => {
 		showControls.value = false;
 	}, showControlsTime);
@@ -147,12 +148,12 @@ onMounted(() => {
 	}
 	videoRef.value?.addEventListener('click', doubleClick);
 
-	updateShowControlsTimeout();
+	doShowControls();
 
 	// Setup control hiding
 	const events = ['mousemove', 'keydown', 'touchstart'];
 	events.forEach((event) => {
-		window.addEventListener(event, updateShowControlsTimeout, { passive: true });
+		window.addEventListener(event, doShowControls, { passive: true });
 	});
 
 	// setup keybindings
@@ -197,21 +198,21 @@ function togglePlay() {
 	else {
 		videoRef.value?.pause();
 	}
-	updateShowControlsTimeout();
+	doShowControls();
 }
 
 function skipBack() {
 	if (videoRef.value) {
 		videoRef.value.currentTime -= 10;
 	}
-	updateShowControlsTimeout();
+	doShowControls();
 }
 
 function skipForward() {
 	if (videoRef.value) {
 		videoRef.value.currentTime = Math.min(videoRef.value.currentTime + 10, videoRef.value.duration - 1);
 	}
-	updateShowControlsTimeout();
+	doShowControls();
 }
 
 function doRangeSeek(percent: number) {
