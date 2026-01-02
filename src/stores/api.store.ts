@@ -88,7 +88,7 @@ export const useApiStore = defineStore('Api', () => {
 	async function connectToDomainHost() {
 		const domainHost = availableHosts.value.find(hostMatchesLocation);
 		if (domainHost) {
-			connectToHost(domainHost);
+			await connectToHost(domainHost);
 		}
 		isInitializing.value = false;
 	}
