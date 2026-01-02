@@ -417,14 +417,14 @@ function toggleTimer() {
 		z-index: 1000;
 		pointer-events: none;
 		text-shadow: 0 0 5px #0006;
-
-		> * {
-			pointer-events: all;
-		}
 	}
 	&.show-controls {
 		.overlay {
 			opacity: 1;
+
+			> * {
+				pointer-events: all;
+			}
 		}
 	}
 
