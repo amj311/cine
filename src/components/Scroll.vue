@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useScreenStore } from '@/stores/tvNavigation.store';
+import { useScreenStore } from '@/stores/screen.store';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 const scrollArea = ref<HTMLElement | null>(null);

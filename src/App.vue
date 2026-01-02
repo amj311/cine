@@ -3,7 +3,7 @@
 	lang="ts"
 >
 import { RouterView, useRoute } from 'vue-router'
-import { useScreenStore } from './stores/tvNavigation.store';
+import { useScreenStore } from './stores/screen.store';
 import AppBackground from './components/AppBackground.vue';
 import { computed, onMounted, ref } from 'vue';
 import { useConfirm } from "primevue/useconfirm";

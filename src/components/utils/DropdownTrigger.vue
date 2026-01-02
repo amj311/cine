@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { focusAreaClass } from '@/stores/tvNavigation.store';
+import { focusAreaClass } from '@/stores/screen.store';
 import TieredMenu from 'primevue/tieredmenu';
 import { ref } from 'vue';
 

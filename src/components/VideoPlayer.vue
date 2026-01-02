@@ -6,7 +6,7 @@ import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import MediaTimer from './MediaTimer.vue';
 import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
-import { useScreenStore } from '@/stores/tvNavigation.store';
+import { useScreenStore } from '@/stores/screen.store';
 
 const toast = useToast();
 

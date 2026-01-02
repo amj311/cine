@@ -5,7 +5,7 @@
 import { getBuildNumber } from '@/services/versionService';
 import { useAppNavigationStore } from '@/stores/appNavigation.store';
 import { useQueryPathStore } from '@/stores/queryPath.store';
-import { focusAreaClass, useScreenStore } from '@/stores/tvNavigation.store';
+import { focusAreaClass, useScreenStore } from '@/stores/screen.store';
 import { useUserStore } from '@/stores/user.store';
 import Button from 'primevue/button';
 import { computed, h, onMounted, onUnmounted, ref } from 'vue';

@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { useScreenStore } from './tvNavigation.store';
+import { useScreenStore } from './screen.store';
 
 const defaultSettings = {
 	is_tv: false,

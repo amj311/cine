@@ -7,7 +7,7 @@ import VideoPlayer from '@/components/VideoPlayer.vue'
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useRoute, useRouter } from 'vue-router';
-import { useScreenStore } from '@/stores/tvNavigation.store';
+import { useScreenStore } from '@/stores/screen.store';
 import { useBackgroundStore } from '@/stores/background.store';
 import { usePageTitleStore } from '@/stores/pageTitle.store';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';

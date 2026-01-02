@@ -10,7 +10,7 @@ import ExtrasList from '@/components/ExtrasList.vue';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import Skeleton from 'primevue/skeleton';
 import { useApiStore } from '@/stores/api.store';
-import { useScreenStore } from '@/stores/tvNavigation.store';
+import { useScreenStore } from '@/stores/screen.store';
 import LibraryItemActions from '@/components/LibraryItemActions.vue';
 
 const router = useRouter();
