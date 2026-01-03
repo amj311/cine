@@ -181,13 +181,14 @@ watch(
 
 const ytAudio = ref<HTMLAudioElement | null>(null);
 const ytCanPlay = ref(false);
-const ytIsplaying = ref(false);
+const ytIsPlaying = ref(false);
 
 function fadeIn(event: Event) {
 	const el = event.target as HTMLAudioElement;
 	if (!el) return;
-	ytIsplaying.value = true;
+	ytIsPlaying.value = true;
 	el.volume = 0;
+	el.muted = false;
 	const maxVolume = 0.25; // Max volume level
 	const fadeDuration = 10000; // Duration of the fade-in in milliseconds
 	const stepDuration = 100; // Interval duration in milliseconds
@@ -205,7 +206,7 @@ async function stopYtAudio() {
 	if (ytAudio.value) {
 		await ytAudio.value.pause();
 		ytAudio.value.currentTime = 0;
-		ytIsplaying.value = false;
+		ytIsPlaying.value = false;
 	}
 }
 async function playYtAudio() {
@@ -272,11 +273,11 @@ onUnmounted(async () => {
 						</Button>
 						<Button
 							v-if="ytCanPlay"
-							:icon="ytIsplaying ? 'pi pi-volume-up pi-spin' : 'pi pi-volume-up'"
+							:icon="ytIsPlaying ? 'pi pi-volume-up pi-spin' : 'pi pi-volume-up'"
 							:size="'large'"
 							variant="text"
 							severity="contrast"
-							@click="() => (ytIsplaying ? stopYtAudio() : playYtAudio())"
+							@click="() => (ytIsPlaying ? stopYtAudio() : playYtAudio())"
 						/>
 						<LibraryItemActions :libraryItem="libraryItem" />
 					</div>
@@ -394,7 +395,19 @@ onUnmounted(async () => {
 				<ExtrasList :extras="libraryItem.extras" />
 			</div>
 
-			<audio ref="ytAudio" :src="useApiStore().apiUrl + '/stream-yt-search?q=' + (`${libraryItem.name} ${libraryItem.year} music ost main theme`).replace(/[&?=/]/g, '')" controls :autoplay="useScreenStore().detectedTv" @canplay="ytCanPlay = true" @play="fadeIn" @pause="ytIsplaying = false" @ended="ytIsplaying = false" hidden>
+			<audio
+				ref="ytAudio"
+				:src="useApiStore().apiUrl + '/stream-yt-search?q=' + (`${libraryItem.name} ${libraryItem.year} music ost main theme`).replace(/[&?=/]/g, '')"
+				controls
+				:autoplay="useScreenStore().detectedTv"
+				onloadeddata="this.volume = 0"
+				@canplay="ytCanPlay = true"
+				@play="fadeIn"
+				@pause="ytIsPlaying = false"
+				@ended="ytIsPlaying = false"
+				muted
+				hidden
+			>
 				Your browser does not support the audio element.
 			</audio>
 		</div>
