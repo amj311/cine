@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { useQueryPathStore } from '@/stores/queryPath.store';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
-import CollectionPoster from '@/components/CollectionPoster.vue';
 import LibraryItemCard from '@/components/LibraryItemCard.vue';
-import Menu from 'primevue/menu';
+import CinemaItemsFilter from './CinemaItemsFilter.vue';
 
 const router = useRouter();
 
 const props = defineProps<{
 	exploreMode: 'library' | 'files';
 	directory: {
-		folders: { folderName: string; libraryItem }[];
+		libraryItems: any[];
+		folders: any[];
 		files: string[];
 	};
-	libraryItem: any; // libraryItem
+	libraryItem: any;
+	rootLibrary: any;
 }>();
 
 const queryPathStore = useQueryPathStore();
@@ -30,49 +31,52 @@ function playVideo(path: string) {
 	})
 }
 
-const folders = computed(() => {
-	return props.directory.folders.filter(folder => folder.libraryItem && folder.libraryItem.type === 'folder');
+const folderItems = computed(() => {
+	return props.directory.libraryItems.filter(item => item.type === 'folder');
 });
-const items = computed(() => {
-	return props.directory.folders.filter(folder => folder.libraryItem && folder.libraryItem.type !== 'folder');
+const childItems = computed(() => {
+	return props.directory.libraryItems.filter(item => item.type !== 'folder');
 });
+
+const LibraryFilters = {
+	'cinema': CinemaItemsFilter,
+}
+const filterComponent = computed(() => LibraryFilters[props.rootLibrary.libraryType]);
+const filterRef = ref<InstanceType<typeof filterComponent.value>>();
+
+const displayItems = computed(() => filterRef.value ? filterRef.value.filteredItems : props.directory.libraryItems)
 
 </script>
 
 <template>
 	<Scroll>
 		<div class="mt-3 pl-3 pr-2 pb-3">
-			<template v-if="exploreMode === 'library'">
-				<div class="folder-grid" v-if="folders.length">
-					<template v-for="folder in folders">
-						<MetadataLoader
-							v-if="folder.libraryItem"
-							:key="folder.libraryItem.relativePath"
-							:media="folder.libraryItem"
-						>
-							<template #default="{ metadata }">
-								<div class="grid-tile">
-									<MediaCard
-										clickable
-										aspectRatio="wide"
-										:title="folder.libraryItem.name"
-										:subtitle="`${folder.libraryItem.children.length} items`"
-										:action="() => queryPathStore.enterDirectory(folder.folderName)"
-									>
-										<template #fallbackIcon>🗂️</template>
-									</MediaCard>
-								</div>
-							</template>
-						</MetadataLoader>
+			<div v-if="exploreMode === 'library'" class="flex flex-column gap-3">
+				<div class="flex justify-content-end" v-if="filterComponent">
+					<component :is="filterComponent" ref="filterRef" :items="directory.libraryItems" />
+				</div>
+				<div class="folder-grid">
+					<template v-for="folder in folderItems">
+						<div class="grid-tile">
+							<MediaCard
+								clickable
+								aspectRatio="wide"
+								:title="folder.name"
+								:subtitle="`${folder.children.length} items`"
+								:action="() => queryPathStore.goTo(folder.relativePath)"
+							>
+								<template #fallbackIcon>🗂️</template>
+							</MediaCard>
+						</div>
 					</template>
 				</div>
 
 				<div class="item-grid">
 					<div class="grid-tile"
-						v-for="folder in items"
-						:key="folder.libraryItem.relativePath"
+						v-for="childItem in displayItems"
+						:key="childItem.relativePath"
 					>
-						<LibraryItemCard :libraryItem="folder.libraryItem" />
+						<LibraryItemCard :libraryItem="childItem" />
 					</div>
 				</div>
 
@@ -82,17 +86,17 @@ const items = computed(() => {
 					<h2>Extras</h2>
 					<ExtrasList :extras="libraryItem.extras" />
 				</div>
-			</template>
+			</div>
 
 			<template v-else>
 				<ul>
 					<li
 						v-for="folder in directory.folders"
-						:key="folder.folderName"
-						@click="queryPathStore.enterDirectory(folder.folderName)"
+						:key="folder.libraryItem.relativePath"
+						@click="queryPathStore.goTo(folder.libraryItem.relativePath)"
 						style="cursor: pointer"
 					>
-						🗂️ {{ folder.folderName }}
+						🗂️ {{ folder.libraryItem.folderName }}
 					</li>
 					<li v-for="file in directory.files" :key="file">
 						<span v-if="file.endsWith('.mp4')">🎬</span>

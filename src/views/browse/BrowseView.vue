@@ -20,8 +20,9 @@ const api = useApiStore().api;
 // const scrollArea = computed(() => scrollerRef.value?.scrollArea);
 
 let fetchedPath = '';
-const directory = ref<{ folders: { folderName: string; libraryItem }[]; files: string[] } | null>(null);
+const directory = ref<{ folders: any[]; libraryItems: any[], files: string[] } | null>(null);
 const libraryItem = ref<any>(null);
+const rootLibrary = ref<any>(null);
 // const listMode = ref('grid');
 const exploreMode = ref<'library' | 'files'>('library');
 
@@ -68,6 +69,7 @@ const fetchDirectory = async () => {
 		const { data } = await api.get('/dir', { params: { dir: queryPathStore.currentPath || '/' } });
 		directory.value = data.directory;
 		libraryItem.value = data.libraryItem;
+		rootLibrary.value = data.rootLibrary;
 
 		// nextTick(() => {
 		// 	const scrollPosition = scrollStack.get(libraryItem.value.relativePath);
@@ -110,7 +112,7 @@ watch(
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'cinema'">
-					<CinemaLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :folders="directory!.folders" />
+					<CinemaLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :directoryItems="directory!.libraryItems" />
 				</template>
 
 				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'cinema'">
@@ -130,6 +132,7 @@ watch(
 						:exploreMode="exploreMode"
 						:directory="directory"
 						:libraryItem="libraryItem"
+						:rootLibrary="rootLibrary"
 					/>
 				</template>
 			</KeepAlive>

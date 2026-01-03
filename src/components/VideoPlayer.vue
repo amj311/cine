@@ -369,7 +369,7 @@ function toggleTimer() {
 				<div><MediaTimer :mediaEl="videoRef" :inPlayer="true" /></div>
 			</div>
 		</div>
-		<div v-if="hasLoaded" class="center-controls overlay flex-center-row gap-4">
+		<div v-if="hasLoaded" class="center-controls overlay flex-row-center gap-4">
 			<Button class="square" text severity="contrast" @click="skipBack">
 				<i class="material-symbols-outlined">fast_rewind</i>
 			</Button>
@@ -381,7 +381,7 @@ function toggleTimer() {
 			</Button>
 		</div>
 		<div class="bottom-controls overlay flex-column gap-2">
-			<div class="flex-center-row">
+			<div class="flex-row-center">
 				<span>-{{ msToTimestamp(secToMs(remaining)) }}</span>
 				<div class="flex-grow-1" />
 				<slot name="bottomButtons"></slot>

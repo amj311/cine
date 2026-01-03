@@ -378,12 +378,9 @@ export const useScreenStore = defineStore('Screen', () => {
 		const focusElements = ['[href]', 'button', 'input', 'select', 'textarea', '[tabindex]', '.clickable', 'details', 'summary', '#overlay_menu_list li', '.p-toggleswitch'];
 		const query = focusElements.map(el => el + ':not([disabled]:not([disabled="false"])):not(.p-disabled):not([tabindex="-1"]):not(#overlay_menu_list)').join(', ');
 
-		const focusAreaSelector = ['#overlay_menu', '.p-dialog', '.' + focusAreaClass].join(', ');
-
-
 		// find highest priority focus area
 		let focusArea;
-		const focusAreaSelectors = ['#overlay_menu', '.p-dialog', '.' + focusAreaClass];
+		const focusAreaSelectors = ['.p-datepicker-panel', '#overlay_menu', '.p-dialog', '.' + focusAreaClass];
 		for (const selector of focusAreaSelectors) {
 			focusArea = document.querySelector(selector);
 			if (focusArea) break;

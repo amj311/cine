@@ -29,6 +29,10 @@ export class ConfirmedPath {
 		this.relativePath = DirectoryService.getRelativePath(absolutePath) as RelativePath;
 	}
 
+	get rootFolder() {
+		return new ConfirmedPath(DirectoryService.resolvePath(this.relativePath.split('/')[0])!.absolutePath);
+	}
+
 	append(newPath: string): ConfirmedPath {
 		const newAbsolutePath = path.join(this.absolutePath, newPath) as AbsolutePath;
 		return new ConfirmedPath(newAbsolutePath);

@@ -79,7 +79,10 @@ h1, h2, h3, h4, h5, h6 {
 	color: var(--p-primary-color);
 }
 
-.text-upper {
+.text-upper, .text-upper * {
+	text-transform: uppercase;
+}
+.text-cap, .text-cap * {
 	text-transform: capitalize;
 }
 
@@ -126,12 +129,12 @@ h1, h2, h3, h4, h5, h6 {
 	aspect-ratio: 1;
 }
 
-.flex-center-row {
+.flex-row-center {
 	@extend .flex;
 	@extend .align-items-center;
 }
 
-.flex-center-col {
+.flex-col-center {
 	@extend .flex;
 	@extend .flex-column;
 	@extend .justify-content-center;

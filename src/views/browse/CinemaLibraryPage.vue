@@ -4,18 +4,19 @@ import { useApiStore } from '@/stores/api.store';
 import SelectButton from 'primevue/selectbutton';
 import InputText from 'primevue/inputtext';
 import { useQueryPathStore } from '@/stores/queryPath.store';
+import CinemaItemsFilter from './CinemaItemsFilter.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
-	folders: { folderName: string; libraryItem }[];
+	directoryItems: any[];
 }>();
 
-const allItems = ref<any[]>([]);
+const allFlatItems = ref<any[]>([]);
 const api = useApiStore().api;
 async function loadItems() {
 	try {
 		const { data } = await api.get(`/rootLibrary/${props.libraryItem.relativePath}/flat`);
-		allItems.value = data.data?.items || [];
+		allFlatItems.value = data.data?.items || [];
 		collectCategorySamples();
 	}
 	catch (error) {
@@ -27,29 +28,28 @@ onBeforeMount(async () => {
 	await loadItems();
 });
 
-const filterMode = ref<string>('Categories');
+const displayMode = ref<string>('Categories');
 // Don't allow removing the option by clicking it agian
-watch(filterMode, (newVal, oldVal) => {
+watch(displayMode, (newVal, oldVal) => {
 	if (!newVal) {
 		nextTick(() => {
-			filterMode.value = oldVal;
+			displayMode.value = oldVal;
 		});
 	}
 });
 
-const cinemaItems = computed(() => allItems.value.filter(item => item.type === 'cinema'));
+const cinemaItems = computed(() => allFlatItems.value.filter(item => item.type === 'cinema'));
 
 const categoryOrder: Record<string, number> = {};
 function initializeRandomOrder() {
-	props.folders.forEach((folder) => {
-		categoryOrder[folder.libraryItem.relativePath] = folder.libraryItem.feedOrder || (Math.ceil(Math.random() * 100));
+	props.directoryItems.forEach((folder) => {
+		categoryOrder[folder.relativePath] = folder.feedOrder || (Math.ceil(Math.random() * 100));
 	});
 }
 const categorySampling = ref<Record<string, Array<any>>>({});
 
 const categories = computed(() => {
-	return props.folders
-		.map(i => i.libraryItem)
+	return props.directoryItems
 		.sort((a, b) => {
 			return (b.feedOrder || 0) - (a.feedOrder || 0);
 		})
@@ -83,13 +83,8 @@ function collectCategorySamples() {
 };
 
 
-const cinemaType = ref<'all' | 'movie' | 'series'>('all');
-const filteredItems = computed(() => {
-	if (cinemaType.value === 'all') {
-		return cinemaItems.value;
-	}
-	return cinemaItems.value.filter(item => item.cinemaType === cinemaType.value);
-});
+const filter = ref<InstanceType<typeof CinemaItemsFilter>>();
+const filteredItems = computed(() => filter.value?.filteredItems || []);
 
 const letterGroups = computed(() => {
 	const groups: Record<string, Array<any>> = {};
@@ -116,12 +111,6 @@ const letterGroups = computed(() => {
 	})) as Array<{ letter: string; items: Array<any> }>;
 });
 
-
-const searchTerm = ref<string>('');
-const seachedItems = computed(() => {
-	return cinemaItems.value.filter(item => !searchTerm.value || item.name.toLowerCase().replaceAll(/[^\d\w\s]/g, '').includes(searchTerm.value.toLowerCase().replaceAll(/[^\d\w\s]/g, '')));
-});
-
 </script>
 
 <template>
@@ -129,29 +118,10 @@ const seachedItems = computed(() => {
 		<div class="cinema-page mt-3 pl-3">
 
 			<div class="filters mb-4 flex justify-content-center">
-					<SelectButton v-model="filterMode" :options="['Categories', 'A - Z', 'search']" size="large">
-						<template #option="{ option }">
-							<div v-if="option === 'A - Z'" class="flex align-items-center gap-2 white-space-nowrap">
-								<div>A - Z</div>
-								<select v-if="filterMode === 'A - Z'" v-model="cinemaType" size="small" class="border-none bg-transparent w-full" style="color: inherit;" @click.stop>
-									<option value="all">All</option>
-									<option value="movie">Movies</option>
-									<option value="series">Series</option>
-								</select>
-							</div>
-							<div v-else-if="option === 'search'" class="flex align-items-center gap-2">
-								<i class="pi pi-search absolute" />
-								<div class="absolute pl-4 pointer-events-none" v-if="filterMode !== 'search'">Search</div>
-								<div class="search-container" :class="{ on: filterMode === 'search' }">
-									<InputText v-model="searchTerm" placeholder="Search" name="search" size="small" class="border-none p-0 pl-4 bg-transparent w-full" style="color: inherit;" />
-								</div>
-							</div>
-							<span v-else>{{ option }}</span>
-						</template>
-					</SelectButton>
+				<SelectButton v-model="displayMode" :options="['Categories', 'A - Z']" size="large" />
 			</div>
 
-			<div v-if="filterMode === 'Categories'" class="categories flex flex-column gap-1">
+			<div v-if="displayMode === 'Categories'" class="categories flex flex-column gap-1">
 				<template v-for="categoriesRow in categories" :key="categoriesRow.relativePath">
 					<div class="categories-row" v-if="categorySampling[categoriesRow.relativePath] && categorySampling[categoriesRow.relativePath].length" :key="categoriesRow.relativePath">
 						<Button variant="text" severity="contrast" @click="useQueryPathStore().goTo(categoriesRow.relativePath)">
@@ -184,7 +154,12 @@ const seachedItems = computed(() => {
 				</template>
 			</div>
 
-			<div v-if="filterMode === 'A - Z'">
+			<div v-if="displayMode === 'A - Z'">
+
+				<div class="flex justify-content-end">
+					<CinemaItemsFilter ref="filter" :items="allFlatItems" />
+				</div>
+
 				<div
 					class="mb-4"
 					v-for="group in letterGroups"
@@ -210,22 +185,6 @@ const seachedItems = computed(() => {
 				</div>
 			</div>
 
-
-			<div v-if="filterMode === 'search'">
-				<h3 v-if="searchTerm">Showing {{ seachedItems.length }} results for '{{ searchTerm }}':</h3>
-				<h3 v-else>All {{ cinemaItems.length }} titles:</h3>
-				<div class="mt-3">
-					<div class="flex flex-wrap gap-3">
-						<div
-							class="card-wrapper"
-							v-for="item in seachedItems"
-							:key="item.relativePath"
-						>
-							<LibraryItemCard :libraryItem="item" />
-						</div>
-					</div>
-				</div>
-			</div>
 		</div>
 		<br />
 	</Scroll>

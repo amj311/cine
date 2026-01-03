@@ -483,9 +483,9 @@ function onTitleClick() {
 							</Button>
 						</div>
 						<template #content>
-							<div class="p-2 flex-center-row">
+							<div class="p-2 flex-row-center">
 								&nbsp;Autoplay:&nbsp;
-								<div class="flex-center-row">
+								<div class="flex-row-center">
 									<Button text icon="pi pi-arrow-down" @click="autoplayTimes = Math.max(0, autoplayTimes - 1)" />
 									<div class="w-1rem text-center">{{ autoplayTimes }}</div>
 									<Button text icon="pi pi-arrow-up" @click="autoplayTimes++" />

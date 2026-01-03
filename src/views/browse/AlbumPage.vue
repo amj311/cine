@@ -9,7 +9,6 @@ import LibraryItemActions from '@/components/LibraryItemActions.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
-	directory?: any,
 }>();
 const backgroundStore = useBackgroundStore();
 

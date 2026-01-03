@@ -109,18 +109,14 @@ app.get("/api/dir/", async function (req, res) {
 
 		const { folders, files } = await DirectoryService.listDirectory(resolvedPath);
 		const libraryItem = await LibraryService.parseFolderToItem(resolvedPath, true);
-
+		const rootLibrary = await LibraryService.parseFolderToItem(resolvedPath.rootFolder)
 		return safeResponse.json(res, {
+			rootLibrary,
 			libraryItem,
 			directory: {
 				files: files.map((file) => file.name),
-				folders: (await Promise.all(folders.map(async (folder) => {
-					const libraryItem = await LibraryService.parseFolderToItem(folder.confirmedPath);
-					return {
-						folderName: folder.name,
-						libraryItem,
-					};
-				}))).sort((a, b) => a.libraryItem?.sortKey.localeCompare(b.libraryItem?.sortKey || '') || 0),
+				folders: folders,
+				libraryItems: (await Promise.all(folders.map(async (folder) => await LibraryService.parseFolderToItem(folder.confirmedPath)))).filter(Boolean).sort((a, b) => a.sortKey.localeCompare(b.sortKey || '') || 0),
 			},
 		});
 	} catch (err) {
