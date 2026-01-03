@@ -19,7 +19,7 @@ watch(filterMode, (newVal, oldVal) => {
 	}
 });
 
-const cinemaItems = computed(() => items.sort((a) => a.surprise ? -1 : 0));
+const cinemaItems = computed(() => items.filter(i => ['cinema','collection'].includes(i.type)).sort((a) => a.surprise ? -1 : 0));
 
 const cinemaType = ref<'all' | 'movie' | 'series'>('all');
 const searchTerm = ref<string>('');

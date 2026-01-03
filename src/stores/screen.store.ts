@@ -545,11 +545,11 @@ export const useScreenStore = defineStore('Screen', () => {
 	}
 
 
+	let clickCapture = document.createElement('div');
 	function engageTvMode() {
 		tvNavEnabled.value = true;
 
 		// create click capture element
-		const clickCapture = document.createElement('div');
 		clickCapture.id = 'tvClickCapture';
 		clickCapture.style.position = 'fixed';
 		clickCapture.style.top = '0';
@@ -575,7 +575,8 @@ export const useScreenStore = defineStore('Screen', () => {
 		findFocus();
 	}
 	function disengageTvMode() {
-		document.getElementById('tvClickCapture')?.remove();
+		setFocus(null);
+		clickCapture.remove();
 		window.removeEventListener('mousemove', handleMouseMove);
 		window.removeEventListener('mouseout', handleMouseOut);
 		window.removeEventListener('keydown', handleKeyDown);

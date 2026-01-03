@@ -157,7 +157,7 @@ const letterGroups = computed(() => {
 			<div v-if="displayMode === 'A - Z'">
 
 				<div class="flex justify-content-end">
-					<CinemaItemsFilter ref="filter" :items="allFlatItems" />
+					<CinemaItemsFilter ref="filter" :items="cinemaItems" />
 				</div>
 
 				<div

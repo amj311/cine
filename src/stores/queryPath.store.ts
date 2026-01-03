@@ -22,20 +22,20 @@ export const useQueryPathStore = defineStore('QueryPath', () => {
 	});
 	const currentFile = computed(() => {
 		if (currentDir.value.length === 0) {
-			return null;
+			return '';
 		}
-		return currentDir.value[currentDir.value.length - 1];
+		return currentDir.value[currentDir.value.length - 1] || '';
 	});
 
 
 	function updatePathFromQuery() {
-		const queryPath = decodeMediaPath(router.currentRoute.value?.query.path as string);
+		const queryPath = decodeMediaPath(router.currentRoute.value?.query.path as string || '');
 		currentDir.value = queryPath ? queryPath.split('/') : [];
 	}
 
 	// Fetch the root directory on component mount
 	updatePathFromQuery();
-	watch(() => decodeMediaPath(router.currentRoute.value?.query.path as string), updatePathFromQuery)
+	watch(() => decodeMediaPath(router.currentRoute.value?.query.path as string || ''), updatePathFromQuery)
 
 
 	function updateQuery() {
@@ -75,7 +75,6 @@ export const useQueryPathStore = defineStore('QueryPath', () => {
 		},
 
 		goToAncestor(dir: string) {
-			console.log(dir, encodeMediaPath(dir), currentDir.value)
 			// Find the index of the ancestor directory
 			const index = currentDir.value.indexOf(dir);
 			if (index !== -1) {
