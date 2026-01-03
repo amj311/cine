@@ -51,11 +51,11 @@ const displayItems = computed(() => filterRef.value ? filterRef.value.filteredIt
 <template>
 	<Scroll>
 		<div class="mt-3 pl-3 pr-2 pb-3">
-			<div v-if="exploreMode === 'library'" class="flex flex-column gap-3">
+			<div v-if="exploreMode === 'library'" class="flex flex-column gap-5">
 				<div class="flex justify-content-end" v-if="filterComponent">
 					<component :is="filterComponent" ref="filterRef" :items="directory.libraryItems" />
 				</div>
-				<div class="folder-grid">
+				<div class="folder-grid" v-if="folderItems.length">
 					<template v-for="folder in folderItems">
 						<div class="grid-tile">
 							<MediaCard
@@ -81,8 +81,6 @@ const displayItems = computed(() => filterRef.value ? filterRef.value.filteredIt
 				</div>
 
 				<div v-if="libraryItem.extras?.length > 0">	
-					<br />
-					<br />
 					<h2>Extras</h2>
 					<ExtrasList :extras="libraryItem.extras" />
 				</div>
@@ -121,7 +119,6 @@ const displayItems = computed(() => filterRef.value ? filterRef.value.filteredIt
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(min(10rem, 27vh), 1fr));
 	gap: 15px;
-	margin-bottom: 30px;
 }
 .item-grid {
 	display: grid;
