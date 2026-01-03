@@ -230,13 +230,13 @@ onMounted(async () => {
 	playMedia(mediaPath.value).catch((e) => {
 		console.error("Failed to load media data", e);
 	});
-	// pauseTvMode();
-	// attemptAutoFullscreen();
 
 	requestWakeLock();
 
 	// Setup fullscreen exit handling
-	// useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
+	// pauseTvMode();
+	attemptAutoFullscreen();
+	useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
 
 	// Attempt rotate screen
 	// if ((screen.orientation as any)?.lock) {
@@ -437,7 +437,7 @@ function toggleScrubMenu() {
  * TITLE CLICK
  */
 function onTitleClick() {
-	router.push('/browse?path=' + parentLibrary.value.relativePath);
+	useQueryPathStore().goTo(parentLibrary.value.relativePath);
 }
 
 </script>

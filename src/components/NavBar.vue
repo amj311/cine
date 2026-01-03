@@ -97,7 +97,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 					:label="library.libraryItem?.name || library.folderName"
 					variant="text"
 					:severity="($route?.query?.path as any)?.startsWith(library.relativePath) ? 'contrast' : 'secondary'"
-					@click="$router.push({ name: 'browse', query: { path: library.relativePath } })"
+					@click="useQueryPathStore().goTo(library.relativePath)"
 				/>
 			</div>
 
@@ -156,7 +156,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 						variant="text"
 						size="large"
 						:severity="($route?.query?.path as any)?.startsWith(library.relativePath) ? 'contrast' : 'secondary'"
-						@click="$router.push({ name: 'browse', query: { path: library.relativePath } })"
+						@click="useQueryPathStore().goTo(library.relativePath)"
 					>
 						{{ library.libraryItem?.name || library.folderName }}
 					</Button>

@@ -3,6 +3,7 @@ import { reactive, computed, ref, watch, nextTick } from 'vue';
 import Button from 'primevue/button';
 import { useRouter } from 'vue-router';
 import GalleryFileFrame, { type GalleryFile } from './GalleryFileFrame.vue';
+import { focusAreaClass } from '@/stores/screen.store';
 
 const router = useRouter();
 
@@ -191,7 +192,7 @@ const activeFileFolders = computed(() => activeFile.value.relativePath.split('/'
 
 
 <template>
-	<div id="Slideshow" v-if="showSlideshow">
+	<div id="Slideshow" v-if="showSlideshow" :class="focusAreaClass">
 		<div id="topBar" class="flex justify-content-start align-items-center gap-2 flex-wrap">
 			<Button text severity="contrast" @click="close" icon="pi pi-times" />
 			<div>{{ activeFile.fileName }}</div>

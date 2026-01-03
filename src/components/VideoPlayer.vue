@@ -339,7 +339,7 @@ function toggleTimer() {
 </script>
 
 <template>
-	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls': showControls }">
+	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls': showControls && !hideControls }">
 		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous" allow>
 			<source :src="videoUrl" :type="'video/mp4'" />
 			<track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" />

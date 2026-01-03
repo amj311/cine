@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { AuthService } from '@/services/AuthService';
 import { useApiStore } from './api.store';
+import { useScreenStore } from './screen.store';
 
 export const useUserStore = defineStore('user', () => {
 	const hasLoadedSessionData = ref(false);
@@ -39,6 +40,7 @@ export const useUserStore = defineStore('user', () => {
 			currentUser.value = authUser;
 			// session.value = data;
 			loginError.value = '';
+			useScreenStore().determineTvEnvironment();
 		}
 		catch (e) {
 			console.log('ERROR LOADING AUTH USER')

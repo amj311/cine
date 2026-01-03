@@ -544,6 +544,7 @@ export const useScreenStore = defineStore('Screen', () => {
 		// try to click within an element when helpful
 		const clicker = lastFocusedEl.value?.querySelector('a,input') as HTMLElement || lastFocusedEl.value;
 		clicker?.click();
+		clicker?.focus();
 	}
 
 

@@ -56,7 +56,6 @@ async function alertTvDetected() {
 }
 
 onMounted(() => {
-	tvNavigationStore.determineTvEnvironment();
 });
 
 const route = useRoute();

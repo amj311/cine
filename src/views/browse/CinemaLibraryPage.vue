@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeMount, ref, watch } from 'vue';
 import { useApiStore } from '@/stores/api.store';
 import SelectButton from 'primevue/selectbutton';
 import InputText from 'primevue/inputtext';
+import { useQueryPathStore } from '@/stores/queryPath.store';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -153,7 +154,7 @@ const seachedItems = computed(() => {
 			<div v-if="filterMode === 'Categories'" class="categories flex flex-column gap-1">
 				<template v-for="categoriesRow in categories" :key="categoriesRow.relativePath">
 					<div class="categories-row" v-if="categorySampling[categoriesRow.relativePath] && categorySampling[categoriesRow.relativePath].length" :key="categoriesRow.relativePath">
-						<Button variant="text" severity="contrast" @click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })">
+						<Button variant="text" severity="contrast" @click="useQueryPathStore().goTo(categoriesRow.relativePath)">
 							<h3>
 								{{ categoriesRow.name }}
 							</h3>
@@ -171,7 +172,7 @@ const seachedItems = computed(() => {
 									<Button variant="text" severity="contrast"
 										class="px-4"
 										style="white-space: nowrap; min-width: 10em"
-										@click="$router.push({ name: 'browse', query: { path: categoriesRow.relativePath } })"
+										@click="useQueryPathStore().goTo(categoriesRow.relativePath)"
 									>
 										View All
 										<i class="pi pi-angle-right" />

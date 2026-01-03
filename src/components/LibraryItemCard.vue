@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import ProgressBar from '@/components/ProgressBar.vue'
-import { useApiStore } from '@/stores/api.store';
-import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import MediaCard from './MediaCard.vue';
+import { useQueryPathStore } from '@/stores/queryPath.store';
 const router = useRouter();
 
 const props = defineProps<{
@@ -21,7 +19,7 @@ const props = defineProps<{
 				:aspectRatio="'tall'"
 				:title="libraryItem.name"
 				:subtitle="libraryItem.year"
-				:action="() => $router.push({ name: 'browse', query: { path: libraryItem.relativePath } })"
+				:action="() => useQueryPathStore().goTo(libraryItem.relativePath)"
 				:progress="libraryItem.watchProgress"
 				:loading="isLoadingMetadata"
 				:surprise="libraryItem.surprise"
@@ -37,7 +35,7 @@ const props = defineProps<{
 				:title="libraryItem.name"
 				:subtitle="`${libraryItem.numSeasons} Season${libraryItem.numSeasons.length ? 's' : ''}`"
 				:progress="libraryItem.movie?.watchProgress"
-				:action="() => $router.push({ name: 'browse', query: { path: libraryItem.relativePath } })"
+				:action="() => useQueryPathStore().goTo(libraryItem.relativePath)"
 				:loading="isLoadingMetadata"
 				:surprise="libraryItem.surprise"
 			>
@@ -52,7 +50,7 @@ const props = defineProps<{
 				:title="libraryItem.title"
 				:subtitle="libraryItem.artist || libraryItem.author"
 				:progress="libraryItem.watchProgress"
-				:action="() => $router.push({ name: 'browse', query: { path: libraryItem.relativePath } })"
+				:action="() => useQueryPathStore().goTo(libraryItem.relativePath)"
 				:loading="isLoadingMetadata"
 				:surprise="libraryItem.surprise"
 			>
@@ -65,7 +63,7 @@ const props = defineProps<{
 				:aspectRatio="'tall'"
 				:title="libraryItem.name"
 				:subtitle="`${libraryItem.children.length} items`"
-				:action="() => $router.push({ name: 'browse', query: { path: libraryItem.relativePath } })"
+				:action="() => useQueryPathStore().goTo(libraryItem.relativePath)"
 			>
 				<template #poster v-if="libraryItem.children.length">
 					<CollectionPoster :paths="libraryItem.children" />

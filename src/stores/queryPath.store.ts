@@ -1,6 +1,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { useRouter } from 'vue-router';
+import { decodeMediaPath, encodeMediaPath } from '@/utils/miscUtils';
 
 export const useQueryPathStore = defineStore('QueryPath', () => {
 	const router = useRouter();
@@ -28,19 +29,19 @@ export const useQueryPathStore = defineStore('QueryPath', () => {
 
 
 	function updatePathFromQuery() {
-		const queryPath = router.currentRoute.value?.query.path as string;
+		const queryPath = decodeMediaPath(router.currentRoute.value?.query.path as string);
 		currentDir.value = queryPath ? queryPath.split('/') : [];
 	}
 
 	// Fetch the root directory on component mount
 	updatePathFromQuery();
-	watch(() => router.currentRoute.value?.query.path, updatePathFromQuery)
+	watch(() => decodeMediaPath(router.currentRoute.value?.query.path as string), updatePathFromQuery)
 
 
 	function updateQuery() {
 		router.push({
 			query: {
-				path: currentDir.value.join('/'),
+				path: encodeMediaPath(currentDir.value.join('/')),
 			}
 		})
 	}
@@ -53,6 +54,11 @@ export const useQueryPathStore = defineStore('QueryPath', () => {
 		rootLibrary,
 
 		updatePathFromQuery,
+
+
+		goTo(relativePath: string) {
+			router.push({ name: 'browse', query: { path: encodeMediaPath(relativePath) } })
+		},
 
 		goToRoot() {
 			// Reset the current directory to the root
@@ -70,7 +76,7 @@ export const useQueryPathStore = defineStore('QueryPath', () => {
 
 		goToAncestor(dir: string) {
 			// Find the index of the ancestor directory
-			const index = currentDir.value.indexOf(dir);
+			const index = currentDir.value.indexOf(encodeMediaPath(dir));
 			if (index !== -1) {
 				// Remove all directories after the ancestor
 				currentDir.value = currentDir.value.slice(0, index + 1);
@@ -80,7 +86,7 @@ export const useQueryPathStore = defineStore('QueryPath', () => {
 
 		enterDirectory(dir: string) {
 			// Add the new folder to the current directory
-			currentDir.value.push(dir);
+			currentDir.value.push(encodeMediaPath(dir));
 			updateQuery();
 		},
 

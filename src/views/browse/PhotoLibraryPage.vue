@@ -5,6 +5,7 @@ import GalleryFileFrame, { type GalleryFile } from '@/components/GalleryFileFram
 import Slideshow from '@/components/Slideshow.vue';
 import VirtualScroll, { type VirtualScrollRow, type VirtualScrollRowWithPosition } from '@/components/VirtualScroll.vue';
 import Scroll from '@/components/Scroll.vue';
+import { useScreenStore } from '@/stores/screen.store';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -156,6 +157,11 @@ function doShowClosestLabel() {
 watch(() => topLabel.value?.data?.date, (newValue) => {
 	if (newValue) {
 		doShowClosestLabel();
+		const anchorEl = document.getElementById('sidebar_button__' + normLabel(topLabel.value?.data?.date));
+		if (anchorEl) {
+			// scroll to el but leave buffer at top
+			sidebarScrollRef.value?.scrollArea?.scrollTo({ top: anchorEl?.getBoundingClientRect().top - 200, behavior: 'smooth' })
+		}
 	}
 });
 
@@ -170,11 +176,7 @@ function openSlideshow(file: GalleryFile) {
 const showMenu = ref(false);
 function openSidebar() {
 	if (!showMenu.value) {
-		setTimeout(() => {
-				showMenu.value = true;
-				const buttonEl = document.querySelector('button#sidebar_button__' + normLabel(topLabel.value?.data.date));
-				buttonEl?.scrollIntoView({ behavior: 'smooth' });
-		}, 300)
+		showMenu.value = true;
 	}
 }
 
@@ -186,6 +188,7 @@ function normLabel(date) {
 
 <template>
 	<div class="photos-page">
+		
 		<div class="gallery-side">
 			<VirtualScroll v-if="timelineRows && timelineRows.length > 0" ref="virtualScroller" :rows="timelineRows" :onScroll="findTopLabel">
 				<template #row="{ data }" :key="day.date" class="date-row" :data-track-anchor="day.date">
@@ -200,6 +203,7 @@ function normLabel(date) {
 								:key="file.relativePath"
 								:id="file.relativePath"
 								@click="openSlideshow(file)"
+								data-tvNavJumpRow="photo_menu"
 							>
 								<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" />
 								<div class="overlay">
@@ -211,7 +215,8 @@ function normLabel(date) {
 				</template>
 			</VirtualScroll>
 		</div>
-		<div class="track" @click="openSidebar" @touchstart="openSidebar" @mouseenter="openSidebar" @mouseleave="showMenu = false">
+
+		<div class="track" @click="openSidebar" @touchstart="openSidebar">
 			<div class="track-anchor-item"
 				v-for="(anchor, i) in trackAnchors"
 				:style="{ top: anchor.percent + '%', height: ((trackAnchors[i+1]?.percent || 100) - anchor.percent) + '%' }"
@@ -221,16 +226,25 @@ function normLabel(date) {
 			<div class="label scroll-marker" v-show="showClosestLabel && topLabel" :style="{ top: topLabel?.topPercent + '%' }">
 				{{ topLabel?.data.date }}
 			</div>
-			<div class="menu-wrapper absolute h-full right-0 overflow-hidden pointer-events-none">
-				<div class="menu h-full shadow-1 bg-soft border-round-xl" :class="{ open: showMenu }">
-					<Scroll ref="sidebarScrollRef">
-						<div class="flex flex-column align-items-end p-2">
-							<Button v-for="anchor in trackAnchors" :key="anchor.label" :id="'sidebar_button__' + normLabel(anchor.label)" :variant="anchor.label === topLabel?.data?.date ? 'outlined' : 'text'" severity="contrast" size="" tabindex="0" @click.stop="() => { scrollToAnchor(anchor); (showMenu = false) }">
-								<div class="white-space-nowrap">{{ anchor.label }}</div>
-							</Button>
-						</div>
-					</Scroll>
-				</div>
+		</div>
+
+		<div class="menu-wrapper relative overflow-hidden w-10rem" :class="{ 'pointer-events-none': false, 'open': showMenu, 'do-hiding': useScreenStore().isSkinnyScreen }" @mouseleave="showMenu = false">
+			<div class="menu h-full border-round-xl absolute w-10rem right-0">
+				<Scroll ref="sidebarScrollRef">
+					<div class="flex flex-column align-items-end p-2">
+						<Button v-for="anchor in trackAnchors"
+							:key="anchor.label"
+							:id="'sidebar_button__' + normLabel(anchor.label)"
+							:variant="anchor.label === topLabel?.data?.date ? 'outlined' : 'text'"
+							severity="contrast"
+							tabindex="0"
+							@click.stop="() => { scrollToAnchor(anchor); (showMenu = false) }"
+							data-tvNavJumpRow="photo_menu"
+						>
+							<div class="white-space-nowrap">{{ anchor.label }}</div>
+						</Button>
+					</div>
+				</Scroll>
 			</div>
 		</div>
 	</div>
@@ -244,70 +258,74 @@ function normLabel(date) {
 	height: 100%;
 	position: relative;
 	padding-left: 5px;
+	display: flex;
 	
 	.gallery-side {
+		position: relative;
 		height: 100%;
-		padding-right: calc(var(--track-width) - 5px);
+		flex: 1 1;
 
 		.gallery {
 			padding: 5px;
 		}
 	}
 
-	.track {
-		position: absolute;
-		top: 0;
-		right: 0;
-		height: 100%;
-		width: var(--track-width);
+}
 
-		.track-anchor-item {
-			position: absolute;
-			right: 0;
-			width: 100%;
-			white-space: nowrap;
+.menu-wrapper {
+	position: relative;
+	transition: 500ms;
+	max-width: 100vw !important;
 
-			.tick {
-				position: absolute;
-				top: 0;
-				left: 50%;
-				translate: -50% 0;
-				width: 4px;
-				aspect-ratio: 1;
-				border-radius: 50%;
-				background-color: var(--color-contrast);
-			}
-		}
-
-		.menu {
-			pointer-events: all !important;
-			translate: 100%;
-			transition: 500ms;
-
-			&.open{
-				translate: none;
-			}
-		}
-
-		.scroll-marker {
-			position: absolute;
-			top: 0;
-			left: 0;
-			translate: -100% 0;
-			background-color: var(--color-background-soft);
-			box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.5);
-			color: var(--color-contrast);
-			padding: 5px;
-			border-radius: 5px;
-			font-size: 1.2em;
-			text-align: center;
-			pointer-events: none;
-			white-space: nowrap;
-			transition: all 500ms ease-in-out;
-		}
+	&.do-hiding:not(.open) {
+		max-width: 0 !important;
 	}
 }
 
+
+.track {
+	position: relative;
+	top: 0;
+	right: 0;
+	height: 100%;
+	width: var(--track-width);
+	margin-left: calc(-1 * var(--track-width) + 10px);
+
+	.track-anchor-item {
+		position: absolute;
+		right: 0;
+		width: 100%;
+		white-space: nowrap;
+
+		.tick {
+			position: absolute;
+			top: 0;
+			left: 50%;
+			translate: -50% 0;
+			width: 4px;
+			aspect-ratio: 1;
+			border-radius: 50%;
+			background-color: var(--color-contrast);
+		}
+	}
+
+	.scroll-marker {
+		position: absolute;
+		top: 0;
+		left: 0;
+		translate: -100% 0;
+		background-color: var(--color-background-soft);
+		box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.5);
+		color: var(--color-contrast);
+		padding: 5px;
+		border-radius: 5px;
+		font-size: 1.2em;
+		text-align: center;
+		pointer-events: none;
+		white-space: nowrap;
+		transition: all 500ms ease-in-out;
+	}
+}
 
 
 .photo-grid {

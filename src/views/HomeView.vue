@@ -7,6 +7,7 @@ import Slideshow from '@/components/Slideshow.vue';
 import MetadataLoader from '@/components/MetadataLoader.vue';
 import LibraryItemCard from '@/components/LibraryItemCard.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
+import { useQueryPathStore } from '@/stores/queryPath.store';
 
 const feed = ref<any[]>([]);
 
@@ -97,7 +98,7 @@ function formatRuntime(minutes: number) {
 												<MediaCard
 													v-if="!item.libraryItem.playable || !item.libraryItem.parentLibrary"
 													clickable
-													:action="() => $router.push({ name: 'browse', query: { path: item.relativePath } })"
+													:action="() => useQueryPathStore().goTo(item.relativePath)"
 													:progress="item.watchProgress"
 													:aspectRatio="'wide'"
 													:title="item.title"
@@ -110,7 +111,7 @@ function formatRuntime(minutes: number) {
 												<MediaCard
 													v-else-if="item.libraryItem.playable.type === 'album' || item.libraryItem.playable.type === 'audiobook'"
 													clickable
-													:action="() => $router.push({ name: 'browse', query: { path: item.libraryItem.playable.relativePath } })"
+													:action="() => useQueryPathStore().goTo(item.libraryItem.playable.relativePath)"
 													:imageUrl="item.libraryItem.playable.cover_thumb"
 													:imagePosition="'top'"
 													:progress="item.watchProgress"
