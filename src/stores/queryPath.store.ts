@@ -75,8 +75,9 @@ export const useQueryPathStore = defineStore('QueryPath', () => {
 		},
 
 		goToAncestor(dir: string) {
+			console.log(dir, encodeMediaPath(dir), currentDir.value)
 			// Find the index of the ancestor directory
-			const index = currentDir.value.indexOf(encodeMediaPath(dir));
+			const index = currentDir.value.indexOf(dir);
 			if (index !== -1) {
 				// Remove all directories after the ancestor
 				currentDir.value = currentDir.value.slice(0, index + 1);

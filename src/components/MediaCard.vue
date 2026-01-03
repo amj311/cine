@@ -117,15 +117,13 @@ const imageError = ref<any>(null);
 				</div>
 
 				<img v-if="fallbackImage" :src="useApiStore().resolve(fallbackImage)" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" />
-
 				<img v-if="imageUrl && !imageError" :src="useApiStore().resolve(imageUrl)" class="poster-image" :style="{ objectPosition: imagePosition || 'center' }" @error="(err) => imageError = err" />
-
 				<div v-if="$slots.poster" class="custom-poster">
 					<slot name="poster" />
 				</div>
 
 				<div v-if="progress?.percentage" class="progress-bar-wrapper">
-					<ProgressBar :progress="progress.percentage" />
+					<ProgressBar :progress="Math.max(3, progress.percentage)" />
 				</div>
 
 				<div v-if="playSrc" class="overlay">

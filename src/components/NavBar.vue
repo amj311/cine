@@ -8,7 +8,7 @@ import { useQueryPathStore } from '@/stores/queryPath.store';
 import { focusAreaClass, useScreenStore } from '@/stores/screen.store';
 import { useUserStore } from '@/stores/user.store';
 import Button from 'primevue/button';
-import { computed, h, onMounted, onUnmounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import DropdownMenu from './utils/DropdownMenu.vue';
 import SettingsModal from './SettingsModal.vue';
 import { AuthService } from '@/services/AuthService';
@@ -105,7 +105,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 				<Button @click="() => queryPathStore.goToAncestor(queryPathStore.rootLibrary!)" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.rootLibrary }}</button>
 				<template v-if="hiddenBreadcrumbs.length > 0">
 					<i class="pi pi-angle-right opacity-50" />
-					<DropdownMenu :model="hiddenBreadcrumbs"><Button variant="text" severity="secondary">...</Button></DropdownMenu>
+					<DropdownMenu :items="hiddenBreadcrumbs"><Button variant="text" severity="secondary">...</Button></DropdownMenu>
 				</template>
 				<template v-for="item in visibleBreadcrumbs" :key="item.label">
 					<i class="pi pi-angle-right opacity-50" />
