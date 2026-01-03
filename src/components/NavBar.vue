@@ -12,6 +12,7 @@ import { computed, ref } from 'vue';
 import DropdownMenu from './utils/DropdownMenu.vue';
 import SettingsModal from './SettingsModal.vue';
 import { AuthService } from '@/services/AuthService';
+import { encodeMediaPath } from '@/utils/miscUtils';
 
 const navStore = useAppNavigationStore();
 const lastClickedItem = ref<string | null>(null);
@@ -96,7 +97,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 					:key="library.relativePath"
 					:label="library.libraryItem?.name || library.folderName"
 					variant="text"
-					:severity="($route?.query?.path as any)?.startsWith(library.relativePath) ? 'contrast' : 'secondary'"
+					:severity="($route?.query?.path as any)?.startsWith(encodeMediaPath(library.relativePath)) ? 'contrast' : 'secondary'"
 					@click="useQueryPathStore().goTo(library.relativePath)"
 				/>
 			</div>
@@ -112,7 +113,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 					<Button
 						@click="item.command"
 						variant="text"
-						:severity="($route?.query?.path as any)?.endsWith(item.folderName) ? 'contrast' : 'secondary'"
+						:severity="($route?.query?.path as any)?.endsWith(encodeMediaPath(item.folderName)) ? 'contrast' : 'secondary'"
 					>
 						{{ item.label }}
 					</button>
@@ -155,7 +156,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 					<Button
 						variant="text"
 						size="large"
-						:severity="($route?.query?.path as any)?.startsWith(library.relativePath) ? 'contrast' : 'secondary'"
+						:severity="($route?.query?.path as any)?.startsWith(encodeMediaPath(library.relativePath)) ? 'contrast' : 'secondary'"
 						@click="useQueryPathStore().goTo(library.relativePath)"
 					>
 						{{ library.libraryItem?.name || library.folderName }}
@@ -167,7 +168,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 							class="subpath"
 							@click="item.command"
 							:key="item.label"
-							:severity="($route?.query?.path as any)?.endsWith(item.folderName) ? 'contrast' : 'secondary'"
+							:severity="($route?.query?.path as any)?.endsWith(encodeMediaPath(item.folderName)) ? 'contrast' : 'secondary'"
 						>
 							{{ item.label }}
 						</Button>

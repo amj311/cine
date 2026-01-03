@@ -5,30 +5,30 @@
 import { computed, ref } from 'vue';
 import type Dialog from 'primevue/dialog';
 import { useSettingsStore } from '@/stores/settings.store';
+import NavModal from './utils/NavModal.vue';
 
 const props = defineProps<{
 }>();
 
-const visible = ref(false);
+const modal = ref<InstanceType<typeof NavModal>>();
 const localSettings = computed(() => useSettingsStore().localSettings);
 
 defineExpose({
-	open: () => visible.value = true,
+	open: () => modal.value?.open(),
 })
 
 </script>
 
 <template>
-	<Dialog
-		:visible="visible"
-		:closable="false"
-		class="w-20rem"
+	<NavModal
+		ref="modal"
+		:width="'20rem'"
 	>
 		<template #header>
 			<div class="flex align-items-center gap-3 w-full">
 				<h3>Settings</h3>
 				<div class="flex-grow-1" />
-				<Button text severity="secondary" icon="pi pi-times" @click="visible = false" />
+				<Button text severity="secondary" icon="pi pi-times" @click="modal?.close()" />
 			</div>
 		</template>
 
@@ -47,7 +47,7 @@ defineExpose({
 				</div>
 			</div>
 		</div>
-	</Dialog>
+	</NavModal>
 </template>
 
 <style

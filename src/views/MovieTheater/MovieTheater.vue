@@ -19,6 +19,7 @@ import { useScrubberStore } from './scrubber.store';
 import ScrubSettings from './ScrubSettings.vue';
 import DropdownTrigger from '@/components/utils/DropdownTrigger.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
+import type NavTrigger from '@/components/utils/NavTrigger/NavTrigger.vue';
 
 const router = useRouter();
 const api = useApiStore().api;
@@ -415,8 +416,18 @@ function playNext() {
  * SCRUBBING
  */
 
+const navTrigger = ref<InstanceType<typeof NavTrigger> | null>(null);
 const showScrubPanel = ref(false);
 
+function toggleScrubMenu() {
+	if (showScrubPanel.value) {
+		navTrigger.value?.close();
+	}
+	else {
+		navTrigger.value?.open();
+	}
+	showScrubPanel.value = !showScrubPanel.value;
+}
 
 /****************
  * LOADING SPLASH
@@ -429,9 +440,6 @@ const showScrubPanel = ref(false);
 	return currentEpisodeMetadata.value?.still_full || parentLibrary.value?.metadata?.background;
  })
 
-function toggleScrubMenu() {
-	showScrubPanel.value = !showScrubPanel.value;
-}
 
 /************
  * TITLE CLICK
@@ -489,7 +497,7 @@ function onTitleClick() {
 									<Button text icon="pi pi-arrow-down" @click="autoplayTimes = Math.max(0, autoplayTimes - 1)" />
 									<div class="w-1rem text-center">{{ autoplayTimes }}</div>
 									<Button text icon="pi pi-arrow-up" @click="autoplayTimes++" />
-									<Button text icon="pi pi-times" @click="autoplayTimes = 0" />
+									<Button text icon="pi pi-trash" @click="autoplayTimes = 0" />
 								</div>
 							</div>
 						</template>
@@ -534,22 +542,30 @@ function onTitleClick() {
 			</VideoPlayer>
 		</div>
 
-		<div class="menu-panel" :class="{ ['md:w-23rem w-full md:h-full open']: showScrubPanel }">
-			<!-- Non-shrinking contents -->
-			<div class="panel-content md:w-23rem w-full">
-				<div class="flex flex-column gap-2 h-full">
-					<div class="flex align-items-center gap-1">
-						<Button icon="pi pi-times" text severity="secondary" @click="toggleScrubMenu" />
-						<h3>Media Scrubs</h3>
-						<div class="flex-grow-1"></div>
-						<ToggleSwitch :defaultValue="useScrubberStore().isScrubbing" @click="useScrubberStore().toggleScrubbing" :disabled="!useScrubberStore().activeProfile" />
-					</div>
-					<div class="flex-grow-1 overflow-y-auto">
-						<ScrubSettings :playable="playable" />
+		<NavTrigger
+			ref="navTrigger"
+			triggerKey="movie-menu-panel"
+			:onClose="() => showScrubPanel = false"
+		>
+			<template #default="{ show }">
+				<div class="menu-panel" :class="{ ['md:w-23rem w-full md:h-full open']: show }">
+					<!-- Non-shrinking contents -->
+					<div class="panel-content md:w-23rem w-full">
+						<div class="flex flex-column gap-2 h-full">
+							<div class="flex align-items-center gap-1">
+								<Button icon="pi pi-times" text severity="secondary" @click="toggleScrubMenu" />
+								<h3>Media Scrubs</h3>
+								<div class="flex-grow-1"></div>
+								<ToggleSwitch :defaultValue="useScrubberStore().isScrubbing" @click="useScrubberStore().toggleScrubbing" :disabled="!useScrubberStore().activeProfile" />
+							</div>
+							<div class="flex-grow-1 overflow-y-auto">
+								<ScrubSettings :playable="playable" />
+							</div>
+						</div>
 					</div>
 				</div>
-			</div>
-		</div>
+			</template>
+		</NavTrigger>
 	</div>
 </template>
 

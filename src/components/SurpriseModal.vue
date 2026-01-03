@@ -8,14 +8,17 @@ import type Dialog from 'primevue/dialog';
 import type ToggleSwitch from 'primevue/toggleswitch';
 import type DatePicker from 'primevue/datepicker';
 import InputText from 'primevue/inputtext';
+import NavModal from './utils/NavModal.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
 }>();
 
-const showSurpriseSettings = ref(false);
+const navModal = ref<InstanceType<typeof NavModal>>();
+
 const draftSurprise = ref(props.libraryItem.surprise || {});
 const savingSurprise = ref(false);
+
 async function upsertSurprise() {
 	try {
 		savingSurprise.value = true;
@@ -24,10 +27,10 @@ async function upsertSurprise() {
 			record: draftSurprise.value.enabled ? draftSurprise.value : null,
 		});
 		props.libraryItem.surprise = draftSurprise.value;
-		showSurpriseSettings.value = false;
+	navModal.value?.close();
 	}
 	catch (e) {
-		console.log(e);
+		console.error(e);
 	}
 	finally {
 		savingSurprise.value = false;
@@ -35,20 +38,20 @@ async function upsertSurprise() {
 }
 function cancelSurpriseEdits() {
 	draftSurprise.value = props.libraryItem.surprise || {};
-	showSurpriseSettings.value = false;
+	navModal.value?.close();
 }
 
 defineExpose({
-	open: () => showSurpriseSettings.value = true,
+	open: () => navModal.value?.open(),
 })
 
 </script>
 
 <template>
-	<Dialog
-		:visible="showSurpriseSettings"
-		:closable="false"
-		class="w-20rem"
+	<NavModal
+		ref="navModal"
+		:closeable="false"
+		:width="'20rem'"
 	>
 		<template #header>
 			<div class="flex align-items-center gap-3 w-full">
@@ -84,7 +87,14 @@ defineExpose({
 			<Button label="Cancel" text severity="secondary" @click="cancelSurpriseEdits" />
 			<Button label="Save" @click="upsertSurprise" />
 		</div>
-	</Dialog>
+	</NavModal>
+	<!-- <Dialog
+		:visible="showSurpriseSettings"
+		:closable="false"
+		class="w-20rem"
+	>
+		
+	</Dialog> -->
 </template>
 
 <style

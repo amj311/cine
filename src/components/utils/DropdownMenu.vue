@@ -2,6 +2,7 @@
 import { focusAreaClass, useScreenStore } from '@/stores/screen.store';
 import TieredMenu from 'primevue/tieredmenu';
 import { ref } from 'vue';
+import DropdownTrigger from './DropdownTrigger.vue';
 
 const menu = ref<InstanceType<typeof TieredMenu>>();
 const props = defineProps<{
@@ -17,6 +18,7 @@ function openMenu(event) {
 }
 
 const menuItems = ref<any[]>([]);
+
 function setMenuItems() {
 	let items;
 	if (Array.isArray(props.items)) {
@@ -43,14 +45,17 @@ function setMenuItems() {
 </script>
 
 <template>
-	<span @click="openMenu" class="trigger" v-bind="{ ...$props, ...$attrs }" tabindex="0">
-		<slot><Button :size="size" variant="text" severity="contrast" :icon="'pi pi-ellipsis-v'" /></slot>
-	</span>
-	<TieredMenu ref="menu" id="overlay_menu" :class="focusAreaClass" :popup="true" :model="menuItems.filter(Boolean)" v-bind="$attrs">
-		<template v-for="(slotFn, name) in $slots" #[name]="slotProps">
-			<slot :name="name" v-bind="slotProps" />
+	<DropdownTrigger>
+		<span @click="setMenuItems"><slot><Button :size="size" variant="text" severity="contrast" :icon="'pi pi-ellipsis-v'" /></slot></span>
+
+		<template #content>
+			<TieredMenu id="overlay_menu" :class="focusAreaClass" :model="menuItems.filter(Boolean)" v-bind="$attrs">
+				<template v-for="(slotFn, name) in $slots" #[name]="slotProps">
+					<slot :name="name" v-bind="slotProps" />
+				</template>
+			</TieredMenu>
 		</template>
-	</TieredMenu>
+	</DropdownTrigger>
 </template>
 
 <style scoped lang="scss">

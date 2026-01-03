@@ -7,6 +7,7 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import type CountdownVue from './Countdown.vue';
 import InputText from 'primevue/inputtext';
+import NavModal from './utils/NavModal.vue';
 const router = useRouter();
 
 const props = defineProps<{
@@ -61,14 +62,14 @@ const onClick = computed(() => {
 		return revealSurprise;
 	}
 	if (hideSurprise.value && !ignoreSurprise.value) {
-		return () => showSurpriseModal.value = true;
+		return () => surpriseModal.value?.open();
 	}
 	return normalAction.value;
 });
 
+const surpriseModal = ref<InstanceType<typeof NavModal>>();
 const revealedSurprise = ref(false);
 const hideSurprise = computed(() => props.surprise && !revealedSurprise.value);
-const showSurpriseModal = ref(false);
 const ignoreSurprise = ref(false);
 const showPinInput = ref(false);
 const draftPin = ref('');
@@ -82,7 +83,7 @@ function goToSurprise() {
 	if (typeof normalAction.value === 'function') {
 		normalAction.value();
 	}
-	showSurpriseModal.value = false;
+	surpriseModal.value?.close();
 	ignoreSurprise.value = false;
 	draftPin.value = '';
 	showPinInput.value = false;
@@ -145,19 +146,19 @@ const imageError = ref<any>(null);
 	</div>
 
 
-	<Dialog
-		:visible="showSurpriseModal"
-		:closable="false"
-		class="w-25rem"
+	<NavModal
+		ref="surpriseModal"
+		:closeable="false"
+		:width="'25rem'"
 	>
 		<div class="flex flex-column align-items-center gap-4">
 			<img src="@/assets/gift.png" style="width: 70%; max-height: 35vh;" @click="showPinInput = true" />
 			<InputText v-model="draftPin" v-if="showPinInput" @keydown.enter="bypassSurprise" placeholder="Enter PIN" />
 			<div>This media will open in...</div>
 			<div class="text-5xl"><Countdown :endMs="new Date(surprise!.until).getTime()" /></div>
-			<Button text severity="secondary" label="Come back later" @click="showSurpriseModal = false" />
+			<Button text severity="secondary" label="Come back later" @click="surpriseModal?.close" />
 		</div>
-	</Dialog>
+	</NavModal>
 </template>
 
 <style scoped lang="scss">
