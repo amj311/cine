@@ -9,6 +9,7 @@ export type SurpriseRecord = {
 	relativePath: string,
 	pin: string, // allows bypassing surprise cover
 	until: string,
+	title?: string,
 }
 
 const surprisesStore = new Store<SurpriseRecord>('surprises');

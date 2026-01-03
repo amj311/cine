@@ -28,6 +28,7 @@ const props = defineProps<{
 		relativePath: string,
 		until: string,
 		pin?: string,
+		title?: string,
 	},
 	navJumpRow?: string,
 }>();
@@ -138,7 +139,7 @@ const imageError = ref<any>(null);
 			<Skeleton v-if="loading" width="100%" height="100%" />
 		</div>
 		<div v-if="title || subtitle" class="mt-1 p-1">
-			<div v-if="title" class="title">{{ hideSurprise ? 'Surprise!' : title }}</div>
+			<div v-if="title" class="title">{{ hideSurprise ? (surprise?.title || 'Surprise!') : title }}</div>
 			<div v-if="subtitle" class="subtitle" style="opacity: .7">{{ hideSurprise ? (canRevealSurprise ? 'Open now!' : 'Coming soon') : subtitle }}</div>
 		</div>
 	</div>

@@ -57,21 +57,27 @@ defineExpose({
 				<ToggleSwitch v-model="draftSurprise.enabled" />
 			</div>
 		</template>
+
 		<p>Hide the details of this media until it is opened, or don't let it open until a future date</p>
 
 		<div
 			style="display: grid; grid-template-columns: 1fr 3fr; gap: .5em; align-items: center;"
 			:class="{ 'opacity-50 pointer-events-none': !draftSurprise.enabled }"	
 		>
+			<label>Until</label>
+			<div>
+				<DatePicker v-model="draftSurprise.until" />
+			</div>
+
+			<label>Title</label>
+			<div>
+				<InputText v-model="draftSurprise.title" placeholder="Surprise!" />
+			</div>
 			<label>PIN</label>
 			<div>
 				<InputText v-model="draftSurprise.pin" />
 			</div>
 
-			<label>Until</label>
-			<div>
-				<DatePicker v-model="draftSurprise.until" />
-			</div>
 		</div>
 
 		<div class="mt-4 flex align-items center justify-content-end">
