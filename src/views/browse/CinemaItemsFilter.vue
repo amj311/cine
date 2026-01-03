@@ -26,7 +26,13 @@ const searchTerm = ref<string>('');
 
 const filteredItems = computed(() => {
 	let filtered = cinemaItems.value;
-	filtered = cinemaType.value === 'all' ? filtered : filtered.filter(item =>  !item.surprise && item.cinemaType === cinemaType.value || item.type === 'collection');
+
+	const filterTypes = {
+		'movie': ['movie', 'collection'],
+		'series': ['series'],
+	}
+
+	filtered = cinemaType.value === 'all' ? filtered : filtered.filter(item =>  !item.surprise && filterTypes[cinemaType.value]!.includes(item.cinemaType) || filterTypes[cinemaType.value]!.includes(item.type));
 	filtered = !searchTerm.value ? filtered : filtered.filter(item => !item.surprise && item.name.toLowerCase().replaceAll(/[^\d\w\s]/g, '').includes(searchTerm.value.toLowerCase().replaceAll(/[^\d\w\s]/g, '')));
 	return filtered;
 });
