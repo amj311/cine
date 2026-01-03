@@ -6,6 +6,7 @@ import { computed, ref } from 'vue';
 import type Dialog from 'primevue/dialog';
 import { useSettingsStore } from '@/stores/settings.store';
 import NavModal from './utils/NavModal.vue';
+import { useScreenStore } from '@/stores/screen.store';
 
 const props = defineProps<{
 }>();
@@ -27,8 +28,6 @@ defineExpose({
 		<template #header>
 			<div class="flex align-items-center gap-3 w-full">
 				<h3>Settings</h3>
-				<div class="flex-grow-1" />
-				<Button text severity="secondary" icon="pi pi-times" @click="modal?.close()" />
 			</div>
 		</template>
 
@@ -43,7 +42,7 @@ defineExpose({
 			<div class="grid-row" :disabled="!localSettings.is_tv">
 				<label>Use experimental navigation</label>
 				<div>
-					<ToggleSwitch v-model="localSettings.tv_nav" />
+					<Button label="Enable" @click="useScreenStore().engageTvMode" />
 				</div>
 			</div>
 		</div>

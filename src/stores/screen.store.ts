@@ -468,11 +468,11 @@ export const useScreenStore = defineStore('Screen', () => {
 
 	function determineTvEnvironment(confirmationCb?: () => Promise<boolean>) {
 		suggestTvModeHandler = confirmationCb || null;
-		console.log('Determining TV environment...');
+		alert('Determining TV environment...');
 		const isTv = localSettings.is_tv || window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
 
 		if (isTv) {
-			console.log('TV environment detected');
+			alert('TV environment detected');
 			finalizeTvDetection(true);
 			return;
 		}
@@ -498,7 +498,7 @@ export const useScreenStore = defineStore('Screen', () => {
 		window.removeEventListener('mousemove', watchForTvMouseMove);
 
 		if (!isTv) {
-			console.log('TV environment not detected');
+			alert('TV environment not detected');
 			detectedTv.value = false;
 			// also remove tv from settings
 			localSettings.is_tv = false;
@@ -509,12 +509,15 @@ export const useScreenStore = defineStore('Screen', () => {
 		detectedTv.value = true;
 		localSettings.is_tv = true;
 
-		let shouldDoTvNav = localSettings.tv_nav;
+		alert('TV confirmed')
+
+		// auto tv nav
+		let shouldDoTvNav = false;
 
 		if (shouldDoTvNav && suggestTvModeHandler) {
 			shouldDoTvNav = await suggestTvModeHandler();
 			if (!shouldDoTvNav) {
-				localSettings.tv_nav = false;
+				// localSettings.tv_nav = false;
 				console.log('TV environment was declined');
 			}
 		}
@@ -603,7 +606,7 @@ export const useScreenStore = defineStore('Screen', () => {
 		tvWasConfirmed,
 
 		setAsTv(enabled: boolean) {
-			detectedTv.value = enabled;
+			finalizeTvDetection(enabled);
 		},
 		setTvNavigation(enabled: boolean) {
 			if (enabled) {
