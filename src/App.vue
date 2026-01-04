@@ -14,14 +14,13 @@ import { useUserStore } from './stores/user.store';
 import LoginPage from './views/LoginPage.vue';
 import OfflinePage from './views/OfflinePage.vue';
 import SharedPage from './views/SharedPage.vue';
-import TieredMenu from 'primevue/tieredmenu';
-import type Menu from 'primevue/menu';
+import { useSettingsStore } from './stores/settings.store';
 
 const apiStore = useApiStore();
 
 usePageTitleStore();
 const tvNavigationStore = useScreenStore();
-const showDebug = ref(false);
+const showDebug = computed(() => useSettingsStore().localSettings.show_debug);
 
 const confirm = useConfirm();
 const toast = useToast();
@@ -55,7 +54,15 @@ async function alertTvDetected() {
 	});
 }
 
+const lastKey = ref('');
+const lastMedia = ref('');
+const mediaEvents = ["nexttrack", "pause", "play", "previoustrack", "seekbackward", "seekforward", "seekto", "skipad", "stop"] as MediaSessionAction[];
+
 onMounted(() => {
+	window.addEventListener('keydown', (e)=>lastKey.value = e.key);
+	for (const event of mediaEvents) {
+		navigator.mediaSession.setActionHandler(event, (e)=>lastMedia.value = e.action);
+	}
 });
 
 const route = useRoute();
@@ -102,11 +109,13 @@ const showNavbar = computed(() => {
 	</div>
 
 	<div v-if="showDebug" class="debug-info">
-		Last mouse move: {{ tvNavigationStore.lastMouseMove }}<br />
+		Last key: {{ lastKey }}<br />
+		Last media action: {{ lastMedia }}<br />
+		<!-- Last mouse move: {{ tvNavigationStore.lastMouseMove }}<br />
 		Last mouse position: {{ tvNavigationStore.lastMousePosition }}<br />
 		Last mouse move time: {{ tvNavigationStore.lastMouseMoveTime }}<br />
 		Last direction: {{ tvNavigationStore.lastDetectedDirection }}<br />
-		Focused: {{ tvNavigationStore.lastFocusedEl?.innerText || 'none' }}<br />
+		Focused: {{ tvNavigationStore.lastFocusedEl?.innerText || 'none' }}<br /> -->
 	</div>
 
 	<ConfirmDialog

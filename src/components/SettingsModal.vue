@@ -42,8 +42,14 @@ defineExpose({
 			<div class="grid-row" :disabled="!localSettings.is_tv">
 				<label>Use experimental navigation</label>
 				<div>
-					<Button label="Enable" @click="useScreenStore().engageTvMode" />
+					<Button v-if="useScreenStore().tvNavEnabled" label="Disable" severity="danger" @click="useScreenStore().disengageTvMode" />
+					<Button v-else label="Enable" @click="useScreenStore().engageTvMode" />
 				</div>
+			</div>
+
+			<label>Show debug</label>
+			<div>
+				<ToggleSwitch v-model="localSettings.show_debug" />
 			</div>
 		</div>
 	</NavModal>

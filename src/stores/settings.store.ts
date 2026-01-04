@@ -5,6 +5,7 @@ import { useScreenStore } from './screen.store';
 const defaultSettings = {
 	is_tv: false,
 	// tv_nav: false,
+	show_debug: false,
 }
 
 export const useSettingsStore = defineStore('Settings', () => {

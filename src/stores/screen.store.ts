@@ -448,7 +448,7 @@ export const useScreenStore = defineStore('Screen', () => {
 		lastFewMouseMovements.push({ x: event.movementX, y: event.movementY });
 
 		if (lastFewMouseMovements.length > EVENTS_CAP) {
-			alert('Too many non-linear mouse movements. Not a TV.');
+			console.info('Too many non-linear mouse movements. Not a TV.');
 			return finalizeTvDetection(false);
 		}
 
@@ -456,7 +456,7 @@ export const useScreenStore = defineStore('Screen', () => {
 			const lastFewMouseMovementsToConsider = lastFewMouseMovements.slice(-SIGNIFICANCE_THRESHOLD);
 			const isTv = lastFewMouseMovementsToConsider.every((movement) => movement.x === 0 || movement.y === 0);
 			if (isTv) {
-				alert('TV environment detected from mouse movements');
+				console.info('TV environment detected from mouse movements');
 				return finalizeTvDetection(true);
 			}
 		}
@@ -471,16 +471,14 @@ export const useScreenStore = defineStore('Screen', () => {
 		console.log('Determining TV environment...');
 		const isTv = localSettings.is_tv;// || window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
 
-		alert("determining tv... Saved setting: " + localSettings.is_tv)
-
 		if (isTv) {
-			alert('TV environment detected');
+			console.info('TV environment detected');
 			finalizeTvDetection(true);
 			return;
 		}
 
 		if (isSkinnyScreen.value) {
-			alert("Screen is too small to be TV");
+			console.info("Screen is too small to be TV");
 			return;
 		}
 
@@ -488,7 +486,7 @@ export const useScreenStore = defineStore('Screen', () => {
 	}
 
 	function detectTouchScreen() {
-		alert('Screen touch detected. Not a TV environment.');
+		console.info('Screen touch detected. Not a TV environment.');
 		detectedTouch.value = true;
 		finalizeTvDetection(false);
 		window.removeEventListener('touchstart', detectTouchScreen);
@@ -497,12 +495,11 @@ export const useScreenStore = defineStore('Screen', () => {
 
 
 	async function finalizeTvDetection(isTv: boolean) {
-		alert("called finalizer: " + isTv)
 		window.removeEventListener('mousemove', watchForTvMouseMove);
 		window.removeEventListener('touchstart', detectTouchScreen);
 
 		if (!isTv) {
-			alert('TV environment not detected');
+			console.info('TV environment not detected');
 			detectedTv.value = false;
 			// also remove tv from settings
 			localSettings.is_tv = false;
@@ -513,7 +510,7 @@ export const useScreenStore = defineStore('Screen', () => {
 		detectedTv.value = true;
 		localSettings.is_tv = true;
 
-		console.log('TV confirmed')
+		console.info('TV confirmed')
 
 		// auto tv nav
 		let shouldDoTvNav = false;
@@ -522,7 +519,7 @@ export const useScreenStore = defineStore('Screen', () => {
 			shouldDoTvNav = await suggestTvModeHandler();
 			if (!shouldDoTvNav) {
 				// localSettings.tv_nav = false;
-				console.log('TV environment was declined');
+				console.info('TV environment was declined');
 			}
 		}
 
@@ -610,7 +607,6 @@ export const useScreenStore = defineStore('Screen', () => {
 		tvWasConfirmed,
 
 		setAsTv(enabled: boolean) {
-			alert("called setAsTv " + enabled)
 			finalizeTvDetection(enabled);
 		},
 		setTvNavigation(enabled: boolean) {
