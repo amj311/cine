@@ -538,7 +538,7 @@ export const useScreenStore = defineStore('Screen', () => {
 
 
 	function captureClick(event) {
-		useFullscreenStore().userFullscreenRequest();
+		// useFullscreenStore().userFullscreenRequest();
 		event.stopPropagation();
 		event.preventDefault();
 

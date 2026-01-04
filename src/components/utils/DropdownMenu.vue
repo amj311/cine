@@ -33,13 +33,6 @@ function setMenuItems() {
 			disabled: true,
 		},
 	];
-
-	if (useScreenStore().tvNavEnabled) {
-		menuItems.value.push({
-			label: 'Cancel',
-			command: () => {},
-		})
-	}
 }
 
 </script>

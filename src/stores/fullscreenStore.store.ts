@@ -86,6 +86,7 @@ export const useFullscreenStore = defineStore('Fullscreen', () => {
 
 
 	let accidentalExitHandler = async () => await Promise.resolve(false);
+
 	watch(isAppInFullscreenMode, async (newValue) => {
 		let shouldDoListeners = true;
 		if (!newValue && userWantsFullscreen.value) {
