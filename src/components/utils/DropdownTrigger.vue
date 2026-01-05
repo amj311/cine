@@ -63,7 +63,7 @@ function doTriggerHide() {
 		:onClose="doTriggerHide"
 	>
 		<template #default="{ show }">
-			<TieredMenu ref="menu" class="dropdown-trigger-wrapper" :class="focusAreaClass" :popup="true" @hide="doMenuHide" :model="useScreenStore().detectedTv ? [{ label: 'Close' }] : []">
+			<TieredMenu ref="menu" class="dropdown-trigger-wrapper" :class="focusAreaClass" :popup="true" @hide="doMenuHide">
 				<template #start>
 					<slot name="content" />
 				</template>
