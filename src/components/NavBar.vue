@@ -102,7 +102,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 				/>
 			</div>
 
-			<div v-else-if="$route.name === 'browse'" class="breadcrumbs" :class="{ bg: isInMediaFolder }">
+			<div v-else-if="$route.name === 'browse'" class="breadcrumbs ml-2" :class="{ bg: isInMediaFolder }">
 				<Button @click="() => queryPathStore.goToAncestor(queryPathStore.rootLibrary!)" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.rootLibrary }}</button>
 				<template v-if="hiddenBreadcrumbs.length > 0">
 					<i class="pi pi-angle-right opacity-50" />
