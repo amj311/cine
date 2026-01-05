@@ -55,14 +55,9 @@ async function alertTvDetected() {
 }
 
 const lastKey = ref('');
-const lastMedia = ref('');
-const mediaEvents = ["nexttrack", "pause", "play", "previoustrack", "seekbackward", "seekforward", "seekto", "skipad", "stop"] as MediaSessionAction[];
 
 onMounted(() => {
 	window.addEventListener('keydown', (e)=>lastKey.value = e.key);
-	for (const event of mediaEvents) {
-		navigator.mediaSession.setActionHandler(event, (e)=>lastMedia.value = e.action);
-	}
 });
 
 const route = useRoute();
@@ -110,12 +105,11 @@ const showNavbar = computed(() => {
 
 	<div v-if="showDebug" class="debug-info">
 		Last key: {{ lastKey }}<br />
-		Last media action: {{ lastMedia }}<br />
-		<!-- Last mouse move: {{ tvNavigationStore.lastMouseMove }}<br />
+		Last mouse move: {{ tvNavigationStore.lastMouseMove }}<br />
 		Last mouse position: {{ tvNavigationStore.lastMousePosition }}<br />
 		Last mouse move time: {{ tvNavigationStore.lastMouseMoveTime }}<br />
 		Last direction: {{ tvNavigationStore.lastDetectedDirection }}<br />
-		Focused: {{ tvNavigationStore.lastFocusedEl?.innerText || 'none' }}<br /> -->
+		Focused: {{ tvNavigationStore.lastFocusedEl?.innerText || 'none' }}<br />
 	</div>
 
 	<ConfirmDialog

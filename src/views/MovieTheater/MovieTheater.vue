@@ -232,13 +232,8 @@ async function playMedia(pathToLoad: string, restart = false) {
 			],
 		});
 
-		navigator.mediaSession.setActionHandler('play', (e) => playerRef.value?.togglePlay());
-		navigator.mediaSession.setActionHandler('pause', (e) => playerRef.value?.togglePlay());
-		navigator.mediaSession.setActionHandler('stop', (e) => playerRef.value?.togglePlay());
 		navigator.mediaSession.setActionHandler('nexttrack', (e) => playNext());
-		navigator.mediaSession.setActionHandler('seekforward', (e) => playerRef.value?.skipForward());
-		navigator.mediaSession.setActionHandler('seekbackward', (e) => playerRef.value?.skipBack());
-		navigator.mediaSession.setActionHandler('previoustrack', (e) => playPrev);
+		navigator.mediaSession.setActionHandler('previoustrack', (e) => playPrev());
 	}
 
 	mediaPath.value = pathToLoad;
