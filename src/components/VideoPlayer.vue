@@ -158,6 +158,13 @@ onMounted(() => {
 
 	// setup keybindings
 	window.addEventListener('keydown', windowKeyHandler);
+
+	// Media Session Actions
+	navigator.mediaSession.setActionHandler('pause', (e) => togglePlay);
+	navigator.mediaSession.setActionHandler('play', (e) => togglePlay);
+	navigator.mediaSession.setActionHandler('stop', (e) => togglePlay);
+	navigator.mediaSession.setActionHandler('seekforward', (e) => skipForward);
+	navigator.mediaSession.setActionHandler('seekbackward', (e) => skipBack);
 })
 
 onBeforeUnmount(() => {

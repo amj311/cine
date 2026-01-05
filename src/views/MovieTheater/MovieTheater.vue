@@ -253,6 +253,10 @@ onMounted(async () => {
 			useScrubberStore().scheduleScrub();
 		})
 	}
+
+	// Media session actions
+	navigator.mediaSession.setActionHandler('nexttrack', (e) => playNext);
+	navigator.mediaSession.setActionHandler('previoustrack', (e) => playPrev);
 })
 
 onBeforeUnmount(async () => {
@@ -404,9 +408,11 @@ const canAutoplay = computed(() => Boolean(nextEpisodeFile.value));
 const willAutoplay = computed(() => autoplayTimes.value > 0 && canAutoplay.value && !hasEnded.value);
 
 function playPrev() {
+	if (!prevEpisodeFile.value) return;
 	playMedia(prevEpisodeFile.value!.relativePath, true);
 }
 function playNext() {
+	if (!nextEpisodeFile.value) return;
 	autoplayTimes.value = Math.max(0, autoplayTimes.value - 1);
 	playMedia(nextEpisodeFile.value!.relativePath, true);
 }
