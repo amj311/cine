@@ -12,6 +12,7 @@ import Skeleton from 'primevue/skeleton';
 import { useApiStore } from '@/stores/api.store';
 import { useScreenStore } from '@/stores/screen.store';
 import LibraryItemActions from '@/components/LibraryItemActions.vue';
+import { encodeMediaPath } from '@/utils/miscUtils';
 
 const router = useRouter();
 const props = defineProps<{
@@ -93,6 +94,7 @@ const mergedSeasons = computed(() => {
 				return {
 					...episode,
 					...metadataEpisode,
+					still_thumb: episode.still_thumb || metadataEpisode?.still_thumb || useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(episode.relativePath),
 				};
 			}),
 		};
