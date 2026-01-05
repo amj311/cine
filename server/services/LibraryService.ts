@@ -52,6 +52,7 @@ export type Playable = {
 	relativePath: RelativePath,
 	confirmedPath: ConfirmedPath,
 	watchProgress?: WatchProgress | null,
+	duration?: number,
 }
 
 const ExtraTypes = ['behindthescenes', 'deleted', 'featurette', 'trailer'] as const;
@@ -653,6 +654,7 @@ export class LibraryService {
 
 			const createEpisode = async (file: typeof videoFiles[0], numbersMatch: NonNullable<NonNullable<ReturnType<typeof NumbersRegex.exec>>['groups']>) => {
 				// const overAllWatchProgress = await WatchProgressService.getWatchProgress(file.confirmedPath);
+				const epFileProbe = await ProbeService.getProbeData(file.confirmedPath);
 
 				const seasonNumber = parseInt(numbersMatch.seasonNumber);
 				const firstEpisodeNumber = parseInt(numbersMatch.firstEpisodeNumber);
@@ -714,11 +716,6 @@ export class LibraryService {
 					seasonNumber,
 					episodeNumber,
 					startTime,
-					// watchProgress: computeEpisodeWatchProgress(
-					// 	startTime,
-					// 	allEpisodeTimes[i + 1]?.startTime,
-					// 	overAllWatchProgress
-					// ),
 				}));
 
 				return {
@@ -730,7 +727,7 @@ export class LibraryService {
 					firstEpisodeNumber,
 					fileName: file.name as string,
 					relativePath: file.confirmedPath.relativePath,
-					// watchProgress: overAllWatchProgress,
+					duration: epFileProbe?.full.format?.duration,
 					episodes,
 					name: lastEpisodeNumber ? `Episodes ${firstEpisodeNumber} - ${Number(lastEpisodeNumber)}` : episodeName,
 				} as EpisodeFile;

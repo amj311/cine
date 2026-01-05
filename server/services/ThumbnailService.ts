@@ -49,7 +49,7 @@ export class ThumbnailService {
 			try {
 				thumbnailBuffer = await ThumbnailService.resizeBuffer(fileBuffer, width);
 			}
-			catch (err) {
+			catch (err: any) {
 				console.log("Error while resizing image:", err.message);
 				console.log("Attempting to fix JPEG file", filePath);
 				const newBuffer = await ThumbnailService.attemptFixJpeg(fileBuffer);
@@ -60,10 +60,10 @@ export class ThumbnailService {
 					throw new Error("Failed to fix JPEG file");
 				}
 			}
-			ThumbnailService.cacheThumbnail(filePath.relativePath, width, thumbnailBuffer);
+			// ThumbnailService.cacheThumbnail(filePath.relativePath, width, thumbnailBuffer);
 			return thumbnailBuffer;
 		}
-		catch (err) {
+		catch (err: any) {
 			console.error("Error while generating thumbnail for image:", filePath);
 			console.error(err.message);
 
@@ -87,7 +87,7 @@ export class ThumbnailService {
 				.rotate()
 				.toBuffer()
 			return fixedBuffer;
-		} catch (err) {
+		} catch (err: any) {
 			console.error("Error while fixing jpeg", err.message);
 		}
 	}
@@ -102,7 +102,7 @@ export class ThumbnailService {
 		return await useFfmpeg<Buffer>(filePath.absolutePath, (ffmpeg, resolve, reject) => {
 			const chunks: Buffer[] = [];
 
-			ffmpeg.on('error', (err) => {
+			ffmpeg.on('error', (err: any) => {
 				console.error("Error while processing video:", err.message);
 				reject(err);
 			})
@@ -116,13 +116,13 @@ export class ThumbnailService {
 				])
 				.outputFormat('image2pipe') // Output format as image
 				.pipe()
-				.on('data', (chunk) => {
+				.on('data', (chunk: any) => {
 					chunks.push(chunk);
 				})
 				.on('end', () => {
 					resolve(Buffer.concat(chunks));
 				})
-				.on('error', (err) => {
+				.on('error', (err: any) => {
 					console.error("Error while processing video:", err.message);
 					reject(err);
 				});
@@ -137,7 +137,7 @@ export class ThumbnailService {
 		thumbCache.set(relativePath + width, buffer);
 		if (thumbCache.size > MAX_CACHE_SIZE) {
 			const oldestKey = thumbCache.keys().next().value;
-			thumbCache.delete(oldestKey);
+			thumbCache.delete(oldestKey || '');
 		}
 	}
 
