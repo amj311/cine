@@ -41,17 +41,20 @@ function findNextEpisode(delta: number) {
 	if (playable.value?.type !== 'episodeFile') {
 		return null;
 	}
-	const allEpisdoes = parentLibrary.value?.seasons
+	const currEpFile = playable.value;
+	const allEpisodes = parentLibrary.value?.seasons
 		.flatMap((season: any) => season.episodeFiles);
-	const currentIndex = allEpisdoes?.findIndex((episode: any) => episode.name === playable.value.name);
+	let currentIndex = allEpisodes?.findIndex((episode: any) => episode.name === currEpFile.name);
 	if (currentIndex === undefined || currentIndex === -1) {
 		return null;
 	}
-	const nextIndex = currentIndex + delta;
-	if (nextIndex >= allEpisdoes?.length) {
-		return null;
+	// iterate in direction for new episode number, in case of multiple versions of the same episode
+	let nextEpFile = allEpisodes[currentIndex];
+	while (nextEpFile && nextEpFile.seasonNumber === currEpFile.seasonNumber && nextEpFile.firstEpisodeNumber === currEpFile.firstEpisodeNumber) {
+		currentIndex += delta;
+		nextEpFile = allEpisodes[currentIndex];
 	}
-	return allEpisdoes?.[nextIndex];
+	return nextEpFile;
 }
 
 const showNextEpisodeCard = computed(() => {
