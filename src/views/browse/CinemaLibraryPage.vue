@@ -115,9 +115,9 @@ const letterGroups = computed(() => {
 
 <template>
 	<Scroll>
-		<div class="cinema-page mt-3 pl-3">
+		<div class="cinema-page mt-3 pl-3 flex flex-column gap-4">
 
-			<div class="filters mb-4 flex justify-content-center">
+			<div class="filters flex justify-content-center">
 				<SelectButton v-model="displayMode" :options="['Categories', 'A - Z']" size="large" />
 			</div>
 
@@ -154,36 +154,38 @@ const letterGroups = computed(() => {
 				</template>
 			</div>
 
-			<div v-if="displayMode === 'A - Z'">
+			<template v-if="displayMode === 'A - Z'">
 
 				<div class="flex justify-content-end">
 					<CinemaItemsFilter ref="filter" :items="cinemaItems" />
 				</div>
 
-				<div
-					class="mb-4"
-					v-for="group in letterGroups"
-					:key="group.letter"
-				>
-					<div class="mb-2">
-						<span class="text-5xl font-bold">
-							<template v-if="group.letter === 'surprise'"><i class="pi pi-gift" /></template>
-							<template v-else>{{ group.letter }}</template>
-						</span>
-						<span class="text-sm text-600 ml-2">({{ group.items.length }})</span>
-					</div>
+				<div class="flex flex-wrap gap-5">
+					<div
+						class="letter-group"
+						v-for="group in letterGroups"
+						:key="group.letter"
+					>
+						<div class="mb-2">
+							<span class="text-5xl font-bold">
+								<template v-if="group.letter === 'surprise'"><i class="pi pi-gift" /></template>
+								<template v-else>{{ group.letter }}</template>
+							</span>
+							<span class="text-sm text-600 ml-2">({{ group.items.length }})</span>
+						</div>
 
-					<div class="flex flex-wrap gap-3">
-						<div
-							class="card-wrapper"
-							v-for="item in group.items"
-							:key="item.relativePath"
-						>
-							<LibraryItemCard :libraryItem="item" />
+						<div class="flex flex-wrap gap-3">
+							<div
+								class="card-wrapper"
+								v-for="item in group.items"
+								:key="item.relativePath"
+							>
+								<LibraryItemCard :libraryItem="item" />
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
+			</template>
 
 		</div>
 		<br />
