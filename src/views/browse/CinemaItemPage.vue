@@ -409,6 +409,7 @@ onUnmounted(async () => {
 				@ended="ytIsPlaying = false"
 				muted
 				hidden
+				loop
 			>
 				Your browser does not support the audio element.
 			</audio>
