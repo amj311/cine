@@ -76,7 +76,7 @@ async function playChapter(chapter: any, time: number = chapter.trackStartOffset
 		if ('mediaSession' in navigator) {
 			navigator.mediaSession.metadata = new MediaMetadata({
 				title: currentChapter.value.title,
-				artist: currentChapter.value.author,
+				artist: currentChapter.value.artist,
 				album: currentChapter.value.album,
 				artwork: [
 					{ src: useApiStore().resolve(props.libraryItem.cover), sizes: '512x512', type: 'image/png' },

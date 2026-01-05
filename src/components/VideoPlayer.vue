@@ -81,6 +81,9 @@ defineExpose({
 	async play() {
 		await videoRef.value?.play();
 	},
+	togglePlay,
+	skipBack,
+	skipForward,
 })
 
 const playingState = ref({
@@ -160,11 +163,11 @@ onMounted(() => {
 	window.addEventListener('keydown', windowKeyHandler);
 
 	// Media Session Actions
-	navigator.mediaSession.setActionHandler('pause', (e) => togglePlay);
-	navigator.mediaSession.setActionHandler('play', (e) => togglePlay);
-	navigator.mediaSession.setActionHandler('stop', (e) => togglePlay);
-	navigator.mediaSession.setActionHandler('seekforward', (e) => skipForward);
-	navigator.mediaSession.setActionHandler('seekbackward', (e) => skipBack);
+	// navigator.mediaSession.setActionHandler('pause', (e) => togglePlay);
+	// navigator.mediaSession.setActionHandler('play', (e) => togglePlay);
+	// navigator.mediaSession.setActionHandler('stop', (e) => togglePlay);
+	// navigator.mediaSession.setActionHandler('seekforward', (e) => skipForward);
+	// navigator.mediaSession.setActionHandler('seekbackward', (e) => skipBack);
 })
 
 onBeforeUnmount(() => {

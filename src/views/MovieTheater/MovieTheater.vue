@@ -4,7 +4,7 @@
 >
 import { useQueryPathStore } from '@/stores/queryPath.store'
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useRoute, useRouter } from 'vue-router';
 import { useScreenStore } from '@/stores/screen.store';
@@ -103,7 +103,7 @@ async function initialProgress() {
 	}
 	const query = route?.query;
 	if (query.startTime) {
-		playerRef.value!.setTime(Number(query.startTime));
+		playerRef.value?.setTime(Number(query.startTime));
 		// remove route start time
 		history.replaceState(
 			{},
@@ -211,20 +211,47 @@ async function playMedia(pathToLoad: string, restart = false) {
 		'',
 		router.currentRoute.value.path + '?' + new URLSearchParams({ ...(router.currentRoute.value.query || {}), path: pathToLoad }).toString(),
 	);
-	mediaPath.value = pathToLoad;
+	
+	mediaPath.value = '';
 	playerRef.value?.setTime(0);
 	playerProgress.value = playerRef.value?.getProgress();
 	hasEnded.value = false;
 	hasLoaded.value = false;
 
 	await loadMediaData(pathToLoad);
-	if (!restart) {
-		await initialProgress();
+
+	if ('mediaSession' in navigator) {
+		navigator.mediaSession.metadata = new MediaMetadata({
+			title: title.value,
+			album: parentLibrary.value.name,
+			artist: parentLibrary.value.name,
+			artwork: [
+				{ src: useApiStore().resolve(loadingBackground.value), sizes: '512x512', type: 'image/png' },
+				{ src: useApiStore().resolve(loadingBackground.value), sizes: '256x256', type: 'image/png' },
+				{ src: useApiStore().resolve(loadingBackground.value), sizes: '96x96', type: 'image/png' }
+			],
+		});
+
+		navigator.mediaSession.setActionHandler('play', (e) => playerRef.value?.togglePlay());
+		navigator.mediaSession.setActionHandler('pause', (e) => playerRef.value?.togglePlay());
+		navigator.mediaSession.setActionHandler('stop', (e) => playerRef.value?.togglePlay());
+		navigator.mediaSession.setActionHandler('nexttrack', (e) => playNext());
+		navigator.mediaSession.setActionHandler('seekforward', (e) => playerRef.value?.skipForward());
+		navigator.mediaSession.setActionHandler('seekbackward', (e) => playerRef.value?.skipBack());
+		navigator.mediaSession.setActionHandler('previoustrack', (e) => playPrev);
 	}
 
-	if (playerRef.value?.videoRef) {
-		await useScrubberStore().initForMedia(pathToLoad, playerRef.value.videoRef);
-	}
+	mediaPath.value = pathToLoad;
+
+	nextTick(async () => {
+		if (!restart) {
+			await initialProgress();
+		}
+
+		if (playerRef.value?.videoRef) {
+			await useScrubberStore().initForMedia(pathToLoad, playerRef.value.videoRef);
+		}
+	})
 }
 
 onMounted(async () => {
@@ -253,10 +280,6 @@ onMounted(async () => {
 			useScrubberStore().scheduleScrub();
 		})
 	}
-
-	// Media session actions
-	navigator.mediaSession.setActionHandler('nexttrack', (e) => playNext);
-	navigator.mediaSession.setActionHandler('previoustrack', (e) => playPrev);
 })
 
 onBeforeUnmount(async () => {
@@ -461,6 +484,7 @@ function onTitleClick() {
 		<div class="movie-theater flex-grow-1" :style="{ backgroundImage: loadingBackground ? `url(${loadingBackground})` : undefined }">
 			<VideoPlayer
 				v-if="mediaPath"
+				:key="mediaPath"
 				v-show="showPlayer"
 				:loadingSplash="loadSplashUrl"
 				:title="title"
@@ -468,7 +492,6 @@ function onTitleClick() {
 				:close="carefulBackNav"
 				:autoplay="true"
 				:controls="true"
-				:key="mediaPath"
 				ref="playerRef"
 				:relativePath="mediaPath"
 				:onLoadedData="() => hasLoaded = true"
