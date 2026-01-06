@@ -108,7 +108,7 @@ const imageError = ref<any>(null);
 </script>
 
 <template>
-	<div class="media-card" :class="{ clickable: onClick }" @click="onClick" :tabindex="onClick ? 0 : -1" :data-tvNavJumpRow="navJumpRow">
+	<div class="media-card" :class="{ clickable: onClick }" @click="onClick" :tabindex="onClick ? 0 : -1" :data-focus-priority="onClick ? 0 : -1"  :data-tvNavJumpRow="navJumpRow">
 		<div
 			class="poster"
 			:class="{ [aspectRatio || 'tall']: true, surprise, revealed: revealedSurprise }"

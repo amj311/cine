@@ -320,6 +320,12 @@ async function releaseWakeLock() {
 	}
 }
 
+function onPlay() {
+	console.log("CALLED ON PLAY")
+	requestWakeLock();
+	hasEnded.value = false;
+}
+
 function onEnd() {
 	if (willAutoplay.value) {
 		return playNext();
@@ -493,7 +499,7 @@ function onTitleClick() {
 				ref="playerRef"
 				:relativePath="mediaPath"
 				:onLoadedData="() => hasLoaded = true"
-				:onPlay="requestWakeLock"
+				:onPlay="onPlay"
 				:onPause="releaseWakeLock"
 				:onEnd="onEnd"
 				:subtitles="probe?.subtitles"
@@ -543,7 +549,7 @@ function onTitleClick() {
 				</template>
 
 				<template #cards>
-					<Button v-if="showNextEpisodeCard" severity="secondary" class="next-episode-card" @click="playNext">
+					<Button v-if="showNextEpisodeCard" data-focus-priority="2" severity="secondary" class="next-episode-card" :class="{ 'text-2xl': hasEnded }" @click="playNext">
 						<div class="play-icon">
 							<div class="w-full">
 								<MediaCard
@@ -644,13 +650,14 @@ function onTitleClick() {
 		display: flex;
 		align-items: center;
 		gap: .5em;
+		transition: font-size 500ms;
 
 		&:hover, &[tv-focus] {
 			box-shadow: 0 0 10px rgba(0, 0, 0, .5);
 		}
 
 		.play-icon {
-			width: 5rem;
+			width: 4em;
 			color: var(--color-contrast);
 			display: flex;
 			justify-content: center;

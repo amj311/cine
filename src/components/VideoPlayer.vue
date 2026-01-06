@@ -127,10 +127,15 @@ onMounted(() => {
 		if (props.onPause) {
 			props.onPause();
 		}
+		if (props.onPlay) {
+			props.onPlay();
+		}
 	});
 	videoRef.value?.addEventListener('play', async () => {
-		await secondaryAudioPlayer.value?.play();
-		secondaryAudioPlayer.value!.currentTime = videoRef.value!.currentTime;
+		if (secondaryAudioPlayer.value) {
+			await secondaryAudioPlayer.value.play();
+			secondaryAudioPlayer.value.currentTime = videoRef.value!.currentTime;
+		}
 		if (props.onPlay) {
 			props.onPlay();
 		}
