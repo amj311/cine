@@ -15,6 +15,7 @@ const props = defineProps<{
 const menuItems = ref<any[]>([]);
 
 function setMenuItems() {
+	console.log('settings menu items!')
 	let items;
 	if (Array.isArray(props.items)) {
 		items = props.items;
@@ -42,8 +43,8 @@ function setMenuItems() {
 </script>
 
 <template>
-	<DropdownTrigger ref="trigger">
-		<span @click="setMenuItems"><slot><Button :size="size" variant="text" severity="contrast" :icon="'pi pi-ellipsis-v'" /></slot></span>
+	<DropdownTrigger ref="trigger" :onOpen="setMenuItems">
+		<slot><Button :size="size" variant="text" severity="contrast" :icon="'pi pi-ellipsis-v'" /></slot>
 
 		<template #content>
 			<TieredMenu id="overlay_menu" :class="focusAreaClass" :model="menuItems.filter(Boolean)" v-bind="$attrs">

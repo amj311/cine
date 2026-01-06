@@ -8,7 +8,8 @@ import type Popover from 'primevue/popover';
 const props = defineProps<{
 	disabled?: boolean
 	style?: any
-	size?: 'small' | 'large'
+	size?: 'small' | 'large',
+	onOpen?: () => void,
 }>();
 
 const isOpen = ref(false);
@@ -20,6 +21,9 @@ function openMenu(event) {
 		navTrigger.value?.open();
 		menu.value?.show(event);
 		isOpen.value = true;
+		if (props.onOpen) {
+			props.onOpen();
+		}
 	}
 }
 
@@ -60,7 +64,7 @@ defineExpose({
 
 <template>
 	<span @click="toggleMenu" class="dropdown-trigger-trigger" v-bind="{ ...$props, ...$attrs }" tabindex="0">
-		<slot><Button :size="size" variant="text" severity="contrast" :icon="'pi pi-ellipsis-v'" /></slot>
+		<slot></slot>
 	</span>
 	<!-- Using TieredMenu just for the popup -->
 	<NavTrigger
