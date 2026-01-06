@@ -81,7 +81,6 @@ function bypassSurprise() {
 async function goToSurprise() {
 	ignoreSurprise.value = true;
 	await surpriseModal.value?.close();
-	console.log("continuing with normal action")
 	if (typeof normalAction.value === 'function') {
 		normalAction.value();
 	}
@@ -153,7 +152,7 @@ const imageError = ref<any>(null);
 		:width="'25rem'"
 	>
 		<div class="flex flex-column align-items-center gap-4">
-			<img src="@/assets/gift.png" style="width: 70%; max-height: 35vh;" @click="showPinInput = true" />
+			<img src="@/assets/gift.png" style="width: 70%; max-height: 35vh;" tabindex="0" @click="showPinInput = true" />
 			<InputText v-model="draftPin" v-if="showPinInput" @keydown.enter="bypassSurprise" placeholder="Enter PIN" />
 			<div>This media will open in...</div>
 			<div class="text-5xl"><Countdown :endMs="new Date(surprise!.until).getTime()" /></div>

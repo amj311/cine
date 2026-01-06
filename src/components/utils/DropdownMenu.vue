@@ -29,7 +29,6 @@ function setMenuItems() {
 		},
 	]);
 	// overwrite item commands to close menu and THEN do action
-	// Leave some time for nav to update
 	menuItems.value = useItems.map(i => ({
 		...i,
 		command: async () => {

@@ -40,6 +40,10 @@ function toggleMenu(event) {
 }
 
 async function doMenuHide() {
+	// TV nav is locked into the nav menu, but captures clicks outside of it, causing the menu to close unbidden
+	if (useScreenStore().tvNavEnabled) {
+		return;
+	}
 	if (isOpen.value) {
 		await navTrigger.value?.close();
 	}
@@ -72,13 +76,11 @@ defineExpose({
 		triggerKey="dropdown-trigger"
 		:onClose="doTriggerHide"
 	>
-		<template #default="{ show }">
-			<TieredMenu ref="menu" class="dropdown-trigger-wrapper" :class="focusAreaClass" :popup="true" @hide="doMenuHide">
-				<template #start>
-					<slot name="content" />
-				</template>
-			</TieredMenu>
-		</template>
+		<TieredMenu ref="menu" class="dropdown-trigger-wrapper" :class="focusAreaClass" :popup="true" @hide="doMenuHide">
+			<template #start>
+				<slot name="content" />
+			</template>
+		</TieredMenu>
 	</NavTrigger>
 </template>
 
