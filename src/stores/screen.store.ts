@@ -376,7 +376,7 @@ export const useScreenStore = defineStore('Screen', () => {
 		focusGroups.clear();
 
 		const focusElements = ['[href]', 'button', 'input', 'select', 'textarea', '[tabindex]', '.clickable', 'details', 'summary', '#overlay_menu_list li', '.p-toggleswitch'];
-		const query = focusElements.map(el => el + ':not([disabled]:not([disabled="false"])):not(.p-disabled):not([tabindex="-1"]):not(#overlay_menu_list)').join(', ');
+		const query = focusElements.map(el => el + ':not([disabled]:not([disabled="false"])):not(.p-disabled):not([tabindex="-1"]):not(#overlay_menu_list):not(.p-hidden-accessible):not(p-hidden-focusable)').join(', ');
 
 		// find highest priority focus area
 		let focusArea;

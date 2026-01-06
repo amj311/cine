@@ -109,7 +109,7 @@ const showNavbar = computed(() => {
 		Last mouse position: {{ tvNavigationStore.lastMousePosition }}<br />
 		Last mouse move time: {{ tvNavigationStore.lastMouseMoveTime }}<br />
 		Last direction: {{ tvNavigationStore.lastDetectedDirection }}<br />
-		Focused: {{ tvNavigationStore.lastFocusedEl?.innerText || 'none' }}<br />
+		Focused: {{ tvNavigationStore.lastFocusedEl ? `${tvNavigationStore.lastFocusedEl.tagName}${tvNavigationStore.lastFocusedEl.id ? '#'+tvNavigationStore.lastFocusedEl.id : ''}.${Array.from(tvNavigationStore.lastFocusedEl.classList).join('.')}` : 'none' }}<br />
 	</div>
 
 	<ConfirmDialog
