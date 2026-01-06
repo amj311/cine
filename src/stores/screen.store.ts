@@ -513,17 +513,17 @@ export const useScreenStore = defineStore('Screen', () => {
 		console.info('TV confirmed')
 
 		// auto tv nav
-		let shouldDoTvNav = false;
+		let shouldCheckForTvNav = localSettings.tv_nav;
 
-		if (shouldDoTvNav && suggestTvModeHandler) {
-			shouldDoTvNav = await suggestTvModeHandler();
-			if (!shouldDoTvNav) {
+		if (shouldCheckForTvNav && suggestTvModeHandler) {
+			shouldCheckForTvNav = await suggestTvModeHandler();
+			if (!shouldCheckForTvNav) {
 				// localSettings.tv_nav = false;
 				console.info('TV environment was declined');
 			}
 		}
 
-		if (!shouldDoTvNav) {
+		if (!shouldCheckForTvNav) {
 			tvWasConfirmed.value = false;
 			disengageTvMode();
 		} else {
@@ -551,6 +551,7 @@ export const useScreenStore = defineStore('Screen', () => {
 
 	let clickCapture = document.createElement('div');
 	function engageTvMode() {
+		console.log("Engaging TV nav mode...")
 		tvNavEnabled.value = true;
 
 		// create click capture element
@@ -577,6 +578,7 @@ export const useScreenStore = defineStore('Screen', () => {
 		});
 		gatherFocusTargets();
 		findFocus();
+		console.log("TV nav enabled.")
 	}
 	function disengageTvMode() {
 		setFocus(null);
@@ -586,6 +588,7 @@ export const useScreenStore = defineStore('Screen', () => {
 		window.removeEventListener('keydown', handleKeyDown);
 		tvNavEnabled.value = false;
 		observer.disconnect();
+		console.log("TV nav disabled.")
 	}
 
 

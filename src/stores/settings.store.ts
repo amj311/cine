@@ -4,7 +4,7 @@ import { useScreenStore } from './screen.store';
 
 const defaultSettings = {
 	is_tv: false,
-	// tv_nav: false,
+	tv_nav: false,
 	show_debug: false,
 }
 
@@ -14,10 +14,10 @@ export const useSettingsStore = defineStore('Settings', () => {
 
 	watch(() => ({
 		is_tv: localSettings.value.is_tv,
-		// tv_nav: localSettings.value.tv_nav,
+		tv_nav: localSettings.value.tv_nav,
 	}), () => {
 		useScreenStore().setAsTv(localSettings.value.is_tv);
-		// useScreenStore().setTvNavigation(localSettings.value.is_tv && localSettings.value.tv_nav);
+		useScreenStore().setTvNavigation(localSettings.value.is_tv && localSettings.value.tv_nav);
 	});
 
 	return {
