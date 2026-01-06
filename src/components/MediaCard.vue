@@ -62,7 +62,7 @@ const onClick = computed(() => {
 		return revealSurprise;
 	}
 	if (hideSurprise.value && !ignoreSurprise.value) {
-		return () => surpriseModal.value?.open();
+		return async () => await surpriseModal.value?.open();
 	}
 	return normalAction.value;
 });
@@ -78,12 +78,13 @@ function bypassSurprise() {
 		goToSurprise();
 	}
 }
-function goToSurprise() {
+async function goToSurprise() {
 	ignoreSurprise.value = true;
+	await surpriseModal.value?.close();
+	console.log("continuing with normal action")
 	if (typeof normalAction.value === 'function') {
 		normalAction.value();
 	}
-	surpriseModal.value?.close();
 	ignoreSurprise.value = false;
 	draftPin.value = '';
 	showPinInput.value = false;

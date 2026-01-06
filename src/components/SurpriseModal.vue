@@ -27,7 +27,7 @@ async function upsertSurprise() {
 			record: draftSurprise.value.enabled ? draftSurprise.value : null,
 		});
 		props.libraryItem.surprise = draftSurprise.value;
-	navModal.value?.close();
+		await navModal.value?.close();
 	}
 	catch (e) {
 		console.error(e);
@@ -36,9 +36,9 @@ async function upsertSurprise() {
 		savingSurprise.value = false;
 	}
 }
-function cancelSurpriseEdits() {
+async function cancelSurpriseEdits() {
 	draftSurprise.value = props.libraryItem.surprise || {};
-	navModal.value?.close();
+	await navModal.value?.close();
 }
 
 defineExpose({

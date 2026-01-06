@@ -16,19 +16,29 @@ const useStore = defineStore('NavTrigger', () => {
 		return router.currentRoute.value.query.v?.toString() || '';
 	});
 
-	function open(viewKey: string) {
+	async function open(viewKey: string) {
 		try {
 			viewStack.value.push(viewKey);
+			console.log(location.href, router.currentRoute.value.path, viewKey)
+			console.log('here')
 			router.push({
 				query: { ...router.currentRoute.value.query, v: viewKey },
 			});
+			// router.push('/');
 			document.body.classList.add('prevent-scroll');
+			// Wait for navs tp update before allowing next action
+			await new Promise(res => setTimeout(res, 100));
+			console.log('now here')
 		} catch (error) {
 			console.error('Error opening NavTrigger:', error);
 		}
 	}
-	function close(cb?: () => void) {
+	async function close(viewKey: string, cb?: () => void) {
+		// remove the desired key from the viewStack and update the query to the new top-of-stack
+		viewStack.value = viewStack.value.filter(v => v !== viewKey);
 		router.back();
+		// Wait for navs tp update before allowing next action
+		await new Promise(res => setTimeout(res, 100));
 		cb?.();
 	}
 
@@ -40,12 +50,13 @@ const useStore = defineStore('NavTrigger', () => {
 			viewStack.value = viewStack.value.slice(0, indexOfNew + 1);
 
 			// if stack is empty, we remove the query parameter
-			if (viewStack.value.length === 0) {
-				history.replaceState(
-					{},
-					document.title,
-					router.currentRoute.value.path + '?' + new URLSearchParams(router.currentRoute.value?.query as Record<string, string>).toString()
-				);
+			// small bug causes this to clear the current path on refresh bc router does not have route info yet
+			// but we don't intend to keep triggers open across refreshes so that's okay.
+			const hasInitRouter = router.currentRoute.value.path === location.pathname;
+			if (viewStack.value.length === 0 && hasInitRouter) {
+				router.replace({
+					query: { ...router.currentRoute.value.query, v: null },
+				});
 				// also restore scroll
 				document.body.classList.remove('prevent-scroll');
 			}
@@ -92,8 +103,8 @@ export default {
 
 		return {
 			show,
-			open: () => store.open(trueKey.value),
-			close: () => store.close(props.onClose),
+			async open() { await store.open(trueKey.value) },
+			async close() { await store.close(trueKey.value, props.onClose) },
 		};
 	},
 };

@@ -1,21 +1,16 @@
 <script setup lang="ts">
 import { focusAreaClass, useScreenStore } from '@/stores/screen.store';
 import TieredMenu from 'primevue/tieredmenu';
-import { ref } from 'vue';
+import { nextTick, ref } from 'vue';
 import DropdownTrigger from './DropdownTrigger.vue';
 
-const menu = ref<InstanceType<typeof TieredMenu>>();
+const trigger = ref<InstanceType<typeof DropdownTrigger>>();
 const props = defineProps<{
 	items?: any,
 	disabled?: boolean
 	style?: any
 	size?: 'small' | 'large'
 }>();
-
-function openMenu(event) {
-	setMenuItems();
-	if (!props.disabled) menu.value?.toggle(event);
-}
 
 const menuItems = ref<any[]>([]);
 
@@ -27,18 +22,27 @@ function setMenuItems() {
 	if (typeof props.items === 'function') {
 		items = props.items();
 	}
-	menuItems.value = items?.length ? [...items] : [
+	const useItems = (items?.length ? [...items] : [
 		{
 			label: 'No actions',
 			disabled: true,
 		},
-	];
+	]);
+	// overwrite item commands to close menu and THEN do action
+	// Leave some time for nav to update
+	menuItems.value = useItems.map(i => ({
+		...i,
+		command: async () => {
+			await trigger.value?.close();
+			i.command.call(null);
+		}
+	}))
 }
 
 </script>
 
 <template>
-	<DropdownTrigger>
+	<DropdownTrigger ref="trigger">
 		<span @click="setMenuItems"><slot><Button :size="size" variant="text" severity="contrast" :icon="'pi pi-ellipsis-v'" /></slot></span>
 
 		<template #content>

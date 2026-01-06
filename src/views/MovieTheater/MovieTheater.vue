@@ -446,12 +446,12 @@ function playNext() {
 const navTrigger = ref<InstanceType<typeof NavTrigger> | null>(null);
 const showScrubPanel = ref(false);
 
-function toggleScrubMenu() {
+async function toggleScrubMenu() {
 	if (showScrubPanel.value) {
-		navTrigger.value?.close();
+		await navTrigger.value?.close();
 	}
 	else {
-		navTrigger.value?.open();
+		await navTrigger.value?.open();
 	}
 	showScrubPanel.value = !showScrubPanel.value;
 }

@@ -35,9 +35,9 @@ function toggleMenu(event) {
 	}
 }
 
-function doMenuHide() {
+async function doMenuHide() {
 	if (isOpen.value) {
-		navTrigger.value?.close();
+		await navTrigger.value?.close();
 	}
 	isOpen.value = false;
 }
@@ -48,6 +48,12 @@ function doTriggerHide() {
 		menu.value?.hide();
 	})
 }
+
+defineExpose({
+	async close() {
+		await navTrigger.value?.close();
+	}
+})
 
 
 </script>

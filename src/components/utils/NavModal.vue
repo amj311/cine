@@ -17,11 +17,11 @@ const { closeable = true } = defineProps<{
 }>();
 
 defineExpose({
-	open: () => {
-		navTriggerRef.value?.open();
+	async open() {
+		await navTriggerRef.value?.open();
 	},
-	close: () => {
-		navTriggerRef.value?.close();
+	async close() {
+		await navTriggerRef.value?.close();
 	},
 })
 
