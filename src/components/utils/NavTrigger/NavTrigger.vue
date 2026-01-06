@@ -19,8 +19,6 @@ const useStore = defineStore('NavTrigger', () => {
 	async function open(viewKey: string) {
 		try {
 			viewStack.value.push(viewKey);
-			console.log(location.href, router.currentRoute.value.path, viewKey)
-			console.log('here')
 			router.push({
 				query: { ...router.currentRoute.value.query, v: viewKey },
 			});
@@ -28,7 +26,6 @@ const useStore = defineStore('NavTrigger', () => {
 			document.body.classList.add('prevent-scroll');
 			// Wait for navs tp update before allowing next action
 			await new Promise(res => setTimeout(res, 100));
-			console.log('now here')
 		} catch (error) {
 			console.error('Error opening NavTrigger:', error);
 		}

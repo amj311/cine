@@ -15,7 +15,6 @@ const props = defineProps<{
 const menuItems = ref<any[]>([]);
 
 function setMenuItems() {
-	console.log('settings menu items!')
 	let items;
 	if (Array.isArray(props.items)) {
 		items = props.items;
