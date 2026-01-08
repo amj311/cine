@@ -33,6 +33,7 @@ const props = defineProps<{
 		foramt: string;
 		name?: string;
 	}>;
+	timer?: boolean;
 }>();
 
 const showControlsTime = 2500;
@@ -374,7 +375,7 @@ function toggleTimer() {
 				<div class="flex-grow-1"></div>
 				<div class="flex align-items-center">
 					<slot name="topButtons"></slot>
-					<div class="timer-trigger" @click="toggleTimer">
+					<div v-if="timer" class="timer-trigger" @click="toggleTimer">
 						<Button :text="showTimer ? false : true" :severity="showTimer ? 'secondary' : 'contrast'" :icon="'pi pi-stopwatch'" />
 					</div>
 				</div>

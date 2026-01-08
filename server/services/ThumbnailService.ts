@@ -4,7 +4,7 @@ import { ConfirmedPath, DirectoryService, RelativePath } from './DirectoryServic
 import sharp from 'sharp';
 import { useFfmpeg } from '../utils/ffmpeg';
 
-const MAX_CACHE_SIZE = 100; // Maximum number of thumbnails to cache
+const MAX_CACHE_SIZE = 500; // Maximum number of thumbnails to cache
 const thumbCache = new Map<string, Buffer>();
 
 export class ThumbnailService {
@@ -14,10 +14,10 @@ export class ThumbnailService {
 	 */
 	public static async streamThumbnail(filePath: ConfirmedPath, width: number = 300, seek = 3): Promise<Buffer> {
 		try {
-			// const cachedThumbnail = this.getCachedThumbnail(filePath.relativePath, width);
-			// if (cachedThumbnail) {
-			// 	return cachedThumbnail;
-			// }
+			const cachedThumbnail = this.getCachedThumbnail(filePath.relativePath, width, seek);
+			if (cachedThumbnail) {
+				return cachedThumbnail;
+			}
 
 
 			// Make sure the file is an image
@@ -60,7 +60,7 @@ export class ThumbnailService {
 					throw new Error("Failed to fix JPEG file");
 				}
 			}
-			// ThumbnailService.cacheThumbnail(filePath.relativePath, width, thumbnailBuffer);
+			ThumbnailService.cacheThumbnail(filePath.relativePath, width, seek, thumbnailBuffer);
 			return thumbnailBuffer;
 		}
 		catch (err: any) {
@@ -129,20 +129,20 @@ export class ThumbnailService {
 		});
 	};
 
-	private static cacheThumbnail(relativePath: RelativePath, width: number, buffer: Buffer) {
+	private static cacheThumbnail(relativePath: RelativePath, width: number, seek: number, buffer: Buffer) {
 		if (width > 500) {
 			// Don't cache thumbnails larger than this
 			return;
 		}
-		thumbCache.set(relativePath + width, buffer);
+		thumbCache.set(`${relativePath}_${width}_${seek}`, buffer);
 		if (thumbCache.size > MAX_CACHE_SIZE) {
 			const oldestKey = thumbCache.keys().next().value;
 			thumbCache.delete(oldestKey || '');
 		}
 	}
 
-	private static getCachedThumbnail(relativePath: RelativePath, width: number) {
-		const cachedThumbnail = thumbCache.get(relativePath + width);
+	private static getCachedThumbnail(relativePath: RelativePath, width: number, seek: number) {
+		const cachedThumbnail = thumbCache.get(`${relativePath}_${width}_${seek}`);
 		if (cachedThumbnail) {
 			return cachedThumbnail;
 		}

@@ -504,6 +504,7 @@ function onTitleClick() {
 				:onEnd="onEnd"
 				:subtitles="probe?.subtitles"
 				:audio="probe?.audio"
+				timer
 			>
 				<template #topButtons>
 					<!-- SCRUB BUTTON -->

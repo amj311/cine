@@ -21,6 +21,7 @@ const props = defineProps<{
 }>();
 
 const wrapper = ref<HTMLDivElement>();
+const before = ref<HTMLDivElement>();
 const scrollerRef = ref<InstanceType<typeof Scroll>>();
 const scrollArea = computed(() => scrollerRef.value?.scrollArea);
 
@@ -208,6 +209,11 @@ function setRange() {
 	const bufferBelow = rect.height * 0;
 	upperRange = 0 - bufferAbove;
 	lowerRange = rect.height + bufferBelow;
+
+	// adjust ranges by height of "before" slot
+	const beforeHeight = before.value?.clientHeight || 0;
+	upperRange -= beforeHeight;
+	lowerRange -= beforeHeight;
 }
 
 /**
@@ -259,13 +265,13 @@ defineExpose({
 	persistRows,
 	renderRows,
 	scrollArea,
-	scrollToRow(row: VirtualScrollRowWithPosition) {
+	scrollToRow(row: VirtualScrollRowWithPosition, behavior: ScrollBehavior = 'smooth') {
 		if (!scrollArea.value) {
 			return;
 		}
 		scrollArea.value.scrollTo({
 			top: row.top,
-			behavior: 'smooth',
+			behavior,
 		});
 	}
 })
@@ -275,11 +281,13 @@ defineExpose({
 <template>
 	<div style="height: 100%">
 		<Scroll ref="scrollerRef">
+			<div ref="before"><slot name="before" /></div>
 			<div ref="wrapper" class="lazy-wrapper" :style="{ height: totalHeight + 'px' }">
 				<div v-for="row in renderRows" :key="row.key" :id="'virtual-row-' + row.key" class="row-wrapper" :style="{ height: row.height + 'px', top: row.top + 'px' }">
 					<slot name="row" :data="row.data" />
 				</div>
 			</div>
+			<slot name="after" />
 		</Scroll>
 	</div>
 </template>
