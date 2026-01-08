@@ -223,8 +223,7 @@ function normLabel(date) {
 
 <template>
 	<div class="gallery-timeline">
-		
-		<div class="gallery-side">
+		<div class="gallery-side" @click="showMenu = false">
 			<VirtualScroll v-if="virtualMonthRows && virtualMonthRows.length > 0" ref="virtualScroller" :rows="virtualMonthRows" :onScroll="findTopLabel">
 				<template #before>
 					<div v-if="previousMonths.length" class="flex-row-center justify-content-end gap-2 pr-2">
@@ -276,6 +275,7 @@ function normLabel(date) {
 
 		<div class="menu-wrapper relative overflow-hidden w-10rem" :class="{ 'pointer-events-none': false, 'open': showMenu, 'do-hiding': useScreenStore().isSkinnyScreen }" @mouseleave="showMenu = false">
 			<div class="menu h-full border-round-xl absolute w-10rem right-0">
+				<div class="flex justify-content-end"><Button @click="showMenu = false" icon="pi pi-arrow-right" text severity="secondary" /></div>
 				<Scroll ref="sidebarScrollRef">
 					<div class="flex flex-column align-items-end p-2">
 						<Button v-for="month in timelineMonths"
