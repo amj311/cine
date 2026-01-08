@@ -23,7 +23,7 @@ const props = defineProps<{
 }>();
 
 const sizeWidths = {
-	blur: 5	,
+	blur: 5,
 	small: 200,
 	medium: 800,
 	large: 1200,
@@ -37,12 +37,13 @@ function maxWidth(width: number) {
 	return Math.min(window.innerWidth * 4, width);
 }
 
+const baseUrl = computed(() => useApiStore().apiUrl + '/thumb/' + props.file.relativePath);
 const lowResUrl = computed(() => {
-	return useApiStore().apiUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(sizeWidths[props.loadSequence?.[0] || ''] || sizeWidth.value);
+	return baseUrl.value + '?width=' + maxWidth(sizeWidths[props.loadSequence?.[0] || ''] || sizeWidth.value);
 });
 const hiResUrl = computed(() => {
 	const HI_RES_WIDTH = sizeWidths[props.loadSequence?.[1] || 'xlarge'];
-	return useApiStore().apiUrl + '/thumb/' + props.file.relativePath + '?width=' + maxWidth(HI_RES_WIDTH);
+	return baseUrl.value + '?width=' + maxWidth(HI_RES_WIDTH);
 });
 
 const hiResReady = ref(false);
@@ -80,10 +81,6 @@ onBeforeUnmount(() => {
 	}
 });
 
-defineExpose({
-	isZooming,
-})
-
 const showThumbnail = computed(() => {
 	if (!props.thumbnail) {
 		return false;
@@ -92,6 +89,26 @@ const showThumbnail = computed(() => {
 		return false;
 	}
 	return true;
+})
+
+const isPanoramic = ref(false);
+const ratio = ref(1);
+const showAsPanoramic = ref(false);
+
+function checkForPanoramic(e) {
+	const image = e.target;
+	console.log(image, image.naturalWidth, image.naturalHeight, image.naturalWidth / image.naturalHeight);
+	const naturalRatio = image.naturalWidth / image.naturalHeight;
+	const panoramicRatioLimit = 2;
+	isPanoramic.value = naturalRatio > panoramicRatioLimit || naturalRatio < 1 / panoramicRatioLimit;
+	console.log(isPanoramic.value)
+	ratio.value = naturalRatio;
+}
+
+defineExpose({
+	isZooming,
+	isPanoramic,
+	ratio,
 })
 
 </script>
@@ -106,6 +123,7 @@ const showThumbnail = computed(() => {
 				style="width: 100%; height: 100%;"
 				:style="{ objectFit }"
 				:class="{ 'blurred': !hiResReady && loadSequence?.includes('blur') }"
+				@load="checkForPanoramic"
 			/>
 			<VideoPlayer
 				v-else-if="file.fileType === 'video'"

@@ -4,6 +4,8 @@ import Button from 'primevue/button';
 import { useRouter } from 'vue-router';
 import GalleryFileFrame, { type GalleryFile } from './GalleryFileFrame.vue';
 import { focusAreaClass } from '@/stores/screen.store';
+import NavTrigger from './utils/NavTrigger/NavTrigger.vue';
+import { useApiStore } from '@/stores/api.store';
 
 const router = useRouter();
 
@@ -18,9 +20,12 @@ const state = reactive({
 	animationClass: '',
 });
 
-const showSlideshow = computed(() => router.currentRoute.value.query.slideshow === 'true' && state.files.length > 0);
-watch(showSlideshow, () => {
-	if (showSlideshow.value) {
+const trigger = ref<InstanceType<typeof NavTrigger>>();
+const fileFrame = ref<HTMLDivElement>();
+
+const hasFiles = computed(() => state.files.length > 0);
+watch(() => trigger.value?.show, (newVal) => {
+	if (newVal) {
 		setupListeners();
 	} else {
 		clearTimeout(state.playingTimer);
@@ -34,16 +39,12 @@ function open(files: Array<GalleryFile>, firstFile?: GalleryFile) {
 	if (firstFile) {
 		state.activeFileIdx = state.files.findIndex(p => p.relativePath === firstFile.relativePath);
 	}
-	router.push({ query: { ...router.currentRoute.value.query, slideshow: 'true' } });
-	nextTick(() => {
-		setupListeners();
-	});
+	trigger.value?.open();
 }
 
 function close() {
 	clearTimeout(state.playingTimer);
-	removeListeners();
-	router.back();
+	trigger.value?.close();
 	props.onClose?.call(null)
 }
 
@@ -59,16 +60,16 @@ const activeFrame = ref<InstanceType<typeof GalleryFileFrame> | null>(null);
 
 function setupListeners() {
 	window.addEventListener('keydown', handleKeydown);
-	window.addEventListener('touchstart', handleTouchStart);
-	window.addEventListener('touchmove', handleTouchMove);
-	window.addEventListener('touchend', handleTouchEnd);
+	fileFrame.value?.addEventListener('touchstart', handleTouchStart);
+	fileFrame.value?.addEventListener('touchmove', handleTouchMove);
+	fileFrame.value?.addEventListener('touchend', handleTouchEnd);
 	window.addEventListener('scroll', preventScroll);
 }
 function removeListeners() {
 	window.removeEventListener('keydown', handleKeydown);
-	window.removeEventListener('touchstart', handleTouchStart);
-	window.removeEventListener('touchmove', handleTouchMove);
-	window.removeEventListener('touchend', handleTouchEnd);
+	fileFrame.value?.removeEventListener('touchstart', handleTouchStart);
+	fileFrame.value?.removeEventListener('touchmove', handleTouchMove);
+	fileFrame.value?.removeEventListener('touchend', handleTouchEnd);
 	window.removeEventListener('scroll', preventScroll);
 }
 
@@ -80,6 +81,9 @@ function uiSwap(action) {
 	const now = Date.now();
 	const doAnimate = now - lastUiSwapTime > animationTime;
 	lastUiSwapTime = now;
+	if (panTrigger.value?.show) {
+		panTrigger.value?.close();
+	}
 	action(doAnimate);
 }
 
@@ -187,43 +191,62 @@ function preventScroll(e) {
 
 const activeFileFolders = computed(() => activeFile.value.relativePath.split('/').slice(1, -1));
 
+const panTrigger = ref<InstanceType<typeof NavTrigger>>();
+function togglePanoramic() {
+	if (panTrigger.value?.show) {
+		panTrigger.value?.close();
+	}
+	else {
+		panTrigger.value?.open();
+	}
+}
 
 </script>
 
 
 <template>
-	<div id="Slideshow" v-if="showSlideshow" :class="focusAreaClass">
-		<div id="topBar" class="flex justify-content-start align-items-center gap-2 flex-wrap">
-			<Button text severity="contrast" @click="close" icon="pi pi-times" />
-			<div>{{ activeFile.fileName }}</div>
-			<div class="flex-grow-1 flex justify-content-end align-items-center gap-2">
-				<div style="flex-grow: 1"></div>
-				<small v-if="activeFile.takenAt">&nbsp;&nbsp;<i class="pi pi-calendar" /> {{ new Date(activeFile.takenAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</small>
-				<small v-if="activeFileFolders.length">&nbsp;&nbsp;<i class="pi pi-folder-open" /> {{ activeFileFolders.join(' / ') }}</small>
-			</div>
-		</div>
-		<div :class="{ 'file-frame': true, [state.animationClass]: true }">
-			<div class="prev">
-				<GalleryFileFrame :key="prevFile.relativePath" :file="prevFile" :size="'small'" :object-fit="'contain'" />
-			</div>
-			<div class="active" >
-				<GalleryFileFrame ref="activeFrame" :key="activeFile.relativePath" :file="activeFile" :size="'large'" :object-fit="'contain'" :autoplay="true" :loadSequence="['small', 'large']" :zoom="true" />
-			</div>
-			<div class="next">
-				<GalleryFileFrame :key="nextFile.relativePath" :file="nextFile" :size="'small'" :object-fit="'contain'" />
-			</div>
-		</div>
-		<div id="bottomBar">
-			<Button text severity="contrast" @click="() => uiSwap(goToPrev)" icon="pi pi-chevron-left" />
-			<Button text severity="contrast" v-if="!isPlaying" @click="play" icon="pi pi-play" />
-			<Button text severity="contrast" v-if="isPlaying" @click="stop" icon="pi pi-pause" />
-			<Button text severity="contrast" @click="() => uiSwap(goToNext)" icon="pi pi-chevron-right" />
-		</div>
+	<NavTrigger ref="trigger" triggerKey="slideshow">
+		<template #default="{ show }">
+			<div id="Slideshow" v-if="show && hasFiles" :class="focusAreaClass">
+				<div id="topBar" class="flex justify-content-start align-items-center gap-2 flex-wrap">
+					<Button text severity="contrast" @click="close" icon="pi pi-times" />
+					<div>{{ activeFile.fileName }}</div>
+					<div class="flex-grow-1 flex justify-content-end align-items-center gap-2">
+						<div style="flex-grow: 1"></div>
+						<small v-if="activeFile.takenAt">&nbsp;&nbsp;<i class="pi pi-calendar" /> {{ new Date(activeFile.takenAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</small>
+						<small v-if="activeFileFolders.length">&nbsp;&nbsp;<i class="pi pi-folder-open" /> {{ activeFileFolders.join(' / ') }}</small>
+					</div>
+				</div>
+				<div ref="fileFrame" class="file-frame" :class="state.animationClass">
+					<div class="prev">
+						<GalleryFileFrame :key="prevFile.relativePath" :file="prevFile" :size="'small'" :object-fit="'contain'" />
+					</div>
+					<div class="active" >
+						<GalleryFileFrame ref="activeFrame" :key="activeFile.relativePath" :file="activeFile" :size="'large'" :object-fit="'contain'" :autoplay="true" :loadSequence="['small', 'large']" :zoom="true" />
+					</div>
+					<div class="next">
+						<GalleryFileFrame :key="nextFile.relativePath" :file="nextFile" :size="'small'" :object-fit="'contain'" />
+					</div>
 
-		<div style="display: none">
-
-		</div>
-	</div>
+					<!-- Panoramic frame -->
+					<NavTrigger ref="panTrigger">
+						<template #default="{ show }">
+							<div v-if="show" class="pan-frame">
+								<img :src="useApiStore().resolve('media/' + activeFile.relativePath)" :style="{ width: activeFrame!.ratio < 1 && '99%', height: activeFrame!.ratio > 1 && '99%' }" />
+							</div>
+						</template>
+					</NavTrigger>
+				</div>
+				<div id="bottomBar">
+					<Button text severity="contrast" @click="() => uiSwap(goToPrev)" icon="pi pi-chevron-left" />
+					<Button text severity="contrast" v-if="!isPlaying" @click="play" icon="pi pi-play" />
+					<Button text severity="contrast" v-if="isPlaying" @click="stop" icon="pi pi-pause" />
+					<Button :variant="panTrigger?.show ? '' : 'text'" severity="contrast" v-if="activeFrame?.isPanoramic" @click="togglePanoramic"><i class="material-symbols-outlined">vrpano</i></Button>
+					<Button text severity="contrast" @click="() => uiSwap(goToNext)" icon="pi pi-chevron-right" />
+				</div>
+			</div>
+		</template>
+	</NavTrigger>
 </template>
 
 <style lang="scss">
@@ -307,6 +330,14 @@ const activeFileFolders = computed(() => activeFile.value.relativePath.split('/'
 			}
 		}
 	}
+}
 
+.pan-frame {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
 }
 </style>

@@ -52,7 +52,7 @@ const useStore = defineStore('NavTrigger', () => {
 			const hasInitRouter = router.currentRoute.value.path === location.pathname;
 			if (viewStack.value.length === 0 && hasInitRouter) {
 				router.replace({
-					query: { ...router.currentRoute.value.query, v: null },
+					query: { ...router.currentRoute.value.query, v: undefined },
 				});
 				// also restore scroll
 				document.body.classList.remove('prevent-scroll');
@@ -75,7 +75,6 @@ export default {
 	props: {
 		triggerKey: {
 			type: String,
-			required: true,
 		},
 		onClose: {
 			type: Function,
@@ -85,7 +84,7 @@ export default {
 	setup(props) {
 		const store = useStore();
 		const trueKey = computed(() => {
-			return props.triggerKey + '-' + Math.random().toString(36).substring(2, 8);
+			return (props.triggerKey ? props.triggerKey + '-' : '') + Math.random().toString(36).substring(2, 8);
 		});
 
 		const show = computed(() => {
