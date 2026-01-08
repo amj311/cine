@@ -226,7 +226,7 @@ function normLabel(date) {
 		<div class="gallery-side" @click="showMenu = false">
 			<VirtualScroll v-if="virtualMonthRows && virtualMonthRows.length > 0" ref="virtualScroller" :rows="virtualMonthRows" :onScroll="findTopLabel">
 				<template #before>
-					<div v-if="previousMonths.length" class="flex-row-center justify-content-end gap-2 pr-2">
+					<div v-if="previousMonths.length" class="flex-row-center justify-content-end flex-wrap gap-2 pr-2">
 						Go to: <Button v-for="month in previousMonths" severity="secondary" @click="goToMonth(month.date)" :label="month.date" />
 					</div>
 				</template>
@@ -254,7 +254,7 @@ function normLabel(date) {
 				</template>
 
 				<template #after>
-					<div v-if="nextMonths.length" class="flex-row-center justify-content-end gap-2 py-5 pr-2">
+					<div v-if="nextMonths.length" class="flex-row-center justify-content-end flex-wrap gap-2 py-5 pr-2">
 						Go to: <Button v-for="month in nextMonths" severity="secondary" @click="goToMonth(month.date)" :label="month.date" />
 					</div>
 				</template>
