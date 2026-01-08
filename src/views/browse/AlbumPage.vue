@@ -153,6 +153,7 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 						size="large"
 						class="w-full"
 						@click="() => playTrack(libraryItem?.tracks[0])"
+						data-focus-priority="1"
 					/>
 				</div>
 			</div>
@@ -165,6 +166,7 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 							v-for="(track, index) in libraryItem.tracks"
 							:key="index"
 							@click="() => playTrack(track)"
+							tabindex="0"
 						>
 							<div><i :class="`pi pi-${track === currentTrack ? 'volume-up' : 'play'}`" /></div>
 							<div class="number">{{ Number(index) + 1 }}</div>

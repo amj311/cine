@@ -452,6 +452,7 @@ const menuItems = [{
 						size="large"
 						class="w-full"
 						@click="() => playAtChapterTime(lastWatched.chapterIndex, lastWatched.sub.time)"
+						data-focus-priority="1"
 					/>
 					<Button
 						v-else-if="!currentChapter && !lastWatched"
@@ -460,6 +461,7 @@ const menuItems = [{
 						size="large"
 						class="w-full"
 						@click="() => playChapter(libraryItem?.chapters[0])"
+						data-focus-priority="1"
 					/>
 				</div>
 					<DropdownMenu
@@ -497,6 +499,7 @@ const menuItems = [{
 							v-for="(chapter, index) in libraryItem.chapters"
 							:key="index"
 							@click="() => playChapter(chapter)"
+							tabindex="0"
 						>
 							<div><i :class="`pi pi-${chapter === currentChapter ? 'volume-up' : 'play'}`" /></div>
 							<div class="number">{{ Number(index) + 1 }}</div>
