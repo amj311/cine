@@ -232,7 +232,8 @@ function togglePanoramic() {
 					<NavTrigger ref="panTrigger">
 						<template #default="{ show }">
 							<div v-if="show" class="pan-frame">
-								<img :src="useApiStore().resolve('media/' + activeFile.relativePath)" :style="{ width: activeFrame!.ratio < 1 && '99%', height: activeFrame!.ratio > 1 && '99%' }" />
+								<div class="loading"><i class="pi pi-spin pi-spinner text-5xl" /></div>
+								<img :src="useApiStore().resolve('media/' + activeFile.relativePath)" :style="{ width: activeFrame!.ratio < 1 ? '99%' : '', height: activeFrame!.ratio > 1 ? '99%' : '' }" />
 							</div>
 						</template>
 					</NavTrigger>
@@ -339,5 +340,19 @@ function togglePanoramic() {
     right: 0;
     bottom: 0;
     overflow: auto;
+	background-color: var(--color-background);
+	
+	img {
+		z-index: 1;
+		position: relative;
+	}
+
+	.loading {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		translate: -50% -50%;
+		z-index: 0;
+	}
 }
 </style>
