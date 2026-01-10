@@ -116,7 +116,8 @@ app.get("/api/dir/", async function (req, res) {
 			directory: {
 				files: files.map((file) => file.name),
 				folders: folders,
-				libraryItems: (await Promise.all(folders.map(async (folder) => await LibraryService.parseFolderToItem(folder.confirmedPath)))).filter(Boolean).sort((a, b) => a.sortKey.localeCompare(b.sortKey || '') || 0),
+				libraryItems: (await Promise.all(folders.map(async (folder) => await LibraryService.parseFolderToItem(folder.confirmedPath)))).filter(Boolean).sort((a, b) => a!.sortKey?.localeCompare(b!.sortKey || '') || 0),
+				galleryFiles: (await Promise.all(files.map(async (file) => await LibraryService.parseFileToItem(file.confirmedPath)))).filter(Boolean),
 			},
 		});
 	} catch (err) {
@@ -667,10 +668,11 @@ app.get('/api/rootLibraries', async (req, res) => {
 	}
 });
 
-app.get('/api/rootLibrary/:name/flat', async (req, res) => {
+app.get('/api/flat', async (req, res) => {
+	console.log("FLAT!!!!", req.query)
 	try {
-		const { name } = req.params;
-		const resolvedPath = DirectoryService.resolvePath(name);
+		const { path } = req.query;
+		const resolvedPath = DirectoryService.resolvePath(path as string);
 		if (!resolvedPath) {
 			throw Error('No such folder')
 		}

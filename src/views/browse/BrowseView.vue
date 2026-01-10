@@ -7,11 +7,12 @@ import { useRoute } from 'vue-router';
 import DropdownMenu from '@/components/utils/DropdownMenu.vue';
 import CinemaLibraryPage from './CinemaLibraryPage.vue';
 import { useApiStore } from '@/stores/api.store';
-import PhotoLibraryPage from './PhotoLibraryPage.vue';
+import PhotoLibraryPage from './PhotoTimelineView.vue';
 import AlbumPage from './AlbumPage.vue';
 import AudiobookPage from './AudiobookPage.vue';
 import CinemaItemPage from './CinemaItemPage.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
+import type { GalleryFile } from '@/components/GalleryFileFrame.vue';
 
 const route = useRoute();
 const api = useApiStore().api;
@@ -20,7 +21,7 @@ const api = useApiStore().api;
 // const scrollArea = computed(() => scrollerRef.value?.scrollArea);
 
 let fetchedPath = '';
-const directory = ref<{ folders: any[]; libraryItems: any[], files: string[] } | null>(null);
+const directory = ref<{ folders: any[]; libraryItems: any[], galleryFiles: GalleryFile[], files: string[] } | null>(null);
 const libraryItem = ref<any>(null);
 const rootLibrary = ref<any>(null);
 // const listMode = ref('grid');
@@ -107,11 +108,7 @@ watch(
 	<div style="height: 100%; position: relative">
 		<div style="height: 100%;" :style="longLoading ? { opacity: 0.5, transition: '500ms' } : {}">
 			<KeepAlive :include="['Explorer', 'CinemaLibraryPage', 'PhotoLibraryPage']">
-				<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'photos'">
-					<PhotoLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" />
-				</template>
-
-				<template v-else-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'cinema'">
+				<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'cinema'">
 					<CinemaLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :directoryItems="directory!.libraryItems" />
 				</template>
 

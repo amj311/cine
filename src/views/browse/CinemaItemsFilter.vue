@@ -50,7 +50,7 @@ defineExpose({
 			</template>
 			{{ cinemaItems.length }}
 		</span>
-		<SelectButton v-model="cinemaType" :options="['all', 'movie', 'series']" class="text-cap" size="large" />
+		<SelectButton v-model="cinemaType" :options="['all', 'movie', 'series']" class="text-cap" />
 		<span class="search-container relative">
 			<i class="pi pi-search" />
 			<InputText v-model="searchTerm" placeholder="Search" name="search" class="pl-5 w-6rem h-full" :class="{ data: searchTerm }" />

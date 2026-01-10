@@ -22,8 +22,42 @@ const props = defineProps<{
 
 const wrapper = ref<HTMLDivElement>();
 const before = ref<HTMLDivElement>();
-const scrollerRef = ref<InstanceType<typeof Scroll>>();
-const scrollArea = computed(() => scrollerRef.value?.scrollArea);
+const scrollArea = ref<HTMLElement | null>(null);
+
+function findScrollAncestor() {
+	if (!wrapper.value) return;
+
+	let currentElement: HTMLElement | null = wrapper.value.parentElement;
+	while (currentElement) {
+		if (currentElement.classList.contains('scroll-area')) {
+			break;
+		}
+		currentElement = currentElement.parentElement;
+	};
+	scrollArea.value = currentElement || document.body;
+	console.log(scrollArea.value)
+}
+
+const wrapperOffset = ref(0);
+
+function getDistanceFromScrollTop(element, scrollableContainer) {
+	let distance = 0;
+	let current = element;
+	
+	// Walk up the DOM tree, accumulating offsetTop values
+	while (current && current !== scrollableContainer) {
+		distance += current.offsetTop;
+		current = current.offsetParent;
+		
+		// Handle case where offsetParent skips the scrollable container
+		if (!current || current === document.body) {
+			break;
+		}
+	}
+	
+	return distance;
+}
+
 
 const totalHeight = ref(0);
 const allRows = computed<Array<VirtualScrollRowWithPosition>>(() => {
@@ -210,8 +244,8 @@ function setRange() {
 	upperRange = 0 - bufferAbove;
 	lowerRange = rect.height + bufferBelow;
 
-	// adjust ranges by height of "before" slot
-	const beforeHeight = before.value?.clientHeight || 0;
+	// adjust ranges by distance from scrollArea top to wrapper top
+	const beforeHeight = getDistanceFromScrollTop(wrapper.value, scrollArea.value);
 	upperRange -= beforeHeight;
 	lowerRange -= beforeHeight;
 }
@@ -250,6 +284,9 @@ function distanceFromRange(row: VirtualScrollRowWithPosition): number {
 }
 
 onMounted(() => {
+	findScrollAncestor();
+	wrapperOffset.value = getDistanceFromScrollTop(wrapper.value, scrollArea.value);
+
 	scrollArea.value?.addEventListener('scroll', debounceUpdate, { passive: true });
 	scrollArea.value?.addEventListener('resize', debounceUpdate, { passive: true });
 	debounceUpdate();
@@ -280,15 +317,13 @@ defineExpose({
 
 <template>
 	<div style="height: 100%">
-		<Scroll ref="scrollerRef">
-			<div ref="before"><slot name="before" /></div>
-			<div ref="wrapper" class="lazy-wrapper" :style="{ height: totalHeight + 'px' }">
-				<div v-for="row in renderRows" :key="row.key" :id="'virtual-row-' + row.key" class="row-wrapper" :style="{ height: row.height + 'px', top: row.top + 'px' }">
-					<slot name="row" :data="row.data" />
-				</div>
+		<div ref="before"><slot name="before" /></div>
+		<div ref="wrapper" class="lazy-wrapper" :style="{ height: totalHeight + 'px' }">
+			<div v-for="row in renderRows" :key="row.key" :id="'virtual-row-' + row.key" class="row-wrapper" :style="{ height: row.height + 'px', top: row.top + 'px' }">
+				<slot name="row" :data="row.data" />
 			</div>
-			<slot name="after" />
-		</Scroll>
+		</div>
+		<slot name="after" />
 	</div>
 </template>
 

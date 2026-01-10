@@ -93,15 +93,12 @@ const showThumbnail = computed(() => {
 
 const isPanoramic = ref(false);
 const ratio = ref(1);
-const showAsPanoramic = ref(false);
 
 function checkForPanoramic(e) {
 	const image = e.target;
-	console.log(image, image.naturalWidth, image.naturalHeight, image.naturalWidth / image.naturalHeight);
 	const naturalRatio = image.naturalWidth / image.naturalHeight;
-	const panoramicRatioLimit = 2;
+	const panoramicRatioLimit = 2.5;
 	isPanoramic.value = naturalRatio > panoramicRatioLimit || naturalRatio < 1 / panoramicRatioLimit;
-	console.log(isPanoramic.value)
 	ratio.value = naturalRatio;
 }
 
@@ -109,21 +106,27 @@ defineExpose({
 	isZooming,
 	isPanoramic,
 	ratio,
-})
+});
+
+const loadError = ref<any>(null);
 
 </script>
 
 <template>
 	<div style="position: relative; width: 100%; height: 100%;">
-		<div class="media-frame" ref="mediaFrame" style="width: 100%; height: 100%;">
-			<img 
+		<div class="media-frame" ref="mediaFrame" style="width: 100%; height: 100%;" :class="{ error: loadError }">
+			<!-- <div v-if="loadError" class="error-frame">
+				error
+			</div> -->
+			<img
 				v-if="file.fileType === 'photo' || showThumbnail"
 				:src="hiResReady ? hiResUrl : lowResUrl" 
 				:alt="file.fileName" 
 				style="width: 100%; height: 100%;"
 				:style="{ objectFit }"
 				:class="{ 'blurred': !hiResReady && loadSequence?.includes('blur') }"
-				@load="checkForPanoramic"
+				@error="(e) => loadError = e"
+				@load="(e) => { checkForPanoramic(e); loadError = false; }"
 			/>
 			<VideoPlayer
 				v-else-if="file.fileType === 'video'"
@@ -131,13 +134,34 @@ defineExpose({
 				:hideControls="hideControls"
 				:autoplay="autoplay"
 				style="width: 100%; height: 100%;"
-				:style="{ objectFit, background: 'transparent' }" 
+				:style="{ objectFit, background: 'transparent' }"
+				@loadedData="loadError = false"
+				@error="(e) => loadError = e"
 			/>
 		</div>
 	</div>
 </template>
 
 <style scoped lang="scss">
+.media-frame {
+	position: relative;
+
+	&.error {
+		aspect-ratio: 1;
+		overflow: hidden;
+	}
+
+	.error-frame {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+}
 .blurred {
 	filter: blur(20px);
 	transition: filter 0.5s ease;

@@ -5,6 +5,7 @@ import SelectButton from 'primevue/selectbutton';
 import InputText from 'primevue/inputtext';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 import CinemaItemsFilter from './CinemaItemsFilter.vue';
+import { encodeMediaPath } from '@/utils/miscUtils';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -15,7 +16,7 @@ const allFlatItems = ref<any[]>([]);
 const api = useApiStore().api;
 async function loadItems() {
 	try {
-		const { data } = await api.get(`/rootLibrary/${props.libraryItem.relativePath}/flat`);
+		const { data } = await api.get('/flat?path=' + encodeMediaPath(props.libraryItem.relativePath));
 		allFlatItems.value = data.data?.items || [];
 		collectCategorySamples();
 	}
