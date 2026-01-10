@@ -162,15 +162,21 @@ function updateSwipeDelta(val) {
 }
 
 function handleTouchStart(e) {
+	e.stopPropagation();
+	e.preventDefault();
 	swipeStart = e.touches[0][clientTouchProp.value];
 }
 function handleTouchMove(e) {
+	e.stopPropagation();
+	e.preventDefault();
 	if (activeFrame.value?.isZooming) {
 		return;
 	}
 	updateSwipeDelta(e.touches[0][clientTouchProp.value] - swipeStart);
 }
 function handleTouchEnd(e) {
+	e.stopPropagation();
+	e.preventDefault();
 	if (activeFrame.value?.isZooming) {
 		updateSwipeDelta(0);
 		return;

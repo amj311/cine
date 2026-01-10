@@ -94,7 +94,7 @@ const videoSeeker = ref<HTMLInputElement>();
 		right: 0;
 		padding: .5em;
 		z-index: 40;
-		filter: drop-shadow(0 0 5px #000);
+		filter: drop-shadow(0 0 5px #0005);
 	}
 
 	.bottom-bar {
@@ -104,7 +104,7 @@ const videoSeeker = ref<HTMLInputElement>();
 		right: 0;
 		padding: .5em;
 		z-index: 40;
-		filter: drop-shadow(0 0 5px #000);
+		filter: drop-shadow(0 0 5px #0005);
 		background-image: linear-gradient(to top, #0007, #0000);
 	}
 
