@@ -63,9 +63,9 @@ const activeFrame = computed(() => activeSlideFrame.value?.galleryFrame);
 function setupListeners() {
 	updateSwipeDelta(0);
 	window.addEventListener('keydown', handleKeydown);
-	slideshowEl.value?.addEventListener('touchstart', handleTouchStart, { passive: true });
-	slideshowEl.value?.addEventListener('touchmove', handleTouchMove, { passive: true });
-	slideshowEl.value?.addEventListener('touchend', handleTouchEnd, { passive: true });
+	slideshowEl.value?.addEventListener('touchstart', handleTouchStart, { passive: false });
+	slideshowEl.value?.addEventListener('touchmove', handleTouchMove, { passive: false });
+	slideshowEl.value?.addEventListener('touchend', handleTouchEnd, { passive: false });
 	window.addEventListener('scroll', preventScroll, { passive: true });
 }
 function removeListeners() {
