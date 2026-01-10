@@ -34,6 +34,10 @@ const props = defineProps<{
 		name?: string;
 	}>;
 	timer?: boolean;
+	background?: string,
+	allowFullscreen?: boolean,
+	showTime?: boolean,
+	seekerEl?: HTMLInputElement,
 }>();
 
 const showControlsTime = 2500;
@@ -102,7 +106,19 @@ function updatePlayingState() {
 	playingState.value.ended = videoRef.value.ended;
 	playingState.value.currentTime = videoRef.value.currentTime;
 	playingState.value.progress = videoRef.value.duration ? videoRef.value.currentTime * 100 / videoRef.value.duration : 0;
+
+	if (props.seekerEl) {
+		props.seekerEl.value = videoRef.value.currentTime as any;
+		props.seekerEl.min = '0';
+		props.seekerEl.max = videoRef.value.duration / 1 as any;
+	}
 }
+
+watch(() => props.seekerEl, () => {
+	if (props.seekerEl) {
+		props.seekerEl.addEventListener('input', (e: any) => doRangeSeek(e?.target?.value));
+	}
+})
 
 function loopUpdateState() {
 	window.requestAnimationFrame(() => {
@@ -155,7 +171,7 @@ onMounted(() => {
 	if (!useScreenStore().detectedTouch) {
 		videoRef.value?.addEventListener('click', togglePlay);
 	}
-	videoRef.value?.addEventListener('click', doubleClick);
+	// videoRef.value?.addEventListener('click', doubleClick);
 
 	doShowControls();
 
@@ -231,12 +247,12 @@ function skipForward() {
 	doShowControls();
 }
 
-function doRangeSeek(percent: number) {
+function doRangeSeek(seek: number) {
+	console.log("DOING SEEK")
 	if (!videoRef.value) {
 		return;
 	}
-	const progress = Math.min(99.99, percent);
-	videoRef.value.currentTime = videoRef.value.duration * progress / 100;
+	videoRef.value.currentTime = seek;
 }
 
 const remaining = computed(() => {
@@ -356,7 +372,7 @@ function toggleTimer() {
 
 <template>
 	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls tvNavigationNoFocus': showControls && !hideControls }">
-		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous" allow>
+		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous" allow :style="{ backgroundColor: background }">
 			<source :src="videoUrl" :type="'video/mp4'" />
 			<track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" />
 		</video>
@@ -398,7 +414,7 @@ function toggleTimer() {
 		</div>
 		<div class="bottom-controls overlay flex-column gap-2">
 			<div class="flex-row-center">
-				<span>-{{ msToTimestamp(secToMs(remaining)) }}</span>
+				<span v-if="showTime">-{{ msToTimestamp(secToMs(remaining)) }}</span>
 				<div class="flex-grow-1" />
 				<slot name="bottomButtons"></slot>
 				<div class="audio-select" v-if="props.audio && props.audio.length > 1">
@@ -406,11 +422,11 @@ function toggleTimer() {
 						<Button variant="text" severity="contrast"><span class="material-symbols-outlined">movie_speaker</span></Button>
 					</DropdownMenu>
 				</div>
-				<Button text severity="contrast" @click="useFullscreenStore().userToggle">
+				<Button v-if="allowFullscreen" text severity="contrast" @click="useFullscreenStore().userToggle">
 					<span class="material-symbols-outlined">{{ useFullscreenStore().isAppInFullscreenMode ? 'fullscreen_exit' : 'fullscreen' }}</span>
 				</Button>
 			</div>
-			<input type="range" class="seeker w-full" min="0" :value="playingState.progress" @input="(e: any) => doRangeSeek(e?.target?.value)" />
+			<input v-if="!seekerEl" type="range" class="seeker w-full" min="0" :value="playingState.progress" @input="(e: any) => doRangeSeek(e?.target?.value)" />
 		</div>
 		<div class="cards" :class="{ lift: showControls }">
 			<slot name="cards" />
@@ -436,7 +452,7 @@ function toggleTimer() {
 		opacity: 0;
 		transition: 500ms;
 		zoom: 1.3;
-		z-index: 1000;
+		z-index: 30;
 		pointer-events: none;
 		text-shadow: 0 0 5px #0006;
 	}

@@ -196,7 +196,7 @@ function openSlideshow(file: GalleryFile) {
 <style scoped lang="scss">
 .folder-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(min(10rem, 27vh), 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(min(8rem, 27vh), 1fr));
 	gap: 15px;
 }
 .item-grid {

@@ -20,6 +20,8 @@ const props = defineProps<{
 	zoom?: boolean;
 	thumbnail?: boolean;
 	loadSequence?: Array<'blur' | 'small' | 'medium' | 'large'>;
+	videoBackground?: string,
+	videoSeeker?: HTMLInputElement,
 }>();
 
 const sizeWidths = {
@@ -137,6 +139,8 @@ const loadError = ref<any>(null);
 				:style="{ objectFit, background: 'transparent' }"
 				@loadedData="loadError = false"
 				@error="(e) => loadError = e"
+				:background="videoBackground"
+				:seekerEl="videoSeeker"
 			/>
 		</div>
 	</div>

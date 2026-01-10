@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { reactive, computed, ref, watch, nextTick } from 'vue';
+import { reactive, computed, ref, watch, nextTick, defineComponent } from 'vue';
 import Button from 'primevue/button';
 import { useRouter } from 'vue-router';
 import GalleryFileFrame, { type GalleryFile } from './GalleryFileFrame.vue';
-import { focusAreaClass } from '@/stores/screen.store';
+import { focusAreaClass, useScreenStore } from '@/stores/screen.store';
 import NavTrigger from './utils/NavTrigger/NavTrigger.vue';
 import { useApiStore } from '@/stores/api.store';
+import SlideshowFileFrame from './SlideshowFileFrame.vue';
 
 const router = useRouter();
 
@@ -56,14 +57,16 @@ const nextFile = computed(() => state.files[(state.activeFileIdx + 1) % state.fi
 const prevFile = computed(() => state.files[(state.activeFileIdx - 1 + state.files.length) % state.files.length]);
 
 const initialScroll = window.scrollY;
-const activeFrame = ref<InstanceType<typeof GalleryFileFrame> | null>(null);
+const activeSlideFrame = ref<InstanceType<typeof SlideshowFileFrame> | null>(null);
+const activeFrame = computed(() => activeSlideFrame.value?.galleryFrame);
 
 function setupListeners() {
+	updateSwipeDelta(0);
 	window.addEventListener('keydown', handleKeydown);
-	slideshowEl.value?.addEventListener('touchstart', handleTouchStart);
-	slideshowEl.value?.addEventListener('touchmove', handleTouchMove);
-	slideshowEl.value?.addEventListener('touchend', handleTouchEnd);
-	window.addEventListener('scroll', preventScroll);
+	slideshowEl.value?.addEventListener('touchstart', handleTouchStart, { passive: true });
+	slideshowEl.value?.addEventListener('touchmove', handleTouchMove, { passive: true });
+	slideshowEl.value?.addEventListener('touchend', handleTouchEnd, { passive: true });
+	window.addEventListener('scroll', preventScroll, { passive: true });
 }
 function removeListeners() {
 	window.removeEventListener('keydown', handleKeydown);
@@ -73,11 +76,11 @@ function removeListeners() {
 	window.removeEventListener('scroll', preventScroll);
 }
 
-
-const animationTime = 500;
+const animationTime = 300;
 let lastUiSwapTime = 0;
 
 function uiSwap(action) {
+	console.log(verticalMode.value)
 	const now = Date.now();
 	const doAnimate = now - lastUiSwapTime > animationTime;
 	lastUiSwapTime = now;
@@ -113,7 +116,7 @@ function resetAfterSwap() {
 		play();
 	}
 	updateSwipeDelta(0);
-	swipeStartX = 0;
+	swipeStart = 0;
 }
 
 function play() {
@@ -150,30 +153,32 @@ function handleKeydown(e) {
 	}
 }
 
-let swipeStartX = 0;
+const verticalMode = computed(() => useScreenStore().isSkinnyScreen && useScreenStore().detectedTouch);
+const clientTouchProp = computed(() => verticalMode.value ? 'clientY' : 'clientX');
+let swipeStart = 0;
 
 function updateSwipeDelta(val) {
 	document.documentElement.style.setProperty('--swipe-delta', val + 'px');
 }
 
 function handleTouchStart(e) {
-	swipeStartX = e.touches[0].clientX;
+	swipeStart = e.touches[0][clientTouchProp.value];
 }
 function handleTouchMove(e) {
 	if (activeFrame.value?.isZooming) {
 		return;
 	}
-	updateSwipeDelta(e.touches[0].clientX - swipeStartX);
+	updateSwipeDelta(e.touches[0][clientTouchProp.value] - swipeStart);
 }
 function handleTouchEnd(e) {
 	if (activeFrame.value?.isZooming) {
 		updateSwipeDelta(0);
 		return;
 	}
-	const swipeEndX = e.changedTouches[0].clientX;
-	if (swipeStartX - swipeEndX > 100) {
+	const swipeEnd = e.changedTouches[0][clientTouchProp.value];
+	if (swipeStart - swipeEnd > 100) {
 		uiSwap(goToNext);
-	} else if (swipeEndX - swipeStartX > 100) {
+	} else if (swipeEnd - swipeStart > 100) {
 		uiSwap(goToPrev);
 	} else {
 		updateSwipeDelta(0);
@@ -188,8 +193,6 @@ function preventScroll(e) {
 	});
 }
 
-
-const activeFileFolders = computed(() => activeFile.value.relativePath.split('/').slice(1, -1));
 
 const panTrigger = ref<InstanceType<typeof NavTrigger>>();
 function togglePanoramic() {
@@ -208,7 +211,23 @@ function togglePanoramic() {
 	<NavTrigger ref="trigger" triggerKey="slideshow">
 		<template #default="{ show }">
 			<div id="Slideshow" ref="slideshowEl" v-if="show && hasFiles" :class="focusAreaClass">
-				<div id="topBar" class="flex justify-content-start align-items-center gap-2 flex-wrap">
+				<div class="file-frame" :class="{ [state.animationClass]: true, 'vertical': verticalMode }">
+					<div class="prev frame">
+						<SlideshowFileFrame :showArrows="!verticalMode" :onPrev="() => uiSwap(goToPrev)" :onNext="() => uiSwap(goToNext)" :onClose="close" :file="prevFile" />
+					</div>
+					<div class="active frame">
+						<SlideshowFileFrame :showArrows="!verticalMode" :onPrev="() => uiSwap(goToPrev)" :onNext="() => uiSwap(goToNext)" ref="activeSlideFrame" :onClose="close" :file="activeFile" active>
+							<template #actions>
+								<Button :variant="panTrigger?.show ? '' : 'text'" severity="contrast" v-if="activeFrame?.isPanoramic" @click="togglePanoramic"><i class="material-symbols-outlined">vrpano</i></Button>
+							</template>
+						</SlideshowFileFrame>
+					</div>
+					<div class="next frame">
+						<SlideshowFileFrame :showArrows="!verticalMode" :onPrev="() => uiSwap(goToPrev)" :onNext="() => uiSwap(goToNext)" :onClose="close" :file="nextFile" />
+					</div>
+				</div>
+				
+				<!-- <div class="top-bar flex justify-content-start align-items-center gap-2 flex-wrap">
 					<Button text severity="contrast" @click="close" icon="pi pi-times" />
 					<div>{{ activeFile.fileName }}</div>
 					<div class="flex-grow-1 flex justify-content-end align-items-center gap-2">
@@ -216,25 +235,8 @@ function togglePanoramic() {
 						<small v-if="activeFile.takenAt">&nbsp;&nbsp;<i class="pi pi-calendar" /> {{ new Date(activeFile.takenAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</small>
 						<small v-if="activeFileFolders.length">&nbsp;&nbsp;<i class="pi pi-folder-open" /> {{ activeFileFolders.join(' / ') }}</small>
 					</div>
-				</div>
-				<div class="file-frame" :class="state.animationClass">
-					<div class="prev">
-						<GalleryFileFrame :key="prevFile.relativePath" :file="prevFile" :size="'small'" :object-fit="'contain'" />
-					</div>
-					<div class="active" >
-						<GalleryFileFrame ref="activeFrame" :key="activeFile.relativePath" :file="activeFile" :size="'large'" :object-fit="'contain'" :autoplay="true" :loadSequence="['small', 'large']" :zoom="true" />
-					</div>
-					<div class="next">
-						<GalleryFileFrame :key="nextFile.relativePath" :file="nextFile" :size="'small'" :object-fit="'contain'" />
-					</div>
-				</div>
-				<div id="bottomBar">
-					<Button text severity="contrast" @click="() => uiSwap(goToPrev)" icon="pi pi-chevron-left" />
-					<Button text severity="contrast" v-if="!isPlaying" @click="play" icon="pi pi-play" />
-					<Button text severity="contrast" v-if="isPlaying" @click="stop" icon="pi pi-pause" />
-					<Button :variant="panTrigger?.show ? '' : 'text'" severity="contrast" v-if="activeFrame?.isPanoramic" @click="togglePanoramic"><i class="material-symbols-outlined">vrpano</i></Button>
-					<Button text severity="contrast" @click="() => uiSwap(goToNext)" icon="pi pi-chevron-right" />
-				</div>
+				</div> -->
+				
 			</div>
 		</template>
 	</NavTrigger>
@@ -246,12 +248,13 @@ function togglePanoramic() {
 			<div v-if="show" class="pan-frame">
 				<div class="loading"><i class="pi pi-spin pi-spinner text-5xl" /></div>
 				<img :src="useApiStore().resolve('media/' + activeFile.relativePath)" :style="{ width: activeFrame!.ratio < 1 ? '99%' : '', height: activeFrame!.ratio > 1 ? '99%' : '' }" />
+				<div class="closer"><Button text severity="contrast" @click="panTrigger?.close" icon="pi pi-times" /></div>
 			</div>
 		</template>
 	</NavTrigger>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 :root {
 	--swipe-delta: 0px;
 }
@@ -263,72 +266,119 @@ function togglePanoramic() {
 	right: 0;
 	bottom: 0;
 	background-color: var(--color-background);
-	backdrop-filter: blur(5px);
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
 	align-items: center;
 	z-index: 20;
 
-
-	#topBar {
-		width: 100%;
-		padding: .5em;
-	}
-
-	#bottomBar {
-		display: flex;
-		justify-content: center;
-		padding: .5em;
-		gap: 1em;
-	}
-
 	.file-frame {
-		position: relative;
-		height: calc(100% - 110px); // room for top and bottom bars
-		width: 100%;
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
 
-		> div {
+		.frame {
 			position: absolute;
 			width: 100%;
-			height: 99.5%;
+			height: 100%;
+			overflow: hidden;
+
+			.blur-bg {
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background-size: cover;
+				background-position: center;
+				filter: blur(25px);
+				opacity: .7;
+				z-index: -1;
+			}
 		}
 
-		.prev {
-			transform: translateX(calc(-100vw + var(--swipe-delta)));
-		}
+		&:not(.vertical) {
+			.prev {
+				transform: translateX(calc(-100vw + var(--swipe-delta)));
+			}
 
-		.next {
-			transform: translateX(calc(100vw + var(--swipe-delta)));
-		}
-
-		.active {
-			transform: translateX(var(--swipe-delta));
-		}
-
-		&.slideNext {
 			.next {
-				transform: translateX(0);
-				transition: 500ms ease;
+				transform: translateX(calc(100vw + var(--swipe-delta)));
 			}
 
 			.active {
-				transform: translateX(-100vw);
-				opacity: 0;
-				transition: 500ms ease;
+				transform: translateX(var(--swipe-delta));
+				z-index: 1;
+			}
+
+			&.slideNext {
+				.next {
+					transform: translateX(0);
+				}
+
+				.active {
+					transform: translateX(-100vw);
+				}
+			}
+
+			&.slidePrev {
+				.prev {
+					transform: translateX(0);
+				}
+
+				.active {
+					transform: translateX(100vw);
+				}
+			}
+		}
+
+		&.vertical {
+			.prev {
+				transform: translateY(calc(-100vh + var(--swipe-delta)));
+			}
+
+			.next {
+				transform: translateY(calc(100vh + var(--swipe-delta)));
+			}
+
+			.active {
+				transform: translateY(var(--swipe-delta));
+				z-index: 1;
+			}
+
+			&.slideNext {
+				.next {
+					transform: translateY(0);
+				}
+
+				.active {
+					transform: translateY(-100vh);
+				}
+			}
+
+			&.slidePrev {
+				.prev {
+					transform: translateY(0);
+				}
+
+				.active {
+					transform: translateY(100vh);
+				}
+			}
+		}
+
+
+		&.slideNext {
+			.next, .active {
+				transition: 300ms ease;
 			}
 		}
 
 		&.slidePrev {
-			.prev {
-				transform: translateX(0);
-				transition: 500ms ease;
-			}
-
-			.active {
-				transform: translateX(100vw);
-				opacity: 0;
-				transition: 500ms ease;
+			.prev, .active {
+				transition: 300ms ease;
 			}
 		}
 	}
@@ -339,7 +389,7 @@ function togglePanoramic() {
     top: 0rem;
     left: 0;
     right: 0;
-    bottom: 3rem;
+    bottom: 0;
     overflow: auto;
     background-color: var(--color-background);
     z-index: 21;
@@ -355,6 +405,13 @@ function togglePanoramic() {
 		left: 50%;
 		translate: -50% -50%;
 		z-index: 0;
+	}
+
+	.closer {
+		position: fixed;
+		top: 0;
+		left: 0;
+		z-index: 22;
 	}
 }
 </style>

@@ -35,7 +35,6 @@ function findScrollAncestor() {
 		currentElement = currentElement.parentElement;
 	};
 	scrollArea.value = currentElement || document.body;
-	console.log(scrollArea.value)
 }
 
 const wrapperOffset = ref(0);
