@@ -264,7 +264,7 @@ function normLabel(date) {
 			</Scroll>
 		</div>
 
-		<div class="track" @click="openSidebar" @touchstart="openSidebar">
+		<div class="track" @click="openSidebar">
 			<div class="track-anchor-item"
 				v-for="(anchor, i) in trackAnchors"
 				:style="{ top: anchor.percent + '%', height: ((trackAnchors[i+1]?.percent || 100) - anchor.percent) + '%' }"

@@ -21,17 +21,17 @@ const state = reactive({
 });
 
 const trigger = ref<InstanceType<typeof NavTrigger>>();
-const fileFrame = ref<HTMLDivElement>();
+const slideshowEl = ref<HTMLDivElement>();
 
 const hasFiles = computed(() => state.files.length > 0);
 watch(() => trigger.value?.show, (newVal) => {
 	if (newVal) {
-		setupListeners();
+		nextTick(setupListeners);
 	} else {
 		clearTimeout(state.playingTimer);
-		removeListeners();
+		nextTick(removeListeners);
 	}
-})
+}, { immediate: true })
 
 
 function open(files: Array<GalleryFile>, firstFile?: GalleryFile) {
@@ -45,7 +45,7 @@ function open(files: Array<GalleryFile>, firstFile?: GalleryFile) {
 function close() {
 	clearTimeout(state.playingTimer);
 	trigger.value?.close();
-	props.onClose?.call(null)
+	props.onClose?.call(null);
 }
 
 defineExpose({open, close});
@@ -60,16 +60,16 @@ const activeFrame = ref<InstanceType<typeof GalleryFileFrame> | null>(null);
 
 function setupListeners() {
 	window.addEventListener('keydown', handleKeydown);
-	fileFrame.value?.addEventListener('touchstart', handleTouchStart);
-	fileFrame.value?.addEventListener('touchmove', handleTouchMove);
-	fileFrame.value?.addEventListener('touchend', handleTouchEnd);
+	slideshowEl.value?.addEventListener('touchstart', handleTouchStart);
+	slideshowEl.value?.addEventListener('touchmove', handleTouchMove);
+	slideshowEl.value?.addEventListener('touchend', handleTouchEnd);
 	window.addEventListener('scroll', preventScroll);
 }
 function removeListeners() {
 	window.removeEventListener('keydown', handleKeydown);
-	fileFrame.value?.removeEventListener('touchstart', handleTouchStart);
-	fileFrame.value?.removeEventListener('touchmove', handleTouchMove);
-	fileFrame.value?.removeEventListener('touchend', handleTouchEnd);
+	slideshowEl.value?.removeEventListener('touchstart', handleTouchStart);
+	slideshowEl.value?.removeEventListener('touchmove', handleTouchMove);
+	slideshowEl.value?.removeEventListener('touchend', handleTouchEnd);
 	window.removeEventListener('scroll', preventScroll);
 }
 
@@ -207,7 +207,7 @@ function togglePanoramic() {
 <template>
 	<NavTrigger ref="trigger" triggerKey="slideshow">
 		<template #default="{ show }">
-			<div id="Slideshow" v-if="show && hasFiles" :class="focusAreaClass">
+			<div id="Slideshow" ref="slideshowEl" v-if="show && hasFiles" :class="focusAreaClass">
 				<div id="topBar" class="flex justify-content-start align-items-center gap-2 flex-wrap">
 					<Button text severity="contrast" @click="close" icon="pi pi-times" />
 					<div>{{ activeFile.fileName }}</div>
@@ -217,7 +217,7 @@ function togglePanoramic() {
 						<small v-if="activeFileFolders.length">&nbsp;&nbsp;<i class="pi pi-folder-open" /> {{ activeFileFolders.join(' / ') }}</small>
 					</div>
 				</div>
-				<div ref="fileFrame" class="file-frame" :class="state.animationClass">
+				<div class="file-frame" :class="state.animationClass">
 					<div class="prev">
 						<GalleryFileFrame :key="prevFile.relativePath" :file="prevFile" :size="'small'" :object-fit="'contain'" />
 					</div>
@@ -227,16 +227,6 @@ function togglePanoramic() {
 					<div class="next">
 						<GalleryFileFrame :key="nextFile.relativePath" :file="nextFile" :size="'small'" :object-fit="'contain'" />
 					</div>
-
-					<!-- Panoramic frame -->
-					<NavTrigger ref="panTrigger">
-						<template #default="{ show }">
-							<div v-if="show" class="pan-frame">
-								<div class="loading"><i class="pi pi-spin pi-spinner text-5xl" /></div>
-								<img :src="useApiStore().resolve('media/' + activeFile.relativePath)" :style="{ width: activeFrame!.ratio < 1 ? '99%' : '', height: activeFrame!.ratio > 1 ? '99%' : '' }" />
-							</div>
-						</template>
-					</NavTrigger>
 				</div>
 				<div id="bottomBar">
 					<Button text severity="contrast" @click="() => uiSwap(goToPrev)" icon="pi pi-chevron-left" />
@@ -245,6 +235,17 @@ function togglePanoramic() {
 					<Button :variant="panTrigger?.show ? '' : 'text'" severity="contrast" v-if="activeFrame?.isPanoramic" @click="togglePanoramic"><i class="material-symbols-outlined">vrpano</i></Button>
 					<Button text severity="contrast" @click="() => uiSwap(goToNext)" icon="pi pi-chevron-right" />
 				</div>
+			</div>
+		</template>
+	</NavTrigger>
+
+
+	<!-- Panoramic frame -->
+	<NavTrigger ref="panTrigger">
+		<template #default="{ show }">
+			<div v-if="show" class="pan-frame">
+				<div class="loading"><i class="pi pi-spin pi-spinner text-5xl" /></div>
+				<img :src="useApiStore().resolve('media/' + activeFile.relativePath)" :style="{ width: activeFrame!.ratio < 1 ? '99%' : '', height: activeFrame!.ratio > 1 ? '99%' : '' }" />
 			</div>
 		</template>
 	</NavTrigger>
@@ -290,7 +291,7 @@ function togglePanoramic() {
 		> div {
 			position: absolute;
 			width: 100%;
-			height: 100%;
+			height: 99.5%;
 		}
 
 		.prev {
@@ -335,12 +336,13 @@ function togglePanoramic() {
 
 .pan-frame {
     position: fixed;
-    top: 0;
+    top: 0rem;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: 3rem;
     overflow: auto;
-	background-color: var(--color-background);
+    background-color: var(--color-background);
+    z-index: 21;
 	
 	img {
 		z-index: 1;
