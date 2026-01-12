@@ -505,6 +505,7 @@ function onTitleClick() {
 				:subtitles="probe?.subtitles"
 				:audio="probe?.audio"
 				timer
+				allowFullscreen
 			>
 				<template #topButtons>
 					<!-- SCRUB BUTTON -->
