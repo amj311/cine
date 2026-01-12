@@ -246,7 +246,8 @@ function setRange() {
 	// adjust ranges by distance from scrollArea top to wrapper top
 	const beforeHeight = getDistanceFromScrollTop(wrapper.value, scrollArea.value);
 	upperRange -= beforeHeight;
-	lowerRange -= beforeHeight;
+	// adjust lower range for slight for slightly high boundary
+	lowerRange -= beforeHeight - 200;
 }
 
 /**
