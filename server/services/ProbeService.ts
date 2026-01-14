@@ -106,7 +106,7 @@ export class ProbeService {
 		let probeData: ProbeData | null = null;
 		try {
 			probeData = await new Promise((resolve, reject) => {
-				ffmpeg.ffprobe(filePath, ['-show_chapters'], (err, data) => {
+				ffmpeg.ffprobe(filePath, ['-show_chapters'], (err: any, data: any) => {
 					if (err) {
 						console.error("Error while probing file:", err);
 						reject(err);
@@ -119,6 +119,7 @@ export class ProbeService {
 						},
 						full: data
 					};
+
 					if (data && data.streams) {
 						for (const stream of data.streams) {
 							const handler_name = stream.tags?.handler_name;
@@ -158,7 +159,7 @@ export class ProbeService {
 		probeCache.set(path, probe);
 		if (probeCache.size > MAX_CACHE_SIZE) {
 			const oldestKey = probeCache.keys().next().value;
-			probeCache.delete(oldestKey);
+			probeCache.delete(oldestKey || '' as RelativePath);
 		}
 	}
 

@@ -25,12 +25,12 @@ const props = defineProps<{
 	loadSubs?: boolean;
 	subtitles?: Array<{
 		index: number;
-		foramt: string;
+		format: string;
 		name?: string;
 	}>;
 	audio?: Array<{
 		index: number;
-		foramt: string;
+		format: string;
 		name?: string;
 	}>;
 	timer?: boolean;
@@ -270,12 +270,34 @@ const subtitleTracks = computed(() => {
 	if (!props.subtitles?.length) {
 		return [];
 	}
-	return props.subtitles.map((track, i) => ({
-		index: track.index,
-		label: track.name || 'Subtitle ' + (i + 1),
-		url: useApiStore().apiUrl + '/subtitles?path=' + encodeMediaPath(props.relativePath) + '&index=' + track.index,
+	const supportedFormats = ['mov_text'];
+	// Sort subtitles by support, but don't hide unsupported ones for transparency
+	return props.subtitles
+		.sort((a, b) => {
+			if (supportedFormats.includes(a.format) && !supportedFormats.includes(b.format)) return -1;
+			if (supportedFormats.includes(b.format) && !supportedFormats.includes(a.format)) return 1;
+			return 0;
+		})
+		.map((track, i) => ({
+			index: track.index,
+			label: track.name || 'Subtitle ' + (i + 1),
+			url: useApiStore().apiUrl + '/subtitles?path=' + encodeMediaPath(props.relativePath) + '&index=' + track.index,
+		}));
+});
+
+const selectedSubtitleIndex = ref(0);
+
+const subtitleMenuItems = computed(() => {
+	return subtitleTracks.value.map((track, i) => ({
+		label: track.label,
+		icon: i === selectedSubtitleIndex.value ? 'pi pi-check' : 'pi',
+		command: () => {
+			selectedSubtitleIndex.value = i;
+		},
 	}));
 });
+
+const selectedSubtitle = computed(() => subtitleTracks.value[selectedSubtitleIndex.value]);
 
 // 0 means default audio, don't load secondary
 const selectedAudioIndex = ref(0);
@@ -378,7 +400,8 @@ function toggleTimer() {
 	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls tvNavigationNoFocus': showControls && !hideControls }">
 		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous" allow :style="{ backgroundColor: background }">
 			<source :src="videoUrl" :type="'video/mp4'" />
-			<track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" />
+			<!-- <track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" /> -->
+			<track v-if="selectedSubtitle" :key="selectedSubtitle.url" kind="subtitles" :src="selectedSubtitle.url" srclang="en" :label="selectedSubtitle.label" default />
 		</video>
 		<audio ref="secondaryAudioPlayer" type="audio/mp3" />
 
@@ -421,6 +444,11 @@ function toggleTimer() {
 				<span v-if="showTime">-{{ msToTimestamp(secToMs(remaining)) }}</span>
 				<div class="flex-grow-1" />
 				<slot name="bottomButtons"></slot>
+				<div class="subtitle-select" v-if="subtitleTracks.length">
+					<DropdownMenu :items="subtitleMenuItems">
+						<Button variant="text" severity="contrast"><span class="material-symbols-outlined">subtitles</span></Button>
+					</DropdownMenu>
+				</div>
 				<div class="audio-select" v-if="props.audio && props.audio.length > 1">
 					<DropdownMenu :items="audioMenuItems">
 						<Button variant="text" severity="contrast"><span class="material-symbols-outlined">movie_speaker</span></Button>

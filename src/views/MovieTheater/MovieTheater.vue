@@ -326,7 +326,7 @@ function onPlay() {
 	hasEnded.value = false;
 }
 
-function onEnd() {
+async function onEnd() {
 	hasEnded.value = true;
 
 	// update progress to finished
