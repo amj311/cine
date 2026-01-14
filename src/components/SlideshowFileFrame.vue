@@ -61,7 +61,7 @@ const videoSeeker = ref<HTMLInputElement>();
 					<slot name="actions" />
 				</div>
 			</div>
-			<input v-if="file.fileType === 'video'" ref="videoSeeker" type="range" step="0.01" @touchmove.stop @touchend.stop />
+			<input v-if="file.fileType === 'video'" ref="videoSeeker" type="range" @touchmove.stop @touchend.stop />
 		</div>
 	</div>
 </template>

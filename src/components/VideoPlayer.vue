@@ -96,7 +96,11 @@ const playingState = ref({
 	ended: false,
 	currentTime: 0,
 	progress: 0,
+	duration: 0,
 });
+
+const seekerRef = ref<HTMLInputElement>();
+const resolvedSeekerEl = computed(() => props.seekerEl || seekerRef.value);
 
 function updatePlayingState() {
 	if (!videoRef.value) {
@@ -107,16 +111,17 @@ function updatePlayingState() {
 	playingState.value.currentTime = videoRef.value.currentTime;
 	playingState.value.progress = videoRef.value.duration ? videoRef.value.currentTime * 100 / videoRef.value.duration : 0;
 
-	if (props.seekerEl) {
-		props.seekerEl.value = videoRef.value.currentTime as any;
-		props.seekerEl.min = '0';
-		props.seekerEl.max = videoRef.value.duration / 1 as any;
+	if (resolvedSeekerEl.value) {
+		resolvedSeekerEl.value.value = videoRef.value.currentTime as any;
+		resolvedSeekerEl.value.step = '0.01';
+		resolvedSeekerEl.value.min = '0';
+		resolvedSeekerEl.value.max = videoRef.value.duration as any;
 	}
 }
 
-watch(() => props.seekerEl, () => {
-	if (props.seekerEl) {
-		props.seekerEl.addEventListener('input', (e: any) => doRangeSeek(e?.target?.value));
+watch(() => resolvedSeekerEl.value, () => {
+	if (resolvedSeekerEl.value) {
+		resolvedSeekerEl.value.addEventListener('input', (e: any) => doRangeSeek(e?.target?.value));
 	}
 })
 
@@ -248,7 +253,6 @@ function skipForward() {
 }
 
 function doRangeSeek(seek: number) {
-	console.log("DOING SEEK")
 	if (!videoRef.value) {
 		return;
 	}
@@ -426,7 +430,7 @@ function toggleTimer() {
 					<span class="material-symbols-outlined">{{ useFullscreenStore().isAppInFullscreenMode ? 'fullscreen_exit' : 'fullscreen' }}</span>
 				</Button>
 			</div>
-			<input v-if="!seekerEl" type="range" class="seeker w-full" min="0" :value="playingState.progress" @input="(e: any) => doRangeSeek(e?.target?.value)" />
+			<input v-if="!seekerEl" type="range" ref="seekerRef" class="seeker w-full" />
 		</div>
 		<div class="cards" :class="{ lift: showControls }">
 			<slot name="cards" />
