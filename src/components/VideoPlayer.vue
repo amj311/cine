@@ -7,6 +7,7 @@ import MediaTimer from './MediaTimer.vue';
 import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
 import { useScreenStore } from '@/stores/screen.store';
+import { format } from 'path';
 
 const toast = useToast();
 
@@ -266,38 +267,57 @@ const remaining = computed(() => {
 	return videoRef.value.duration - playingState.value.currentTime;
 })
 
+const selectedSubtitle = ref<typeof subtitleTracks.value[0]>();
+
 const subtitleTracks = computed(() => {
 	if (!props.subtitles?.length) {
 		return [];
 	}
 	const supportedFormats = ['mov_text'];
 	// Sort subtitles by support, but don't hide unsupported ones for transparency
-	return props.subtitles
-		.sort((a, b) => {
-			if (supportedFormats.includes(a.format) && !supportedFormats.includes(b.format)) return -1;
-			if (supportedFormats.includes(b.format) && !supportedFormats.includes(a.format)) return 1;
-			return 0;
-		})
+	const tracks = props.subtitles
 		.map((track, i) => ({
 			index: track.index,
 			label: track.name || 'Subtitle ' + (i + 1),
 			url: useApiStore().apiUrl + '/subtitles?path=' + encodeMediaPath(props.relativePath) + '&index=' + track.index,
-		}));
+			supported: supportedFormats.includes(track.format),
+		}))
+		.sort((a, b) => {
+			if (a.supported && !b.supported) return -1;
+			if (b.supported && !a.supported) return 1;
+			return 0;
+		});
+
+	// WHen this changes choose the first supported track
+	selectedSubtitle.value = tracks.find(t => t.supported);
+
+	return tracks;
 });
 
-const selectedSubtitleIndex = ref(0);
+const subtitleErrors = ref({});
+function handleSubtitleError(e) {
+	toast.add({
+		severity: 'error',
+		summary: 'Failed to load subtitle track',
+		life: 3000,
+	})
+	subtitleErrors.value[selectedSubtitle.value!.url] = e;
+}
 
 const subtitleMenuItems = computed(() => {
-	return subtitleTracks.value.map((track, i) => ({
-		label: track.label,
-		icon: i === selectedSubtitleIndex.value ? 'pi pi-check' : 'pi',
-		command: () => {
-			selectedSubtitleIndex.value = i;
-		},
-	}));
+	return [
+		{ label: 'Off', command: () => selectedSubtitle.value = undefined, icon: !selectedSubtitle.value ? 'pi pi-check' : undefined },
+		...subtitleTracks.value.map((track) => ({
+			label: track.label,
+			icon: selectedSubtitle.value?.url === track.url ? 'pi pi-check' : undefined,
+			command: () => {
+				selectedSubtitle.value = track;
+			},
+			disabled: Boolean(subtitleErrors.value[track.url]) || !track.supported,
+		}))
+	];
 });
 
-const selectedSubtitle = computed(() => subtitleTracks.value[selectedSubtitleIndex.value]);
 
 // 0 means default audio, don't load secondary
 const selectedAudioIndex = ref(0);
@@ -401,7 +421,7 @@ function toggleTimer() {
 		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous" allow :style="{ backgroundColor: background }">
 			<source :src="videoUrl" :type="'video/mp4'" />
 			<!-- <track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" /> -->
-			<track v-if="selectedSubtitle" :key="selectedSubtitle.url" kind="subtitles" :src="selectedSubtitle.url" srclang="en" :label="selectedSubtitle.label" default />
+			<track v-if="selectedSubtitle" :key="selectedSubtitle.url" kind="subtitles" :src="selectedSubtitle.url" srclang="en" :label="selectedSubtitle.label" default @error="handleSubtitleError" />
 		</video>
 		<audio ref="secondaryAudioPlayer" type="audio/mp3" />
 
