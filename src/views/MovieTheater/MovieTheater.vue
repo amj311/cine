@@ -116,23 +116,26 @@ async function initialProgress() {
 		return;
 	}
 
-	if (playable.value.watchProgress) {
-		playerRef.value?.setTime(playable.value.watchProgress.time);
-		return;
-	}
-
-	try {
-		const { data } = await api.get('/watchProgress', {
-			params: {
-				relativePath: mediaPath.value,
+	let watchProgress = playable.value.watchProgress;
+	if (!watchProgress) {
+		try {
+			const { data } = await api.get('/watchProgress', {
+				params: {
+					relativePath: mediaPath.value,
+				}
+			})
+			if (data.data) {
+				playerRef.value?.setTime(data.data.time)
 			}
-		})
-		if (data.data) {
-			playerRef.value?.setTime(data.data.time)
+		}
+		catch (e) {
+			console.error("error loading watchProgress", e)
 		}
 	}
-	catch (e) {
-		console.error(e)
+
+	if (watchProgress && watchProgress.time < watchProgress.duration) {
+		playerRef.value?.setTime(playable.value.watchProgress.time);
+		return;
 	}
 }
 
