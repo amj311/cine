@@ -327,12 +327,26 @@ function onPlay() {
 }
 
 function onEnd() {
+	hasEnded.value = true;
+
+	// update progress to finished
+	const finishedTime = playerRef.value?.videoRef?.duration || 1; // just to satisfy TS and avoid division by 0
+	await useWatchProgressStore().postProgress(
+		mediaPath.value,
+		useWatchProgressStore().createProgress(finishedTime, finishedTime),
+	);
+
 	if (willAutoplay.value) {
 		return playNext();
 	}
-	hasEnded.value = true;
+
 	releaseWakeLock();
-	if (playable.value?.type !== 'episodeFile' || !nextEpisodeFile.value) {
+
+	if (willAutoplay.value) {
+		return playNext();
+	}
+	// don't do back nav if auto playing
+	else if (playable.value?.type !== 'episodeFile' || !nextEpisodeFile.value) {
 		carefulBackNav();
 	}
 }
