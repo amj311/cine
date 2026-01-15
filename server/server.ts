@@ -669,7 +669,6 @@ app.get('/api/rootLibraries', async (req, res) => {
 });
 
 app.get('/api/flat', async (req, res) => {
-	console.log("FLAT!!!!", req.query)
 	try {
 		const { path } = req.query;
 		const resolvedPath = DirectoryService.resolvePath(path as string);

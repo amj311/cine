@@ -7,7 +7,6 @@ import MediaTimer from './MediaTimer.vue';
 import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
 import { useScreenStore } from '@/stores/screen.store';
-import { format } from 'path';
 
 const toast = useToast();
 
@@ -138,6 +137,12 @@ const hasLoaded = ref(false);
 onMounted(() => {
 	loopUpdateState();
 
+	secondaryAudioPlayer.value?.addEventListener('play', (e) => {
+		// prevent secondary audio from pausing main video when it plays
+		e.stopPropagation();
+		e.preventDefault();
+	})
+
 	videoRef.value?.addEventListener('loadeddata', () => {
 		hasLoaded.value = true;
 		updatePlayingState();
@@ -146,21 +151,18 @@ onMounted(() => {
 		}
 	});
 	videoRef.value?.addEventListener('pause', async () => {
-		await secondaryAudioPlayer.value?.pause();
 		if (props.onPause) {
 			props.onPause();
 		}
+		await secondaryAudioPlayer.value?.pause();
+	});
+	videoRef.value?.addEventListener('play', async () => {
 		if (props.onPlay) {
 			props.onPlay();
 		}
-	});
-	videoRef.value?.addEventListener('play', async () => {
 		if (secondaryAudioPlayer.value) {
 			await secondaryAudioPlayer.value.play();
 			secondaryAudioPlayer.value.currentTime = videoRef.value!.currentTime;
-		}
-		if (props.onPlay) {
-			props.onPlay();
 		}
 	});
 	videoRef.value?.addEventListener('ended', () => {
