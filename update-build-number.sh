@@ -7,17 +7,16 @@ else
   CURRENT_BUILD=0
 fi
 
+DELTA=1
+
+if [ "$1" = "--down" ]; then
+  DELTA=-1
+fi
+
 # Increment the build number
-NEW_BUILD=$((CURRENT_BUILD + 1))
+NEW_BUILD=$((CURRENT_BUILD + $DELTA))
 
 # Update the version.json file
 echo "{\"buildNumber\": $NEW_BUILD}" > version.json
 
 echo "Build number updated to $NEW_BUILD"
-
-# Optionally commit the updated version file to git
-if [ "$1" = "--commit" ]; then
-  git add version.json
-  git commit -m "build $NEW_BUILD"
-  echo "Committed change to git"
-fi
