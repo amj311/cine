@@ -538,7 +538,7 @@ app.get('/api/feed', async (req, res) => {
 					probe: await ProbeService.getProbeData(item.confirmedPath),
 					libraryItem: await LibraryService.getLibraryForPlayable(item.confirmedPath),
 					isUpNext: item.isUpNext,
-				})))).sort((a, b) => b.watchedAt - a.watchedAt),
+				})))).sort((a, b) => b.watchedAt - a.watchedAt).filter(i => !i.libraryItem.parentLibrary?.surprise && !(i.libraryItem.playable as any).surprise),
 			});
 		}
 
