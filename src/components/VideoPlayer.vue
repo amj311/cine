@@ -510,6 +510,11 @@ function toggleTimer() {
 		pointer-events: none;
 		text-shadow: 0 0 5px #0006;
 	}
+
+	&:not(.show-controls) {
+		cursor: none;
+	}
+
 	&.show-controls {
 		.overlay {
 			opacity: 1;
