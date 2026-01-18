@@ -324,7 +324,6 @@ async function releaseWakeLock() {
 }
 
 function onPlay() {
-	console.log("CALLED ON PLAY")
 	requestWakeLock();
 	hasEnded.value = false;
 }
@@ -523,6 +522,7 @@ function onTitleClick() {
 				:audio="probe?.audio"
 				timer
 				allowFullscreen
+				showtime
 			>
 				<template #topButtons>
 					<!-- SCRUB BUTTON -->
