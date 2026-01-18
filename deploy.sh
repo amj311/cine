@@ -27,13 +27,9 @@ if [[ $SUCCESS == 0 ]]; then
 	sudo DOCKER_HOST=ssh://${SSH_USER}@${SSH_HOST} docker system prune -f --filter "label=com.docker.compose.project=cine" > $OUT
 
 	echo "Committing build number..."
-
-	# Optionally commit the updated version file to git
-	if [ "$1" = "--commit" ]; then
-		CURRENT_BUILD=$(cat version.json | grep -o '"buildNumber": [0-9]*' | grep -o '[0-9]*')
-		git add version.json
-		git commit -m "build $NEW_BUILD"
-	fi
+	CURRENT_BUILD=$(cat version.json | grep -o '"buildNumber": [0-9]*' | grep -o '[0-9]*')
+	git add version.json
+	git commit -m "build $NEW_BUILD"
 
 	echo "Finished!"
 	exit 0
