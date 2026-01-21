@@ -15,6 +15,7 @@ import LoginPage from './views/LoginPage.vue';
 import OfflinePage from './views/OfflinePage.vue';
 import SharedPage from './views/SharedPage.vue';
 import { useSettingsStore } from './stores/settings.store';
+import ProgressBar from 'primevue/progressbar';
 
 const apiStore = useApiStore();
 
@@ -115,7 +116,15 @@ const showNavbar = computed(() => {
 	<ConfirmDialog
 		class="tvNavigationFocusArea"
 	/>
-	<Toast />
+	<Toast>
+		<template #message="{ message }">
+			<div class="w-full flex flex-column gap-2">
+				<h4 v-if="message.summary">{{ message.summary }}</h4>
+				<div v-if="message.detail">{{ message.detail }}</div>
+				<ProgressBar v-if="message.progressRef" :value="message.progressRef" :showValue="false" style="height: 8px" />
+			</div>
+		</template>
+	</Toast>
 </template>
 
 <style>

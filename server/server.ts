@@ -309,12 +309,15 @@ app.post('/api/prepareAudio', async (req, res) => {
 	const job = JobService.addJob({
 		type: 'extract_audio_stream',
 		priority: true,
-		handler: async () => {
+		handler: async ({ progress }) => {
 			// Use ffmpeg to extract indicated audio stream from video file as mp3
 			const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp3');
 			await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
 				ffmpeg.outputOptions(`-map 0:${index}`)
 					.output(outputFilePath)
+					.on('progress', (data: { percent: number }) => {
+						progress(data.percent)
+					})
 					.on('end', () => {
 						resolve();
 					})

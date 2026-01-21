@@ -8,7 +8,7 @@ export class JobPinger {
 
 	private promiseRes = (job: any) => { };
 	private promiseRej = (e: any) => { };
-	private onCompleted = () => { };
+	private onPing = (job: any) => { };
 	private onFailure = () => { };
 
 	constructor(
@@ -33,13 +33,16 @@ export class JobPinger {
 			}
 
 			this.job.value = await this.fetchJob();
+
+			this.onPing(this.job.value);
+
 			if (['pending', 'running'].includes(this.job.value.status)) {
 				this.schedulePing();
 				return;
 			}
-			if (this.job.value.status === 'completed') {
-				this.onCompleted();
-			}
+			// if (this.job.value.status === 'completed') {
+			// 	this.onCompleted();
+			// }
 			if (this.job.value.status === 'failed') {
 				this.onFailure();
 			}
@@ -60,10 +63,10 @@ export class JobPinger {
 		this.pingTimeout.value = 0;
 	}
 
-	start() {
-		// if (props.onCompleted) {
-		// 	this.onCompleted = props.onCompleted;
-		// }
+	start(props: any = {}) {
+		if (props.onPing) {
+			this.onPing = props.onPing;
+		}
 		// if (onFailure) {
 		// 	this.onFailure = onFailure;
 		// }

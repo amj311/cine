@@ -12,7 +12,7 @@ route.get('/:jobId', async (req, res) => {
 		const job = JobService.getJob(jobId);
 
 		if (!job) {
-			return res.send(404);
+			return res.sendStatus(404);
 		}
 
 		res.send({

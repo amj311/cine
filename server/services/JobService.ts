@@ -2,7 +2,7 @@ type JobType = string;
 
 type JobInterface = {
 	log: (...messages: Array<string>) => void;
-	progress: (percentage: number, data: any) => void;
+	progress: (percentage: number, data?: any) => void;
 }
 type JobResolution = {
 	error: any;
@@ -141,7 +141,11 @@ export class JobService {
 		finally {
 			job.endedAt = new Date();
 			if (this.endedJobs.length > MAX_DONE_JOBS) {
-				Jobs.delete(job.jobId);
+				// delete the oldest completed job
+				const oldest = this.getJobs().reduce((j, oldest) => {
+					return (j?.startedAt || Infinity) < (oldest?.startedAt || Infinity) ? j : oldest;
+				}, Jobs.values().next().value);
+				Jobs.delete(oldest?.jobId || '');
 			}
 			this.startNextJobs();
 		}

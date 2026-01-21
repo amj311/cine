@@ -363,11 +363,14 @@ async function turnOnSecondaryAudio(audio) {
 	if (audioPlayer) {
 		try {
 			loadingAudio.value = true;
+
+			const progressRef = ref(0);
 			toast.add({
 				severity: 'info',
 				summary: 'Preparing Audio',
 				detail: 'This may take a few minutes...',
-			});
+				progressRef,
+			} as any);
 
 			// request job start
 			const { data } = await useApiStore().api.post('/prepareAudio', {
@@ -379,7 +382,11 @@ async function turnOnSecondaryAudio(audio) {
 
 			// await job completion
 			const pinger = new JobPinger(jobId);
-			const completedJob = await pinger.start();
+			const completedJob = await pinger.start({
+				onPing(job) {
+					progressRef.value = job?.progress?.percentage;
+				}
+			});
 
 			if (completedJob.status === 'failed') {
 				console.log("job failed", completedJob);
@@ -387,9 +394,14 @@ async function turnOnSecondaryAudio(audio) {
 			}
 
 			audioPlayer.src = useApiStore().apiUrl + '/assets/conversion.mp3';
-			await audioPlayer.play();
-			audioPlayer.currentTime = videoRef.value.currentTime;
+
 			videoRef.value.muted = true;
+			
+			audioPlayer.currentTime = videoRef.value.currentTime;
+			if (isPlaying.value) {
+				await audioPlayer.play();
+			}
+			
 			loadingAudio.value = false;
 			toast.removeAllGroups();
 			toast.add({
