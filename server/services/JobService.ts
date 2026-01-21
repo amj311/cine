@@ -9,16 +9,19 @@ type JobResolution = {
 	data: any;
 }
 
-type JobDefinition<T = JobType, D = any> = {
-	type: T;
-	data: D;
-	handler: (jobInterFace: JobInterface) => Promise<JobResolution>;
+type JobDefinition = {
+	type: JobType;
+	data?: any;
+	priority?: boolean;
+	handler: (jobInterFace: JobInterface) => Promise<JobResolution | void>;
 }
 
-enum JobStatus { 'pending', 'running', 'completed', 'failed' };
+const JobStatuses = ['pending', 'running', 'completed', 'failed'] as const;
+type JobStatus = typeof JobStatuses[number];
+
 type JobId = string;
 type Job = {
-	id: JobId;
+	jobId: JobId;
 	type: JobType;
 	definition: JobDefinition;
 	status: JobStatus;
@@ -32,36 +35,35 @@ type Job = {
 		data: any;
 	},
 	logs: Array<Array<string>>;
+	result?: JobResolution;
 }
 
 const Jobs = new Map<JobId, Job>();
 
 const PriorityQueue: Set<JobId> = new Set();
 const MainQueue: Set<JobId> = new Set();
-const ActiveJobs: Set<JobId> = new Set();
-const EndedJobs: Array<JobId> = [];
 
 const MAX_ACTIVE_JOBS = 1;
 const MAX_DONE_JOBS = 5; // Don't keep too many done jobs in memory
 const JOB_INTERVAL = 1000;
 
 export class JobService {
-	public static addJob(job: JobDefinition, priority?: boolean): Job {
+	public static addJob(job: JobDefinition): Job {
 		const newJob: Job = {
-			id: Math.random().toString(36).substring(2, 15),
+			jobId: Math.random().toString(36).substring(2, 15),
 			type: job.type,
-			status: JobStatus.pending,
+			status: 'pending',
 			definition: job,
 			createdAt: new Date(),
 			logs: [],
 		};
-		Jobs.set(newJob.id, newJob);
+		Jobs.set(newJob.jobId, newJob);
 
-		if (priority) {
-			PriorityQueue.add(newJob.id);
+		if (job.priority) {
+			PriorityQueue.add(newJob.jobId);
 		}
 		else {
-			MainQueue.add(newJob.id);
+			MainQueue.add(newJob.jobId);
 		}
 
 		JobService.startNextJobs().catch((err) => {
@@ -79,15 +81,21 @@ export class JobService {
 		return Array.from(Jobs.values());
 	}
 
+	public static get activeJobs(): Job[] {
+		return Array.from(Jobs.values()).filter(job => job.status === 'running');
+	}
+	public static get endedJobs(): Job[] {
+		return Array.from(Jobs.values()).filter(job => job.status === 'completed' || job.status === 'failed');
+	}
 
 	private static async startNextJobs() {
-		if (ActiveJobs.size >= MAX_ACTIVE_JOBS) {
+		if (JobService.activeJobs.length >= MAX_ACTIVE_JOBS) {
 			return;
 		}
 
-		while (ActiveJobs.size < MAX_ACTIVE_JOBS && (PriorityQueue.size > 0 || MainQueue.size > 0)) {
+		while (JobService.activeJobs.length < MAX_ACTIVE_JOBS && (PriorityQueue.size > 0 || MainQueue.size > 0)) {
 			const queue = PriorityQueue.size > 0 ? PriorityQueue : MainQueue;
-			const jobId = queue.values().next().value;
+			const jobId = queue.values().next().value!;
 			if (queue === MainQueue) {
 				await new Promise((resolve) => setTimeout(resolve, JOB_INTERVAL));
 			}
@@ -99,12 +107,11 @@ export class JobService {
 	}
 
 	private static async doJob(job: Job) {
-		job.status = JobStatus.running;
+		job.status = 'running';
 		job.startedAt = new Date();
-		ActiveJobs.add(job.id);
 
 		try {
-			const result = await job.definition.handler({
+			job.result = (await job.definition.handler({
 				log: (message) => {
 					job.progressedAt = new Date();
 					job.progress = {
@@ -119,33 +126,24 @@ export class JobService {
 						data,
 					};
 				}
-			});
+			})) || { error: undefined, data: undefined };
 
-			const error = result.error;
+			const error = job.result.error;
 			if (error) {
 				throw error;
 			}
-			job.status = JobStatus.completed;
+			job.status = 'completed';
 		}
 		catch (err) {
-			job.status = JobStatus.failed;
+			job.status = 'failed';
 			job.error = err;
 		}
 		finally {
 			job.endedAt = new Date();
-			JobService.startNextJobs();
-			JobService.addDoneJob(job.id);
-		}
-	}
-
-	private static addDoneJob(jobId: JobId) {
-		EndedJobs.push(jobId);
-		ActiveJobs.delete(jobId);
-		if (EndedJobs.length > MAX_DONE_JOBS) {
-			const oldJobId = EndedJobs.shift();
-			if (oldJobId) {
-				Jobs.delete(oldJobId);
+			if (this.endedJobs.length > MAX_DONE_JOBS) {
+				Jobs.delete(job.jobId);
 			}
+			this.startNextJobs();
 		}
 	}
 }

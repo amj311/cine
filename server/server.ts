@@ -290,7 +290,7 @@ app.get("/api/stream", async function (req, res) {
 
 app.post('/api/prepareAudio', async (req, res) => {
 	const { src, index } = req.body;
-	// Use ffmpeg to extract indicated audio stream from video file as mp3
+
 	if (!src) {
 		res.status(400).send("Requires src query param");
 		return;
@@ -304,26 +304,37 @@ app.post('/api/prepareAudio', async (req, res) => {
 		res.status(404).send("File not found");
 		return;
 	}
-	const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp3');
-	await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
-		ffmpeg.outputOptions(`-map 0:${index}`)
-			.output(outputFilePath)
-			.on('end', () => {
-				resolve();
-			})
-			.on('error', (err) => {
-				reject(err);
-			})
-			.run();
-	}).catch((err) => {
-		console.error("Error while sending converted file:", err);
-		if (!res.headersSent) {
-			res.status(500).send("Error sending converted file");
+
+	// Setup a job for the frontend to ping
+	const job = JobService.addJob({
+		type: 'extract_audio_stream',
+		priority: true,
+		handler: async () => {
+			// Use ffmpeg to extract indicated audio stream from video file as mp3
+			const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp3');
+			await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
+				ffmpeg.outputOptions(`-map 0:${index}`)
+					.output(outputFilePath)
+					.on('end', () => {
+						resolve();
+					})
+					.on('error', (err: any) => {
+						reject(err);
+					})
+					.run();
+			}).catch((err) => {
+				console.error("Error while sending converted file:", err);
+				throw (err);
+			});
 		}
-	});
-	if (!res.headersSent) {
-		res.sendStatus(200);
-	}
+	})
+
+	safeRes(res)?.send({
+		success: true,
+		data: {
+			jobId: job.jobId,
+		}
+	})
 });
 
 app.post('/api/metadata', async (req, res) => {
@@ -812,10 +823,13 @@ app.use('/api/timer', timerRoute);
 import scrubRoute from './routes/scrub.route'
 app.use('/api/scrub', scrubRoute);
 import surpriseRoute from './routes/surprise.route'
-import { safeParseInt } from './utils/miscUtils';
 app.use('/api/surprise', surpriseRoute);
+import jobRoute from './routes/job.route'
+app.use('/api/job', jobRoute);
 
 
+import { safeParseInt } from './utils/miscUtils';
+import { JobService } from './services/JobService';
 
 
 // STATIC SITE

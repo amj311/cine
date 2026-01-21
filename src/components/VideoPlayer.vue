@@ -7,6 +7,7 @@ import MediaTimer from './MediaTimer.vue';
 import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
 import { useScreenStore } from '@/stores/screen.store';
+import { JobPinger } from '@/utils/JobPinger';
 
 const toast = useToast();
 
@@ -367,10 +368,24 @@ async function turnOnSecondaryAudio(audio) {
 				summary: 'Preparing Audio',
 				detail: 'This may take a few minutes...',
 			});
-			await useApiStore().api.post('/prepareAudio', {
+
+			// request job start
+			const { data } = await useApiStore().api.post('/prepareAudio', {
 				src: props.relativePath,
 				index: audio.index,
 			});
+
+			const jobId = data.data.jobId;
+
+			// await job completion
+			const pinger = new JobPinger(jobId);
+			const completedJob = await pinger.start();
+
+			if (completedJob.status === 'failed') {
+				console.log("job failed", completedJob);
+				throw new Error("Job Failed");
+			}
+
 			audioPlayer.src = useApiStore().apiUrl + '/assets/conversion.mp3';
 			await audioPlayer.play();
 			audioPlayer.currentTime = videoRef.value.currentTime;
