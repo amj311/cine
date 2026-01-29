@@ -3,10 +3,10 @@
 	lang="ts"
 >
 import { useApiStore } from '@/stores/api.store';
+import type ToggleSwitch from 'primevue/toggleswitch';
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
-
-const defaultTotal = 30;
-const addAmount = 10;
+import DurationInput from './utils/DurationInput.vue';
+import { msToTimestamp } from '@/utils/miscUtils';
 
 const { mediaEl, inPlayer = false } = defineProps<{
 	mediaEl?: HTMLMediaElement;
@@ -17,15 +17,20 @@ const loading = ref(true);
 
 const timerState = ref({
 	running: false,
-	timeLeft: defaultTotal,
-	totalTime: defaultTotal,
+	timeLeft_ms: 1,
+	totalTime_ms: 1,
+	config: {
+		maxTime_ms: 0,
+		startTime_ms: 1,
+		tapValue_ms: 0,
+	}
 });
 
 async function fetchTimerState() {
 	const { data } = await useApiStore().api.get('/timer');
 	timerState.value = data.data;
 
-	if (timerState.value.timeLeft <= 0) {
+	if (timerState.value.timeLeft_ms <= 0) {
 		// paused by time, NOT media
 		pausedByMedia.value = false;
 		await mediaEl?.pause();
@@ -46,10 +51,10 @@ async function pauseTimerOnly() {
 }
 
 /** 1 Second Total time is used to indicate the timer in a neutral state */
-const hasRun = computed(() => timerState.value.totalTime !== 1);
+const hasRun = computed(() => timerState.value.totalTime_ms !== 1);
 
 async function start() {
-	const { data } = await useApiStore().api.put('/timer/start', { timeLeft: defaultTotal });
+	const { data } = await useApiStore().api.put('/timer/start', { timeLeft_ms: timerState.value.config.startTime_ms });
 	timerState.value = data.data;
 	mediaEl?.play();
 }
@@ -58,14 +63,19 @@ async function reset() {
 	timerState.value = data.data;
 }
 
-async function unpause(timeLeft?: number) {
-	const { data } = await useApiStore().api.put('/timer/start', { timeLeft });
+async function updateConfig() {
+	const { data } = await useApiStore().api.put('/timer/config', timerState.value.config);
+	timerState.value = data.data;
+}
+
+async function unpause(timeLeft_ms?: number) {
+	const { data } = await useApiStore().api.put('/timer/start', { timeLeft_ms });
 	timerState.value = data.data;
 	mediaEl?.play();
 }
 
 async function addTime() {
-	const { data } = await useApiStore().api.put('/timer/add', { time: addAmount });
+	const { data } = await useApiStore().api.put('/timer/add');
 	timerState.value = data.data;
 	mediaEl?.play();
 }
@@ -97,23 +107,58 @@ onMounted(async () => {
 	loading.value = false;
 
 	interval = setInterval(fetchTimerState, 1000);
+
+	requestWakeLock();
 });
+
 
 onUnmounted(() => {
 	clearInterval(interval);
+	releaseWakeLock();
 });
+
+
+const wakeLock = ref<WakeLockSentinel | null>(null);
+const isWakeLockOn = computed(() => !wakeLock.value?.released);
+
+async function requestWakeLock() {
+	if ('wakeLock' in navigator) {
+		try {
+			wakeLock.value = await navigator.wakeLock.request('screen');
+		}
+		catch (e) {
+			console.error("Failed to acquire wake lock", e);
+			wakeLock.value = null;
+		}
+	}
+}
+async function releaseWakeLock() {
+	if (wakeLock.value) {
+		await wakeLock.value.release();
+		wakeLock.value = null;
+	}
+}
+async function toggleWakeLock() {
+	if (wakeLock.value) {
+		await releaseWakeLock();
+		console.log(wakeLock.value)
+	}
+	else {
+		await requestWakeLock();
+	}
+}
 
 const buttonActive = ref(false);
 
 
 const status = computed(() => {
-	if (!hasRun.value) {
+	if (!hasRun.value) {	
 		return 'unstarted';
 	}
-	if (!timerState.value.running && timerState.value.timeLeft) {
+	if (!timerState.value.running && timerState.value.timeLeft_ms) {
 		return 'paused';
 	}
-	if (!timerState.value.timeLeft) {
+	if (!timerState.value.timeLeft_ms) {
 		return 'ended';
 	}
 	else {
@@ -150,16 +195,16 @@ async function handleClick() {
 	}
 }
 
-const timerColor = computed(() => (!hasRun.value || timerState.value.timeLeft) ? '#ffffff' : 'red');
+const timerColor = computed(() => (!hasRun.value || timerState.value.timeLeft_ms) ? '#ffffff' : 'red');
 const remainingRatio = computed(() => {
 	if (loading.value) {
 		return 0;
 	}
-	if (!timerState.value.timeLeft) {
-		// Show a full red circle when. no tim eis left
+	if (!timerState.value.timeLeft_ms) {
+		// Show a full red circle when. no time is left
 		return 1;
 	}
-	return (timerState.value.timeLeft / timerState.value.totalTime)
+	return (timerState.value.timeLeft_ms / timerState.value.totalTime_ms)
 })
 
 const strokeWidth = computed(() => inPlayer ? 25 : 10);
@@ -208,8 +253,30 @@ const qrUrl = computed(() => "https://api.qrserver.com/v1/create-qr-code/?data="
 					<template v-if="loading"></template>
 					<template v-else-if="status === 'unstarted'">Start</template>
 					<template v-else-if="status === 'paused'">Continue</template>
-					<template v-else-if="status === 'running' || status === 'ended'">+ Add Time</template>
+					<template v-else-if="status === 'ended'">+ Add Time</template>
 				</text>
+				<g v-if="!inPlayer && status === 'running'">
+					<text
+						x="50%"
+						y="50%"
+						dominant-baseline="middle"
+						text-anchor="middle"
+						font-size="28"
+						fill="var(--color-heading)"
+					>
+						{{ msToTimestamp(timerState.timeLeft_ms, true) }}
+					</text>
+					<text
+						x="50%"
+						y="65%"
+						dominant-baseline="middle"
+						text-anchor="middle"
+						font-size="12"
+						fill="var(--color-heading)"
+					>
+						+ Add Time
+					</text>
+				</g>
 			</svg>
 			<!-- Small svg icons for player -->
 			<!-- Can't display these icons in the svg -->
@@ -227,6 +294,34 @@ const qrUrl = computed(() => "https://api.qrserver.com/v1/create-qr-code/?data="
 			<Button v-if="inPlayer" @click="showPhoneQR = true" icon="pi pi-mobile" severity="secondary" size="large" />
 			<Button v-if="hasRun && timerState.running" @click="pauseTimerOnly" icon="pi pi-pause" severity="secondary" size="large" label="Pause Timer" />
 			<Button v-if="hasRun" @click="reset" icon="pi pi-stop" severity="secondary" size="large" label="Cancel" />
+		</div>
+
+		<div class="non-media-buttons" v-if="!inPlayer" style="order: 3">
+			<div
+				style="display: grid; grid-template-columns: 1fr auto; gap: 1em; align-items: center; min-width: 20rem;"
+				class="w-full mt-6"
+			>
+				<label>Tap value</label>
+				<div>
+					<DurationInput v-model="timerState.config.tapValue_ms" @change="updateConfig" :steppers="false" :units="['m', 's']" />
+				</div>
+
+				<label>Starting time</label>
+				<div>
+					<DurationInput v-model="timerState.config.startTime_ms" @change="updateConfig" :steppers="false" :units="['m', 's']" />
+				</div>
+
+				<label>Max time</label>
+				<div>
+					<DurationInput v-model="timerState.config.maxTime_ms" @change="updateConfig" :steppers="false" :units="['m', 's']" />
+				</div>
+
+
+				<label>Keep screen on</label>
+				<div>
+					<ToggleSwitch :modelValue="isWakeLockOn" @click="toggleWakeLock" />
+				</div>
+			</div>
 		</div>
 	</div>
 
