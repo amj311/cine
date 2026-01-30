@@ -522,7 +522,7 @@ function onTitleClick() {
 				:audio="probe?.audio"
 				timer
 				allowFullscreen
-				showtime
+				showTime
 			>
 				<template #topButtons>
 					<!-- SCRUB BUTTON -->
