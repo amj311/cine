@@ -117,12 +117,10 @@ watch(() => mergedSeasons.value, determineEpisodeToPlay, { immediate: true, deep
 
 function determineEpisodeToPlay() {
 	// Find the episode with the most recent watch time
-	const scored = mergedSeasons.value.flatMap((season: any) => season.episodes).map((episode: any) => {
+	const allEps = mergedSeasons.value.flatMap((season: any) => season.episodes);
+	const scored = allEps.map((episode: any, allEpsIdx) => {
 		let score = 0;
 		if (!episode.watchProgress) {
-			score = 0;
-		}
-		else if (episode.watchProgress.percentage >= 90) {
 			score = 0;
 		}
 		else {
@@ -131,9 +129,19 @@ function determineEpisodeToPlay() {
 		return {
 			...episode,
 			score,
+			allEpsIdx,
 		};
 	}).filter((episode: any) => episode.score > 0).sort((a,b) => b.score - a.score);
-	const episode = scored[0] || mergedSeasons.value[0]?.episodes[0] || null;
+	
+	const mostRecent = scored[0];
+	const nextEpisode = mostRecent?.watchProgress?.percentage >= 90 ? allEps[mostRecent.allEpsIdx + 1] || null : null;
+	
+	// Fallback on first episode
+	const episode = nextEpisode || mostRecent || allEps[0] || null;
+
+	if (episode && episode === nextEpisode) {
+		episode.isNext = true;
+	}
 	
 	// Use this opportunity to update the active season based on the last watched episode
 	activeSeason.value =
@@ -147,7 +155,7 @@ function determineEpisodeToPlay() {
 
 
 const resumable = computed(() => {
-	return isSeries.value ? episodeToPlay.value : props.libraryItem.movie;
+	return isSeries.value ? (episodeToPlay.value.isNext ? null : episodeToPlay.value) : props.libraryItem.movie;
 })
 const resumeTime = computed(() => {
 	if (resumable.value?.watchProgress && resumable.value.watchProgress.percentage < 90) {
