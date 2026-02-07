@@ -45,8 +45,8 @@ export class ProbeService {
 				...tags,
 				year: safeParseInt(tags.date),
 				subtitles: probe?.glossary?.subtitles || [],
-				trackNumber: stringTrackNumber ? stringTrackNumber.split('/')[0] : safeParseInt(tags.track),
-				trackTotal: stringTrackNumber ? stringTrackNumber.split('/')[1] : safeParseInt(tags.track),
+				trackNumber: slashTrackNumber ? stringTrackNumber!.split('/')[0] : safeParseInt(tags.track),
+				trackTotal: slashTrackNumber ? stringTrackNumber!.split('/')[1] : safeParseInt(tags.track),
 				duration: probe?.full?.format?.duration,
 				chapters: probe?.full?.chapters,
 			}
