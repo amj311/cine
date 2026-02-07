@@ -39,12 +39,14 @@ export class ProbeService {
 		try {
 			const probe = await ProbeService.getProbeData(path);
 			const tags = probe?.full?.format?.tags || {};
+			const stringTrackNumber = typeof tags.track === 'string' ? tags.track as string : null;
+			const slashTrackNumber = stringTrackNumber?.includes('/');
 			return {
 				...tags,
-				year: tags.date ? safeParseInt(tags.date) : undefined,
+				year: safeParseInt(tags.date),
 				subtitles: probe?.glossary?.subtitles || [],
-				trackNumber: String(tags.track || '')?.split('/')[0] ? parseInt(tags.track.split('/')[0]) : undefined,
-				trackTotal: String(tags.track || '')?.split('/')[1] ? parseInt(tags.track.split('/')[1]) : undefined,
+				trackNumber: stringTrackNumber ? stringTrackNumber.split('/')[0] : safeParseInt(tags.track),
+				trackTotal: stringTrackNumber ? stringTrackNumber.split('/')[1] : safeParseInt(tags.track),
 				duration: probe?.full?.format?.duration,
 				chapters: probe?.full?.chapters,
 			}
@@ -55,26 +57,6 @@ export class ProbeService {
 		}
 	}
 
-
-	// public static async getMp3Art(relativePath: string): Promise<any> {
-	// 	try {
-	// 		const filePath = DirectoryService.resolvePath(relativePath);
-	// 		const probe = await ProbeService.getProbeData(relativePath);
-	// 		const tags = probe?.full?.format?.tags;
-	// 		if (!tags) {
-	// 			return null;
-	// 		}
-	// 		return {
-	// 			...tags,
-	// 			trackNumber: tags.track.split('/')[0] ? parseInt(tags.track.split('/')[0]) : undefined,
-	// 			trackTotal: tags.track.split('/')[1] ? parseInt(tags.track.split('/')[1]) : undefined,
-	// 		}
-	// 	}
-	// 	catch (err) {
-	// 		console.error("Error while getting mp3 tags:", err);
-	// 		return null;
-	// 	}
-	// }
 
 	/**
 	 * 
