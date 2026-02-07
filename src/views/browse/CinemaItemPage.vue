@@ -132,7 +132,7 @@ function determineEpisodeToPlay() {
 			...episode,
 			score,
 		};
-	}).filter((episode: any) => episode.score > 0).reverse();
+	}).filter((episode: any) => episode.score > 0).sort((a,b) => b.score - a.score);
 	const episode = scored[0] || mergedSeasons.value[0]?.episodes[0] || null;
 	
 	// Use this opportunity to update the active season based on the last watched episode
