@@ -3,19 +3,20 @@ import path from 'path';
 import { AbsolutePath, ConfirmedPath, DirectoryService, RelativePath } from './DirectoryService';
 import sharp from 'sharp';
 import ffmpeg from 'fluent-ffmpeg';
+import { safeParseInt } from '../utils/miscUtils';
 
 const MAX_CACHE_SIZE = 100; // Maximum number of Probes to cache
 const probeCache = new Map<RelativePath, ProbeData>();
 
 type SubtitleTrack = {
 	index: number;
-	format: string;
+	format: string | undefined;
 	name?: string;
 }
 
 type AudioTrack = {
 	index: number;
-	format: string;
+	format: string | undefined;
 	language?: string;
 	name?: string;
 }
@@ -25,7 +26,7 @@ type ProbeData = {
 		subtitles: SubtitleTrack[];
 		audio: AudioTrack[];
 	},
-	full: any;
+	full: ffmpeg.FfprobeData;
 }
 
 
@@ -40,10 +41,10 @@ export class ProbeService {
 			const tags = probe?.full?.format?.tags || {};
 			return {
 				...tags,
-				year: tags.date ? parseInt(tags.date) : undefined,
+				year: tags.date ? safeParseInt(tags.date) : undefined,
 				subtitles: probe?.glossary?.subtitles || [],
-				trackNumber: tags.track?.split('/')[0] ? parseInt(tags.track.split('/')[0]) : undefined,
-				trackTotal: tags.track?.split('/')[1] ? parseInt(tags.track.split('/')[1]) : undefined,
+				trackNumber: String(tags.track || '')?.split('/')[0] ? parseInt(tags.track.split('/')[0]) : undefined,
+				trackTotal: String(tags.track || '')?.split('/')[1] ? parseInt(tags.track.split('/')[1]) : undefined,
 				duration: probe?.full?.format?.duration,
 				chapters: probe?.full?.chapters,
 			}
@@ -106,12 +107,14 @@ export class ProbeService {
 		let probeData: ProbeData | null = null;
 		try {
 			probeData = await new Promise((resolve, reject) => {
-				ffmpeg.ffprobe(filePath, ['-show_chapters'], (err: any, data: any) => {
+				ffmpeg.ffprobe(filePath, ['-show_chapters'], (err: any, data) => {
 					if (err) {
 						console.error("Error while probing file:", err);
 						reject(err);
 						return;
 					}
+					console.log(data)
+
 					const probeData: ProbeData = {
 						glossary: {
 							subtitles: [],
