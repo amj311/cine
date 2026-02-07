@@ -113,7 +113,6 @@ export class ProbeService {
 						reject(err);
 						return;
 					}
-					console.log(data)
 
 					const probeData: ProbeData = {
 						glossary: {
