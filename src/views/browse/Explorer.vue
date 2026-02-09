@@ -135,7 +135,7 @@ function openSlideshow(file: GalleryFile) {
 			</template>
 			<template v-else>
 				<Scroll>
-					<div class="mt-3 pl-3 pb-3">
+					<div class="mt-3 pl-3 pr-2 pb-3">
 						<div class="flex flex-column gap-5">
 							<div class="folder-grid" v-if="folderItems.length">
 								<template v-for="folder in folderItems">

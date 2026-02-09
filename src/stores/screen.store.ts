@@ -277,7 +277,7 @@ export const useScreenStore = defineStore('Screen', () => {
 		const focusablePriority = Array.from(focusTargets.values()).map((focusTarget) => focusTarget.element)
 			.sort((a, b) => {
 				if (a.getAttribute('data-focus-priority') && b.getAttribute('data-focus-priority')) {
-					return parseInt(a.getAttribute('data-focus-priority') || '0') - parseInt(b.getAttribute('data-focus-priority') || '0');
+					return parseInt(b.getAttribute('data-focus-priority') || '0') - parseInt(a.getAttribute('data-focus-priority') || '0');
 				}
 				if (a.getAttribute('data-focus-priority')) {
 					return -1;
