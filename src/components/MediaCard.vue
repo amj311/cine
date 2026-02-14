@@ -105,10 +105,28 @@ async function revealSurprise() {
 }
  
 const imageError = ref<any>(null);
+
+function activate() {
+	const handler = onClick.value;
+	if (typeof handler === 'function') {
+		handler();
+	}
+}
 </script>
 
 <template>
-	<div class="media-card" :class="{ clickable: onClick }" @click="onClick" :tabindex="onClick ? 0 : -1" :data-focus-priority="onClick ? 0 : undefined"  :data-tvNavJumpRow="navJumpRow">
+	<div
+		class="media-card"
+		:class="{ clickable: onClick }"
+		@click="onClick"
+		@keydown.enter.prevent="activate"
+		@keydown.space.prevent="activate"
+		:tabindex="onClick ? 0 : -1"
+		:role="onClick ? 'button' : undefined"
+		:aria-label="onClick ? (title || subtitle || 'Open item') : undefined"
+		:data-focus-priority="onClick ? 0 : undefined"
+		:data-tvNavJumpRow="navJumpRow"
+	>
 		<div
 			class="poster"
 			:class="{ [aspectRatio || 'tall']: true, surprise, revealed: revealedSurprise }"
@@ -168,7 +186,7 @@ const imageError = ref<any>(null);
 	border-radius: 5px;
 	overflow: hidden;
 
-	&.clickable:hover, &[tv-focus] {
+	&.clickable:hover, &.clickable:focus-visible, &[tv-focus] {
 		cursor: pointer;
 		background-color: var(--color-background-mute);
 		border: 3px solid var(--color-background-mute);

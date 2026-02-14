@@ -176,8 +176,12 @@ function formatRuntime(minutes: number) {
 								class="photo-grid-cell"
 								v-for="item in feedRow.items"
 								:key="item.relativePath"
-								tabindex="0"
-								@click="openSlideshow(feedRow.items, item)"
+									tabindex="0"
+									role="button"
+									:aria-label="item.fileName || item.relativePath"
+									@click="openSlideshow(feedRow.items, item)"
+									@keydown.enter.prevent="openSlideshow(feedRow.items, item)"
+									@keydown.space.prevent="openSlideshow(feedRow.items, item)"
 							>
 								<GalleryFileFrame
 									:file="item"
@@ -255,7 +259,7 @@ function formatRuntime(minutes: number) {
 			box-shadow: var(--shadow-1);
 			transition: all 0.2s ease-in-out;
 
-			&:hover {
+			&:hover, &:focus-visible {
 				box-shadow: var(--shadow-2);
 				transform: scale(1.05);
 			}
