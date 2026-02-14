@@ -482,12 +482,12 @@ async function toggleScrubMenu() {
  * LOADING SPLASH
  */
 
- const loadSplashUrl = computed(() => {
+const loadSplashUrl = computed(() => {
 	if (playable.value?.type === 'extra') {
 		return useApiStore().apiUrl + '/thumb/' + encodeMediaPath(queryPathStore.currentPath) + '?width=1200';
 	}
 	return currentEpisodeMetadata.value?.still_full || parentLibrary.value?.metadata?.background;
- })
+})
 
 
 /************
@@ -520,6 +520,7 @@ function onTitleClick() {
 				:onEnd="onEnd"
 				:subtitles="probe?.subtitles"
 				:audio="probe?.audio"
+				:chapters="probe?.chapters"
 				timer
 				allowFullscreen
 				showTime

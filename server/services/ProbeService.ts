@@ -25,6 +25,11 @@ type ProbeData = {
 	glossary: {
 		subtitles: SubtitleTrack[];
 		audio: AudioTrack[];
+		chapters?: Array<{
+			title: string;
+			start_s: number,
+			end_s: number,
+		}>,
 	},
 	full: ffmpeg.FfprobeData;
 }
@@ -99,9 +104,10 @@ export class ProbeService {
 					const probeData: ProbeData = {
 						glossary: {
 							subtitles: [],
-							audio: []
+							audio: [],
+							chapters: [],
 						},
-						full: data
+						full: data,
 					};
 
 					if (data && data.streams) {
@@ -127,6 +133,15 @@ export class ProbeService {
 								});
 							}
 						}
+					}
+
+					// format chapters
+					if (data.chapters) {
+						probeData.glossary.chapters = data.chapters.map((c, i) => ({
+							title: c['TAG:title'] || `Chapter ${i + 1}`,
+							start_s: c.start_time,
+							end_s: c.end_time,
+						}))
 					}
 					resolve(probeData);
 				});

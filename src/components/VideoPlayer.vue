@@ -23,7 +23,6 @@ const props = defineProps<{
 	onLoadedData?: (data: any) => void;
 	hideControls?: boolean;
 	autoplay?: boolean;
-	loadSubs?: boolean;
 	subtitles?: Array<{
 		index: number;
 		format: string;
@@ -33,6 +32,11 @@ const props = defineProps<{
 		index: number;
 		format: string;
 		name?: string;
+	}>;
+	chapters?: Array<{
+		title: string;
+		start_s: number,
+		end_s: number,
 	}>;
 	timer?: boolean;
 	background?: string,
@@ -96,8 +100,8 @@ const playingState = ref({
 	paused: false,
 	ended: false,
 	currentTime: 0,
-	progress: 0,
-	duration: 0,
+	progress_s: 0,
+	duration_s: 0,
 });
 
 const seekerRef = ref<HTMLInputElement>();
@@ -110,7 +114,7 @@ function updatePlayingState() {
 	playingState.value.paused = videoRef.value.paused;
 	playingState.value.ended = videoRef.value.ended;
 	playingState.value.currentTime = videoRef.value.currentTime;
-	playingState.value.progress = videoRef.value.duration ? videoRef.value.currentTime * 100 / videoRef.value.duration : 0;
+	playingState.value.progress_s = videoRef.value.duration ? videoRef.value.currentTime * 100 / videoRef.value.duration : 0;
 
 	if (resolvedSeekerEl.value) {
 		resolvedSeekerEl.value.value = videoRef.value.currentTime as any;
@@ -122,7 +126,7 @@ function updatePlayingState() {
 
 watch(() => resolvedSeekerEl.value, () => {
 	if (resolvedSeekerEl.value) {
-		resolvedSeekerEl.value.addEventListener('input', (e: any) => doRangeSeek(e?.target?.value));
+		resolvedSeekerEl.value.addEventListener('input', (e: any) => doSeek(e?.target?.value));
 	}
 })
 
@@ -256,11 +260,11 @@ function skipForward() {
 	doShowControls();
 }
 
-function doRangeSeek(seek: number) {
+function doSeek(time_s: number) {
 	if (!videoRef.value) {
 		return;
 	}
-	videoRef.value.currentTime = seek;
+	videoRef.value.currentTime = time_s;
 }
 
 const remaining = computed(() => {
@@ -481,9 +485,9 @@ function toggleTimer() {
 			<Button class="square" text severity="contrast" @click="skipBack">
 				<i class="material-symbols-outlined">fast_rewind</i>
 			</Button>
-			<div data-focus-priority="1" class="clickable square border-circle w-3rem bg-white-alpha-70 flex-center-all cursor-pointer no-select" @click="togglePlay">
+			<Button class="square" text severity="contrast" data-focus-priority="1" @click="togglePlay">
 				<i class="material-symbols-outlined">{{ isPlaying ? 'pause' : 'play_arrow' }}</i>
-			</div>
+			</Button>
 			<Button class="square" text severity="contrast" @click="skipForward">
 				<i class="material-symbols-outlined">fast_forward</i>
 			</Button>
@@ -507,7 +511,26 @@ function toggleTimer() {
 					<span class="material-symbols-outlined">{{ useFullscreenStore().isAppInFullscreenMode ? 'fullscreen_exit' : 'fullscreen' }}</span>
 				</Button>
 			</div>
-			<input v-if="!seekerEl" type="range" ref="seekerRef" class="seeker w-full" />
+			<div v-if="!seekerEl" class="seeker-wrapper relative">
+				<input type="range" ref="seekerRef" class="seeker w-full" />
+				<div
+					class="chapters-wrapper absolute top-0 left-0 h-full pointer-events-none"
+					style="width: calc(100% - 1em)"
+				>
+					<template v-for="chapter, i in chapters">
+						<div
+							v-if="i > 0"
+							class="chapter-button absolute bg-soft border-round cursor-pointer"
+							tabindex="0"
+							:key="chapter.title || i"
+							style="top: 47%; translate: 0 -50%; height: .6em; width: 3px; pointer-events: all;"
+							:style="{ left: `${(chapter.start_s / (videoRef?.duration || chapter.start_s) * 100).toFixed(4)}%` }"
+							@click="() => doSeek(chapter.start_s)"
+						>
+						</div>
+					</template>
+				</div>
+			</div>
 		</div>
 		<div class="cards" :class="{ lift: showControls }">
 			<slot name="cards" />

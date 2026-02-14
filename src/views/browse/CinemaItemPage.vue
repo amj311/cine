@@ -243,7 +243,7 @@ onUnmounted(async () => {
 					<div class="poster-wrapper">
 						<MediaCard
 							:imageUrl="metadata?.poster_full"
-							:progress="resumable?.watchProgress"
+							:progress="isSeries? undefined : resumable?.watchProgress"
 							:loading="isLoadingMetadata"
 						/>
 					</div>
