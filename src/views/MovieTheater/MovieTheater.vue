@@ -18,6 +18,7 @@ import { useApiStore } from '@/stores/api.store';
 import { useScrubberStore } from './scrubber.store';
 import ScrubSettings from './ScrubSettings.vue';
 import DropdownTrigger from '@/components/utils/DropdownTrigger.vue';
+import ToggleSwitchInputClick from '@/components/utils/ToggleSwitchInputClick.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import type NavTrigger from '@/components/utils/NavTrigger/NavTrigger.vue';
 
@@ -609,7 +610,11 @@ function onTitleClick() {
 								<Button icon="pi pi-times" text severity="secondary" @click="toggleScrubMenu" />
 								<h3>Media Scrubs</h3>
 								<div class="flex-grow-1"></div>
-								<ToggleSwitch :defaultValue="useScrubberStore().isScrubbing" @click="useScrubberStore().toggleScrubbing" :disabled="!useScrubberStore().activeProfile" />
+								<ToggleSwitchInputClick
+									:modelValue="useScrubberStore().isScrubbing"
+									@update:modelValue="(value) => value ? useScrubberStore().startScrubbing() : useScrubberStore().stopScrubbing()"
+									:disabled="!useScrubberStore().activeProfile"
+								/>
 							</div>
 							<div class="flex-grow-1 overflow-y-auto">
 								<ScrubSettings :playable="playable" />

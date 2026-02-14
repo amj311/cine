@@ -16,6 +16,7 @@ import OfflinePage from './views/OfflinePage.vue';
 import SharedPage from './views/SharedPage.vue';
 import { useSettingsStore } from './stores/settings.store';
 import ProgressBar from 'primevue/progressbar';
+import ToggleSwitchInputClick from './components/utils/ToggleSwitchInputClick.vue';
 
 const apiStore = useApiStore();
 

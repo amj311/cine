@@ -7,6 +7,7 @@ import type Dialog from 'primevue/dialog';
 import { useSettingsStore } from '@/stores/settings.store';
 import NavModal from './utils/NavModal.vue';
 import { useScreenStore } from '@/stores/screen.store';
+import ToggleSwitchInputClick from '@/components/utils/ToggleSwitchInputClick.vue';
 
 const props = defineProps<{
 }>();
@@ -36,7 +37,7 @@ defineExpose({
 		>
 			<label>This is a TV</label>
 			<div>
-				<ToggleSwitch v-model="localSettings.is_tv" />
+				<ToggleSwitchInputClick v-model="localSettings.is_tv" />
 			</div>
 
 			<div class="grid-row" :disabled="!localSettings.is_tv">
@@ -46,13 +47,13 @@ defineExpose({
 					<Button v-else label="Enable" @click="useScreenStore().engageTvMode" />
 				</div> -->
 				<div>
-					<ToggleSwitch v-model="localSettings.tv_nav" />
+					<ToggleSwitchInputClick v-model="localSettings.tv_nav" />
 				</div>
 			</div>
 
 			<label>Show debug</label>
 			<div>
-				<ToggleSwitch v-model="localSettings.show_debug" />
+				<ToggleSwitchInputClick v-model="localSettings.show_debug" />
 			</div>
 		</div>
 	</NavModal>
