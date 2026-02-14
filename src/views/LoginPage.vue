@@ -221,6 +221,7 @@ function doFormSubmit() {
 							:loading="state.isLoading"
 							class="w-full my-3 justify-content-around"
 							role="submit"
+							@click="doFormSubmit"
 						>
 							Sign in
 						</button>
