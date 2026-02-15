@@ -447,6 +447,33 @@ function toggleTimer() {
 	showTimer.value = !showTimer.value;
 }
 
+/**************
+ * CHAPTERS
+ *************/
+function getCurrentChapterIndex() {
+	return props.chapters?.findIndex(c => c.start_s <= playingState.value.currentTime && c.end_s > playingState.value.currentTime) ?? -1;
+}
+
+/** The start of the current chapter or the previous if we're at the beginning of the current */
+const prevChapterStart = computed(() => {
+	const currentChapterIndex = getCurrentChapterIndex();
+	if (currentChapterIndex === -1) return null;
+	console.log(currentChapterIndex)
+	const currentChapter = props.chapters![currentChapterIndex]!;
+	if ((playingState.value.currentTime - currentChapter.start_s) > 1) {
+		return currentChapter.start_s;
+	}
+	const prevChapter = props.chapters![currentChapterIndex - 1];
+	return prevChapter?.start_s || null;
+})
+
+const nextChapterStart = computed(() => {
+	const currentChapterIndex = getCurrentChapterIndex();
+	if (currentChapterIndex === -1) return null;
+	const nextChapter = props.chapters![currentChapterIndex + 1];
+	return nextChapter?.start_s || null;
+})
+
 </script>
 
 <template>
@@ -481,14 +508,20 @@ function toggleTimer() {
 				<div><MediaTimer :mediaEl="videoRef" :inPlayer="true" /></div>
 			</div>
 		</div>
-		<div v-if="hasLoaded" class="center-controls overlay flex-row-center gap-4">
-			<Button class="square" text severity="contrast" @click="skipBack">
+		<div v-if="hasLoaded" class="center-controls overlay flex-row-center gap-1">
+			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text severity="contrast" :disabled="prevChapterStart === null" @click="prevChapterStart !== null && doSeek(prevChapterStart)">
 				<i class="material-symbols-outlined">fast_rewind</i>
 			</Button>
-			<Button class="square" text severity="contrast" data-focus-priority="1" @click="togglePlay">
+			<Button class="square text-xl" text severity="contrast" @click="skipBack">
+				<i class="material-symbols-outlined">replay_10</i>
+			</Button>
+			<Button class="square text-5xl" text severity="contrast" data-focus-priority="1" @click="togglePlay">
 				<i class="material-symbols-outlined">{{ isPlaying ? 'pause' : 'play_arrow' }}</i>
 			</Button>
-			<Button class="square" text severity="contrast" @click="skipForward">
+			<Button class="square text-xl" text severity="contrast" @click="skipForward">
+				<i class="material-symbols-outlined">forward_10</i>
+			</Button>
+			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text severity="contrast" :disabled="!nextChapterStart" @click="nextChapterStart && doSeek(nextChapterStart)">
 				<i class="material-symbols-outlined">fast_forward</i>
 			</Button>
 		</div>
