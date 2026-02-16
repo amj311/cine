@@ -138,11 +138,13 @@ const creditsByTitle = computed(() => {
 
 				<br/>
 				<h3>Images</h3>
-				<Scroll>
-					<div class="flex gap-3 mt-2">
-						<img v-for="image of personDetails.images" height="200rem" :src="image" class="border-round" tabindex="0" />
-					</div>
-				</Scroll>
+				<div style="max-width: 89vw;">
+					<Scroll>
+						<div class="flex gap-3 mt-2">
+							<img v-for="image of personDetails.images" height="200rem" :src="image" class="border-round" tabindex="0" />
+						</div>
+					</Scroll>
+				</div>
 
 				<br/>
 				<h3>Credits</h3>
