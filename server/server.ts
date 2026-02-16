@@ -388,6 +388,23 @@ app.post('/api/metadata', async (req, res) => {
 });
 
 
+app.get('/api/metadata/person/:personId', async (req, res) => {
+	try {
+		const { personId } = req.params;
+		const person = await MediaMetadataService.getMetadata('person', personId);
+		res.json({
+			data: person,
+		})
+	}
+	catch (err) {
+		console.error(err)
+		if (!res.headersSent) {
+			res.status(500).send("Internal server error");
+		}
+	}
+});
+
+
 
 app.get('/api/watchProgress', async (req, res) => {
 	try {

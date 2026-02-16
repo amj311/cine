@@ -7,6 +7,7 @@ import { ConfirmedPath } from "../DirectoryService";
 
 export type MovieMetadata = MetadataDefinition<
 	'movie',
+	ConfirmedPath,
 	CommonSearchKey,
 	CommonSimpleMetadata,
 	CommonDetailsMetadata
@@ -17,7 +18,7 @@ export type MovieMetadata = MetadataDefinition<
  * Responsible for reading metadata about films from a provider API
  */
 export class MovieMetadataProvider extends IMetadataProvider<MovieMetadata> {
-	protected createSearchKeyFromPath(path: ConfirmedPath) {
+	protected createSearchKeyFromSource(path: ConfirmedPath) {
 		// Split the path into file segments, and find one with a (year) in it
 		const movieFileName = path.relativePath.split('/').find(s => s.match(/\(\d{4}\)/))!;
 		const { name, year, imdbId } = LibraryService.parseNamePieces(movieFileName);
@@ -29,7 +30,7 @@ export class MovieMetadataProvider extends IMetadataProvider<MovieMetadata> {
 		}
 	}
 
-	protected async fetchMetadata(key) {
+	protected async fetchMetadata(key: CommonSearchKey) {
 		const api = new TmdbApi();
 		const result = await api.getMetadataBySearch(key, 'movie');
 		if (!result) {

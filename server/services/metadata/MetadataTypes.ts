@@ -1,4 +1,4 @@
-const MetadataTypes = ['movie', 'series'] as const;
+const MetadataTypes = ['movie', 'series', 'person'] as const;
 export type MetadataType = typeof MetadataTypes[number];
 
 const MetadataSubTypes = ['episode'];
@@ -8,6 +8,7 @@ export type MetadataSubType = typeof MetadataSubTypes[number];
 export type CommonSearchKey = {
 	name: string,
 	year: string,
+	details?: boolean,
 }
 
 export type CommonSimpleMetadata = {
@@ -30,12 +31,14 @@ export type CommonDetailsMetadata = {
 
 export type MetadataDefinition<
 	Type extends MetadataType = MetadataType,
+	CacheKeySource = any,
 	SearchKey extends Object = {},
 	Simple extends Object = {},
 	Details extends Object = {},
 	SubTypes extends Record<Partial<MetadataSubType>, SubMetadataDefinition> = {}
 > = {
 	Type: Type,
+	CacheKeySource: CacheKeySource,
 	SearchKey: SearchKey & { details?: boolean },
 	Simple: Simple,
 	Details: Details,
@@ -55,3 +58,7 @@ export type EitherMetadata<Type extends MetadataType = MetadataType> =
 	| MetadataDefinition<Type>['Details']
 	| MetadataDefinition<Type>['SubTypes'][keyof MetadataDefinition<Type>['SubTypes']]['Data']
 	;
+
+export type SearchKeyWithDetails<T extends MetadataDefinition> = T['SearchKey'] & {
+	details?: boolean,
+}

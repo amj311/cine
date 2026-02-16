@@ -2,17 +2,26 @@
 	setup
 	lang="ts"
 >
+import { ref } from 'vue';
+import PersonModal from './PersonModal.vue';
+
 
 defineProps<{
 	people?: any[]; // libraryItem
 	loading?: boolean;
 }>();
+
+const personModal = ref<InstanceType<typeof PersonModal>>();
+function openPersonModal(person) {
+	personModal.value?.open(person.personId);
+}
+
 </script>
 
 <template>
 	<Scroll>
 		<div class="people-list">
-			<div class="people-item" v-for="(person, index) in (loading ? Array(5).fill(null) : people)" :key="index" tabindex="0">
+			<div class="people-item" v-for="(person, index) in (loading ? Array(5).fill(null) : people)" :key="index" tabindex="0" @click="openPersonModal(person)">
 				<div
 					class="image-wrapper"
 					:style="{ backgroundImage: loading ? '' : `url(${person.photo})` }"
@@ -38,6 +47,8 @@ defineProps<{
 			</div>
 		</div>
 	</Scroll>
+
+	<PersonModal ref="personModal" />
 </template>
 
 <style
@@ -46,7 +57,6 @@ defineProps<{
 >
 .people-list {
 	display: flex;
-	gap: 20px;
 	margin-top: 10px;
 	width: 100%;
 	white-space: nowrap;
@@ -56,6 +66,15 @@ defineProps<{
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	cursor: pointer;
+
+	padding: .75em;
+	border-radius: .5rem;
+
+
+	&:hover, &[tv-focus] {
+		background: rgba(0, 0, 0, 0.3);
+	}
 
 	.image-wrapper {
 		width: 80px;
@@ -68,7 +87,7 @@ defineProps<{
 	}
 	
 	.people-role {
-		width: 6rem;
+		width: 7rem;
 		text-align: center;
 	}
 }

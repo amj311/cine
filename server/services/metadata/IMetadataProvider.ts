@@ -1,5 +1,5 @@
 import { ConfirmedPath } from "../DirectoryService";
-import { EitherMetadata, MetadataDefinition } from "./MetadataTypes";
+import { EitherMetadata, MetadataDefinition, SearchKeyWithDetails } from "./MetadataTypes";
 
 /**
  * Responsible for reading metadata about films from a provider API
@@ -13,19 +13,19 @@ export abstract class IMetadataProvider<T extends MetadataDefinition = MetadataD
 
 	/**
 	 * Turns a search key into a consistent string key for caching
-	 * @param {T['SearchKey']} key
+	 * @param {SearchKeyWithDetails<T>} key
 	 * @returns {string}
 	 */
-	private createCacheKey(key: T['SearchKey']): string {
+	private createCacheKey(key: SearchKeyWithDetails<T>): string {
 		// Build an alphabetical string key from the search key to ensure consistency
 		const sortedKeys = Object.keys(key).sort();
-		return sortedKeys.map(k => `${k}:${key[k as keyof T['SearchKey']]}`).join('|');
+		return sortedKeys.map(k => `${k}:${key[k as keyof SearchKeyWithDetails<T>]}`).join('|');
 	}
-	protected addToCache(key: T['SearchKey'], data: EitherMetadata<T['Type']>) {
+	protected addToCache(key: SearchKeyWithDetails<T>, data: EitherMetadata<T['Type']>) {
 		const cacheKey = this.createCacheKey(key);
 		this.cache.set(cacheKey, data);
 	}
-	protected getFromCache(key: T['SearchKey']): EitherMetadata<T['Type']> | null {
+	protected getFromCache(key: SearchKeyWithDetails<T>): EitherMetadata<T['Type']> | null {
 		const cacheKey = this.createCacheKey(key);
 		return this.cache.get(cacheKey) || null;
 	}
@@ -38,18 +38,18 @@ export abstract class IMetadataProvider<T extends MetadataDefinition = MetadataD
 	 * Determines the unique search key for
 	 * @param path 
 	 */
-	protected abstract createSearchKeyFromPath(path: ConfirmedPath): T['SearchKey'];
+	protected abstract createSearchKeyFromSource(path: T['CacheKeySource']): SearchKeyWithDetails<T>;
 
 	// Private operations for fetching data
-	protected abstract fetchMetadata(key: T['SearchKey']): Promise<EitherMetadata<T['Type']> | null>;
+	protected abstract fetchMetadata(key: SearchKeyWithDetails<T>): Promise<EitherMetadata<T['Type']> | null>;
 
 
 	/***************|
 	|	 Public		|
 	|***************/
-	public async getMetadata(path: ConfirmedPath, details = false, noFetch = false, skipCache = false): Promise<EitherMetadata<T['Type']> | null> {
-		const key: T['SearchKey'] = {
-			...this.createSearchKeyFromPath(path),
+	public async getMetadataBySearch(path: ConfirmedPath, details = false, noFetch = false, skipCache = false): Promise<EitherMetadata<T['Type']> | null> {
+		const key: SearchKeyWithDetails<T> = {
+			...this.createSearchKeyFromSource(path),
 			details,
 		};
 

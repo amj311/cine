@@ -65,7 +65,7 @@ export class TmdbApi {
 			background: this.getImageUrl(result.backdrop_path, 'backdrop', 'large'),
 			background_thumb: this.getImageUrl(result.backdrop_path, 'backdrop', 'small'),
 			logo: this.getImageUrl(
-				result.images?.logos?.find(i => i.iso_639_1 === 'en')?.file_path,
+				result.images?.logos?.find((i: any) => i.iso_639_1 === 'en')?.file_path,
 				'logo',
 				'large',
 			),
@@ -74,20 +74,22 @@ export class TmdbApi {
 			genres: result.genres?.map(g => g.name),
 			runtime: result.runtime,
 			credits: [
-				...(result.credits?.cast.slice(0, 20).map((c) => ({
+				...(result.credits?.cast.slice(0, 20).map((c: any) => ({
+					personId: c.id,
 					name: c.name,
 					role: c.character,
 					photo: this.getImageUrl(c.profile_path, 'profile', 'small'),
 				})) || []),
-				...(result.credits?.crew.slice(0, 20).map((c) => ({
+				...(result.credits?.crew.slice(0, 20).map((c: any) => ({
+					personId: c.id,
 					name: c.name,
 					role: c.job,
 					photo: this.getImageUrl(c.profile_path, 'profile', 'small'),
 				})) || []),
 			],
 			content_rating:
-				result.release_dates?.results.find((r) => r.iso_3166_1 === 'US')?.release_dates[0]?.certification
-				|| result.content_ratings?.results.find((r) => r.iso_3166_1 === 'US')?.rating,
+				result.release_dates?.results.find((r: any) => r.iso_3166_1 === 'US')?.release_dates[0]?.certification
+				|| result.content_ratings?.results.find((r: any) => r.iso_3166_1 === 'US')?.rating,
 		}
 	}
 
@@ -122,10 +124,11 @@ const ImageSizes = {
 	},
 	profile: {
 		small: 'w185',
+		large: 'w300',
 	},
 	still: {
 		small: 'w300',
 		large: 'original',
 	},
 	default: 'original',
-};
+} as const;

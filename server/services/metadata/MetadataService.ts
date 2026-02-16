@@ -1,11 +1,12 @@
-import { ConfirmedPath } from '../DirectoryService';
-import { EitherMetadata, MetadataType } from './MetadataTypes';
+import { EitherMetadata, MetadataDefinition, MetadataType } from './MetadataTypes';
 import { MovieMetadataProvider } from './MovieMetadataProvider';
 import { SeriesMetadataProvider } from './SeriesMetadataProvider';
+import { PersonMetadataProvider } from './PersonMetadataProvider';
 
 export type MetadataProviders =
 	MovieMetadataProvider
 	| SeriesMetadataProvider
+	| PersonMetadataProvider
 	;
 
 // export type Metadata = EitherMetadata<MovieMetadata>;
@@ -13,6 +14,7 @@ export type MetadataProviders =
 const Providers: Record<MetadataType, MetadataProviders> = {
 	movie: new MovieMetadataProvider(),
 	series: new SeriesMetadataProvider(),
+	person: new PersonMetadataProvider(),
 };
 
 export class MediaMetadataService {
@@ -21,17 +23,17 @@ export class MediaMetadataService {
 	 * @param key 
 	 * @returns 
 	 */
-	public static async getMetadata<T extends MetadataType = MetadataType>(
-		type: MetadataType,
-		path: ConfirmedPath,
+	public static async getMetadata<T extends MetadataDefinition>(
+		type: T['Type'],
+		keySource: T['CacheKeySource'],
 		detailed = false,
 		noFetch = false,
 		skipCache = false,
-	): Promise<EitherMetadata<T> | null> {
+	): Promise<EitherMetadata<T['Type']> | null> {
 		const provider = Providers[type];
 		if (!provider) {
 			return null;
 		}
-		return await provider.getMetadata(path, detailed, noFetch, skipCache);
+		return await provider.getMetadataBySearch(keySource, detailed, noFetch, skipCache);
 	}
 }

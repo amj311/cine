@@ -13,6 +13,7 @@ const navTriggerRef = ref<InstanceType<typeof NavTrigger> | null>(null);
 const { closeable = true } = defineProps<{
 	title?: string;
 	width?: string;
+	height?: string;
 	closeable?: boolean,
 }>();
 
@@ -36,7 +37,7 @@ defineExpose({
 					:visible="show"
 					:header="title"
 					:modal="true"
-					:style="{ width: width || '30rem' }"
+					:style="{ width: width || '30rem', height: height || undefined }"
 					:closable="closeable"
 				>
 					<slot></slot>
