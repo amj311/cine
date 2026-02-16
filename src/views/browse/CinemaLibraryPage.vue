@@ -51,19 +51,18 @@ const categorySampling = ref<Record<string, Array<any>>>({});
 
 const categories = computed(() => {
 	return props.directoryItems
-		.sort((a, b) => {
-			return (b.feedOrder || 0) - (a.feedOrder || 0);
-		})
 		.filter(item => ['collection', 'folder'].includes(item.type))
 		// Support items at the root level, w/o category
 		.concat({
 			name: 'Uncategorized',
 			relativePath: props.libraryItem.relativePath,
 			folderName: '',
-			order: 9999,
+			feedOrder: 9999,
 			type: 'library',
 		})
-		.sort((a, b) => a.order - b.order);
+		.sort((a, b) => {
+			return (a.feedOrder || 500) - (b.feedOrder || 500);
+		})
 });
 
 function collectCategorySamples() {

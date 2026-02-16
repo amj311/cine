@@ -415,7 +415,7 @@ export class LibraryService {
 
 
 		// Find feedOrder if specified in the folder name like ".feedorder-1"
-		const feedOrderMatch = folderName.match(/\.feedorder-(\d{1,2})/);
+		const feedOrderMatch = folderName.match(/\.feedorder-(\d{1,3})/);
 		const feedOrder = feedOrderMatch ? parseInt(feedOrderMatch[1]) : null;
 
 
