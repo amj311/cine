@@ -3,12 +3,13 @@
 	lang="ts"
 >
 import { computed, ref } from 'vue';
-import type Dialog from 'primevue/dialog';
 import { useSettingsStore } from '@/stores/settings.store';
 import NavModal from './utils/NavModal.vue';
-import { useScreenStore } from '@/stores/screen.store';
 import ToggleSwitchInputClick from '@/components/utils/ToggleSwitchInputClick.vue';
+import { useApiStore } from '@/stores/api.store';
+import { useToast } from 'primevue/usetoast';
 
+const toast = useToast();
 const props = defineProps<{
 }>();
 
@@ -18,6 +19,24 @@ const localSettings = computed(() => useSettingsStore().localSettings);
 defineExpose({
 	open: () => modal.value?.open(),
 })
+
+async function clearLibraryCache() {
+	try {
+		await useApiStore().api.post('/emptyCaches');
+		toast.add({
+			severity: 'success',
+			summary: 'Cleared directory cache',
+			life: 3000,
+		})
+	}
+	catch (e) {
+		toast.add({
+			severity: 'error',
+			summary: 'Failed to clear directory cache',
+			life: 3000,
+		})
+	}
+}
 
 </script>
 
@@ -55,6 +74,9 @@ defineExpose({
 			<div>
 				<ToggleSwitchInputClick v-model="localSettings.show_debug" />
 			</div>
+
+			<Button label="Reset directory cache" severity="warn" @click="clearLibraryCache" />
+			<div></div>
 		</div>
 	</NavModal>
 </template>

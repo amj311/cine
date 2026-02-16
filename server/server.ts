@@ -126,6 +126,16 @@ app.get("/api/dir/", async function (req, res) {
 	}
 });
 
+app.post("/api/emptyCaches", async function (req, res) {
+	try {
+		LibraryService.emptyCaches();
+		return safeResponse.send(res, 200);
+	} catch (err) {
+		console.error(err);
+		safeResponse.error(res, "Error reading directory");
+	}
+})
+
 app.post("/api/refresh", async function (req, res) {
 	try {
 		let { path } = req.query;

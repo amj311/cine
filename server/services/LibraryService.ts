@@ -256,13 +256,25 @@ type LibraryFile = Photo | Video | Audio;
 export class LibraryService {
 	static readonly itemCache = new Map<string, Base<LibraryItemStrat>>();
 	static readonly itemDetailCache = new Map<string, LibraryItemStrat['details']>();
+	static readonly fileCache = new Map<string, LibraryFile | null>();
+
+	public static emptyCaches() {
+		this.itemCache.clear()
+		this.itemDetailCache.clear();
+		this.fileCache.clear();
+	}
 
 	public static async parseFolderToItem(path: ConfirmedPath, detailed = false, withMetadata = true): Promise<Full<LibraryItemStrat>> {
 		let base: Base<LibraryItemStrat> | undefined = this.itemCache.get(path.relativePath);
 		if (!base) {
 			const item = await this.computeFolderToItem(path);
 			base = item;
-			this.itemCache.set(path.relativePath, item);
+
+			// don't cache non-item types
+			const uncachedTypes: Array<Base<LibraryItemStrat>['type']> = ['library', 'folder', 'collection'];
+			if (!uncachedTypes.includes(base.type)) {
+				this.itemCache.set(path.relativePath, item);
+			}
 		}
 
 		// Add surprise for everything, but after cache
@@ -542,7 +554,6 @@ export class LibraryService {
 		}
 	}
 
-
 	/** Many library items have nested Playable items. This will find watchProgress for all of them. */
 	private static async joinProgressDeep(item: Record<any, any>) {
 		const diveAttributes = ['movie', 'extras', 'seasons', 'episodeFiles', 'episodes', 'chapters', 'tracks'];
@@ -560,8 +571,6 @@ export class LibraryService {
 		}));
 	}
 
-
-	static readonly fileCache = new Map<string, LibraryFile | null>();
 
 	public static async parseFileToItem(path: ConfirmedPath): Promise<LibraryFile | null> {
 		const key = `${path.relativePath}`;
