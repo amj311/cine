@@ -43,6 +43,8 @@ const props = defineProps<{
 	allowFullscreen?: boolean,
 	showTime?: boolean,
 	seekerEl?: HTMLInputElement,
+	onPrevTrack?: () => void;
+	onNextTrack?: () => void;
 }>();
 
 const showControlsTime = 2500;
@@ -203,6 +205,8 @@ onMounted(() => {
 	navigator.mediaSession.setActionHandler('stop', (e) => togglePlay());
 	navigator.mediaSession.setActionHandler('seekforward', (e) => skipForward());
 	navigator.mediaSession.setActionHandler('seekbackward', (e) => skipBack());
+	navigator.mediaSession.setActionHandler('nexttrack', (e) => props.onNextTrack ? props.onNextTrack() : goToNextChapter());
+	navigator.mediaSession.setActionHandler('previoustrack', (e) => props.onPrevTrack ? props.onPrevTrack() : goToPrevChapter());
 })
 
 onBeforeUnmount(() => {
@@ -294,9 +298,6 @@ const subtitleTracks = computed(() => {
 			if (b.supported && !a.supported) return 1;
 			return 0;
 		});
-
-	// WHen this changes choose the first supported track
-	selectedSubtitle.value = tracks.find(t => t.supported);
 
 	return tracks;
 });
@@ -458,7 +459,6 @@ function getCurrentChapterIndex() {
 const prevChapterStart = computed(() => {
 	const currentChapterIndex = getCurrentChapterIndex();
 	if (currentChapterIndex === -1) return null;
-	console.log(currentChapterIndex)
 	const currentChapter = props.chapters![currentChapterIndex]!;
 	if ((playingState.value.currentTime - currentChapter.start_s) > 1) {
 		return currentChapter.start_s;
@@ -467,12 +467,24 @@ const prevChapterStart = computed(() => {
 	return prevChapter?.start_s || null;
 })
 
+function goToPrevChapter() {
+	if (prevChapterStart.value !== null) {
+		doSeek(prevChapterStart.value);
+	}
+}
+
 const nextChapterStart = computed(() => {
 	const currentChapterIndex = getCurrentChapterIndex();
 	if (currentChapterIndex === -1) return null;
 	const nextChapter = props.chapters![currentChapterIndex + 1];
 	return nextChapter?.start_s || null;
 })
+
+function goToNextChapter() {
+	if (nextChapterStart.value) {
+		doSeek(nextChapterStart.value);
+	}
+}
 
 </script>
 
@@ -508,14 +520,14 @@ const nextChapterStart = computed(() => {
 				<div><MediaTimer :mediaEl="videoRef" :inPlayer="true" /></div>
 			</div>
 		</div>
-		<div v-if="hasLoaded" class="center-controls overlay flex-row-center gap-1">
+		<div v-if="hasLoaded" class="center-controls overlay flex-row-center">
 			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text severity="contrast" :disabled="prevChapterStart === null" @click="prevChapterStart !== null && doSeek(prevChapterStart)">
 				<i class="material-symbols-outlined">fast_rewind</i>
 			</Button>
 			<Button class="square text-xl" text severity="contrast" @click="skipBack">
 				<i class="material-symbols-outlined">replay_10</i>
 			</Button>
-			<Button class="square text-5xl" text severity="contrast" data-focus-priority="1" @click="togglePlay">
+			<Button class="square text-6xl" text severity="contrast" data-focus-priority="1" @click="togglePlay">
 				<i class="material-symbols-outlined">{{ isPlaying ? 'pause' : 'play_arrow' }}</i>
 			</Button>
 			<Button class="square text-xl" text severity="contrast" @click="skipForward">

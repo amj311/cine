@@ -238,9 +238,6 @@ async function playMedia(pathToLoad: string, restart = false) {
 				{ src: useApiStore().resolve(loadingBackground.value), sizes: '96x96', type: 'image/png' }
 			],
 		});
-
-		navigator.mediaSession.setActionHandler('nexttrack', (e) => playNext());
-		navigator.mediaSession.setActionHandler('previoustrack', (e) => playPrev());
 	}
 
 	mediaPath.value = pathToLoad;
@@ -519,6 +516,8 @@ function onTitleClick() {
 				:onPlay="onPlay"
 				:onPause="releaseWakeLock"
 				:onEnd="onEnd"
+				:onNextTrack="playNext"
+				:onPrevTrack="playPrev"
 				:subtitles="probe?.subtitles"
 				:audio="probe?.audio"
 				:chapters="probe?.chapters"
