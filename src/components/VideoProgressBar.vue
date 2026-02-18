@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useApiStore } from '@/stores/api.store';
+import { useScreenStore } from '@/stores/screen.store';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import { useToast } from 'primevue/usetoast';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 
 const toast = useToast();
 
@@ -33,21 +34,9 @@ function updatePlayingState() {
 
 	playingState.value.duration = props.videoRef.duration;
 	playingState.value.buffered = props.videoRef.buffered;
-	playingState.value.paused = props.videoRef.paused;
-	playingState.value.ended = props.videoRef.ended;
 	playingState.value.currentTime = props.videoRef.currentTime;
 	playingState.value.percent = props.videoRef.duration ? props.videoRef.currentTime * 100 / props.videoRef.duration : 0;
-
-	// console.log(mousePercent.value, thumbSpots.value);
-	// activeThumb.value = thumbSpots.value.find(t => t.endPercent >= mousePercent.value);
-	// console.log(activeThumb.value);
 }
-
-// watch(() => resolvedSeekerEl.value, () => {
-// 	if (resolvedSeekerEl.value) {
-// 		resolvedSeekerEl.value.addEventListener('input', (e: any) => doSeek(e?.target?.value));
-// 	}
-// })
 
 function loopUpdateState() {
 	window.requestAnimationFrame(() => {
@@ -122,29 +111,43 @@ const isDragging = ref(false);
 
 const mousePercent = ref(0);
 
-function getMouseEventTime(e) {
+function getMouseEventTime(e: MouseEvent | TouchEvent) {
 	if (!wrapperRef.value) return;
 	const trackWidth = wrapperRef.value.getBoundingClientRect().width;
 	const trackLeftOffset = wrapperRef.value.getBoundingClientRect().left;
-	const mousePercentIntoTrack = (e.clientX - trackLeftOffset) / trackWidth;
+	let clientX = ('clientX' in e) ? e.clientX : e.touches[0]!.clientX;
+	const mousePercentIntoTrack = (clientX - trackLeftOffset) / trackWidth;
 	mousePercent.value = mousePercentIntoTrack;
 	return props.videoRef.duration * mousePercentIntoTrack;
 }
 
-function doMouseEventSeek(e) {
+function doMouseEventSeek(e: MouseEvent | TouchEvent) {
 	doSeek(getMouseEventTime(e));
 }
 
 onMounted(() => {
 	window.addEventListener('mousemove', trackMouseMove);
+	window.addEventListener('touchmove', trackMouseMove);
 	window.addEventListener('mouseup', handleDragEnd);
+	window.addEventListener('touchend', handleDragEnd);
+
+	if (wrapperRef.value) {
+		wrapperRef.value
+	}
 })
 
-function handleMousedown(e) {
+onBeforeUnmount(() => {
+	window.removeEventListener('mousemove', trackMouseMove);
+	window.removeEventListener('touchmove', trackMouseMove);
+	window.removeEventListener('mouseup', handleDragEnd);
+	window.removeEventListener('touchend', handleDragEnd);
+})
+
+function handleMousedown(e: MouseEvent | TouchEvent) {
 	isDragging.value = true;
 	doMouseEventSeek(e);
 }
-function trackMouseMove(e) {
+function trackMouseMove(e: MouseEvent | TouchEvent) {
 	e.stopPropagation();
 	e.preventDefault();
 	// videoRef.pause();
@@ -160,7 +163,7 @@ function handleDragEnd() {
 </script>
 
 <template>
-	<div class="progress-wrapper flex h-full" :class="{ dragging: isDragging}" ref="wrapperRef" @click="doMouseEventSeek" @mousedown="handleMousedown">
+	<div class="progress-wrapper flex h-full" :class="{ dragging: isDragging}" ref="wrapperRef" @click="doMouseEventSeek" @mousedown="handleMousedown" @touchstart="handleMousedown">
 		<div
 			v-for="segment of segments"
 			class="segment"
@@ -178,7 +181,7 @@ function handleDragEnd() {
 		<!-- <div class="thumb-area absolute h-full top-0" style="left: calc(var(--thumb-width) / 2); width: calc(100% - var(--thumb-width))"> -->
 			<!-- {{ mousePercent }}
 			{{ activeThumb?.percent }} -->
-			<div class="thumb-wrapper absolute" v-if="activeThumb" :style="{ left: `min(max(calc(var(--thumb-width) / 2), ${activeThumb.percent * 100}%), calc(100% - (var(--thumb-width) / 2)))` }">
+			<div class="thumb-wrapper absolute" v-if="activeThumb && !useScreenStore().isSkinnyScreen" :style="{ left: `min(max(calc(var(--thumb-width) / 2), ${activeThumb.percent * 100}%), calc(100% - (var(--thumb-width) / 2)))` }">
 				<img :src="useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaRelativePath) + '?width=200&seek=' + (activeThumb.start_s + 2)" />
 			</div>
 		<!-- </div> -->
