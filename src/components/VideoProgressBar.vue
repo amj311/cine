@@ -85,7 +85,8 @@ function getSegmentRelativeProgress(segment) {
 }
 
 const seekSpots = computed(() => {
-	const thumbInterval = Math.max(10, playingState.value.duration_s / 30);
+	const minThumbs = 30;
+	const thumbInterval = playingState.value.duration_s / minThumbs;
 	const spots = new Set(segments.value?.map(s => s.start_s));
 	let spotTime = 0;
 	while (spotTime < playingState.value.duration_s) {
@@ -180,7 +181,7 @@ function handleDragEnd() {
 		<div class="seek-spot absolute h-full top-0 w-full" v-for="spot of seekSpots">
 			<div class="seek-spot-target" tabindex="0" :style="{ left: `${spot.percent * 100}%` }" @click.stop="doSeek(spot.start_s)" />
 			<div class="thumb-wrapper" :class="{ 'active': activeThumb?.start_s === spot.start_s && !useScreenStore().isSkinnyScreen }" :style="{ left: `min(max(calc(var(--thumb-width) / 2), ${spot.percent * 100}%), calc(100% - (var(--thumb-width) / 2)))` }">
-				<img :src="useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaRelativePath) + '?width=200&seek=' + (spot.start_s + 3)" />
+				<img :src="useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaRelativePath) + '?width=200&seek=' + (spot.start_s)" />
 			</div>
 		</div>
 	</div>
@@ -256,6 +257,7 @@ function handleDragEnd() {
 			width: 100%;
 			height: 100%;
 			object-fit: cover;
+			user-select: none;
 		}
 	}
 

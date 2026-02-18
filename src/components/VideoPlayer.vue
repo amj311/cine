@@ -108,7 +108,7 @@ const playingState = ref({
 });
 
 const seekerRef = ref<HTMLInputElement>();
-const resolvedSeekerEl = computed(() => props.seekerEl || seekerRef.value);
+// const resolvedSeekerEl = computed(() => props.seekerEl || seekerRef.value);
 
 function updatePlayingState() {
 	if (!videoRef.value) {
@@ -119,19 +119,19 @@ function updatePlayingState() {
 	playingState.value.currentTime = videoRef.value.currentTime;
 	playingState.value.progress_s = videoRef.value.duration ? videoRef.value.currentTime * 100 / videoRef.value.duration : 0;
 
-	if (resolvedSeekerEl.value) {
-		resolvedSeekerEl.value.value = videoRef.value.currentTime as any;
-		resolvedSeekerEl.value.step = '0.01';
-		resolvedSeekerEl.value.min = '0';
-		resolvedSeekerEl.value.max = videoRef.value.duration as any;
-	}
+	// if (resolvedSeekerEl.value) {
+	// 	resolvedSeekerEl.value.value = videoRef.value.currentTime as any;
+	// 	resolvedSeekerEl.value.step = '0.01';
+	// 	resolvedSeekerEl.value.min = '0';
+	// 	resolvedSeekerEl.value.max = videoRef.value.duration as any;
+	// }
 }
 
-watch(() => resolvedSeekerEl.value, () => {
-	if (resolvedSeekerEl.value) {
-		resolvedSeekerEl.value.addEventListener('input', (e: any) => doSeek(e?.target?.value));
-	}
-})
+// watch(() => resolvedSeekerEl.value, () => {
+// 	if (resolvedSeekerEl.value) {
+// 		resolvedSeekerEl.value.addEventListener('input', (e: any) => doSeek(e?.target?.value));
+// 	}
+// })
 
 function loopUpdateState() {
 	window.requestAnimationFrame(() => {

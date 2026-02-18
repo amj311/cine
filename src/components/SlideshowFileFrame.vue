@@ -6,6 +6,7 @@ import GalleryFileFrame, { type GalleryFile } from './GalleryFileFrame.vue';
 import { focusAreaClass } from '@/stores/screen.store';
 import NavTrigger from './utils/NavTrigger/NavTrigger.vue';
 import { useApiStore } from '@/stores/api.store';
+import VideoProgressBar from './VideoProgressBar.vue';
 
 const { file, active } = defineProps<{
 	onClose?: () => void,
@@ -61,7 +62,8 @@ const videoSeeker = ref<HTMLInputElement>();
 					<slot name="actions" />
 				</div>
 			</div>
-			<input v-if="file.fileType === 'video'" ref="videoSeeker" type="range" @touchmove.stop @touchend.stop />
+			<!-- <input v-if="file.fileType === 'video'" ref="videoSeeker" type="range" @touchmove.stop @touchend.stop /> -->
+			<VideoProgressBar  v-if="file.fileType === 'video' && galleryFrame?.videoPlayer?.videoRef" :mediaRelativePath="file.relativePath" :videoRef="galleryFrame?.videoPlayer?.videoRef" ref="videoSeeker" type="range" @touchmove.stop @touchend.stop />
 		</div>
 	</div>
 </template>

@@ -104,10 +104,13 @@ function checkForPanoramic(e) {
 	ratio.value = naturalRatio;
 }
 
+const videoPlayer = ref<InstanceType<typeof VideoPlayer> | null>(null);
+
 defineExpose({
 	isZooming,
 	isPanoramic,
 	ratio,
+	videoPlayer,
 });
 
 const loadError = ref<any>(null);
@@ -132,6 +135,7 @@ const loadError = ref<any>(null);
 			/>
 			<VideoPlayer
 				v-else-if="file.fileType === 'video'"
+				ref="videoPlayer"
 				:relativePath="file.relativePath"
 				:hideControls="hideControls"
 				:autoplay="autoplay"
