@@ -538,7 +538,7 @@ function goToNextChapter() {
 				<i class="material-symbols-outlined">fast_forward</i>
 			</Button>
 		</div>
-		<div class="bottom-controls overlay flex-column gap-2">
+		<div class="bottom-controls overlay">
 			<div class="flex-row-center">
 				<span v-if="showTime">-{{ msToTimestamp(secToMs(remaining)) }}</span>
 				<div class="flex-grow-1" />

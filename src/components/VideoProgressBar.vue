@@ -85,24 +85,24 @@ function getSegmentRelativeProgress(segment) {
 	return 100 * (progressIntoSegment / segmentLength);
 }
 
-const thumbSpots = computed(() => {
+const seekSpots = computed(() => {
 	const thumbInterval = Math.max(30, playingState.value.duration / 30);
-	const spots = [] as any[];
+	const spots = new Set(segments.value?.map(s => s.start_s));
 	let spotTime = 0;
 	while (spotTime < playingState.value.duration) {
-		spots.push({
-			start_s: spotTime,
-			end_s: spotTime + thumbInterval,
-			percent: spotTime / playingState.value.duration,
-			endPercent: (spotTime + thumbInterval) / playingState.value.duration,
-		});
+		spots.add(spotTime);
 		spotTime += thumbInterval;
 	}
-	return spots;
+	return Array.from(spots).map(time => ({
+		start_s: time,
+		end_s: time + thumbInterval,
+		percent: time / playingState.value.duration,
+		endPercent: (time + thumbInterval) / playingState.value.duration,
+	}));
 })
 
 const activeThumb = computed(() => {
-	return thumbSpots.value.find(t => t.endPercent >= mousePercent.value);
+	return seekSpots.value.find(t => t.endPercent >= mousePercent.value);
 })
 
 // EVENTS
@@ -177,14 +177,13 @@ function handleDragEnd() {
 		<div class="handle-wrapper absolute h-full top-0" style="width: calc(100% - var(--handle-width))">
 			<div class="handle" :style="{ left: `${playingState.percent}%` }" />
 		</div>
-		<!-- Thumb -->
-		<!-- <div class="thumb-area absolute h-full top-0" style="left: calc(var(--thumb-width) / 2); width: calc(100% - var(--thumb-width))"> -->
-			<!-- {{ mousePercent }}
-			{{ activeThumb?.percent }} -->
-			<div class="thumb-wrapper absolute" v-if="activeThumb && !useScreenStore().isSkinnyScreen" :style="{ left: `min(max(calc(var(--thumb-width) / 2), ${activeThumb.percent * 100}%), calc(100% - (var(--thumb-width) / 2)))` }">
-				<img :src="useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaRelativePath) + '?width=200&seek=' + (activeThumb.start_s + 2)" />
+		<!-- Thumb and Seek spots -->
+		<div class="seek-spot absolute h-full top-0 w-full" v-for="spot of seekSpots">
+			<div class="seek-spot-target" tabindex="0" :style="{ left: `${spot.percent * 100}%` }" @click.stop="doSeek(spot.start_s)" />
+			<div class="thumb-wrapper" :class="{ 'active': activeThumb?.start_s === spot.start_s && !useScreenStore().isSkinnyScreen }" :style="{ left: `min(max(calc(var(--thumb-width) / 2), ${spot.percent * 100}%), calc(100% - (var(--thumb-width) / 2)))` }">
+				<img :src="useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaRelativePath) + '?width=200&seek=' + (spot.start_s + 3)" />
 			</div>
-		<!-- </div> -->
+		</div>
 	</div>
 </template>
 
@@ -221,6 +220,26 @@ function handleDragEnd() {
 		display: none;
 	}
 
+	.seek-spot-target {
+		position: absolute;
+		top: 50%;
+		translate: 0 -50%;
+		aspect-ratio: 1;
+		width: calc(var(--handle-width) - 4px);
+		box-shadow: 0 0 2px #000;
+		background: #fff;
+		border-radius: 50%;
+		visibility: hidden;
+
+		&[tv-focus] {
+			visibility: visible;
+
+			& + .thumb-wrapper {
+				display: block;
+			}
+		}
+	}
+
 	.thumb-wrapper {
 		width: var(--thumb-width);
 		aspect-ratio: 3/2;
@@ -233,7 +252,6 @@ function handleDragEnd() {
 		display: none;
 		padding: 3px;
 		pointer-events: none;
-		transition: 100ms left;
 
 		img {
 			width: 100%;
@@ -243,7 +261,7 @@ function handleDragEnd() {
 	}
 
 	&:hover, &.dragging {
-		.handle, .thumb-wrapper {
+		.handle, .thumb-wrapper.active {
 			display: block;
 		}
 	}
