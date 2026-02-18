@@ -8,6 +8,7 @@ import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
 import { useScreenStore } from '@/stores/screen.store';
 import { JobPinger } from '@/utils/JobPinger';
+import VideoProgressBar from './VideoProgressBar.vue';
 
 const toast = useToast();
 
@@ -557,24 +558,7 @@ function goToNextChapter() {
 				</Button>
 			</div>
 			<div v-if="!seekerEl" class="seeker-wrapper relative">
-				<input type="range" ref="seekerRef" class="seeker w-full" />
-				<div
-					class="chapters-wrapper absolute top-0 left-0 h-full pointer-events-none"
-					style="width: calc(100% - 1em)"
-				>
-					<template v-for="chapter, i in chapters">
-						<div
-							v-if="i > 0"
-							class="chapter-button absolute bg-soft border-round cursor-pointer"
-							tabindex="0"
-							:key="chapter.title || i"
-							style="top: 47%; translate: 0 -50%; height: .6em; width: 3px; pointer-events: all;"
-							:style="{ left: `${(chapter.start_s / (videoRef?.duration || chapter.start_s) * 100).toFixed(4)}%` }"
-							@click="() => doSeek(chapter.start_s)"
-						>
-						</div>
-					</template>
-				</div>
+				<VideoProgressBar :mediaRelativePath="relativePath" v-if="videoRef" :videoRef="videoRef" :chapters="chapters" />
 			</div>
 		</div>
 		<div class="cards" :class="{ lift: showControls }">
@@ -589,6 +573,7 @@ function goToNextChapter() {
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
+	user-select: none;
 
 	.video-player {
 		width: 100%;
