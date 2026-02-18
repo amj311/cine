@@ -22,9 +22,8 @@ const playingState = ref({
 	ended: false,
 	currentTime: 0,
 	percent: 0,
-	duration_s: 0,
 	buffered: null as null | TimeRanges,
-	duration: 0,
+	duration_s: 0,
 });
 
 function updatePlayingState() {
@@ -32,7 +31,7 @@ function updatePlayingState() {
 		return;
 	}
 
-	playingState.value.duration = props.videoRef.duration;
+	playingState.value.duration_s = props.videoRef.duration;
 	playingState.value.buffered = props.videoRef.buffered;
 	playingState.value.currentTime = props.videoRef.currentTime;
 	playingState.value.percent = props.videoRef.duration ? props.videoRef.currentTime * 100 / props.videoRef.duration : 0;
@@ -86,18 +85,18 @@ function getSegmentRelativeProgress(segment) {
 }
 
 const seekSpots = computed(() => {
-	const thumbInterval = Math.max(30, playingState.value.duration / 30);
+	const thumbInterval = Math.max(10, playingState.value.duration_s / 30);
 	const spots = new Set(segments.value?.map(s => s.start_s));
 	let spotTime = 0;
-	while (spotTime < playingState.value.duration) {
+	while (spotTime < playingState.value.duration_s) {
 		spots.add(spotTime);
 		spotTime += thumbInterval;
 	}
 	return Array.from(spots).map(time => ({
 		start_s: time,
 		end_s: time + thumbInterval,
-		percent: time / playingState.value.duration,
-		endPercent: (time + thumbInterval) / playingState.value.duration,
+		percent: time / playingState.value.duration_s,
+		endPercent: (time + thumbInterval) / playingState.value.duration_s,
 	}));
 })
 
@@ -118,7 +117,7 @@ function getMouseEventTime(e: MouseEvent | TouchEvent) {
 	let clientX = ('clientX' in e) ? e.clientX : e.touches[0]!.clientX;
 	const mousePercentIntoTrack = (clientX - trackLeftOffset) / trackWidth;
 	mousePercent.value = mousePercentIntoTrack;
-	return props.videoRef.duration * mousePercentIntoTrack;
+	return playingState.value.duration_s * mousePercentIntoTrack;
 }
 
 function doMouseEventSeek(e: MouseEvent | TouchEvent) {
