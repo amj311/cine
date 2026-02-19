@@ -13,6 +13,8 @@ import { useApiStore } from '@/stores/api.store';
 import { useScreenStore } from '@/stores/screen.store';
 import LibraryItemActions from '@/components/LibraryItemActions.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
+import type ToggleButton from 'primevue/togglebutton';
+import MediaCard from '@/components/MediaCard.vue';
 
 const router = useRouter();
 const props = defineProps<{
@@ -85,18 +87,22 @@ const mergedSeasons = computed(() => {
 	const seasons = props.libraryItem.seasons.map((season: any) => {
 		const metadataSeason = metadata.value?.seasons.find((s: any) => s.seasonNumber === season.seasonNumber);
 		const name = season.seasonNumber === 0 ? 'Specials' : (season.name || `Season ${ season.seasonNumber }`);
+		const fileEpisodes = season.episodeFiles.flatMap((file: any) => file.episodes).map(episode => {
+			const metadataEpisode = metadataSeason?.episodes.find((e: any) => e.episodeNumber === episode.episodeNumber);
+			return {
+				hasFile: true,
+				...episode,
+				...metadataEpisode,
+				still_thumb: episode.still_thumb || metadataEpisode?.still_thumb || useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(episode.relativePath),
+			};
+		});
+		const missingEpisodes = metadataSeason?.episodes.filter(me => !fileEpisodes.some((e: any) => e.episodeNumber === me.episodeNumber)) || [];
 		return {
+			hasFile: false,
 			...season,
 			...metadataSeason,
 			name,
-			episodes: season.episodeFiles.flatMap((file: any) => file.episodes).map(episode => {
-				const metadataEpisode = metadataSeason?.episodes.find((e: any) => e.episodeNumber === episode.episodeNumber);
-				return {
-					...episode,
-					...metadataEpisode,
-					still_thumb: episode.still_thumb || metadataEpisode?.still_thumb || useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(episode.relativePath),
-				};
-			}),
+			episodes: [...fileEpisodes, ...missingEpisodes].sort((a, b) => a.episodeNumber - b.episodeNumber),
 		};
 	});
 	// Sort seasons by season number bu put specials last
@@ -112,6 +118,7 @@ const mergedSeasons = computed(() => {
 	return seasons;
 });
 
+const showAdditionalEpisodes = ref(false);
 
 watch(() => mergedSeasons.value, determineEpisodeToPlay, { immediate: true, deep: true });
 
@@ -326,27 +333,31 @@ onUnmounted(async () => {
 				<h2 class="mb-2">Seasons</h2>
 				<div class="seasons-wrapper" :class="{ 'wide': !useScreenStore().isSkinnyScreen }">
 					<div class="selection-wrapper">
-						<div class="selection">
-							<Button
-								v-for="season in mergedSeasons"
-								:key="season.seasonNumber"
-								class="season-button"
-								data-tvNavJumpRow="seasons"
-								data-tvnav_noscroll="true"
-								severity="contrast"
-								:variant="activeSeason.seasonNumber === season.seasonNumber ? '' : 'text'"
-								@click="() => activeSeason = season"
-							>
-								{{ season.name }}
-							</Button>
+						<div class="selection flex flex-column align-items-start gap-2">
+							<div>
+								<Button
+									v-for="season in mergedSeasons"
+									:key="season.seasonNumber"
+									class="season-button"
+									data-tvNavJumpRow="seasons"
+									data-tvnav_noscroll="true"
+									severity="contrast"
+									:variant="activeSeason.seasonNumber === season.seasonNumber ? '' : 'text'"
+									@click="() => activeSeason = season"
+								>
+									{{ season.name }}
+								</Button>
+							</div>
 							
-							<p v-if="activeSeason.overview">{{ activeSeason.overview }}</p>
+							<div v-if="activeSeason.overview">{{ activeSeason.overview }}</div>
+
+							<ToggleButton v-if="activeSeason.episodes.some(e => !e.hasFile)" v-model="showAdditionalEpisodes" class="mt-2">Show additional episodes</ToggleButton>
 						</div>
 					</div>
 					<div class="season-details flex flex-column gap-4" v-if="activeSeason">
 						<div class="episodes-list flex flex-column gap-4">
 							<template v-for="(episode, i) in activeSeason.episodes" :key="episode.relativePath">
-								<div class="episode-item">
+								<div class="episode-item" v-if="episode.hasFile || showAdditionalEpisodes">
 									<div class="episode-poster-wrapper">
 										<MediaCard
 											navJumpRow="seasons"
@@ -358,6 +369,9 @@ onUnmounted(async () => {
 											:loading="isLoadingMetadata"
 										>
 											<template #fallbackIcon>📺</template>
+											<template #poster v-if="!episode.hasFile">
+												<i class="material-symbols-outlined h-full w-full flex-center-all text-6xl" style="background-image: radial-gradient(#000c, transparent 50%);">movie_off</i>
+											</template>
 										</MediaCard>
 									</div>
 									<div class="episode-info flex-grow-1">
@@ -370,7 +384,7 @@ onUnmounted(async () => {
 													<span v-if="episode.content_rating">{{ episode.content_rating }}</span>
 												</div>
 											</div>
-											<LibraryItemActions :libraryItem="episode" />
+											<LibraryItemActions v-if="episode.hasFile" :libraryItem="episode" />
 										</div>
 										
 										<div class="mt-3 line-clamp-4">
@@ -471,7 +485,7 @@ onUnmounted(async () => {
 	max-width: 50rem;
 
 	.episode-poster-wrapper {
-		flex: 0 0 13rem;
+		flex: 0 0 min(13rem, 35vw);
 	}
 }
 
