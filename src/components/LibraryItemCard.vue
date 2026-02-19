@@ -29,7 +29,7 @@ const props = defineProps<{
 
 			<MediaCard
 				v-if="libraryItem.cinemaType === 'series'"
-				clickable
+				tvNavable
 				:imageUrl="metadata?.poster_thumb"
 				:aspectRatio="'tall'"
 				:title="libraryItem.name"
@@ -44,7 +44,7 @@ const props = defineProps<{
 
 			<MediaCard
 				v-if="libraryItem.type === 'album' || libraryItem.type === 'audiobook'"
-				clickable
+				tvNavable
 				:imageUrl="libraryItem.cover_thumb"
 				:aspectRatio="'square'"
 				:title="libraryItem.title"
@@ -59,7 +59,7 @@ const props = defineProps<{
 
 			<MediaCard
 				v-if="libraryItem.type === 'collection'"
-				clickable
+				tvNavable
 				:aspectRatio="'tall'"
 				:title="libraryItem.name"
 				:subtitle="`${libraryItem.children.length} items`"

@@ -22,7 +22,7 @@ const props = defineProps<{
 	progress?: any; // Progress
 	overrideStartTime?: number;
 	playSrc?: string;
-	clickable?: boolean;
+	tvNavable?: boolean;
 	action?: () => void;
 	loading?: boolean;
 	surprise?: {
@@ -121,7 +121,7 @@ function activate() {
 		@click="onClick"
 		@keydown.enter.prevent="activate"
 		@keydown.space.prevent="activate"
-		:tabindex="onClick ? 0 : -1"
+		:tabindex="(onClick || tvNavable) ? 0 : -1"
 		:role="onClick ? 'button' : undefined"
 		:aria-label="onClick ? (title || subtitle || 'Open item') : undefined"
 		:data-focus-priority="onClick ? 0 : undefined"

@@ -351,7 +351,7 @@ onUnmounted(async () => {
 							
 							<div v-if="activeSeason.overview">{{ activeSeason.overview }}</div>
 
-							<ToggleButton v-if="activeSeason.episodes.some(e => !e.hasFile)" v-model="showAdditionalEpisodes" class="mt-2">Show additional episodes</ToggleButton>
+							<ToggleButton v-if="activeSeason.episodes.some(e => !e.hasFile)" v-model="showAdditionalEpisodes" class="mt-2" data-tvNavJumpRow="seasons">Show additional episodes</ToggleButton>
 						</div>
 					</div>
 					<div class="season-details flex flex-column gap-4" v-if="activeSeason">
@@ -367,6 +367,7 @@ onUnmounted(async () => {
 											:overrideStartTime="episode.startTime"
 											:progress="episode.watchProgress"
 											:loading="isLoadingMetadata"
+											:tvNavable="true"
 										>
 											<template #fallbackIcon>📺</template>
 											<template #poster v-if="!episode.hasFile">

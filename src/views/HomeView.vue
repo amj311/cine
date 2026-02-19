@@ -97,7 +97,7 @@ function formatRuntime(minutes: number) {
 												<!-- Failure case -->
 												<MediaCard
 													v-if="!item.libraryItem.playable || !item.libraryItem.parentLibrary"
-													clickable
+													tvNavable
 													:action="() => useQueryPathStore().goTo(item.relativePath)"
 													:progress="item.watchProgress"
 													:aspectRatio="'wide'"
@@ -110,7 +110,7 @@ function formatRuntime(minutes: number) {
 
 												<MediaCard
 													v-else-if="item.libraryItem.playable.type === 'album' || item.libraryItem.playable.type === 'audiobook'"
-													clickable
+													tvNavable
 													:action="() => useQueryPathStore().goTo(item.libraryItem.playable.relativePath)"
 													:imageUrl="item.libraryItem.playable.cover_thumb"
 													:imagePosition="'top'"
