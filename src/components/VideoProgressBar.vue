@@ -181,7 +181,7 @@ function handleDragEnd() {
 		<div class="seek-spot absolute h-full top-0 w-full" v-for="spot of seekSpots">
 			<div class="seek-spot-target" tabindex="0" :style="{ left: `${spot.percent * 100}%` }" @click.stop="doSeek(spot.start_s)" />
 			<div class="thumb-wrapper" :class="{ 'active': activeThumb?.start_s === spot.start_s && !useScreenStore().isSkinnyScreen }" :style="{ left: `min(max(calc(var(--thumb-width) / 2), ${spot.percent * 100}%), calc(100% - (var(--thumb-width) / 2)))` }">
-				<img :src="useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaRelativePath) + '?width=200&seek=' + (Math.min(spot.start_s + 2, playingState.duration_s)" />
+				<img :src="useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaRelativePath) + '?width=200&seek=' + (Math.min(spot.start_s + 2, playingState.duration_s))" />
 			</div>
 		</div>
 	</div>
