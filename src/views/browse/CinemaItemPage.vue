@@ -15,6 +15,7 @@ import LibraryItemActions from '@/components/LibraryItemActions.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import type ToggleButton from 'primevue/togglebutton';
 import MediaCard from '@/components/MediaCard.vue';
+import PeopleList from '@/components/PeopleList.vue';
 
 const router = useRouter();
 const props = defineProps<{
@@ -412,7 +413,7 @@ onUnmounted(async () => {
 
 			<div v-if="isLoadingMetadata || metadata?.credits">
 				<h2>Cast & Crew</h2>
-				<PeopleList :loading="isLoadingMetadata" :people="metadata?.credits" />
+				<PeopleList :loading="isLoadingMetadata" :credits="metadata?.credits" />
 			</div>
 
 			<div v-if="libraryItem.extras?.length > 0">	

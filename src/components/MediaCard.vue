@@ -2,10 +2,8 @@
 import ProgressBar from '@/components/ProgressBar.vue'
 import { useApiStore } from '@/stores/api.store';
 import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import type CountdownVue from './Countdown.vue';
 import InputText from 'primevue/inputtext';
 import NavModal from './utils/NavModal.vue';
 const router = useRouter();

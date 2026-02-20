@@ -59,6 +59,7 @@ export class SeriesMetadataProvider extends IMetadataProvider<SeriesMetadata> {
 						runtime: e.runtime,
 						still_thumb: api.getImageUrl(e.still_path, 'still', 'small'),
 						still_full: api.getImageUrl(e.still_path, 'still', 'large'),
+						credits: api.extractCredits(e), // crew and guest_stars
 					})),
 				}
 			}));

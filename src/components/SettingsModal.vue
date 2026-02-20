@@ -5,7 +5,7 @@
 import { computed, ref } from 'vue';
 import { useSettingsStore } from '@/stores/settings.store';
 import NavModal from './utils/NavModal.vue';
-import ToggleSwitchInputClick from '@/components/utils/ToggleSwitchInputClick.vue';
+import ToggleSwitch from '@/components/utils/ToggleSwitch.vue';
 import { useApiStore } from '@/stores/api.store';
 import { useToast } from 'primevue/usetoast';
 
@@ -56,7 +56,7 @@ async function clearLibraryCache() {
 		>
 			<label>This is a TV</label>
 			<div>
-				<ToggleSwitchInputClick v-model="localSettings.is_tv" />
+				<ToggleSwitch v-model="localSettings.is_tv" />
 			</div>
 
 			<div class="grid-row" :disabled="!localSettings.is_tv">
@@ -66,13 +66,13 @@ async function clearLibraryCache() {
 					<Button v-else label="Enable" @click="useScreenStore().engageTvMode" />
 				</div> -->
 				<div>
-					<ToggleSwitchInputClick v-model="localSettings.tv_nav" />
+					<ToggleSwitch v-model="localSettings.tv_nav" />
 				</div>
 			</div>
 
 			<label>Show debug</label>
 			<div>
-				<ToggleSwitchInputClick v-model="localSettings.show_debug" />
+				<ToggleSwitch v-model="localSettings.show_debug" />
 			</div>
 
 			<Button label="Reset directory cache" severity="warn" @click="clearLibraryCache" />

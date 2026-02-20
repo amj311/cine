@@ -8,7 +8,7 @@ import type Dialog from 'primevue/dialog';
 import type DatePicker from 'primevue/datepicker';
 import InputText from 'primevue/inputtext';
 import NavModal from './utils/NavModal.vue';
-import ToggleSwitchInputClick from '@/components/utils/ToggleSwitchInputClick.vue';
+import ToggleSwitch from '@/components/utils/ToggleSwitch.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -57,7 +57,7 @@ defineExpose({
 			<div class="flex align-items-center gap-3 w-full">
 				<h3>Keep this a surprise</h3>
 				<div class="flex-grow-1" />
-				<ToggleSwitchInputClick v-model="draftSurprise.enabled" />
+				<ToggleSwitch v-model="draftSurprise.enabled" />
 			</div>
 		</template>
 

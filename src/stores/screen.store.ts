@@ -482,7 +482,7 @@ export const useScreenStore = defineStore('Screen', () => {
 			return;
 		}
 
-		window.addEventListener('mousemove', watchForTvMouseMove);
+		// window.addEventListener('mousemove', watchForTvMouseMove);
 	}
 
 	function detectTouchScreen() {

@@ -22,7 +22,7 @@ export class TmdbApi {
 		});
 	}
 
-	public async getMetadataBySearch(searchParams, entity: 'tv' | 'movie') {
+	public async getMetadataBySearch(searchParams: any, entity: 'tv' | 'movie') {
 		const api = await this.getApi();
 		const { data } = await api.get('/search/' + entity, {
 			params: {
@@ -32,7 +32,7 @@ export class TmdbApi {
 			}
 		});
 		// Can't do simple search by imdb, so we have to look deeper to be that specific
-		// lok at just the first two results. Less likely that THREE are in conflict.
+		// look at just the first two results. Less likely that THREE are in conflict.
 		if (searchParams.imdbId) {
 			const details = await Promise.all(
 				data.results.slice(0, 2).map(r => this.getDetailsById(entity + '/' + r.id))
@@ -73,23 +73,33 @@ export class TmdbApi {
 			votes: result.vote_count,
 			genres: result.genres?.map(g => g.name),
 			runtime: result.runtime,
-			credits: [
-				...(result.credits?.cast.slice(0, 20).map((c: any) => ({
-					personId: c.id,
-					name: c.name,
-					role: c.character,
-					photo: this.getImageUrl(c.profile_path, 'profile', 'small'),
-				})) || []),
-				...(result.credits?.crew.slice(0, 20).map((c: any) => ({
-					personId: c.id,
-					name: c.name,
-					role: c.job,
-					photo: this.getImageUrl(c.profile_path, 'profile', 'small'),
-				})) || []),
-			],
+			credits: this.extractCredits(result.credits),
 			content_rating:
 				result.release_dates?.results.find((r: any) => r.iso_3166_1 === 'US')?.release_dates[0]?.certification
 				|| result.content_ratings?.results.find((r: any) => r.iso_3166_1 === 'US')?.rating,
+		}
+	}
+
+	public extractCredits({ cast, crew, guest_stars }: any = {}) {
+		return {
+			cast: cast?.slice(0, 20).map((c: any) => ({
+				personId: c.id,
+				name: c.name,
+				role: c.character,
+				photo: this.getImageUrl(c.profile_path, 'profile', 'small'),
+			})) || [],
+			guest_stars: guest_stars?.slice(0, 20).map((c: any) => ({
+				personId: c.id,
+				name: c.name,
+				role: c.character,
+				photo: this.getImageUrl(c.profile_path, 'profile', 'small'),
+			})) || [],
+			crew: crew?.slice(0, 20).map((c: any) => ({
+				personId: c.id,
+				name: c.name,
+				role: c.job,
+				photo: this.getImageUrl(c.profile_path, 'profile', 'small'),
+			})) || [],
 		}
 	}
 

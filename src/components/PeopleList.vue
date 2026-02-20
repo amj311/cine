@@ -2,12 +2,16 @@
 	setup
 	lang="ts"
 >
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import PersonModal from './PersonModal.vue';
 
 
-defineProps<{
-	people?: any[]; // libraryItem
+const props = defineProps<{
+	credits?: {
+		cast: any[],
+		guest_stars: any[],
+		crew: any[],
+	}
 	loading?: boolean;
 }>();
 
@@ -16,17 +20,26 @@ function openPersonModal(person) {
 	personModal.value?.open(person.personId);
 }
 
+const people = computed(() => {
+	return props.loading ? Array(5).fill(null) : [
+		...(props.credits?.cast || []),
+		...(props.credits?.guest_stars || []),
+		...(props.credits?.crew || []),
+	]
+})
+
 </script>
 
 <template>
 	<Scroll>
 		<div class="people-list">
-			<div class="people-item" v-for="(person, index) in (loading ? Array(5).fill(null) : people)" :key="index" tabindex="0" @click="openPersonModal(person)">
+			<div class="people-item" v-for="(person, index) in people" :key="index" tabindex="0" @click="openPersonModal(person)">
 				<div
 					class="image-wrapper"
 					:style="{ backgroundImage: loading ? '' : `url(${person.photo})` }"
 				>
 					<Skeleton v-if="loading" shape="circle" class="w-full h-full" />
+					<div v-else-if="!person.photo" class="w-full h-full flex-center-all border-circle bg-soft text-2xl"><i class="material-symbols-outlined">person</i></div>
 				</div>
 				<div class="people-name">
 					<template v-if="loading">

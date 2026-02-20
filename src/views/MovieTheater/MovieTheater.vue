@@ -18,9 +18,10 @@ import { useApiStore } from '@/stores/api.store';
 import { useScrubberStore } from './scrubber.store';
 import ScrubSettings from './ScrubSettings.vue';
 import DropdownTrigger from '@/components/utils/DropdownTrigger.vue';
-import ToggleSwitchInputClick from '@/components/utils/ToggleSwitchInputClick.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import type NavTrigger from '@/components/utils/NavTrigger/NavTrigger.vue';
+import ToggleSwitch from '@/components/utils/ToggleSwitch.vue';
+import PersonModal from '@/components/PersonModal.vue';
 
 const router = useRouter();
 const api = useApiStore().api;
@@ -229,7 +230,7 @@ async function playMedia(pathToLoad: string, restart = false) {
 
 	if ('mediaSession' in navigator) {
 		navigator.mediaSession.metadata = new MediaMetadata({
-			title: title.value,
+			title: videoTitle.value,
 			album: parentLibrary.value.name,
 			artist: parentLibrary.value.name,
 			artwork: [
@@ -383,6 +384,9 @@ const progressUpdateInterval = setInterval(async () => {
 	}
 }, PROGRESS_INTERVAL);
 
+/***************
+ * METADATA
+ */
 
 const currentEpisodeMetadata = computed(() => {
 	if (playable.value?.type !== 'episodeFile') {
@@ -392,7 +396,30 @@ const currentEpisodeMetadata = computed(() => {
 		.find((episode: any) => episode.episodeNumber === playable.value?.firstEpisodeNumber);
 });
 
-const title = computed(() => {
+
+const mediaInfo = computed(() => {
+	if (playable.value?.type === 'episodeFile' && currentEpisodeMetadata.value) {
+		return {
+			name: currentEpisodeMetadata.value.name,
+			episodeLabel: playable.value.name,
+			...currentEpisodeMetadata.value,
+			credits: {
+				cast: parentLibrary.value?.metadata?.credits.cast,
+				guest_stars: currentEpisodeMetadata.value.credits.guest_stars,
+				crew: currentEpisodeMetadata.value?.credits.crew,
+			}
+		};
+	}
+	if (playable.value?.type === 'movie') {
+		return {
+			name: playable.value.name,
+			year: playable.value.year,
+			...parentLibrary.value?.metadata,
+		}
+	}
+});
+
+const videoTitle = computed(() => {
 	if (!playable.value) {
 		return '';
 	}
@@ -410,7 +437,8 @@ const title = computed(() => {
 	return playable.value.name;
 });
 
-watch(title, (newTitle) => {
+
+watch(videoTitle, (newTitle) => {
 	usePageTitleStore().setTitle(newTitle);
 });
 
@@ -460,20 +488,41 @@ function playNext() {
 
 
 /*************
- * SCRUBBING
+ * MENU PANEL
  */
 
-const navTrigger = ref<InstanceType<typeof NavTrigger> | null>(null);
-const showScrubPanel = ref(false);
-
-async function toggleScrubMenu() {
-	if (showScrubPanel.value) {
-		await navTrigger.value?.close();
+const menuPanelTrigger = ref<InstanceType<typeof NavTrigger> | null>(null);
+const activeMenuPanel = ref('');
+function closeMenuPanel() {
+	activeMenuPanel.value = '';
+}
+watch(() => activeMenuPanel.value, async () => {
+	if (!activeMenuPanel.value) {
+		await menuPanelTrigger.value?.close();
 	}
 	else {
-		await navTrigger.value?.open();
+		await menuPanelTrigger.value?.open();
 	}
-	showScrubPanel.value = !showScrubPanel.value;
+})
+
+const showDetailsPanel = computed(() => activeMenuPanel.value === 'details');
+async function toggleDetailsMenu() {
+	if (showDetailsPanel.value) {
+		activeMenuPanel.value = '';
+	}
+	else {
+		activeMenuPanel.value = 'details';
+	}
+}
+
+const showScrubPanel = computed(() => activeMenuPanel.value === 'scrub');
+async function toggleScrubMenu() {
+	if (showScrubPanel.value) {
+		activeMenuPanel.value = '';
+	}
+	else {
+		activeMenuPanel.value = 'scrub';
+	}
 }
 
 /****************
@@ -495,6 +544,13 @@ function onTitleClick() {
 	useQueryPathStore().goTo(parentLibrary.value.relativePath);
 }
 
+
+
+const personModal = ref<InstanceType<typeof PersonModal>>();
+function openPersonModal(person) {
+	personModal.value?.open(person.personId);
+}
+
 </script>
 
 <template>
@@ -505,7 +561,7 @@ function onTitleClick() {
 				:key="mediaPath"
 				v-show="showPlayer"
 				:loadingSplash="loadSplashUrl"
-				:title="title"
+				:title="videoTitle"
 				:onTitleClick="onTitleClick"
 				:close="carefulBackNav"
 				:autoplay="true"
@@ -526,6 +582,16 @@ function onTitleClick() {
 				showTime
 			>
 				<template #topButtons>
+					<!-- INFO BUTTON -->
+					<Button
+						text
+						severity="contrast"
+						@click="toggleDetailsMenu"
+						v-if="mediaInfo"
+					>
+						<span class="material-symbols-outlined">info</span>
+					</Button>
+
 					<!-- SCRUB BUTTON -->
 					<Button
 						:text="useScrubberStore().isScrubbing ? false : true"
@@ -573,7 +639,7 @@ function onTitleClick() {
 						<div class="play-icon">
 							<div class="w-full">
 								<MediaCard
-									:imageUrl="nextEpisodeMetadata.still_full"
+									:imageUrl="nextEpisodeMetadata?.still_full"
 									:aspectRatio="'wide'"
 								>
 									<template #fallbackIcon><i class="pi pi-play" /></template>
@@ -596,34 +662,78 @@ function onTitleClick() {
 		</div>
 
 		<NavTrigger
-			ref="navTrigger"
+			ref="menuPanelTrigger"
 			triggerKey="movie-menu-panel"
-			:onClose="() => showScrubPanel = false"
+			:onClose="() => activeMenuPanel = ''"
 		>
 			<template #default="{ show }">
 				<div class="menu-panel" :class="{ ['md:w-23rem w-full md:h-full open']: show }">
 					<!-- Non-shrinking contents -->
 					<div class="panel-content md:w-23rem w-full">
-						<div class="flex flex-column gap-2 h-full">
-							<div class="flex align-items-center gap-1">
-								<Button icon="pi pi-times" text severity="secondary" @click="toggleScrubMenu" />
-								<h3>Media Scrubs</h3>
-								<div class="flex-grow-1"></div>
-								<ToggleSwitchInputClick
-									:modelValue="useScrubberStore().isScrubbing"
-									@update:modelValue="(value) => value ? useScrubberStore().startScrubbing() : useScrubberStore().stopScrubbing()"
-									:disabled="!useScrubberStore().activeProfile"
-								/>
+						<template v-if="showScrubPanel">
+							<div class="flex flex-column gap-2 h-full">
+								<div class="flex align-items-center gap-1">
+									<Button icon="pi pi-times" text severity="secondary" @click="closeMenuPanel" />
+									<h3>Media Scrubs</h3>
+									<div class="flex-grow-1"></div>
+									<ToggleSwitch
+										:modelValue="useScrubberStore().isScrubbing"
+										@update:modelValue="(value) => value ? useScrubberStore().startScrubbing() : useScrubberStore().stopScrubbing()"
+										:disabled="!useScrubberStore().activeProfile"
+									/>
+								</div>
+								<div class="flex-grow-1 overflow-y-auto">
+									<ScrubSettings :playable="playable" />
+								</div>
 							</div>
-							<div class="flex-grow-1 overflow-y-auto">
-								<ScrubSettings :playable="playable" />
+						</template>
+
+						<template v-else-if="showDetailsPanel && mediaInfo">
+							<div class="flex flex-column gap-2 h-full">
+								<div class="flex align-items-center gap-1">
+									<Button icon="pi pi-times" text severity="secondary" @click="closeMenuPanel" />
+								</div>
+								<div class="flex-grow-1 overflow-y-auto flex flex-column gap-4">
+									<div class="flex-column gap-1">
+										<h2>{{ mediaInfo.name }}</h2>
+										
+										<div v-if="mediaInfo.episodeLabel">{{ mediaInfo.episodeLabel }}</div>
+										<div v-if="mediaInfo.air_date">Aired: {{ mediaInfo.air_date }}</div>
+										<div v-if="mediaInfo.year">{{ mediaInfo.year }}</div>
+									</div>
+
+									<div>{{ mediaInfo.overview }}</div>
+
+									<template v-for="creditList, key in mediaInfo.credits">
+										<div v-if="creditList.length" class="flex flex-column gap-3">
+											<h3 class="m" style="text-transform: capitalize;">{{ (key as string).split('_').join(' ') }}</h3>
+											<div v-for="person in creditList" class="flex-row-center gap-3 cursor-pointer" tabindex="0" @click="openPersonModal(person)">
+												<div class="w-3 flex-shrink-0">
+													<MediaCard
+														:imageUrl="person.photo"
+														aspectRatio="square"
+													>
+														<template #fallbackIcon><i class="material-symbols-outlined">person</i></template>
+													</MediaCard>
+												</div>
+
+												<div class="flex-column gap-1 w-full overflow-hidden">
+													<div class="font-bold text-ellipsis">{{ person.name }}</div>
+													<div class="text-ellipsis">{{ person.role }}</div>
+												</div>
+											</div>
+										</div>
+									</template>
+								</div>
 							</div>
-						</div>
+						</template>
 					</div>
 				</div>
 			</template>
 		</NavTrigger>
 	</div>
+
+	<PersonModal ref="personModal" />
 </template>
 
 <style

@@ -119,11 +119,12 @@ const creditsByTitle = computed(() => {
 				<div class="card-wrapper"
 					style="width: min(25vw, 10rem); float: right; margin: 0 0 2rem 2rem;"
 				>
-
-				<MediaCard
-					:imageUrl="personDetails.profile_photo"
-					aspectRatio="square"
-				/>
+					<MediaCard
+						:imageUrl="personDetails.profile_photo"
+						aspectRatio="square"
+					>
+						<template #fallbackIcon><i class="material-symbols-outlined">person</i></template>
+					</MediaCard>
 				</div>
 
 				<h2>{{ personDetails.name }}</h2>

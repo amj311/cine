@@ -6,7 +6,7 @@ import { useApiStore } from '@/stores/api.store';
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import DurationInput from './utils/DurationInput.vue';
 import { msToTimestamp } from '@/utils/miscUtils';
-import ToggleSwitchInputClick from '@/components/utils/ToggleSwitchInputClick.vue';
+import ToggleSwitch from '@/components/utils/ToggleSwitch.vue';
 
 const { mediaEl, inPlayer = false } = defineProps<{
 	mediaEl?: HTMLMediaElement;
@@ -319,7 +319,7 @@ const qrUrl = computed(() => "https://api.qrserver.com/v1/create-qr-code/?data="
 
 				<label>Keep screen on</label>
 				<div>
-					<ToggleSwitchInputClick
+					<ToggleSwitch
 						:modelValue="isWakeLockOn"
 						@update:modelValue="toggleWakeLock"
 					/>
