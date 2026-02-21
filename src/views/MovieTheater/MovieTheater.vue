@@ -589,7 +589,7 @@ function openPersonModal(person) {
 						@click="toggleDetailsMenu"
 						v-if="mediaInfo"
 					>
-						<span class="material-symbols-outlined">info</span>
+						<template #icon><span class="material-symbols-outlined">info</span></template>
 					</Button>
 
 					<!-- SCRUB BUTTON -->
@@ -598,15 +598,17 @@ function openPersonModal(person) {
 						:severity="useScrubberStore().isScrubbing ? 'secondary' : 'contrast'"
 						@click="toggleScrubMenu"
 					>
-						<span class="material-symbols-outlined">mop</span>
+						<template #icon><span class="material-symbols-outlined">mop</span></template>
 					</Button>
 
 					<!-- AUTOPLAY BUTTON -->
 					<DropdownTrigger v-if="canAutoplay">
 						<div class="autoplay" @click="">
 							<Button :text="willAutoplay ? false : true" :severity="willAutoplay ? 'secondary' : 'contrast'">
-								<span class="material-symbols-outlined">autoplay</span>
-								{{ autoplayTimes || '' }}
+								<template #icon>
+									<span class="material-symbols-outlined">autoplay</span>
+									<span v-if="autoplayTimes">&nbsp;{{ autoplayTimes }}</span>
+								</template>
 							</Button>
 						</div>
 						<template #content>
@@ -626,11 +628,11 @@ function openPersonModal(person) {
 				<template #bottomButtons>
 					<!-- PREV EPISODE BUTTON -->
 					<Button v-if="prevEpisodeFile" text severity="contrast" @click="playPrev">
-						<span class="material-symbols-outlined">skip_previous</span>
+						<template #icon><span class="material-symbols-outlined">skip_previous</span></template>
 					</Button>
 					<!-- NEXT EPISODE BUTTON -->
 					<Button v-if="nextEpisodeFile" text severity="contrast" @click="playNext">
-						<span class="material-symbols-outlined">skip_next</span>
+						<template #icon><span class="material-symbols-outlined">skip_next</span></template>
 					</Button>
 				</template>
 
