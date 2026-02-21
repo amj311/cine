@@ -3,7 +3,7 @@
 	lang="ts"
 >
 import { useRouter } from 'vue-router';
-import { computed, onBeforeMount, onBeforeUnmount, onUnmounted, ref, watch } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, onUnmounted, reactive, ref, watch } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useBackgroundStore } from '@/stores/background.store';
 import ExtrasList from '@/components/ExtrasList.vue';
@@ -81,6 +81,10 @@ function formatRuntime(minutes: number) {
 const episodeToPlay = ref<any>(null);
 const activeSeason = ref(metadata.value?.seasons[0] || null);
 
+function episodeKey({ seasonNumber, episodeNumber }) {
+	return `s${seasonNumber}:${episodeNumber}`;
+}
+
 const mergedSeasons = computed(() => {
 	if (!isSeries.value ) {
 		return [];
@@ -119,7 +123,29 @@ const mergedSeasons = computed(() => {
 	return seasons;
 });
 
-const showAdditionalEpisodes = ref(false);
+const expandedAdditionalEpisodeKeys = reactive(new Set<string>());
+function toggleMissingEpisode(episode) {
+	const key = episodeKey(episode);
+	if (expandedAdditionalEpisodeKeys.has(key)) {
+		expandedAdditionalEpisodeKeys.delete(key);
+	}
+	else {
+		expandedAdditionalEpisodeKeys.add(key);
+	}
+}
+function isEpisodeExpanded(episode) {
+	const allEpisodes = mergedSeasons.value.flatMap(s => s.episodes);
+	let index = allEpisodes.findIndex(e => e.episodeNumber === episode.episodeNumber && e.seasonNumber === episode.seasonNumber);
+
+	while (allEpisodes[index] && !allEpisodes[index].hasFile) {
+		const key = episodeKey(allEpisodes[index]);
+		if (expandedAdditionalEpisodeKeys.has(key)) {
+			return true;
+		}
+		index--;
+	}
+	return false;
+}
 
 watch(() => mergedSeasons.value, determineEpisodeToPlay, { immediate: true, deep: true });
 
@@ -351,14 +377,28 @@ onUnmounted(async () => {
 							</div>
 							
 							<div v-if="activeSeason.overview">{{ activeSeason.overview }}</div>
-
-							<ToggleButton v-if="activeSeason.episodes.some(e => !e.hasFile)" v-model="showAdditionalEpisodes" class="mt-2" data-tvNavJumpRow="seasons">Show additional episodes</ToggleButton>
 						</div>
 					</div>
 					<div class="season-details flex flex-column gap-4" v-if="activeSeason">
 						<div class="episodes-list flex flex-column gap-4">
 							<template v-for="(episode, i) in activeSeason.episodes" :key="episode.relativePath">
-								<div class="episode-item" v-if="episode.hasFile || showAdditionalEpisodes">
+								<div
+									v-if="!episode.hasFile && (i === 0 || activeSeason.episodes[(i as number) - 1].hasFile)"
+								>
+									<Button
+										@click="toggleMissingEpisode(episode)"
+										small
+										severity="secondary"
+										class="btn-blur flex-row-center gap-3"
+									>
+										View missing episodes
+										<span>
+											<i class="pi" :class="expandedAdditionalEpisodeKeys.has(episodeKey(episode)) ? 'pi-chevron-down' : 'pi-chevron-right'" />
+										</span>
+									</Button>
+								</div>
+
+								<div class="episode-item" v-if="episode.hasFile || isEpisodeExpanded(episode)" :class="{ 'pl-5': isEpisodeExpanded(episode) }">
 									<div class="episode-poster-wrapper">
 										<MediaCard
 											navJumpRow="seasons"
