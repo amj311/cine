@@ -212,3 +212,15 @@ body .p-dialog {
     border-color: rgba(255, 255, 255, 0.1);
 	backdrop-filter: blur(45px);
 }
+
+
+.p-button.btn-blur {
+    background: #0004;
+    backdrop-filter: blur(20px);
+    border: 1px solid transparent;
+    color: var(--p-button-secondary-color);
+
+	&:hover {
+	    // background: #0004;
+	}
+}
