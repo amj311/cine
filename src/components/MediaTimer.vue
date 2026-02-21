@@ -195,7 +195,12 @@ async function handleClick() {
 	}
 }
 
-const timerColor = computed(() => (!hasRun.value || timerState.value.timeLeft_ms) ? '#ffffff' : 'red');
+const timerColor = computed(() => {
+	if (!hasRun.value) {
+		return '#ffffff';
+	}
+	return timerState.value.timeLeft_ms < (timerState.value.totalTime_ms/4) ? 'red' : '#ffffff'
+});
 const remainingRatio = computed(() => {
 	if (loading.value) {
 		return 0;
@@ -224,13 +229,11 @@ const qrUrl = computed(() => "https://api.qrserver.com/v1/create-qr-code/?data="
 		>
 			<svg viewBox="0 0 200 200"
 				preserve-aspect-ratio
-				:style="{
-					filter: `drop-shadow(0 0 0px ${timerColor})`
-				}">
+			>
 				<circle cx="100"
 					cy="100"
 					r="80"
-					fill="var(--color-background)"
+					fill="#00000088"
 					stroke-width="10" />
 				<circle cx="100"
 					cy="100"
