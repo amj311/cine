@@ -548,6 +548,14 @@ const seasonExtrasToShow = computed(() => {
 	}
 })
 
+const nextExtra = computed(() => {
+	const extras = parentLibrary.value?.extras || currentSeason.value?.extras;
+	if (extras && playable.value.type === 'extra') {
+		const idx = extras.findIndex(e => e.relativePath === playable.value.relativePath);
+		return extras[idx + 1];
+	}
+})
+
 </script>
 
 <template>
@@ -784,6 +792,11 @@ const seasonExtrasToShow = computed(() => {
 							</div>
 						</div>
 
+						<div v-if="nextExtra" class="w-full overflow-hidden">
+							<h2>Next Extra</h2>
+							<ExtrasList :extras="[nextExtra]" />
+						</div>
+
 						<div v-if="parentExtrasToShow" class="w-full overflow-hidden">
 							<h2>Extras</h2>
 							<ExtrasList :extras="parentExtrasToShow" />
@@ -867,11 +880,11 @@ const seasonExtrasToShow = computed(() => {
 .end-screen {
 	opacity: 0;
 	pointer-events: none;
-	transition: 500ms;
 
 	&.visible {
 		opacity: 1;
 		pointer-events: all;
+		transition: 500ms;
 	}
 }
 </style>
