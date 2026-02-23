@@ -274,7 +274,9 @@ onUnmounted(async () => {
 							:imageUrl="metadata?.poster_full"
 							:progress="isSeries? undefined : resumable?.watchProgress"
 							:loading="isLoadingMetadata"
-						/>
+						>
+							<template #fallbackIcon>{{ isSeries ? "📺" : "🎞️" }}</template>
+						</MediaCard>
 					</div>
 				</div>
 
