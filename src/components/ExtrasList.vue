@@ -62,7 +62,7 @@ const sortedExtras = computed(() => {
 
 .extras-list {
 	display: flex;
-	gap: 15px;
+	gap: 10px;
 	padding: 10px;
 }
 

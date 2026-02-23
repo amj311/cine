@@ -16,6 +16,7 @@ import { encodeMediaPath } from '@/utils/miscUtils';
 import type ToggleButton from 'primevue/togglebutton';
 import MediaCard from '@/components/MediaCard.vue';
 import PeopleList from '@/components/PeopleList.vue';
+import { useMediaStore } from '@/stores/media.store';
 
 const router = useRouter();
 const props = defineProps<{
@@ -55,13 +56,7 @@ const isSeries = computed(() => props.libraryItem.cinemaType === 'series');
 
 
 function playVideo(path: string, startTime?: number) {
-	router.push({
-		name: 'play',
-		query: {
-			path,
-			startTime,
-		},
-	})
+	useMediaStore().playMedia(path, { start: startTime });
 }
 
 function formatRuntime(minutes: number) {

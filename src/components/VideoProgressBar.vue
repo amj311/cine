@@ -37,16 +37,13 @@ function updatePlayingState() {
 	playingState.value.percent = props.videoRef.duration ? props.videoRef.currentTime * 100 / props.videoRef.duration : 0;
 }
 
+let animationRequest = 0;
 function loopUpdateState() {
-	window.requestAnimationFrame(() => {
+	animationRequest = window.requestAnimationFrame(() => {
 		updatePlayingState();
 		loopUpdateState();
 	})
 }
-
-onMounted(() => {
-	loopUpdateState();
-})
 
 defineExpose({
 	playingState,
@@ -126,6 +123,8 @@ function doMouseEventSeek(e: MouseEvent | TouchEvent) {
 }
 
 onMounted(() => {
+	loopUpdateState();
+	
 	window.addEventListener('mousemove', trackMouseMove);
 	window.addEventListener('touchmove', trackMouseMove);
 	window.addEventListener('mouseup', handleDragEnd);
@@ -141,7 +140,8 @@ onBeforeUnmount(() => {
 	window.removeEventListener('touchmove', trackMouseMove);
 	window.removeEventListener('mouseup', handleDragEnd);
 	window.removeEventListener('touchend', handleDragEnd);
-})
+	window.cancelAnimationFrame(animationRequest);
+}) 
 
 function handleMousedown(e: MouseEvent | TouchEvent) {
 	isDragging.value = true;

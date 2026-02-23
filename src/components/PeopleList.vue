@@ -33,10 +33,10 @@ const people = computed(() => {
 <template>
 	<Scroll>
 		<div class="people-list">
-			<div class="people-item" v-for="(person, index) in people" :key="index" tabindex="0" @click="openPersonModal(person)">
+			<div class="people-item bg-blur-hover" v-for="(person, index) in people" :key="index" tabindex="0" @click="openPersonModal(person)">
 				<div
 					class="image-wrapper"
-					:style="{ backgroundImage: loading ? '' : `url(${person.photo})` }"
+					:style="{ backgroundImage: loading ? '' : `url('${person.photo}')` }"
 				>
 					<Skeleton v-if="loading" shape="circle" class="w-full h-full" />
 					<div v-else-if="!person.photo" class="w-full h-full flex-center-all border-circle bg-soft text-2xl"><i class="material-symbols-outlined">person</i></div>
@@ -83,11 +83,6 @@ const people = computed(() => {
 
 	padding: .75em;
 	border-radius: .5rem;
-
-
-	&:hover, &[tv-focus] {
-		background: rgba(0, 0, 0, 0.3);
-	}
 
 	.image-wrapper {
 		width: 80px;

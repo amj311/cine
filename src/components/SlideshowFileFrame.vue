@@ -31,7 +31,7 @@ const videoSeeker = ref<HTMLInputElement>();
 
 <template>
 	<div class="frame">
-		<div class="blur-bg" :style="{ backgroundImage: `url(${useApiStore().apiUrl + '/thumb/' + file.relativePath})`}" />
+		<div class="blur-bg" :style="{ backgroundImage: `url('${useApiStore().apiUrl + '/thumb/' + file.relativePath}'')`}" />
 		<div class="file-wrapper">
 			<GalleryFileFrame
 				ref="galleryFrame"

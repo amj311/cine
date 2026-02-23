@@ -208,15 +208,29 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 body .p-dialog {
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.1);
 	backdrop-filter: blur(45px);
 }
 
+body .p-tieredmenu {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(0, 0, 0, 0.1);
+	backdrop-filter: blur(45px);
+}
+
+.bg-blur {
+	background: #0004;
+    backdrop-filter: blur(20px);
+}
+
+
+.bg-blur-hover:hover, .bg-blur-hover[tv-focus] {
+    @extend .bg-blur;
+}
 
 .p-button.btn-blur {
-    background: #0004;
-    backdrop-filter: blur(20px);
+    @extend .bg-blur;
     border: 1px solid transparent;
     color: var(--p-button-secondary-color);
 

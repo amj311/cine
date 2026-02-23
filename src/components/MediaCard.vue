@@ -6,6 +6,7 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import InputText from 'primevue/inputtext';
 import NavModal from './utils/NavModal.vue';
+import { useMediaStore } from '@/stores/media.store';
 const router = useRouter();
 
 const props = defineProps<{
@@ -37,12 +38,8 @@ function playVideo() {
 	if (!props.playSrc) {
 		return;
 	}
-	router.push({
-		name: 'play',
-		query: {
-			path: props.playSrc,
-			startTime: ((props.progress?.percentage < 90 && props.progress?.time) || props.overrideStartTime) ?? undefined,
-		}
+	useMediaStore().playMedia(props.playSrc, {
+		start: ((props.progress?.percentage < 90 && props.progress?.time) || props.overrideStartTime) ?? undefined,
 	})
 }
 
@@ -115,7 +112,7 @@ function activate() {
 <template>
 	<div
 		class="media-card"
-		:class="{ clickable: onClick }"
+		:class="{ 'clickable bg-blur-hover': onClick }"
 		@click="onClick"
 		@keydown.enter.prevent="activate"
 		@keydown.space.prevent="activate"
@@ -182,15 +179,12 @@ function activate() {
 	transition: transform 50ms ease-in-out;
 	user-select: none;
 	border-radius: 5px;
+	padding: 5px;
 	overflow: hidden;
 
 	&.clickable:hover, &.clickable:focus-visible, &[tv-focus] {
 		cursor: pointer;
-		background-color: var(--color-background-mute);
-		border: 3px solid var(--color-background-mute);
-		margin: -3px;
-		outline: 1px solid var(--color-contrast);
-		transform: scale(1.03);
+		// transform: scale(1.03);
 	}
 
 	&:not(.clickable) {

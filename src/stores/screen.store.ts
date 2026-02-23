@@ -292,6 +292,11 @@ export const useScreenStore = defineStore('Screen', () => {
 	function setFocus(element: HTMLElement | null) {
 		if (lastFocusedEl.value) {
 			lastFocusedEl.value.removeAttribute('tv-focus');
+			// emit blurred event for app to respond to
+			const event = new CustomEvent('tvblur', {
+				bubbles: true,
+			});
+			lastFocusedEl.value.dispatchEvent(event);
 		}
 		if (element) {
 			lastFocusedEl.value = element;
@@ -299,6 +304,11 @@ export const useScreenStore = defineStore('Screen', () => {
 				lastFocusedEl.value.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'center' });
 			}
 			lastFocusedEl.value.setAttribute('tv-focus', 'true');
+			// emit focused event for app to respond to
+			const event = new CustomEvent('tvfocus', {
+				bubbles: true,
+			});
+			element.dispatchEvent(event);
 		}
 	}
 

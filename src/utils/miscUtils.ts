@@ -59,6 +59,15 @@ export function episodeTag({ seasonNumber, episodeNumber }) {
 }
 
 
+export function formatRuntime_m(minutes: number) {
+	const hours = Math.floor(minutes / 60);
+	const minutesOver = Math.floor(minutes % 60);
+	if (hours === 0) {
+		return `${minutesOver}min`;
+	}
+	return `${hours}hr ${minutesOver}min`;
+}
+
 
 
 
