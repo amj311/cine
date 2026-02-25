@@ -126,7 +126,7 @@ export class WatchProgressService {
 	}
 
 	private static isEpisode(relativePath: RelativePath): boolean {
-		return relativePath.toLowerCase().includes("/season ");
+		return relativePath?.toLowerCase().includes("/season ");
 	}
 
 	/**

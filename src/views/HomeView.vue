@@ -9,6 +9,8 @@ import LibraryItemCard from '@/components/LibraryItemCard.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 import NothingFound from '@/components/NothingFound.vue';
+import { useUserStore } from '@/stores/user.store';
+import { useAppNavigationStore } from '@/stores/appNavigation.store';
 
 const feed = ref<any[]>([]);
 
@@ -17,7 +19,15 @@ async function loadFeed() {
 	try {
 		loadingFeed.value = true;
 		const { data } = await useApiStore().api.get('/feed');
-		feed.value = data.data;
+		const feedRows = data.data || [];
+		if (!useUserStore().isOwner && useAppNavigationStore().libraries?.length) {
+			feedRows.unshift({
+				type: 'libraries',
+				title: 'Your Shared Libraries',
+				items: useAppNavigationStore().libraries,
+			})
+		}
+		feed.value = feedRows;
 	}
 	catch (error) {
 		console.error('Error loading feed:', error);
@@ -196,6 +206,34 @@ function formatRuntime(minutes: number) {
 							</div>
 						</div>
 					</template>
+
+					<template v-else-if="feedRow.type === 'libraries'">
+						<h3>{{ feedRow.title }}</h3>
+						<div class="feed-scroll-wrapper">
+							<Scroll>
+								<div class="feed-row-items-list">
+									<div
+										v-for="library in feedRow.items"
+										class="feed-row-card-wrapper library"
+										:key="library.relativePath"
+									>
+										<MediaCard
+											:action="() => useQueryPathStore().goTo(library.relativePath)"
+											:title="library.name"
+											:subtitle="library.libraryType"
+											aspectRatio="wide"
+										>
+											<template #fallbackIcon>
+												<template v-if="library.libraryType === 'cinema'">🍿</template>
+												<template v-if="library.libraryType === 'audio'">🎧</template>
+												<template v-if="library.libraryType === 'photos'">📸</template>
+											</template>
+										</MediaCard>
+									</div>
+								</div>
+							</Scroll>
+						</div>
+					</template>
 				</div>
 			</Scroll>
 		</div>
@@ -236,16 +274,22 @@ function formatRuntime(minutes: number) {
 
 	&.new-items .feed-row-card-wrapper {
 		--baseWidth: min(8rem, 30vw);
-		width: var(--baseWidth);
-		min-width: var(--baseWidth);
-		max-width: var(--baseWidth);
+		--mult: 1;
+		width: calc(var(--baseWidth) * var(--mult));
+		min-width: calc(var(--baseWidth) * var(--mult));
+		max-width: calc(var(--baseWidth) * var(--mult));
 
 		&.album, &.audiobook {
 			--mult: 1.50;
-			width: calc(var(--baseWidth) * var(--mult));
-			min-width: calc(var(--baseWidth) * var(--mult));
-			max-width: calc(var(--baseWidth) * var(--mult));
 		}
+	}
+
+	&.libraries .feed-row-card-wrapper {
+		--baseWidth: min(16rem, 40vw);
+		--mult: 1;
+		width: calc(var(--baseWidth) * var(--mult));
+		min-width: calc(var(--baseWidth) * var(--mult));
+		max-width: calc(var(--baseWidth) * var(--mult));
 	}
 
 	&.photos .photo-grid {
