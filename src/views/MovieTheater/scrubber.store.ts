@@ -53,7 +53,7 @@ export const useScrubberStore = defineStore('Scrubber', () => {
 			loadingProfile.value = true;
 			activeProfile.value = null;
 			savedProfile.value = '';
-			const { data } = await useApiStore().api.get('/scrub/media?relativePath=' + encodeMediaPath(relativePath.value));
+			const { data } = await useApiStore().api.get('/scrub/media?path=' + encodeMediaPath(relativePath.value));
 			activeProfile.value = data.data;
 			savedProfile.value = JSON.stringify(activeProfile.value);
 			if (scrubs.value.length > 0) {

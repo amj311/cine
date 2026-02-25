@@ -8,6 +8,7 @@ import MetadataLoader from '@/components/MetadataLoader.vue';
 import LibraryItemCard from '@/components/LibraryItemCard.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import { useQueryPathStore } from '@/stores/queryPath.store';
+import NothingFound from '@/components/NothingFound.vue';
 
 const feed = ref<any[]>([]);
 
@@ -79,6 +80,8 @@ function formatRuntime(minutes: number) {
 				Loading...
 			</div>
 
+			<NothingFound v-if="feed.length === 0" />
+
 			<Scroll>
 				<div class="feed-row" v-for="feedRow in feed" :class="feedRow.type" :key="feedRow.type">
 					<template v-if="feedRow.type === 'continue-watching'">
@@ -132,7 +135,7 @@ function formatRuntime(minutes: number) {
 													:progress="item.watchProgress"
 													:aspectRatio="'wide'"
 													:title="playableName(item.libraryItem.playable, item.libraryItem.parentLibrary)"
-													:subtitle="item.isUpNext ? (item.probe?.full?.format?.duration ? formatRuntime(item.probe?.full?.format?.duration / 60) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
+													:subtitle="item.isUpNext ? (item.duration_s ? formatRuntime(item.duration_s / 60) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
 													:surprise="item.libraryItem.parentLibrary.surprise"
 													:loading="isLoadingMetadata"
 												>

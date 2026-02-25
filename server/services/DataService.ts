@@ -20,10 +20,12 @@ type datumKey = string;
 
 export class Store<T = any, N extends namespace = namespace> {
 	private versions: Map<number, StoreVersion> = new Map();
+	hasMigrated = false;
+	isMigrating = false;
 
 	constructor(
 		readonly namespace: N,
-		migrators: Array<(oldT: any) => T> = [],
+		migrators: Array<(oldT: Datum<any>) => T> = [],
 	) {
 		// define initial version with no up
 		this.versions.set(1, new InitialStoreVersion<T>());
@@ -47,6 +49,22 @@ export class Store<T = any, N extends namespace = namespace> {
 	public async getByKey(key: string): Promise<T | null> {
 		const datum = (await DataService.findByKey(this.namespace, key));
 		return datum ? this.migrateDatum(datum).data : null;
+	}
+
+	public async migrate<O = any>(migrator: (oldT: Datum<O>) => T) {
+		if (this.hasMigrated || this.isMigrating) {
+			return;
+		}
+		this.isMigrating = true;
+		// get and migrate all records
+		const oldData = (await DataService.findAll(this.namespace)) as Array<Datum<O>>;
+		for (const each of oldData) {
+			const migrated = migrator(each);
+			await this.set(each.key, migrated);
+		}
+		this.isMigrating = false;
+		this.hasMigrated = true;
+		console.log(`Migrated ${oldData.length} records in ${this.namespace}`);
 	}
 
 	private migrateDatum(datum: Datum<any>): Datum<T> {

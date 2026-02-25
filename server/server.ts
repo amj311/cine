@@ -2,6 +2,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
+
 const { json, urlencoded } = bodyParser as any;
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,7 +17,7 @@ import fs, { readdirSync, watch } from 'fs';
 import { ConfirmedPath, DirectoryService } from './services/DirectoryService';
 import { LibraryService, Photo } from './services/LibraryService';
 import { MediaMetadataService } from './services/metadata/MetadataService';
-import { WatchProgress, WatchProgressService } from './services/WatchProgressService';
+import { Bookmark, WatchProgressService } from './services/WatchProgressService';
 import mime from 'mime-types';
 import { EitherMetadata } from './services/metadata/MetadataTypes';
 import { ThumbnailService } from './services/ThumbnailService';
@@ -27,7 +29,27 @@ import ytdl from '@distube/ytdl-core'
 import ffmpeg from 'fluent-ffmpeg';
 import axios from 'axios';
 
-const corsOptions = {};
+const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
+	.split(',')
+	.map((origin) => origin.trim())
+	.filter(Boolean);
+
+const corsOptions: cors.CorsOptions = {
+	origin: (origin: string, callback: any) => {
+		// Allow non-browser clients or same-origin requests (no Origin header)
+		if (!origin) {
+			return callback(null, true);
+		}
+
+		// If no allowlist is configured, reflect the request origin
+		if (allowedOrigins.length === 0) {
+			return callback(null, true);
+		}
+
+		return callback(null, allowedOrigins.some(o => origin.includes(o)));
+	},
+	credentials: true,
+};
 
 // Safe response helper to prevent double responses
 function safeRes(res: Response) {
@@ -52,6 +74,7 @@ const safeResponse = {
 app.use(cors(corsOptions));
 app.use(json());
 app.use(urlencoded({ extended: false }));
+app.use(cookieParser(process.env.COOKIE_SECRET));
 
 // Request logging middleware
 // app.use((req: any, res: any, next: any) => {
@@ -91,18 +114,60 @@ app.use((req: any, res: any, next: any) => {
 
 app.get('/health', (_, res) => res.sendStatus(200));
 
+// authentication
+app.post('/api/auth', async (req, res) => {
+	const { emailHash, passHash } = req.body;
+	const token = await loginOwnerUser(emailHash, passHash);
+	if (!token) {
+		return res.status(401).send();
+	}
+	res.cookie('ownerToken', token, { signed: true });
+	res.send();
+})
+// authentication
+app.post('/api/auth/signout', async (req, res) => {
+	const ownerToken = req.signedCookies?.ownerToken;
+	const token = await logoutOwnerUser(ownerToken);
+	res.clearCookie('ownerToken', { signed: true, path: '/' });
+	res.send();
+})
+
+app.use((req, res, next) => {
+	const ownerToken = req.signedCookies?.ownerToken;
+	sessionAuthMiddleware(ownerToken, req, res, next);
+})
+
+app.use((req, res, next) => {
+	const ownerToken = req.signedCookies?.ownerToken;
+	sessionAuthMiddleware(ownerToken, req, res, next);
+})
+
+app.use(async (req, res, next) => {
+	const { path: pathQ } = req.query;
+	const { path: pathB } = req.body;
+	const { path: pathP } = req.params;
+	const path = decodeMediaPath(pathB || pathP || pathQ || '');
+
+	if (path) {
+		const isShared = await SharingService.isShared(path, getSessionEmail());
+		console.log(isShared, path)
+	}
+
+	next();
+})
+
 // get directory at relative path from media dir
 app.get("/api/dir/", async function (req, res) {
 	try {
-		let { dir } = req.query;
-		if (!dir) {
-			return safeResponse.error(res, "Requires dir query param", 400);
+		let { path } = req.query;
+		if (!path) {
+			return safeResponse.error(res, "Requires path query param", 400);
 		}
-		if (dir === "/") {
-			dir = "";
+		if (path === "/") {
+			path = "";
 		}
 
-		const resolvedPath = DirectoryService.resolvePath(dir as string);
+		const resolvedPath = DirectoryService.resolvePath(path as string);
 		if (!resolvedPath) {
 			return safeResponse.error(res, "Directory not found", 404);
 		}
@@ -207,12 +272,12 @@ app.get('/api/stream-yt-search', async (req, res) => {
 
 
 app.get("/api/stream", async function (req, res) {
-	let { src } = req.query;
-	if (!src) {
+	let { path } = req.query;
+	if (!path) {
 		res.status(400).send("Requires src query param");
 		return;
 	}
-	const resolvedPath = DirectoryService.resolvePath(src as string);
+	const resolvedPath = DirectoryService.resolvePath(path as string);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");
 		return;
@@ -299,9 +364,9 @@ app.get("/api/stream", async function (req, res) {
 });
 
 app.post('/api/prepareAudio', async (req, res) => {
-	const { src, index } = req.body;
+	const { path, index } = req.body;
 
-	if (!src) {
+	if (!path) {
 		res.status(400).send("Requires src query param");
 		return;
 	}
@@ -309,7 +374,7 @@ app.post('/api/prepareAudio', async (req, res) => {
 		res.status(400).send("Requires index query param");
 		return;
 	}
-	const resolvedPath = DirectoryService.resolvePath(src as string);
+	const resolvedPath = DirectoryService.resolvePath(path as string);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");
 		return;
@@ -408,8 +473,8 @@ app.get('/api/metadata/person/:personId', async (req, res) => {
 
 app.get('/api/watchProgress', async (req, res) => {
 	try {
-		const { relativePath } = req.query;
-		const resolvedPath = DirectoryService.resolvePath(relativePath as string);
+		const { path } = req.query;
+		const resolvedPath = DirectoryService.resolvePath(path as string);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
@@ -428,8 +493,8 @@ app.get('/api/watchProgress', async (req, res) => {
 });
 app.post('/api/watchProgress', async (req, res) => {
 	try {
-		const { relativePath, progress, bookmarkId } = req.body;
-		const resolvedPath = DirectoryService.resolvePath(relativePath);
+		const { path, progress, bookmarkId } = req.body;
+		const resolvedPath = DirectoryService.resolvePath(path);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
@@ -449,8 +514,8 @@ app.post('/api/watchProgress', async (req, res) => {
 });
 app.delete('/api/watchProgress/bookmark', async (req, res) => {
 	try {
-		const { relativePath, bookmarkId } = req.body;
-		const resolvedPath = DirectoryService.resolvePath(relativePath);
+		const { path, bookmarkId } = req.body;
+		const resolvedPath = DirectoryService.resolvePath(path);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
@@ -469,8 +534,8 @@ app.delete('/api/watchProgress/bookmark', async (req, res) => {
 });
 app.delete('/api/watchProgress', async (req, res) => {
 	try {
-		const { relativePath } = req.body;
-		const resolvedPath = DirectoryService.resolvePath(relativePath);
+		const { path } = req.body;
+		const resolvedPath = DirectoryService.resolvePath(path);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
@@ -495,12 +560,12 @@ app.delete('/api/watchProgress', async (req, res) => {
 
 app.get('/api/theaterData', async (req, res) => {
 	try {
-		const { relativePath } = req.query;
-		if (!relativePath) {
+		const { path } = req.query;
+		if (!path) {
 			res.status(400).send("Requires relativePath query param");
 			return;
 		}
-		const resolvedPath = DirectoryService.resolvePath(relativePath as string);
+		const resolvedPath = DirectoryService.resolvePath(path as string);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
@@ -536,20 +601,20 @@ app.get('/api/feed', async (req, res) => {
 				subtitle?: string;
 				relativePath: string;
 				metadata?: EitherMetadata | null;
-				watchProgress?: WatchProgress;
+				watchProgress?: Bookmark;
 				libraryItem?: any;
 				isUpNext?: boolean;
 			}>;
 		}>;
 
-		type ContinueWatchingItem = WatchProgress & {
+		type ContinueWatchingItem = Bookmark & {
 			confirmedPath: ConfirmedPath;
 			isUpNext?: boolean;
 		}
 
 		// Continue Watching
 		// Make sure cached items still exist!!!
-		const watchItems: ContinueWatchingItem[] = (await WatchProgressService.getContinueWatchingList()).map((progress) => ({
+		let watchItems: ContinueWatchingItem[] = (await WatchProgressService.getContinueWatchingList()).map((progress) => ({
 			...progress,
 			watchedAt: progress.watchedAt,
 			confirmedPath: DirectoryService.resolvePath(progress.relativePath),
@@ -563,6 +628,10 @@ app.get('/api/feed', async (req, res) => {
 				}
 			}
 		}));
+
+		// make sure all watchItems are STILL accessible to email
+		watchItems = await SharingService.getSharedOnly(watchItems, getSessionEmail(), w => w.relativePath);
+
 		if (watchItems.length > 0) {
 			feedLists.push({
 				title: "Continue Watching",
@@ -576,7 +645,7 @@ app.get('/api/feed', async (req, res) => {
 						LibraryService.determineMediaTypeFromPath(item.relativePath) as any,
 						item.confirmedPath,
 					),
-					probe: await ProbeService.getProbeData(item.confirmedPath),
+					duration_s: (await ProbeService.getProbeData(item.confirmedPath))?.glossary.duration_s,
 					libraryItem: await LibraryService.getLibraryForPlayable(item.confirmedPath),
 					isUpNext: item.isUpNext,
 				})))).sort((a, b) => b.watchedAt - a.watchedAt).filter(i => !i.libraryItem.parentLibrary?.surprise && !(i.libraryItem.playable as any).surprise),
@@ -856,10 +925,15 @@ import surpriseRoute from './routes/surprise.route'
 app.use('/api/surprise', surpriseRoute);
 import jobRoute from './routes/job.route'
 app.use('/api/job', jobRoute);
+app.use('/api/surprise', surpriseRoute);
+import shareRoute from './routes/share.route'
+app.use('/api/share', shareRoute);
 
 
-import { safeParseInt } from './utils/miscUtils';
+import { decodeMediaPath, safeParseInt } from './utils/miscUtils';
 import { JobService } from './services/JobService';
+import { getSessionEmail, loginOwnerUser, logoutOwnerUser, sessionAuthMiddleware, sessionStore } from './services/SessionService';
+import { SharingService } from './services/SharingService';
 
 
 // STATIC SITE

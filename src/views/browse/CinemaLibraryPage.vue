@@ -139,7 +139,10 @@ const letterGroups = computed(() => {
 									>
 										<LibraryItemCard :libraryItem="item" />
 									</div>
-									<Button variant="text" severity="contrast"
+									<Button
+										btn-blur-hover
+										variant="text"
+										severity="contrast"
 										class="px-4"
 										style="white-space: nowrap; min-width: 10em"
 										@click="useQueryPathStore().goTo(categoriesRow.relativePath)"
@@ -211,7 +214,7 @@ const letterGroups = computed(() => {
 		padding: 10px var(--padding);
 		padding-right: 0;
 		display: flex;
-		gap: 15px;
+		gap: 5px;
 	}
 }
 

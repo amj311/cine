@@ -67,7 +67,7 @@ const fetchDirectory = async () => {
 		// 	scrollStack.delete(libraryItem.value?.relativePath);
 		// }
 
-		const { data } = await api.get('/dir', { params: { dir: queryPathStore.currentPath || '/' } });
+		const { data } = await api.get('/dir', { params: { path: queryPathStore.currentPath || '/' } });
 		directory.value = data.directory;
 		libraryItem.value = data.libraryItem;
 		rootLibrary.value = data.rootLibrary;

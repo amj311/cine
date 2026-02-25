@@ -67,7 +67,7 @@ async function playChapter(chapter: any, time: number = chapter.trackStartOffset
 	}
 	currentChapter.value = chapter;
 	if (audio.value) {
-		audio.value.src = useApiStore().apiUrl + ('/stream?src=') + currentTrack.value!.relativePath;
+		audio.value.src = useApiStore().apiUrl + ('/stream?path=') + currentTrack.value!.relativePath;
 		await audio.value.play();
 		audio.value.currentTime = time;
 		startProgressUpdate();
@@ -444,7 +444,7 @@ const menuItems = [{
 		<div class="other-wrapper">
 			<div class="controls px-2 flex align-items-center">
 				<div class="audio-controls flex-grow-1">
-					<audio v-show="currentChapter" ref="audio" preload="auto" controls />
+					<audio v-show="currentChapter" ref="audio" preload="auto" controls crossorigin="use-credentials" />
 					<Button
 						v-if="!currentChapter && lastWatched"
 						icon="pi pi-play"

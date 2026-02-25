@@ -81,3 +81,8 @@ export function encodeMediaPath(path: string) {
 export function decodeMediaPath(path: string) {
 	return decodeURIComponent(path).split('<amp>').join('&');
 }
+
+
+export function objectOrder<T, A>(list: Array<T>, getComp: (item: T) => A) {
+	return list.sort((a, b) => (getComp(a) < getComp(b)) ? -1 : (getComp(b) < getComp(a) ? 2 : 0));
+}

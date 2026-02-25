@@ -8,6 +8,7 @@ import NavModal from './utils/NavModal.vue';
 import ToggleSwitch from '@/components/utils/ToggleSwitch.vue';
 import { useApiStore } from '@/stores/api.store';
 import { useToast } from 'primevue/usetoast';
+import { useUserStore } from '@/stores/user.store';
 
 const toast = useToast();
 const props = defineProps<{
@@ -61,10 +62,6 @@ async function clearLibraryCache() {
 
 			<div class="grid-row" :disabled="!localSettings.is_tv">
 				<label>Use experimental navigation</label>
-				<!-- <div>
-					<Button v-if="useScreenStore().tvNavEnabled" label="Disable" severity="danger" @click="useScreenStore().disengageTvMode" />
-					<Button v-else label="Enable" @click="useScreenStore().engageTvMode" />
-				</div> -->
 				<div>
 					<ToggleSwitch v-model="localSettings.tv_nav" />
 				</div>
@@ -75,8 +72,10 @@ async function clearLibraryCache() {
 				<ToggleSwitch v-model="localSettings.show_debug" />
 			</div>
 
-			<Button label="Reset directory cache" severity="warn" @click="clearLibraryCache" />
-			<div></div>
+			<template v-if="useUserStore().currentUser.isOwner">
+				<Button label="Reset directory cache" severity="warn" @click="clearLibraryCache" />
+				<div></div>
+			</template>
 		</div>
 	</NavModal>
 </template>

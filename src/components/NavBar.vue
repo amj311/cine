@@ -13,6 +13,7 @@ import DropdownMenu from './utils/DropdownMenu.vue';
 import SettingsModal from './SettingsModal.vue';
 import { AuthService } from '@/services/AuthService';
 import { encodeMediaPath } from '@/utils/miscUtils';
+import SharingModal from './SharingModal.vue';
 
 const navStore = useAppNavigationStore();
 const lastClickedItem = ref<string | null>(null);
@@ -67,6 +68,7 @@ const avatarInitial = computed(() => useUserStore().currentUser?.email?.[0]);
 
 
 const settingsModal = ref<InstanceType<typeof SettingsModal>>();
+const sharingModal = ref<InstanceType<typeof SharingModal>>();
 </script>
 
 <template>
@@ -97,28 +99,40 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 					:key="library.relativePath"
 					:label="library.libraryItem?.name || library.folderName"
 					variant="text"
+					btn-blur-hover
 					:severity="($route?.query?.path as any)?.startsWith(encodeMediaPath(library.relativePath)) ? 'contrast' : 'secondary'"
 					@click="useQueryPathStore().goTo(library.relativePath)"
 				/>
 			</div>
 
 			<div v-else-if="$route.name === 'browse'" class="breadcrumbs ml-2" :class="{ bg: isInMediaFolder }">
-				<Button @click="() => queryPathStore.goToAncestor(queryPathStore.rootLibrary!)" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.rootLibrary }}</button>
+				<Button btn-blur-hover @click="() => queryPathStore.goToAncestor(queryPathStore.rootLibrary!)" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.rootLibrary }}</button>
 				<template v-if="hiddenBreadcrumbs.length > 0">
 					<i class="pi pi-angle-right opacity-50" />
-					<DropdownMenu :items="hiddenBreadcrumbs"><Button variant="text" severity="secondary">...</Button></DropdownMenu>
+					<DropdownMenu :items="hiddenBreadcrumbs"><Button btn-blur-hover variant="text" severity="secondary">...</Button></DropdownMenu>
 				</template>
 				<template v-for="item in visibleBreadcrumbs" :key="item.label">
 					<i class="pi pi-angle-right opacity-50" />
 					<Button
 						@click="item.command"
 						variant="text"
+						btn-blur-hover
 						:severity="($route?.query?.path as any)?.endsWith(encodeMediaPath(item.folderName)) ? 'contrast' : 'secondary'"
 					>
 						{{ item.label }}
 					</button>
 				</template>
 			</div>
+
+			<Button
+				btn-blur-hover
+				v-if="queryPathStore.currentPath && useUserStore().currentUser.isOwner"
+				icon="pi pi-users"
+				text
+				large
+				:severity="useMobileNav ? 'contrast' :'secondary'"
+				@click="sharingModal?.open"
+			/>
 
 			<div class="flex-grow-1" />
 
@@ -179,6 +193,7 @@ const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 	</div>
 
 	<SettingsModal ref="settingsModal" />
+	<SharingModal ref="sharingModal" />
 </template>
 
 <style lang="scss">

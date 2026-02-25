@@ -1,5 +1,7 @@
+import SHA256 from '@/utils/SHA256';
+import { useApiStore } from '@/stores/api.store';
 import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth';
 // import { useUserStore } from '@/stores/user.store';
 
 const firebaseConfig = {
@@ -37,17 +39,12 @@ export const AuthService = {
 	},
 
 	getInitialUser() {
-		const maxAge = 1000 * 60 * 60 * 24 * 7;
 		const isOwner = localStorage.getItem('isOwner') === 'true';
-		const lastLogin = localStorage.getItem('lastLogin');
-		if (isOwner && lastLogin) {
-			const lastLoginDate = new Date(parseInt(lastLogin));
-			if (Date.now() - lastLoginDate.getTime() < maxAge) {
-				return {
-					email: import.meta.env.VITE_OWNER_EMAIL,
-					isOwner: true,
-				};
-			}
+		if (isOwner) {
+			return {
+				email: import.meta.env.VITE_OWNER_EMAIL,
+				isOwner: true,
+			};
 		}
 		return null;
 	},
@@ -57,11 +54,6 @@ export const AuthService = {
 		const isOwner = authUser?.email === import.meta.env.VITE_OWNER_EMAIL;
 		if (isOwner) {
 			authUser.isOwner = true;
-			localStorage.setItem('isOwner', 'true');
-			localStorage.setItem('lastLogin', Date.now().toString());
-		}
-		else {
-			localStorage.setItem('isOwner', 'false');
 		}
 
 		this.authUser = authUser || null;
@@ -81,7 +73,7 @@ export const AuthService = {
 	},
 
 	async getToken() {
-		return await auth?.currentUser?.getIdToken();
+		return localStorage.getItem('isOwner') || await auth?.currentUser?.getIdToken();
 	},
 
 	async createEmailUser(email, password, givenName, familyName) {
@@ -103,19 +95,26 @@ export const AuthService = {
 
 	async signInWithEmail(email, password) {
 		try {
-			if (email === import.meta.env.VITE_OWNER_EMAIL && password === import.meta.env.VITE_OWNER_PASS) {
+			// if (email === import.meta.env.VITE_OWNER_EMAIL && password === import.meta.env.VITE_OWNER_PASS) {
+			if (email === import.meta.env.VITE_OWNER_EMAIL) {
+				// authenticate with server directly for LAN setup
+				await useApiStore().api.post('/auth', {
+					emailHash: SHA256(email),
+					passHash: SHA256(password),
+				});
 				this.info.push('signing in as owner');
+				localStorage.setItem('isOwner', 'true');
 				this.setAuthUser({
 					email: import.meta.env.VITE_OWNER_EMAIL,
 				});
 			}
 			else {
-				// const userCredential = await signInWithEmailAndPassword(auth, email, password);
-				// const user = userCredential.user;
-				// this.setAuthUser({
-				// 	email: user.email || '',
-				// 	isFb: true,
-				// });
+				const userCredential = await signInWithEmailAndPassword(auth, email, password);
+				const user = userCredential.user;
+				this.setAuthUser({
+					email: user.email || '',
+					isFb: true,
+				});
 			}
 		} catch (error: any) {
 			console.error('signInWithEmail error', error)
@@ -159,11 +158,14 @@ export const AuthService = {
 	async signOut() {
 		try {
 			// do not log out with FiB if used bypass
-			if (!AuthService.authUser?.isOwner) {
+			if (auth && !AuthService.authUser?.isOwner) {
 				await signOut(auth);
 			}
+			localStorage.removeItem('isOwner');
+			await useApiStore().api.post('/auth/signout');
 			AuthService.setAuthUser(null);
 			AuthService.onLogInOrOut?.call(null, null);
+			this.initialize();
 		} catch (error: any) {
 			throw new Error(error.message);
 		}

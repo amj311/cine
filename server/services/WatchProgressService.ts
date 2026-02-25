@@ -4,6 +4,7 @@
 
 import { Store } from "./DataService";
 import { ConfirmedPath, RelativePath } from "./DirectoryService";
+import { getSessionEmail } from "./SessionService";
 
 export type WatchProgress = {
 	time: number,
@@ -19,7 +20,7 @@ export type WatchProgress = {
 }
 
 // A bookmark saves additional timestamps for a media
-type Bookmark = WatchProgress & {
+export type Bookmark = WatchProgress & {
 	name: string,
 }
 
@@ -30,8 +31,16 @@ type WatchProgressWithBookmarks = WatchProgress & {
 // const watching = new Map<RelativePath, WatchProgress>();
 // const bookmarks = new Map<RelativePath, Map<string, Bookmark>>();
 
-const watchingStore = new Store<WatchProgress>('watchProgress',)
-const bookmarkStore = new Store<Record<string, Bookmark>>('bookmarks',)
+
+
+/**
+ * store all progress by email for a path
+ */
+type WatchProgressStoreRecord = Record<string, WatchProgress>; // <email, progress>
+type BookmarkStoreRecord = Record<string, Record<string, Bookmark>>;
+
+const watchingStore = new Store<WatchProgressStoreRecord>('watchProgress');
+const bookmarkStore = new Store<BookmarkStoreRecord>('bookmarks');
 
 export class WatchProgressService {
 	/**
@@ -43,20 +52,20 @@ export class WatchProgressService {
 	 */
 	public static async updateWatchProgress(path: ConfirmedPath, progress: WatchProgress, bookmarkId?: string) {
 		// Always save the overall progress
-		await watchingStore.set(path.relativePath, {
+		const fullProgress: WatchProgress = {
 			...progress,
 			relativePath: path.relativePath,
-		});
+		}
+		await this.upsertProgressForEmail(fullProgress, getSessionEmail());
 
 		if (bookmarkId) {
 			// Save the bookmark progress
-			const bookmarksForMedia = await bookmarkStore.getByKey(path.relativePath) || {};
-			bookmarksForMedia[bookmarkId] = {
+			const fullBookmark: Bookmark = {
 				...progress,
 				relativePath: path.relativePath,
 				name: bookmarkId,
-			};
-			await bookmarkStore.set(path.relativePath, bookmarksForMedia);
+			}
+			await this.upsertBookmarkForEmail(fullBookmark, getSessionEmail());
 		}
 	}
 
@@ -66,11 +75,14 @@ export class WatchProgressService {
 	 * @returns The watching progress of the media.
 	 */
 	public static async getWatchProgress(path: ConfirmedPath): Promise<WatchProgressWithBookmarks | null> {
-		const progress = await watchingStore.getByKey(path.relativePath);
+		const allProgress = (await watchingStore.getByKey(path.relativePath)) || {};
+		const progress = allProgress[getSessionEmail()];
 		if (progress) {
+			const allBookmarks = (await bookmarkStore.getByKey(path.relativePath)) || {};
+			const bookmarks = allBookmarks[getSessionEmail()] || {};
 			return {
 				...progress,
-				bookmarks: Array.from(Object.values((await bookmarkStore.getByKey(path.relativePath)) || {})),
+				bookmarks: Array.from(Object.values(bookmarks)),
 			}
 		}
 		return null;
@@ -79,7 +91,6 @@ export class WatchProgressService {
 	public static async deleteWatchProgress(path: ConfirmedPath): Promise<void> {
 		await watchingStore.delete(path.relativePath);
 		await bookmarkStore.delete(path.relativePath);
-		console.log(await watchingStore.getByKey(path.relativePath))
 	}
 
 	public static async deleteBookmark(path: ConfirmedPath, bookmarkId: string) {
@@ -90,8 +101,26 @@ export class WatchProgressService {
 		}
 	}
 
+	private static async upsertBookmarkForEmail(bookmark: Bookmark, email: string) {
+		const allBookmarks = await bookmarkStore.getByKey(bookmark.relativePath) || {};
+		const emailBookmarks = allBookmarks[email] || {};
+		emailBookmarks[bookmark.name] = bookmark;
+		await bookmarkStore.set(bookmark.relativePath, allBookmarks);
+	}
+
+	private static async upsertProgressForEmail(progress: WatchProgress, email: string) {
+		const allProgress = await watchingStore.getByKey(progress.relativePath) || {};
+		allProgress[email] = progress;
+		await watchingStore.set(progress.relativePath, allProgress);
+	}
+
 	public static async getAllRecentlyWatched(): Promise<WatchProgress[]> {
-		return (await watchingStore.getAll()).sort((a, b) => {
+		// await watchingStore.migrate<WatchProgress>((v1) => ({ [getSessionEmail()]: v1.data }));
+		// await bookmarkStore.migrate<Record<string, Bookmark>>((v1) => ({ [getSessionEmail()]: v1.data }));
+
+		const allProgresses = await watchingStore.getAll();
+		const emailProgresses = allProgresses.map(p => p[getSessionEmail()]).filter(Boolean);
+		return (emailProgresses).sort((a, b) => {
 			return b.watchedAt - a.watchedAt;
 		}).slice(0, 50);
 	}

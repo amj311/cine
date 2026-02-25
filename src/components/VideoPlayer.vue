@@ -64,7 +64,7 @@ function doShowControls() {
 } 
 
 const videoRef = ref<HTMLVideoElement>();
-const videoUrl = computed(() => useApiStore().apiUrl + '/stream?src=' + encodeMediaPath(props.relativePath));
+const videoUrl = computed(() => useApiStore().apiUrl + '/stream?path=' + encodeMediaPath(props.relativePath));
 const secondaryAudioPlayer = ref<HTMLAudioElement>();
 
 const supportedVideoTypes = [
@@ -206,12 +206,18 @@ function windowKeyHandler(e) {
 	}
 
 	if (e.key === ' ') {
+		e.preventDefault();
+		e.stopPropagation();
 		togglePlay();
 	}
 	if (e.key === 'ArrowLeft') {
+		e.preventDefault();
+		e.stopPropagation();
 		skipBack();
 	}
 	if (e.key === 'ArrowRight') {
+		e.preventDefault();
+		e.stopPropagation();
 		skipForward();
 	}
 }
@@ -365,7 +371,7 @@ async function turnOnSecondaryAudio(audio) {
 
 			// request job start
 			const { data } = await useApiStore().api.post('/prepareAudio', {
-				src: props.relativePath,
+				path: props.relativePath,
 				index: audio.index,
 			});
 
@@ -476,12 +482,12 @@ function goToNextChapter() {
 
 <template>
 	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls tvNavigationNoFocus': showControls && !hideControls }">
-		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="anonymous" allow :style="{ backgroundColor: background }">
+		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="use-credentials" allow :style="{ backgroundColor: background }">
 			<source :src="videoUrl" :type="'video/mp4'" />
 			<!-- <track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" /> -->
 			<track v-if="selectedSubtitle" :key="selectedSubtitle.url" kind="subtitles" :src="selectedSubtitle.url" srclang="en" :label="selectedSubtitle.label" default @error="handleSubtitleError" />
 		</video>
-		<audio ref="secondaryAudioPlayer" type="audio/mp3" />
+		<audio ref="secondaryAudioPlayer" type="audio/mp3" crossorigin="use-credentials" />
 
 		<div v-if="!hasLoaded" class="loading-splash">
 			<img v-if="loadingSplash" :src="loadingSplash" />
@@ -507,19 +513,19 @@ function goToNextChapter() {
 			</div>
 		</div>
 		<div v-if="hasLoaded" class="center-controls overlay flex-row-center">
-			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text severity="contrast" :disabled="prevChapterStart === null" @click="prevChapterStart !== null && doSeek(prevChapterStart)">
+			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover severity="contrast" :disabled="prevChapterStart === null" @click="prevChapterStart !== null && doSeek(prevChapterStart)">
 				<i class="material-symbols-outlined">fast_rewind</i>
 			</Button>
-			<Button class="square text-xl" text severity="contrast" @click="skipBack">
+			<Button class="square text-xl" text btn-blur-hover severity="contrast" @click="skipBack">
 				<i class="material-symbols-outlined">replay_10</i>
 			</Button>
-			<Button class="square text-6xl" text severity="contrast" data-focus-priority="1" @click="togglePlay">
+			<Button class="square text-7xl" text btn-blur-hover severity="contrast" data-focus-priority="1" @click="togglePlay">
 				<i class="material-symbols-outlined">{{ isPlaying ? 'pause' : 'play_arrow' }}</i>
 			</Button>
-			<Button class="square text-xl" text severity="contrast" @click="skipForward">
+			<Button class="square text-xl" text btn-blur-hover severity="contrast" @click="skipForward">
 				<i class="material-symbols-outlined">forward_10</i>
 			</Button>
-			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text severity="contrast" :disabled="!nextChapterStart" @click="nextChapterStart && doSeek(nextChapterStart)">
+			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover severity="contrast" :disabled="!nextChapterStart" @click="nextChapterStart && doSeek(nextChapterStart)">
 				<i class="material-symbols-outlined">fast_forward</i>
 			</Button>
 		</div>

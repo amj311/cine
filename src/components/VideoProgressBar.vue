@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useApiStore } from '@/stores/api.store';
 import { useScreenStore } from '@/stores/screen.store';
-import { encodeMediaPath } from '@/utils/miscUtils';
+import { encodeMediaPath, objectOrder } from '@/utils/miscUtils';
 import { useToast } from 'primevue/usetoast';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 
@@ -90,12 +90,12 @@ const seekSpots = computed(() => {
 		spots.add(spotTime);
 		spotTime += thumbInterval;
 	}
-	return Array.from(spots).map(time => ({
+	return objectOrder(Array.from(spots).map(time => ({
 		start_s: time,
 		end_s: time + thumbInterval,
 		percent: time / playingState.value.duration_s,
 		endPercent: (time + thumbInterval) / playingState.value.duration_s,
-	}));
+	})), s => s.start_s);
 })
 
 const activeThumb = computed(() => {

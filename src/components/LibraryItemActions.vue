@@ -121,7 +121,9 @@ defineExpose({
 </script>
 
 <template>
-	<DropdownMenu :items="menuItems" />
+	<DropdownMenu :items="menuItems">
+		<slot></slot>
+	</DropdownMenu>
 	<SurpriseModal ref="surpriseModal" :libraryItem="libraryItem" />
 </template>
 

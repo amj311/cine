@@ -13,7 +13,7 @@ import { useApiStore, type Host } from './stores/api.store';
 import { useUserStore } from './stores/user.store';
 import LoginPage from './views/LoginPage.vue';
 import OfflinePage from './views/OfflinePage.vue';
-import SharedPage from './views/SharedPage.vue';
+import SharedPage from './components/NothingFound.vue';
 import { useSettingsStore } from './stores/settings.store';
 import ProgressBar from 'primevue/progressbar';
 
@@ -73,17 +73,13 @@ const showNavbar = computed(() => {
 	<div class="dark-app app-wrapper" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
 		<template v-if="apiStore.isInitializing || !useUserStore().hasLoadedSessionData">
 			<div id="longLoading">
-				<i class="pi pi-spinner spin" />
+				<i class="pi pi-spinner pi-spin" />
 				Loading...
 			</div>
 		</template>
 
 		<template v-else-if="!useUserStore().isLoggedIn">
 			<LoginPage />
-		</template>
-
-		<template v-else-if="!useUserStore().isOwner">
-			<SharedPage />
 		</template>
 
 		<template v-else-if="!apiStore.selectedHost">

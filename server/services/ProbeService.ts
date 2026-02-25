@@ -23,6 +23,7 @@ type AudioTrack = {
 
 type ProbeData = {
 	glossary: {
+		duration_s?: number,
 		subtitles: SubtitleTrack[];
 		audio: AudioTrack[];
 		chapters?: Array<{
@@ -109,6 +110,9 @@ export class ProbeService {
 						},
 						full: data,
 					};
+
+					probeData.glossary.duration_s = data?.format.duration;
+
 
 					if (data && data.streams) {
 						for (const stream of data.streams) {

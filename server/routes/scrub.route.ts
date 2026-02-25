@@ -8,18 +8,18 @@ const route = express.Router({ mergeParams: true });
  * Fetches a scrub that matches a particular media file
  */
 route.get('/media', async (req, res) => {
-	const { relativePath } = req.query;
+	const { path } = req.query;
 
 	try {
-		const mediaPath = DirectoryService.resolvePath(relativePath as string);
+		const mediaPath = DirectoryService.resolvePath(path as string);
 		if (!mediaPath) {
-			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(relativePath as string)}`);
+			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(path as string)}`);
 		}
 
 		const media = await LibraryService.getLibraryForPlayable(mediaPath);
 
 		if (!media.playable) {
-			throw new Error(`Could not find playable for path ${relativePath}`);
+			throw new Error(`Could not find playable for path ${path}`);
 		}
 
 		res.send({
@@ -39,18 +39,18 @@ route.get('/media', async (req, res) => {
  * Creates a scrub that matches a particular media file
  */
 route.post('/media', async (req, res) => {
-	const { relativePath } = req.query;
+	const { path } = req.query;
 
 	try {
-		const mediaPath = DirectoryService.resolvePath(relativePath as string);
+		const mediaPath = DirectoryService.resolvePath(path as string);
 		if (!mediaPath) {
-			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(relativePath as string)}`);
+			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(path as string)}`);
 		}
 
 		const media = await LibraryService.getLibraryForPlayable(mediaPath);
 
 		if (!media.playable) {
-			throw new Error(`Could not find playable for path ${relativePath}`);
+			throw new Error(`Could not find playable for path ${path}`);
 		}
 
 		res.send({

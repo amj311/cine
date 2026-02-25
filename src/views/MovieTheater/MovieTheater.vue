@@ -51,7 +51,7 @@ async function loadMediaData(pathToLoad: string) {
 		isLoadingLibrary.value = true;
 		const { data } = await api.get('/theaterData', {
 			params: {
-				relativePath: pathToLoad,
+				path: pathToLoad,
 			}
 		});
 		parentLibrary.value = data.data.parentLibrary;
@@ -96,7 +96,7 @@ async function initialProgress() {
 		try {
 			const { data } = await api.get('/watchProgress', {
 				params: {
-					relativePath: mediaPath.value,
+					path: mediaPath.value,
 				}
 			})
 			if (data.data) {
@@ -655,11 +655,11 @@ const nextExtra = computed(() => {
 								</div>
 							</div>
 							<div>
-								<div class="flex align-items-ceter gap-1">
-									<span v-if="willAutoplay">
+								<div class="flex align-items-center gap-1">
+									<template v-if="willAutoplay">
 										<span class="material-symbols-outlined">autoplay</span>
 										Autoplay ({{ autoplayTimes }})
-									</span>
+									</template>
 									<span v-else>Play Next</span>
 								</div>
 								<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
@@ -750,19 +750,17 @@ const nextExtra = computed(() => {
 		>
 			<div class="flex-grow-1 overflow-hidden">
 				<Scroll>
-					<div class="h-full flex-column align-items-start gap-5" style="padding: max(2rem, 3%)">
-						<div>
+					<div class="flex-column align-items-start gap-5" style="padding: max(1rem, 3%); min-height: 100vh">
+						<div class="flex-grow-1" >
 							<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-arrow-left" label="Return" @click="carefulBackNav" />
 							<br />
 							<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-replay" label="Replay" @click="showEndScreen = false" />
 						</div>
 
-						<div class="flex-grow-1" />
-
 						<div v-if="nextEpisode">
-							<h2>{{ nextEpisode.seasonNumber === playable.seasonNumber ? 'Next Episode' : 'Begin Next Season' }}</h2>
+							<h3>{{ nextEpisode.seasonNumber === playable.seasonNumber ? 'Next Episode' : 'Begin Next Season' }}</h3>
 							<div class="episode-item flex gap-3 mt-3">
-								<div class="episode-poster-wrapper flex-shrink-0" style="width: min(250px, 30vw)">
+								<div class="episode-poster-wrapper flex-shrink-0" style="width: min(250px, 30vw, 30vh);">
 									<MediaCard
 										navJumpRow="seasons"
 										:imageUrl="nextEpisodeMetadata?.still_thumb"
@@ -770,7 +768,6 @@ const nextExtra = computed(() => {
 										:playSrc="nextEpisode.relativePath"
 										:overrideStartTime="nextEpisode.startTime"
 										:progress="nextEpisode.watchProgress"
-										:tvNavable="true"
 									>
 										<template #fallbackIcon>📺</template>
 									</MediaCard>
@@ -793,20 +790,21 @@ const nextExtra = computed(() => {
 						</div>
 
 						<div v-if="nextExtra" class="w-full overflow-hidden">
-							<h2>Next Extra</h2>
+							<h3>Next Extra</h3>
 							<ExtrasList :extras="[nextExtra]" />
 						</div>
 
 						<div v-if="parentExtrasToShow" class="w-full overflow-hidden">
-							<h2>Extras</h2>
+							<h3>Extras</h3>
 							<ExtrasList :extras="parentExtrasToShow" />
 						</div>
 
 						<div v-if="seasonExtrasToShow" class="w-full overflow-hidden">
-							<h2>Season {{ currentSeason.seasonNumber }} Extras</h2>
+							<h3>Season {{ currentSeason.seasonNumber }} Extras</h3>
 							<ExtrasList :extras="seasonExtrasToShow" />
 						</div>
 					</div>
+					
 				</Scroll>
 			</div>
 		</div>

@@ -67,7 +67,7 @@ const sortedExtras = computed(() => {
 }
 
 .extra-poster-wrapper {
-	width: min(250px, 30vw);
+	width: min(250px, 30vw, 30vh);
 }
 
 </style>

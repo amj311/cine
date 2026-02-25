@@ -282,7 +282,7 @@ onUnmounted(async () => {
 
 				<div class="left-side" :style="{ flexGrow: 1 }">
 
-					<h1 class="title line-clamp-3">{{ libraryItem.name }}</h1>
+					<h1 class="title line-clamp-2">{{ libraryItem.name }}</h1>
 					<div style="display: flex; column-gap: 10px; flex-wrap: wrap; align-items: center;">
 						<span v-if="libraryItem.year">{{ libraryItem.year }}</span>
 						<span v-if="metadata?.runtime">{{ formatRuntime(metadata.runtime) }}</span>
@@ -293,34 +293,49 @@ onUnmounted(async () => {
 					<StarRating :rating="metadata?.rating || 0" :votes="metadata?.votes || 0" />
 
 					<br />
-					<div class="flex align-items-center">
-						<Button
-							:size="'large'"
-							class="play-button"
-							@click="() => playVideo(resumable.relativePath, resumeTime)"
-							data-focus-priority="1"
-						>
-							<i class="pi pi-play" />
-							{{ playText }}
-						</Button>
-						<Button
-							v-if="resumeTime"
-							:size="'large'"
-							variant="text"
-							severity="contrast"
-							@click="() => playVideo(resumable.relativePath, resumable.startTime || 0)"
-						>
-							<i class="pi pi-replay" />
-						</Button>
-						<Button
-							v-if="ytCanPlay"
-							:icon="ytIsPlaying ? 'pi pi-volume-up pi-spin' : 'pi pi-volume-up'"
-							:size="'large'"
-							variant="text"
-							severity="contrast"
-							@click="() => (ytIsPlaying ? stopYtAudio() : playYtAudio())"
-						/>
-						<LibraryItemActions :libraryItem="libraryItem" />
+					<div class="flex-row-center flex-wrap">
+						<div class="flex-row-center">
+							<Button
+								:size="'large'"
+								class="play-button"
+								@click="() => playVideo(resumable.relativePath, resumeTime)"
+								data-focus-priority="1"
+							>
+								<i class="pi pi-play" />
+								{{ playText }}
+							</Button>
+						</div>
+						
+						<div class="flex-row-center">
+							<Button
+								v-if="resumeTime"
+								:size="'large'"
+								variant="text"
+								severity="contrast"
+								btn-blur-hover
+								@click="() => playVideo(resumable.relativePath, resumable.startTime || 0)"
+								icon="pi pi-replay"
+							>
+							</Button>
+							<Button
+								v-if="ytCanPlay"
+								:icon="ytIsPlaying ? 'pi pi-volume-up pi-spin' : 'pi pi-volume-up'"
+								:size="'large'"
+								variant="text"
+								severity="contrast"
+								btn-blur-hover
+								@click="() => (ytIsPlaying ? stopYtAudio() : playYtAudio())"
+							/>
+							<LibraryItemActions :libraryItem="libraryItem">
+								<Button
+									icon="pi pi-ellipsis-v"
+									:size="'large'"
+									variant="text"
+									severity="contrast"
+									btn-blur-hover
+								/>
+							</LibraryItemActions>
+						</div>
 					</div>
 					
 

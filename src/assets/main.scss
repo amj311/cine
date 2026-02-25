@@ -220,8 +220,8 @@ body .p-tieredmenu {
 }
 
 .bg-blur {
-	background: #0004;
-    backdrop-filter: blur(20px);
+	background: #3334 !important;
+    backdrop-filter: blur(20px) !important;
 }
 
 
@@ -229,12 +229,29 @@ body .p-tieredmenu {
     @extend .bg-blur;
 }
 
-.p-button.btn-blur {
+.p-button[btn-blur] {
     @extend .bg-blur;
-    border: 1px solid transparent;
+    border-color: #aaa3 !important;
     color: var(--p-button-secondary-color);
+}
 
-	&:hover {
-	    // background: #0004;
+.p-button[btn-blur-hover] {
+	background-color: transparent;
+	border-color: transparent;
+
+	&:hover, &[tv-focus] {
+		@extend [btn-blur];
+	}
+}
+
+
+.p-inputtext[transparent] {
+	background-color: transparent;
+	backdrop-filter: blur(25px);
+	border-color: #fff3;
+
+
+	&::placeholder {
+		color: #fff9;
 	}
 }

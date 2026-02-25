@@ -47,7 +47,7 @@ async function playTrack(track: any, time: number = 0) {
 	}
 	currentTrack.value = track;
 	if (audio.value) {
-		audio.value.src = useApiStore().apiUrl + '/stream?src=' + track.relativePath;
+		audio.value.src = useApiStore().apiUrl + '/stream?path=' + track.relativePath;
 		await audio.value.play();
 		audio.value.currentTime = time;
 
@@ -145,7 +145,7 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 		<div class="other-wrapper">
 			<div class="controls px-2 flex align-items-center">
 				<div class="audio-controls flex-grow-1">
-					<audio v-show="currentTrack" ref="audio" :src="useApiStore().apiUrl + '/stream?src=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls />
+					<audio v-show="currentTrack" ref="audio" :src="useApiStore().apiUrl + '/stream?path=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls crossorigin="use-credentials" />
 					<Button
 						v-if="!currentTrack"
 						icon="pi pi-play"

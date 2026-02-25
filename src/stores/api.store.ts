@@ -28,6 +28,7 @@ export const useApiStore = defineStore('Api', () => {
 	const api = computed(() => {
 		const client = axios.create({
 			baseURL: apiUrl.value,
+			withCredentials: true,
 		})
 
 		client.interceptors.request.use(async (config) => {

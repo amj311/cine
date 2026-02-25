@@ -2,6 +2,8 @@ import { existsSync } from 'fs';
 import { readdir } from 'fs/promises';
 import path from 'path';
 import { decodeMediaPath } from '../utils/miscUtils';
+import { SharingService } from './SharingService';
+import { getSessionEmail, sessionStore } from './SessionService';
 
 /**
  * A unique identifier for every file/folder based on its path from MEDIA_DIR
@@ -75,9 +77,10 @@ export class DirectoryService {
 					name: f.name,
 					confirmedPath: dirPath.append(f.name),
 				};
-			}).filter(f => f.name !== '.DS_Store');
-			const dirs = files.filter((file) => file.isDirectory);
-			const filesOnly = files.filter((file) => !file.isDirectory);
+			}).filter(f => f.name !== '.DS_Store'); // hate macOs >:(
+			const sharedFiles = await SharingService.getSharedOnly(files, getSessionEmail(), file => file.confirmedPath.relativePath);
+			const dirs = sharedFiles.filter((file) => file.isDirectory);
+			const filesOnly = sharedFiles.filter((file) => !file.isDirectory);
 			return { folders: dirs, files: filesOnly };
 		}
 		catch (err) {

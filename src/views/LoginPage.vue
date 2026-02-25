@@ -107,12 +107,15 @@ function doFormSubmit() {
 	switch (state.mode) {
 		case 'login': {
 			loginWithEmail();
+			break;
 		}
 		case 'reset_password': {
 			sendPasswordResetEmail();
+			break;
 		}
 		case 'signup': {
 			createEmailUser();
+			break
 		}
 	}
 }
@@ -194,6 +197,7 @@ function doFormSubmit() {
 
 
 				<div class="flex flex-column align-items-center gap-2">
+					{{ state.mode }}
 					<template v-if="state.mode === 'signup'">
 						<Button
 							size="large"

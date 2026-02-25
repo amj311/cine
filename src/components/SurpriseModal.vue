@@ -23,7 +23,7 @@ async function upsertSurprise() {
 	try {
 		savingSurprise.value = true;
 		await useApiStore().api.post('/surprise', {
-			relativePath: props.libraryItem.relativePath,
+			path: props.libraryItem.relativePath,
 			record: draftSurprise.value.enabled ? draftSurprise.value : null,
 		});
 		props.libraryItem.surprise = draftSurprise.value;

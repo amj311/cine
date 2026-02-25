@@ -8,12 +8,12 @@ const route = express.Router({ mergeParams: true });
  * Creates a scrub that matches a particular media file
  */
 route.post('/', async (req, res) => {
-	const { relativePath, record } = req.body;
+	const { path, record } = req.body;
 
 	try {
-		const mediaPath = DirectoryService.resolvePath(relativePath as string);
+		const mediaPath = DirectoryService.resolvePath(path as string);
 		if (!mediaPath) {
-			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(relativePath as string)}`);
+			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(path as string)}`);
 		}
 
 		if (record) {

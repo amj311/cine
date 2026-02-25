@@ -94,7 +94,7 @@ async function revealSurprise() {
 	if (!props.surprise) return;
 	revealedSurprise.value = true;
 	await useApiStore().api.post('/surprise', {
-		relativePath: props.surprise.relativePath,
+		path: props.surprise.relativePath,
 		record: null
 	});
 }
@@ -179,8 +179,11 @@ function activate() {
 	transition: transform 50ms ease-in-out;
 	user-select: none;
 	border-radius: 5px;
-	padding: 5px;
 	overflow: hidden;
+
+	&.clickable {
+		padding: 5px;
+	}
 
 	&.clickable:hover, &.clickable:focus-visible, &[tv-focus] {
 		cursor: pointer;

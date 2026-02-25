@@ -202,7 +202,7 @@ function openSlideshow(file: GalleryFile) {
 .item-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(min(7rem, 19vh), 1fr));
-	gap: 15px;
+	gap: 5px;
 }
 .grid-tile {
 	width: 100%;
