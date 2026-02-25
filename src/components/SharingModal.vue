@@ -145,6 +145,11 @@ async function addShare() {
 			accessType: 'direct',
 		});
 		newEmail.value = '';
+		toast.add({
+			summary: 'Shared with ' + email,
+			severity: 'success',
+			life: 5000,
+		})
 	}
 	catch (e) {
 		toast.add({

@@ -56,7 +56,6 @@ export const useUserStore = defineStore('user', () => {
 	AuthService.onLogInOrOut = () => {
 		loadSessionData();
 	};
-	AuthService.initialize();
 
 	// const setNewUserData = (data) => {
 	// 	newUserData.value = data;

@@ -126,13 +126,15 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 
 			<Button
 				btn-blur-hover
+				btn-drop-shadow
 				v-if="queryPathStore.currentPath && useUserStore().currentUser.isOwner"
-				icon="pi pi-users"
 				text
-				large
+				size="small text-5xl"
 				:severity="useMobileNav ? 'contrast' :'secondary'"
 				@click="sharingModal?.open"
-			/>
+			>
+				<template #icon><i class="pi pi-users text-2xl" /></template>
+			</Button>
 
 			<div class="flex-grow-1" />
 

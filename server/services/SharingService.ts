@@ -1,6 +1,7 @@
 import { access } from "fs";
 import { Store } from "./DataService";
 import { ConfirmedPath, RelativePath } from "./DirectoryService";
+import { LoanService } from "./LoanService";
 
 export type ShareRecord = {
 	relativePath: string,
@@ -41,7 +42,6 @@ export class SharingService {
 			return 'owner';
 		}
 
-		// TODO: determine loaned access
 		if (!fromShares) {
 			fromShares = await shareStore.getAll();
 		}
@@ -53,6 +53,19 @@ export class SharingService {
 
 			const access = this.determineSharedAccess(relativePath, shared);
 			if (access) return access;
+		}
+
+		// Have to check all loans for any that descend from this path,
+		// or if this path descends from a loaned item
+		const loans = await LoanService.getAllLoans();
+		for (const loan of loans) {
+			// if (relativePath.includes('even more')) {
+			// 	console.log(loan, loan.email === email, relativePath, loan.email === email && loan.relativePath.startsWith(relativePath))
+			// }
+			if (loan.email === email && (loan.relativePath.startsWith(relativePath) || relativePath.startsWith(loan.relativePath))) {
+				// console.log("returning TRUE!!!!")
+				return 'loan';
+			}
 		}
 	}
 
@@ -87,7 +100,10 @@ export class SharingService {
 			accessType: this.determineSharedAccess(path.relativePath, s),
 		})).filter(s => Boolean(s.accessType)) as Array<SharedAccessWithType>;
 
-		// todo: include access by loan
+		const loan = await LoanService.getLoan(path.relativePath);
+		if (loan) {
+			sharedAccess.push({ emails: [loan.email], relativePath: loan.relativePath, accessType: 'loan' });
+		}
 
 		return sharedAccess;
 	}

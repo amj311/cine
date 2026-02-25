@@ -8,6 +8,7 @@ const route = express.Router({ mergeParams: true });
 /**
  */
 route.get('/', async (req, res) => {
+	console.log("GET SHARE")
 	const { path } = req.query;
 
 	try {

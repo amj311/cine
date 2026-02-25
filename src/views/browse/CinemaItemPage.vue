@@ -17,7 +17,12 @@ import type ToggleButton from 'primevue/togglebutton';
 import MediaCard from '@/components/MediaCard.vue';
 import PeopleList from '@/components/PeopleList.vue';
 import { useMediaStore } from '@/stores/media.store';
+import { useUserStore } from '@/stores/user.store';
+import type Message from 'primevue/message';
+import LoanModal from '@/components/LoanModal.vue';
+import { useToast } from 'primevue/usetoast';
 
+const toast = useToast();
 const router = useRouter();
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -262,6 +267,41 @@ onUnmounted(async () => {
 	}
 });
 
+
+/***********
+ * LOANING
+ */
+
+const loan = computed(() => props.libraryItem.loan);
+const loanModal = ref<InstanceType<typeof LoanModal>>();
+
+const canStream = computed(() => {
+	return loan.value ? loan.value.email === useUserStore().currentUser.email : useUserStore().isOwner;
+})
+
+function manageLoan() {
+	loanModal.value?.open();
+}
+
+async function returnLoan() {
+	try {
+		await useApiStore().api.delete('/loan?path=' + encodeMediaPath(props.libraryItem.relativePath));
+		props.libraryItem.loan = null;
+		toast.add({
+			life: 5000,
+			severity: 'success',
+			summary: 'Loan returned',
+		})
+	}
+	catch (e) {
+		toast.add({
+			life: 5000,
+			severity: 'error',
+			summary: 'Failed to return loan',
+		})
+	}
+}
+
 </script>
 
 <template>
@@ -295,20 +335,27 @@ onUnmounted(async () => {
 					<br />
 					<div class="flex-row-center flex-wrap">
 						<div class="flex-row-center">
-							<Button
-								:size="'large'"
-								class="play-button"
-								@click="() => playVideo(resumable.relativePath, resumeTime)"
-								data-focus-priority="1"
-							>
-								<i class="pi pi-play" />
-								{{ playText }}
-							</Button>
+							<template v-if="canStream">
+								<Button
+									:size="'large'"
+									class="play-button"
+									@click="() => playVideo(resumable.relativePath, resumeTime)"
+									data-focus-priority="1"
+								>
+									<i class="pi pi-play" />
+									{{ playText }}
+								</Button>
+							</template>
+							<template v-else>
+								<Message size="large" severity="secondary">
+									Unavailable
+								</Message>
+							</template>
 						</div>
 						
 						<div class="flex-row-center">
 							<Button
-								v-if="resumeTime"
+								v-if="resumeTime && canStream"
 								:size="'large'"
 								variant="text"
 								severity="contrast"
@@ -326,7 +373,7 @@ onUnmounted(async () => {
 								btn-blur-hover
 								@click="() => (ytIsPlaying ? stopYtAudio() : playYtAudio())"
 							/>
-							<LibraryItemActions :libraryItem="libraryItem">
+							<LibraryItemActions :libraryItem="libraryItem" :additionalItems="useUserStore().isOwner ? [{ matIcon: 'hand_package', label: 'Loan', command: manageLoan }] : undefined">
 								<Button
 									icon="pi pi-ellipsis-v"
 									:size="'large'"
@@ -348,12 +395,19 @@ onUnmounted(async () => {
 							<Skeleton width="33%" height="20px" class="my-1" />
 						</template>
 						<template v-else>
-						<p class="line-clamp-3">{{ metadata?.overview }}</p>
-						<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
+							<div class="line-clamp-3">{{ metadata?.overview }}</div>
+							<div class="mt-2" v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></div>
 						</template>
 					</div>
 				</div>
 			</div>
+
+			<Message v-if="loan && (canStream || useUserStore().isOwner)" severity="warn" class="flex-row-center">
+				<template #icon><i class="material-symbols-outlined text-2xl">hand_package</i></template>
+				This title is on loan until {{ new Date(loan.expires).toLocaleDateString() }}
+				<Button v-if="useUserStore().isOwner" text severity="info" @click="manageLoan">Manage Loan</Button>
+				<Button v-else-if="canStream" text severity="info" @click="returnLoan">Return Loan</Button>
+			</Message>
 		
 			<div class="show-sm">
 				<template v-if="isLoadingMetadata">
@@ -363,8 +417,8 @@ onUnmounted(async () => {
 					<Skeleton width="33%" height="20px" class="my-1" />
 				</template>
 				<template v-else>
-					<p>{{ metadata?.overview }}</p>
-					<span v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></span>
+					<div>{{ metadata?.overview }}</div>
+					<div class="mt-2" v-if="metadata?.genres.length">Genres: <i>{{ metadata?.genres.join(', ') }}</i></div>
 				</template>
 			</div>
 
@@ -416,7 +470,7 @@ onUnmounted(async () => {
 											navJumpRow="seasons"
 											:imageUrl="episode.still_thumb"
 											:aspectRatio="'wide'"
-											:playSrc="episode.relativePath"
+											:playSrc="canStream ? episode.relativePath : undefined"
 											:overrideStartTime="episode.startTime"
 											:progress="episode.watchProgress"
 											:loading="isLoadingMetadata"
@@ -467,10 +521,9 @@ onUnmounted(async () => {
 				<h2>Cast & Crew</h2>
 				<PeopleList :loading="isLoadingMetadata" :credits="metadata?.credits" />
 			</div>
-
 			<div v-if="libraryItem.extras?.length > 0">	
 				<h2>Extras</h2>
-				<ExtrasList :extras="libraryItem.extras" />
+				<ExtrasList :extras="libraryItem.extras" :readonly="!canStream" />
 			</div>
 
 			<audio
@@ -491,6 +544,8 @@ onUnmounted(async () => {
 			</audio>
 		</div>
 		<br />
+
+		<LoanModal ref="loanModal" v-model="libraryItem.loan" />
 	</Scroll>
 </template>
 

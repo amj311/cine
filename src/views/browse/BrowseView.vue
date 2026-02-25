@@ -13,6 +13,7 @@ import AudiobookPage from './AudiobookPage.vue';
 import CinemaItemPage from './CinemaItemPage.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import type { GalleryFile } from '@/components/GalleryFileFrame.vue';
+import NothingFound from '@/components/NothingFound.vue';
 
 const route = useRoute();
 const api = useApiStore().api;
@@ -107,6 +108,7 @@ watch(
 <template>
 	<div style="height: 100%; position: relative">
 		<div style="height: 100%;" :style="longLoading ? { opacity: 0.5, transition: '500ms' } : {}">
+			<NothingFound v-if="!libraryItem" />
 			<KeepAlive :include="['Explorer', 'CinemaLibraryPage', 'PhotoLibraryPage']">
 				<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'cinema'">
 					<CinemaLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :directoryItems="directory!.libraryItems" />

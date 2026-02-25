@@ -26,15 +26,15 @@ export const firebaseConfig = {
 admin.initializeApp(firebaseConfig);
 
 // Middleware to check if the request has a valid Firebase user session
-export const sessionAuthMiddleware = async (ownerToken: string | false, req: Request, res: Response, next: NextFunction) => {
+export const sessionAuthMiddleware = async (otofbt: string | false, req: Request, res: Response, next: NextFunction) => {
 	try {
-		const authToken = ownerToken || req.headers.authorization;
-		if (!authToken) {
+		if (!otofbt) {
+			console.log('no token', req.path)
 			// Send 401 for no auth
 			return res.status(401).send();
 		}
 
-		let authData = (await checkOwnerAuth(authToken)) || (await checkFirebaseAuth(authToken));
+		let authData = (await checkOwnerAuth(otofbt)) || (await checkFirebaseAuth(otofbt));
 		if (!authData) {
 			// Send 401 for no auth
 			return res.status(401).send();

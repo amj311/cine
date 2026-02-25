@@ -80,7 +80,7 @@ function formatRuntime(minutes: number) {
 				Loading...
 			</div>
 
-			<NothingFound v-if="feed.length === 0" />
+			<NothingFound v-if="!loadingFeed && feed.length === 0" />
 
 			<Scroll>
 				<div class="feed-row" v-for="feedRow in feed" :class="feedRow.type" :key="feedRow.type">
@@ -216,7 +216,7 @@ function formatRuntime(minutes: number) {
 	.feed-row-items-list {
 		padding: 10px var(--padding);
 		display: flex;
-		gap: 15px;
+		gap: 5px;
 	}
 
 	&.continue-watching .feed-row-card-wrapper {

@@ -9,19 +9,21 @@ import { useApiStore } from '@/stores/api.store';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import { useRouter } from 'vue-router';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
+import { useUserStore } from '@/stores/user.store';
 
 const toast = useToast();
 const router = useRouter();
 
-const { libraryItem, reload } = defineProps<{
+const { libraryItem, reload, additionalItems } = defineProps<{
 	libraryItem: any; // libraryItem
+	additionalItems?: Array<{ label: string, icon?: string, matIcon?: string, command }>,
 	reload?: () => void,
 }>();
 
 const mainMediaTypes = ['cinema', 'audiobook', 'audio'];
 
 const canSurprise = computed(() => {
-	return mainMediaTypes.includes(libraryItem.type);
+	return useUserStore().currentUser.isOwner && mainMediaTypes.includes(libraryItem.type);
 })
 const canRefresh = computed(() => {
 	return mainMediaTypes.includes(libraryItem.type);
@@ -46,6 +48,7 @@ function doReload() {
 }
 
 const menuItems = computed(() => [
+	...(additionalItems || []),
 	canSurprise.value && {
 		label: 'Surprise',
 		icon: 'pi pi-gift',
@@ -123,6 +126,10 @@ defineExpose({
 <template>
 	<DropdownMenu :items="menuItems">
 		<slot></slot>
+		<template #itemicon="{ item }">
+			<i v-if="item.icon" :class="item.icon" />
+			<i v-else-if="item.matIcon" class="material-symbols-outlined">{{ item.matIcon }}</i>
+		</template>
 	</DropdownMenu>
 	<SurpriseModal ref="surpriseModal" :libraryItem="libraryItem" />
 </template>

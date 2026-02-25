@@ -18,6 +18,8 @@ let firebaseApp;
 let auth;
 
 export const AuthService = {
+	pauseAuthListeners: false,
+
 	initialize() {
 		this.setAuthUser(this.getInitialUser());
 		if (!this.authUser) {
@@ -26,7 +28,9 @@ export const AuthService = {
 
 			auth.useDeviceLanguage();
 			onAuthStateChanged(auth, (authUser) => {
-				AuthService.onFbAuthChange(authUser);
+				if (!this.pauseAuthListeners) {
+					AuthService.onFbAuthChange(authUser);
+				}
 			});
 		}
 	},
@@ -73,7 +77,7 @@ export const AuthService = {
 	},
 
 	async getToken() {
-		return localStorage.getItem('isOwner') || await auth?.currentUser?.getIdToken();
+		return await auth?.currentUser?.getIdToken();
 	},
 
 	async createEmailUser(email, password, givenName, familyName) {
@@ -109,12 +113,23 @@ export const AuthService = {
 				});
 			}
 			else {
+				this.pauseAuthListeners = true;
 				const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+				// authenticate with server with fb token
+				await useApiStore().api.post('/auth', {}, {
+					headers: {
+						Authorization: await this.getToken(),
+					}
+				});
+
 				const user = userCredential.user;
 				this.setAuthUser({
 					email: user.email || '',
 					isFb: true,
 				});
+				this.pauseAuthListeners = false;
+				this.onFbAuthChange(this.authUser);
 			}
 		} catch (error: any) {
 			console.error('signInWithEmail error', error)

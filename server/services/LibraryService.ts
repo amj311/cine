@@ -3,6 +3,7 @@
  */
 
 import { AbsolutePath, ConfirmedPath, DirectoryService, RelativePath } from "./DirectoryService";
+import { Loan, LoanService } from "./LoanService";
 import { MediaMetadataService } from "./metadata/MetadataService";
 import { EitherMetadata } from "./metadata/MetadataTypes";
 import { ProbeService } from "./ProbeService";
@@ -35,6 +36,7 @@ type LibraryItemStratBase = Stratified<
 	{},
 	{
 		metadata?: EitherMetadata | null,
+		loan?: Loan | null,
 		surprise: SurpriseRecord | null,
 		children: Array<RelativePath>,
 	}
@@ -283,6 +285,7 @@ export class LibraryService {
 		let item: Full<LibraryItemStrat> = {
 			...base,
 			surprise: await SurpriseService.getSurprise(path),
+			loan: await LoanService.getLoan(path.relativePath),
 			children: childrenDir.folders.map((folder) => folder.confirmedPath.relativePath),
 		}
 
@@ -643,6 +646,7 @@ export class LibraryService {
 			await Promise.all(folders.map((folder) => parseDirectory(folder.confirmedPath)));
 		}
 		await parseDirectory(path);
+		console.log({ items })
 		return { items, files };
 	}
 

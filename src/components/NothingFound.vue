@@ -8,7 +8,7 @@ import { useUserStore } from '@/stores/user.store';
 </script>
 
 <template>
-	<div class="flex flex-column align-items-center justify-content-center gap-2 text-center">
+	<div class="flex flex-column align-items-center justify-content-center gap-2 text-center mt-5">
 		<h3>Hmm, looks a little empty...</h3>
 		<template v-if="!useUserStore().currentUser.isOwner">
 			<div>Request access to media from the drive owner.</div>

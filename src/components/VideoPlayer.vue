@@ -513,19 +513,19 @@ function goToNextChapter() {
 			</div>
 		</div>
 		<div v-if="hasLoaded" class="center-controls overlay flex-row-center">
-			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover severity="contrast" :disabled="prevChapterStart === null" @click="prevChapterStart !== null && doSeek(prevChapterStart)">
+			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" :disabled="prevChapterStart === null" @click="prevChapterStart !== null && doSeek(prevChapterStart)">
 				<i class="material-symbols-outlined">fast_rewind</i>
 			</Button>
-			<Button class="square text-xl" text btn-blur-hover severity="contrast" @click="skipBack">
+			<Button class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" @click="skipBack">
 				<i class="material-symbols-outlined">replay_10</i>
 			</Button>
-			<Button class="square text-7xl" text btn-blur-hover severity="contrast" data-focus-priority="1" @click="togglePlay">
+			<Button class="square text-7xl" text btn-blur-hover btn-drop-shadow severity="contrast" data-focus-priority="1" @click="togglePlay">
 				<i class="material-symbols-outlined">{{ isPlaying ? 'pause' : 'play_arrow' }}</i>
 			</Button>
-			<Button class="square text-xl" text btn-blur-hover severity="contrast" @click="skipForward">
+			<Button class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" @click="skipForward">
 				<i class="material-symbols-outlined">forward_10</i>
 			</Button>
-			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover severity="contrast" :disabled="!nextChapterStart" @click="nextChapterStart && doSeek(nextChapterStart)">
+			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" :disabled="!nextChapterStart" @click="nextChapterStart && doSeek(nextChapterStart)">
 				<i class="material-symbols-outlined">fast_forward</i>
 			</Button>
 		</div>

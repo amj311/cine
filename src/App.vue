@@ -16,6 +16,8 @@ import OfflinePage from './views/OfflinePage.vue';
 import SharedPage from './components/NothingFound.vue';
 import { useSettingsStore } from './stores/settings.store';
 import ProgressBar from 'primevue/progressbar';
+import { AuthService } from './services/AuthService';
+import Logo from './components/Logo.vue';
 
 const apiStore = useApiStore();
 
@@ -57,8 +59,16 @@ async function alertTvDetected() {
 
 const lastKey = ref('');
 
-onMounted(() => {
+const isInitializing = ref(true);
+
+onMounted(async () => {
 	window.addEventListener('keydown', (e)=>lastKey.value = e.key);
+
+	// Allow auth some time to warm up and check for active session
+	AuthService.initialize();
+	await new Promise(res => setTimeout(res, 500));
+	await useUserStore().loadSessionData();
+	isInitializing.value = false;
 });
 
 const route = useRoute();
@@ -71,10 +81,10 @@ const showNavbar = computed(() => {
 <template>
 	<AppBackground />
 	<div class="dark-app app-wrapper" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
-		<template v-if="apiStore.isInitializing || !useUserStore().hasLoadedSessionData">
-			<div id="longLoading">
+		<template v-if="isInitializing || apiStore.isInitializing || !useUserStore().hasLoadedSessionData">
+			<div id="longLoading" class="flex-col-center gap-7 text-3xl">
+				<Logo />
 				<i class="pi pi-spinner pi-spin" />
-				Loading...
 			</div>
 		</template>
 

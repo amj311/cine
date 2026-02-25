@@ -79,6 +79,7 @@ export class DirectoryService {
 				};
 			}).filter(f => f.name !== '.DS_Store'); // hate macOs >:(
 			const sharedFiles = await SharingService.getSharedOnly(files, getSessionEmail(), file => file.confirmedPath.relativePath);
+
 			const dirs = sharedFiles.filter((file) => file.isDirectory);
 			const filesOnly = sharedFiles.filter((file) => !file.isDirectory);
 			return { folders: dirs, files: filesOnly };

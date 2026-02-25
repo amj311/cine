@@ -31,18 +31,18 @@ export const useApiStore = defineStore('Api', () => {
 			withCredentials: true,
 		})
 
-		client.interceptors.request.use(async (config) => {
-			const token = await AuthService.getToken();
-			if (token) {
-				config.headers.Authorization = token;
-			}
-			return config;
-		});
+		// client.interceptors.request.use(async (config) => {
+		// 	const token = await AuthService.getToken();
+		// 	if (token) {
+		// 		config.headers.Authorization = token;
+		// 	}
+		// 	return config;
+		// });
 
-		client.interceptors.response.use(null, (error) => {
+		client.interceptors.response.use(null, async (error) => {
 			if (error.isAxiosError && error.response?.status === 401) {
 				console.log("Received unauthenticated response. Logging out");
-				AuthService.signOut();
+				await AuthService.signOut();
 			}
 
 			return Promise.reject(error);

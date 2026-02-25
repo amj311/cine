@@ -11,6 +11,7 @@ import { useApiStore } from '@/stores/api.store';
 
 const props = defineProps<{
 	extras: any[]; // extras
+	readonly?: boolean;
 }>();
 
 
@@ -43,7 +44,7 @@ const sortedExtras = computed(() => {
 							:imageUrl="extra.still_thumb"
 							:title="extra.name"
 							:subtitle="extraTypeLabels[extra.extraType]"
-							:playSrc="extra.relativePath"
+							:playSrc="!readonly ? extra.relativePath : undefined"
 						>
 							<template #fallbackIcon>🎬</template>
 						</MediaCard>

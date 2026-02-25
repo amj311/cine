@@ -117,29 +117,27 @@ app.get('/health', (_, res) => res.sendStatus(200));
 // authentication
 app.post('/api/auth', async (req, res) => {
 	const { emailHash, passHash } = req.body;
-	const token = await loginOwnerUser(emailHash, passHash);
+	let token = req.headers.authorization;
+	if (!token) {
+		token = await loginOwnerUser(emailHash, passHash);
+	}
 	if (!token) {
 		return res.status(401).send();
 	}
-	res.cookie('ownerToken', token, { signed: true });
+	res.cookie('otofbt', token, { signed: true });
 	res.send();
 })
-// authentication
+
 app.post('/api/auth/signout', async (req, res) => {
-	const ownerToken = req.signedCookies?.ownerToken;
-	const token = await logoutOwnerUser(ownerToken);
-	res.clearCookie('ownerToken', { signed: true, path: '/' });
+	const otofbt = req.signedCookies?.otofbt;
+	await logoutOwnerUser(otofbt);
+	res.clearCookie('otofbt', { signed: true, path: '/' });
 	res.send();
 })
 
 app.use((req, res, next) => {
-	const ownerToken = req.signedCookies?.ownerToken;
-	sessionAuthMiddleware(ownerToken, req, res, next);
-})
-
-app.use((req, res, next) => {
-	const ownerToken = req.signedCookies?.ownerToken;
-	sessionAuthMiddleware(ownerToken, req, res, next);
+	let otofbt = req.signedCookies?.otofbt;
+	sessionAuthMiddleware(otofbt, req, res, next);
 })
 
 app.use(async (req, res, next) => {
@@ -150,11 +148,34 @@ app.use(async (req, res, next) => {
 
 	if (path) {
 		const isShared = await SharingService.isShared(path, getSessionEmail());
-		console.log(isShared, path)
+		if (!isShared) {
+			return res.sendStatus(404);
+		}
 	}
 
 	next();
 })
+
+// Sub Routes
+import timerRoute from './routes/timer.route'
+app.use('/api/timer', timerRoute);
+import scrubRoute from './routes/scrub.route'
+app.use('/api/scrub', scrubRoute);
+import surpriseRoute from './routes/surprise.route'
+app.use('/api/surprise', surpriseRoute);
+import jobRoute from './routes/job.route'
+app.use('/api/job', jobRoute);
+import shareRoute from './routes/share.route'
+app.use('/api/share', shareRoute);
+import loanRoute from './routes/loan.route'
+app.use('/api/loan', loanRoute);
+
+
+import { decodeMediaPath, safeParseInt } from './utils/miscUtils';
+import { JobService } from './services/JobService';
+import { getSessionEmail, loginOwnerUser, logoutOwnerUser, sessionAuthMiddleware, sessionStore } from './services/SessionService';
+import { SharingService } from './services/SharingService';
+import { LoanService } from './services/LoanService';
 
 // get directory at relative path from media dir
 app.get("/api/dir/", async function (req, res) {
@@ -280,6 +301,11 @@ app.get("/api/stream", async function (req, res) {
 	const resolvedPath = DirectoryService.resolvePath(path as string);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");
+		return;
+	}
+
+	if (!await LoanService.canStreamMedia(resolvedPath, getSessionEmail())) {
+		res.status(401).send("Not allowed");
 		return;
 	}
 
@@ -914,26 +940,6 @@ app.get('/api/subtitles', async (req, res) => {
 		res.send(500)
 	}
 });
-
-
-// Sub Routes
-import timerRoute from './routes/timer.route'
-app.use('/api/timer', timerRoute);
-import scrubRoute from './routes/scrub.route'
-app.use('/api/scrub', scrubRoute);
-import surpriseRoute from './routes/surprise.route'
-app.use('/api/surprise', surpriseRoute);
-import jobRoute from './routes/job.route'
-app.use('/api/job', jobRoute);
-app.use('/api/surprise', surpriseRoute);
-import shareRoute from './routes/share.route'
-app.use('/api/share', shareRoute);
-
-
-import { decodeMediaPath, safeParseInt } from './utils/miscUtils';
-import { JobService } from './services/JobService';
-import { getSessionEmail, loginOwnerUser, logoutOwnerUser, sessionAuthMiddleware, sessionStore } from './services/SessionService';
-import { SharingService } from './services/SharingService';
 
 
 // STATIC SITE

@@ -538,6 +538,16 @@ const parentExtrasToShow = computed(() => {
 		const extras = parentLibrary.value?.extras?.filter(e => e.relativePath !== playable.value?.relativePath);
 		return extras?.length > 0 ? extras : undefined;
 	}
+	if (parentLibrary.value?.cinemaType === 'series') {
+		const lastSeason = parentLibrary.value.seasons.slice().pop();
+		const lastEpFile = lastSeason.episodes.slice().pop();
+
+		// show series extras for very final episode or other series extra
+		if (parentLibrary.value.extras?.some(e => e.relativePath === playable.value?.relativePath) || lastEpFile.relativePath === playable.value?.relativePath) {
+			const extras = parentLibrary.value?.extras?.filter(e => e.relativePath !== playable.value?.relativePath);
+			return extras?.length > 0 ? extras : undefined;
+		}
+	}
 });
 
 const seasonExtrasToShow = computed(() => {

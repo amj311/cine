@@ -207,51 +207,77 @@ h1, h2, h3, h4, h5, h6 {
 	transition: 500ms;
 }
 
-body .p-dialog {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.1);
-	backdrop-filter: blur(45px);
-}
 
-body .p-tieredmenu {
-    background: rgba(0, 0, 0, 0.2);
-    border-color: rgba(0, 0, 0, 0.1);
-	backdrop-filter: blur(45px);
-}
+body {
+	.p-dialog {
+		background: rgba(255, 255, 255, 0.1);
+		border-color: rgba(255, 255, 255, 0.1);
+		backdrop-filter: blur(45px);
+	}
 
-.bg-blur {
-	background: #3334 !important;
-    backdrop-filter: blur(20px) !important;
-}
+	.p-tieredmenu, .p-select-overlay {
+		background: #1113;
+		border-color: #1113;
+		backdrop-filter: blur(15px);
+
+		.p-tieredmenu-item:not(.p-disabled) > .p-tieredmenu-item-content:hover, .p-select-option:not(.p-select-option-selected):not(.p-disabled).p-focus {
+			background: transparentize($color: #059669, $amount: .3) !important;
+		}
+	}
+
+	.bg-blur {
+		background: #3334 !important;
+		backdrop-filter: blur(20px) !important;
+	}
 
 
-.bg-blur-hover:hover, .bg-blur-hover[tv-focus] {
-    @extend .bg-blur;
-}
+	.bg-blur-hover {
+		border: 1px solid transparent;
 
-.p-button[btn-blur] {
-    @extend .bg-blur;
-    border-color: #aaa3 !important;
-    color: var(--p-button-secondary-color);
-}
+		&:hover, &.bg-blur-hover[tv-focus] {
+			@extend .bg-blur;
+			border-color: #aaa3 !important;
+		}
+	}
 
-.p-button[btn-blur-hover] {
-	background-color: transparent;
-	border-color: transparent;
+	.p-button[btn-blur] {
+		@extend .bg-blur;
+		border-color: #aaa3 !important;
+		color: var(--p-button-secondary-color);
+	}
 
-	&:hover, &[tv-focus] {
-		@extend [btn-blur];
+	.p-button[btn-blur-hover] {
+		background-color: transparent;
+		border-color: transparent;
+
+		&:hover, &[tv-focus] {
+			@extend [btn-blur];
+		}
+	}
+
+
+	.p-inputtext[transparent], .p-select[transparent], .p-inputgroupaddon[transparent], .p-datepicker[transparent] > .p-datepicker-input {
+		&:not(.p-invalid) {
+			background-color: #ffffff08;
+			backdrop-filter: blur(25px);
+			border-color: #fff3 !important;
+		}
+
+		&:hover, &:focus-within, &[tv-focus] {
+			background-color: #ffffff11;
+		}
+
+		&:focus-within, &[tv-focus] {
+			border-color: transparentize($color: #059669, $amount: .2) !important;
+		}
+
+		&::placeholder {
+			color: #fff6;
+		}
 	}
 }
 
 
-.p-inputtext[transparent] {
-	background-color: transparent;
-	backdrop-filter: blur(25px);
-	border-color: #fff3;
-
-
-	&::placeholder {
-		color: #fff9;
-	}
+[btn-drop-shadow] > * {
+	filter: drop-shadow(0 0 6px #0004);
 }

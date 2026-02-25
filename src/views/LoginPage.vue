@@ -144,8 +144,9 @@ function doFormSubmit() {
 					shortly.</template>
 			</p>
 
-			<form @submit.prevent="doFormSubmit">
+			<form @submit.prevent="doFormSubmit" class="flex-column gap-1">
 				<InputText
+					transparent
 					v-if="!(state.mode === 'reset_password' && state.hasSentEmail)"
 					type="text"
 					v-model="state.email"
@@ -157,6 +158,7 @@ function doFormSubmit() {
 
 				<template v-if="state.mode === 'signup'">
 					<InputText
+						transparent
 						type="text"
 						v-model="state.givenName"
 						placeholder="First Name"
@@ -164,6 +166,7 @@ function doFormSubmit() {
 						class="w-full"
 					/>
 					<InputText
+						transparent
 						type="text"
 						v-model="state.familyName"
 						placeholder="Last Name"
@@ -176,6 +179,7 @@ function doFormSubmit() {
 				<InputGroup>
 					<template v-if="state.mode === 'signup' || state.mode === 'login'">
 						<InputText
+							transparent
 							v-model="state.password"
 							placeholder="Password"
 							:type="state.showPassword ? 'text' : 'password'"
@@ -184,8 +188,10 @@ function doFormSubmit() {
 							class="w-full"
 						/>
 						<InputGroupAddon
+							transparent
 							style="cursor: pointer"
 							@click="state.showPassword = !state.showPassword"
+							tabindex="0"
 						>
 							<i
 								class="pi"
@@ -197,7 +203,6 @@ function doFormSubmit() {
 
 
 				<div class="flex flex-column align-items-center gap-2">
-					{{ state.mode }}
 					<template v-if="state.mode === 'signup'">
 						<Button
 							size="large"
@@ -210,12 +215,12 @@ function doFormSubmit() {
 						</button>
 						<small>
 							Already have an account?
-							<span
-								class="text-link"
+							<a
+								class="link"
 								@click="state.mode = 'login'"
 							>
 								Sign in
-							</span>
+							</a>
 						</small>
 					</template>
 					<template v-else-if="state.mode === 'login'">
@@ -231,20 +236,20 @@ function doFormSubmit() {
 						</button>
 						<small>
 							New here?
-							<span
-								class="text-link"
+							<a
+								class="link"
 								@click="state.mode = 'signup'"
 							>
 								Create account
-							</span>
+							</a>
 						</small>
 						<small>
-							<span
-								class="text-link"
+							<a
+								class="link"
 								@click="state.mode = 'reset_password'"
 							>
 								Forgot password?
-							</span>
+							</a>
 						</small>
 					</template>
 					<template v-else-if="state.mode === 'reset_password'">
@@ -254,10 +259,10 @@ function doFormSubmit() {
 							role="submit"
 							class="w-full my-3 justify-content-around"
 						>Send Email</button>
-						<small>Back to <span
-								class="text-link"
+						<small>Back to <a
+								class="link"
 								@click="leaveRestPasswordMode"
-							>Sign in</span></small>
+							>Sign in</a></small>
 					</template>
 				</div>
 				<input type="submit" hidden />

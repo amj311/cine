@@ -69,18 +69,17 @@ defineExpose({
 		>
 			<label>Until</label>
 			<div>
-				<DatePicker v-model="draftSurprise.until" />
+				<DatePicker transparent v-model="draftSurprise.until" />
 			</div>
 
 			<label>Title</label>
 			<div>
-				<InputText v-model="draftSurprise.title" placeholder="Surprise!" />
+				<InputText transparent v-model="draftSurprise.title" placeholder="Surprise!" />
 			</div>
 			<label>PIN</label>
 			<div>
-				<InputText v-model="draftSurprise.pin" />
+				<InputText transparent v-model="draftSurprise.pin" />
 			</div>
-
 		</div>
 
 		<div class="mt-4 flex align-items center justify-content-end">
@@ -88,13 +87,6 @@ defineExpose({
 			<Button label="Save" @click="upsertSurprise" />
 		</div>
 	</NavModal>
-	<!-- <Dialog
-		:visible="showSurpriseSettings"
-		:closable="false"
-		class="w-20rem"
-	>
-		
-	</Dialog> -->
 </template>
 
 <style
