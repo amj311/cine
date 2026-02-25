@@ -59,11 +59,7 @@ export class SharingService {
 		// or if this path descends from a loaned item
 		const loans = await LoanService.getAllLoans();
 		for (const loan of loans) {
-			// if (relativePath.includes('even more')) {
-			// 	console.log(loan, loan.email === email, relativePath, loan.email === email && loan.relativePath.startsWith(relativePath))
-			// }
 			if (loan.email === email && (loan.relativePath.startsWith(relativePath) || relativePath.startsWith(loan.relativePath))) {
-				// console.log("returning TRUE!!!!")
 				return 'loan';
 			}
 		}

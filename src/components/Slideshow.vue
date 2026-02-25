@@ -80,7 +80,7 @@ const animationTime = 300;
 let lastUiSwapTime = 0;
 
 function uiSwap(action) {
-	console.log(verticalMode.value)
+	(verticalMode.value)
 	const now = Date.now();
 	const doAnimate = now - lastUiSwapTime > animationTime;
 	lastUiSwapTime = now;

@@ -646,7 +646,6 @@ export class LibraryService {
 			await Promise.all(folders.map((folder) => parseDirectory(folder.confirmedPath)));
 		}
 		await parseDirectory(path);
-		console.log({ items })
 		return { items, files };
 	}
 

@@ -141,7 +141,6 @@ async function releaseWakeLock() {
 async function toggleWakeLock() {
 	if (wakeLock.value) {
 		await releaseWakeLock();
-		console.log(wakeLock.value)
 	}
 	else {
 		await requestWakeLock();
