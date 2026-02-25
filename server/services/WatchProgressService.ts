@@ -115,9 +115,6 @@ export class WatchProgressService {
 	}
 
 	public static async getAllRecentlyWatched(): Promise<WatchProgress[]> {
-		await watchingStore.migrate<WatchProgress>((v1) => ({ [getSessionEmail()]: v1.data }));
-		await bookmarkStore.migrate<Record<string, Bookmark>>((v1) => ({ [getSessionEmail()]: v1.data }));
-
 		const allProgresses = await watchingStore.getAll();
 		const emailProgresses = allProgresses.map(p => p[getSessionEmail()]).filter(Boolean);
 		return (emailProgresses).sort((a, b) => {
