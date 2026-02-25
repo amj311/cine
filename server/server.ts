@@ -135,12 +135,12 @@ app.post('/api/auth/signout', async (req, res) => {
 	res.send();
 })
 
-app.use((req, res, next) => {
+app.use('/api', (req, res, next) => {
 	let otofbt = req.signedCookies?.otofbt;
 	sessionAuthMiddleware(otofbt, req, res, next);
 })
 
-app.use(async (req, res, next) => {
+app.use('/api', async (req, res, next) => {
 	const { path: pathQ } = req.query;
 	const { path: pathB } = req.body;
 	const { path: pathP } = req.params;
@@ -149,7 +149,7 @@ app.use(async (req, res, next) => {
 	if (path) {
 		const isShared = await SharingService.isShared(path, getSessionEmail());
 		if (!isShared) {
-			return res.sendStatus(404);
+			return res.sendStatus(409);
 		}
 	}
 
