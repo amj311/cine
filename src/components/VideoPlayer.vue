@@ -291,6 +291,12 @@ const subtitleTracks = computed(() => {
 			return 0;
 		});
 
+	// When this changes, choose selected track based on previous selection
+	const deviceSubtitlePreference = localStorage.getItem('deviceSubtitlePreference') // on || off || ''
+	if (deviceSubtitlePreference === 'on') {
+		selectedSubtitle.value = tracks.find(t => t.supported);
+	}
+
 	return tracks;
 });
 
@@ -304,15 +310,19 @@ function handleSubtitleError(e) {
 	subtitleErrors.value[selectedSubtitle.value!.url] = e;
 }
 
+function selectSubtitle(track) {
+	selectedSubtitle.value = track;
+	const devicePreference = Boolean(track) ? 'on' : 'off';
+	localStorage.setItem('deviceSubtitlePreference', devicePreference);
+}
+
 const subtitleMenuItems = computed(() => {
 	return [
-		{ label: 'Off', command: () => selectedSubtitle.value = undefined, icon: !selectedSubtitle.value ? 'pi pi-check' : undefined },
+		{ label: 'Off', command: () => selectSubtitle(undefined), icon: !selectedSubtitle.value ? 'pi pi-check' : undefined },
 		...subtitleTracks.value.map((track) => ({
 			label: track.label,
 			icon: selectedSubtitle.value?.url === track.url ? 'pi pi-check' : undefined,
-			command: () => {
-				selectedSubtitle.value = track;
-			},
+			command: () => selectSubtitle(track),
 			disabled: Boolean(subtitleErrors.value[track.url]) || !track.supported,
 		}))
 	];

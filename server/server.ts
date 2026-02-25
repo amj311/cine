@@ -847,8 +847,12 @@ app.get('/api/subtitles', async (req, res) => {
 						.outputOptions('-c:s webvtt')
 						.save(outputFilePath)
 						.on('end', () => {
-							// set cors header
-							res.setHeader('Access-Control-Allow-Origin', '*');
+							const origin = req.headers.origin as string | undefined;
+							if (origin) {
+								res.setHeader('Access-Control-Allow-Origin', origin);
+								res.setHeader('Access-Control-Allow-Credentials', 'true');
+								res.setHeader('Vary', 'Origin');
+							}
 							res.setHeader('Content-Type', 'text/vtt');
 							res.sendFile(outputFilePath, (err) => {
 								if (err) {
@@ -883,7 +887,12 @@ app.get('/api/subtitles', async (req, res) => {
 								// console.log("OCR Result:", ocrResult.data.text);
 
 								// Send the OCR result as plain text
-								res.setHeader('Access-Control-Allow-Origin', '*');
+								const origin = req.headers.origin as string | undefined;
+								if (origin) {
+									res.setHeader('Access-Control-Allow-Origin', origin);
+									res.setHeader('Access-Control-Allow-Credentials', 'true');
+									res.setHeader('Vary', 'Origin');
+								}
 								res.setHeader('Content-Type', 'text/plain');
 								// res.send(ocrResult.data.text);
 								res.send(200);
@@ -910,8 +919,12 @@ app.get('/api/subtitles', async (req, res) => {
 						.outputOptions('-f srt') // Output format as SRT
 						.save(outputFilePath)
 						.on('end', () => {
-							// set cors header
-							res.setHeader('Access-Control-Allow-Origin', '*');
+							const origin = req.headers.origin as string | undefined;
+							if (origin) {
+								res.setHeader('Access-Control-Allow-Origin', origin);
+								res.setHeader('Access-Control-Allow-Credentials', 'true');
+								res.setHeader('Vary', 'Origin');
+							}
 							res.setHeader('Content-Type', 'text/plain');
 							res.sendFile(outputFilePath, (err) => {
 								if (err) {
