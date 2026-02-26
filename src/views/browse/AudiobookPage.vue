@@ -499,8 +499,10 @@ const menuItems = [{
 							@click="() => playChapter(chapter)"
 							tabindex="0"
 						>
-							<div><i :class="`pi pi-${chapter === currentChapter ? 'volume-up' : 'play'}`" /></div>
-							<div class="number">{{ Number(index) + 1 }}</div>
+							<div class="number">
+								<i v-if="chapter === currentChapter" class="pi pi-volume-up" />
+								<div v-else>{{ Number(index) + 1 }}</div>
+							</div>
 							<div class="title">{{ chapter.title }}</div>
 							<div class="duration">{{ formatRuntime(chapter.bookStartOffset) }}</div>
 						</div>
@@ -569,7 +571,7 @@ const menuItems = [{
 .chapter-item {
 	font-size: 1.2rem;
 	display: grid;
-	grid-template-columns: 1em 1em 1fr auto;
+	grid-template-columns: 2em 1fr auto;
 	align-items: center;
 	gap: .5rem;
 	padding: 0.8em 0.7em;
@@ -585,7 +587,7 @@ const menuItems = [{
 	}
 
 	.number {
-		text-align: right;
+		text-align: center;
 		opacity: .7;
 	}
 

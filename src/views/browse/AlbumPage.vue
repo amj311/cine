@@ -166,8 +166,10 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 							@click="() => playTrack(track)"
 							tabindex="0"
 						>
-							<div><i :class="`pi pi-${track === currentTrack ? 'volume-up' : 'play'}`" /></div>
-							<div class="number">{{ Number(index) + 1 }}</div>
+							<div class="number">
+								<i v-if="track === currentTrack" class="pi pi-volume-up" />
+								<div v-else>{{ Number(index) + 1 }}</div>
+							</div>
 							<div class="title">{{ track.title }}</div>
 							<div class="duration">{{ formatRuntime(track.duration) }}</div>
 						</div>
@@ -238,7 +240,7 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 .track-item {
 	font-size: 1.2rem;
 	display: grid;
-	grid-template-columns: 1em 1em 1fr auto;
+	grid-template-columns: 2em 1fr auto;
 	align-items: center;
 	gap: .5rem;
 	padding: 0.8em 0.7em;
@@ -254,7 +256,7 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 	}
 
 	.number {
-		text-align: right;
+		text-align: center;
 		opacity: .7;
 	}
 
