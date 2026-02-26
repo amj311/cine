@@ -124,19 +124,20 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 				</template>
 			</div>
 
-			<Button
-				btn-blur-hover
-				btn-drop-shadow
-				v-if="queryPathStore.currentPath && useUserStore().currentUser.isOwner"
-				text
-				size="small text-5xl"
-				:severity="useMobileNav ? 'contrast' :'secondary'"
-				@click="sharingModal?.open"
-			>
-				<template #icon><i class="pi pi-users text-2xl" /></template>
-			</Button>
+			<div class="flex-grow-1 flex justify-content-end">
+				<Button
+					btn-blur-hover
+					btn-drop-shadow
+					v-if="queryPathStore.currentPath && useUserStore().currentUser.isOwner"
+					text
+					size="small text-5xl"
+					:severity="useMobileNav ? 'contrast' :'secondary'"
+					@click="sharingModal?.open"
+				>
+					<template #icon><i class="pi pi-users text-xl" /></template>
+				</Button>
 
-			<div class="flex-grow-1" />
+			</div>
 
 			<div v-if="useMobileNav && expandMobileNav">
 				<Button
@@ -215,6 +216,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 		align-items: center;
 		justify-content: space-between;
 		padding: 1rem 1rem;
+		gap: 5px;
 	}
 }
 
