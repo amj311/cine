@@ -689,7 +689,7 @@ app.get('/api/feed', async (req, res) => {
 			const { items } = await LibraryService.getFlatTree(library.confirmedPath);
 			// async filestats for each file
 			return await Promise.all(items.map(async (item, i) => {
-				if (!['cinema', 'audiobook'].includes(item.type)) {
+				if (!['cinema', 'audiobook', 'album'].includes(item.type)) {
 					return null; // Skip folders
 				}
 				const fullPath = DirectoryService.resolvePath(item.relativePath)?.absolutePath!;
