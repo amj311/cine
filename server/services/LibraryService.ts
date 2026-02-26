@@ -486,7 +486,7 @@ export class LibraryService {
 						name: title,
 						fileName: file.name,
 						relativePath: path.relativePath + '/' + file.name,
-						sortKey: (probe?.trackNumber ? probe.trackNumber + '_' : '') + file.name,
+						sortKey: (probe?.trackNumber ? (String(probe.trackNumber).padStart(3, '0')) + '_' : '') + file.name,
 						listName: title,
 						chapters: probe?.chapters
 					} as any;

@@ -44,9 +44,11 @@ export class ProbeService {
 		}
 		try {
 			const probe = await ProbeService.getProbeData(path);
-			const tags = probe?.full?.format?.tags || {};
+			// make tags uniform lowercase
+			const tags = Object.fromEntries(Array.from(Object.entries(probe?.full?.format?.tags || {})).map(([key, value]) => [key.toLowerCase(), value]));
 			const stringTrackNumber = typeof tags.track === 'string' ? tags.track as string : null;
 			const slashTrackNumber = stringTrackNumber?.includes('/');
+
 			return {
 				...tags,
 				year: safeParseInt(tags.date),
