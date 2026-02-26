@@ -453,7 +453,7 @@ const menuItems = [{
 					<Button
 						v-else-if="!currentChapter && !lastWatched"
 						icon="pi pi-play"
-						:label="`Play All`"
+						label="Begin"
 						size="large"
 						class="w-full"
 						@click="() => playChapter(libraryItem?.chapters[0])"
