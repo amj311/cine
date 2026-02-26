@@ -222,7 +222,7 @@ type LibraryFileData = {
 	sortKey: string,
 }
 
-const PhotoTypes = ['jpg', 'jpeg', 'png', 'gif'] as const;
+export const PhotoTypes = ['jpg', 'jpeg', 'png', 'gif'] as const;
 type PhotoType = typeof PhotoTypes[number];
 export type Photo = LibraryFileData & {
 	type: 'photo',
@@ -230,7 +230,7 @@ export type Photo = LibraryFileData & {
 	takenAt?: string,
 }
 
-const VideoTypes = ['mp4', '3gp', '3g2'] as const;
+export const VideoTypes = ['mp4', '3gp', '3g2'] as const;
 type VideoType = typeof VideoTypes[number];
 type Video = LibraryFileData & {
 	type: 'video',
@@ -238,7 +238,7 @@ type Video = LibraryFileData & {
 	takenAt?: string,
 }
 
-const AudioTypes = ['mp3', 'm4a', 'm4b', 'aac', 'flac'] as const;
+export const AudioTypes = ['mp3', 'm4a', 'm4b', 'aac', 'flac'] as const;
 type AudioType = typeof AudioTypes[number];
 type Audio = LibraryFileData & {
 	type: 'audio',
