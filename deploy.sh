@@ -28,6 +28,8 @@ if [[ $SUCCESS == 0 ]]; then
 
 	echo "Committing build number..."
 	CURRENT_BUILD=$(cat version.json | grep -o '"buildNumber": [0-9]*' | grep -o '[0-9]*')
+	# commit ONLY the version umber
+	git reset .
 	git add version.json
 	git commit -m "build $NEW_BUILD"
 

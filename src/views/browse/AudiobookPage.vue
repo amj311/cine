@@ -431,16 +431,14 @@ const menuItems = [{
 			</div>
 			<div class="flex flex-column align-items-center gap-2 relative">
 				<div class="flex align-items-center gap-2">
-					<h3>{{ libraryItem.title }}</h3>
+					<h3 class="line-clamp-2">{{ libraryItem.title }}</h3>
 				</div>
 				<div class="flex align-items-center justify-content-center">
 					{{ [libraryItem.author, libraryItem.year, formatRuntime(totalTime)].filter(Boolean).join(' - ') }}
 				</div>
-				<div class="absolute right-0" style="top: 50%; translate: 100% -50%"><LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" /></div>
 			</div>
-		</div>
-		<div class="other-wrapper">
-			<div class="controls px-2 flex align-items-center">
+
+			<div class="controls flex align-items-center w-full">
 				<div class="audio-controls flex-grow-1">
 					<audio v-show="currentChapter" ref="audio" preload="auto" controls crossorigin="use-credentials" />
 					<Button
@@ -462,32 +460,35 @@ const menuItems = [{
 						data-focus-priority="1"
 					/>
 				</div>
-					<DropdownMenu
-						:model="bookmarkMenuItems"
-					>
-						<Button
-							:icon="`pi pi-bookmark${(currentBookmarkName === '') ? '' : '-fill'}`"
-							size="large"
-							text
-							severity="contrast"
-						/>
-						<template #item="{ item }">
-							<div class="p-tieredmenu-item-link gap-3" :style="item.isCurrent ? { backgroundColor: 'var(--p-tieredmenu-item-focus-background)', fontWeight: 'bold' } : undefined">
-								<span style="white-space: nowrap;">
-									<template v-if="item.bookmarkName">
-										{{ item.bookmarkName }}
-										<span class="text-muted">&nbsp;{{ bookmarkTime(item.bookmarkName) }}</span>
-									</template>
-									<template v-else>
-										{{ item.label }}
-									</template>
-								</span>
-								<div class="flex-grow-1" />
-								<i v-if="item.canDelete" @click.stop="() => deleteBookmark(item.bookmarkName)" class="pi pi-trash" />
-							</div>
-						</template>
-					</DropdownMenu>
+				<DropdownMenu
+					:model="bookmarkMenuItems"
+				>
+					<Button
+						:icon="`pi pi-bookmark${(currentBookmarkName === '') ? '' : '-fill'}`"
+						size="large"
+						text
+						severity="contrast"
+					/>
+					<template #item="{ item }">
+						<div class="p-tieredmenu-item-link gap-3" :style="item.isCurrent ? { backgroundColor: 'var(--p-tieredmenu-item-focus-background)', fontWeight: 'bold' } : undefined">
+							<span style="white-space: nowrap;">
+								<template v-if="item.bookmarkName">
+									{{ item.bookmarkName }}
+									<span class="text-muted">&nbsp;{{ bookmarkTime(item.bookmarkName) }}</span>
+								</template>
+								<template v-else>
+									{{ item.label }}
+								</template>
+							</span>
+							<div class="flex-grow-1" />
+							<i v-if="item.canDelete" @click.stop="() => deleteBookmark(item.bookmarkName)" class="pi pi-trash" />
+						</div>
+					</template>
+				</DropdownMenu>
+				<LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" />
 			</div>
+		</div>
+		<div class="other-wrapper">
 			<div class="chapters-list-wrapper" v-if="libraryItem?.chapters">
 				<Scroll>
 					<div class="chapters-list">
@@ -532,13 +533,13 @@ const menuItems = [{
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		gap: 1em;
-   		padding: 0 2em;
-    	flex: 1 0 10vw;
+		gap: 2em;
+   		padding: 0 1em;
+    	flex-grow: 1;
 	}
 
 	.other-wrapper {
-		flex-grow: 1;
+		flex-grow: 20;
 		display: flex;
 		flex-direction: column;
 		gap: 1em;
@@ -552,7 +553,7 @@ const menuItems = [{
 @media (min-aspect-ratio: 1/1) {
 	.album-page {
 		flex-direction: row;
-		align-items: center;
+		align-items: stretch;
 		padding-left: 1rem;
 	}
 }

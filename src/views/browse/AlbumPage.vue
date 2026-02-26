@@ -130,18 +130,15 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 					:aspectRatio="'square'"
 				/>
 			</div>
-			<div class="flex flex-column align-items-center gap-2 relative">
+			<div class="flex flex-column align-items-center gap-2">
 				<div class="flex align-items-center gap-2">
-					<h3>{{ libraryItem.title }}</h3>
+					<h3 class="line-clamp-2">{{ libraryItem.title }}</h3>
 				</div>
 				<div class="flex align-items-center justify-content-center">
 					{{ [libraryItem.artist, libraryItem.year, formatRuntime(totalTime)].filter(Boolean).join(' - ') }}
 				</div>
-				<div class="absolute right-0" style="top: 50%; translate: 100% -50%"><LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" /></div>
 			</div>
-		</div>
-		<div class="other-wrapper">
-			<div class="controls px-2 flex align-items-center">
+			<div class="controls px-2 flex align-items-center w-full">
 				<div class="audio-controls flex-grow-1">
 					<audio v-show="currentTrack" ref="audio" :src="useApiStore().apiUrl + '/stream?path=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls crossorigin="use-credentials" />
 					<Button
@@ -154,7 +151,10 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 						data-focus-priority="1"
 					/>
 				</div>
+				<LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" />
 			</div>
+		</div>
+		<div class="other-wrapper">
 			<div class="tracks-list-wrapper" v-if="libraryItem?.tracks">
 				<Scroll>
 					<div class="tracks-list">
@@ -201,13 +201,13 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		gap: 1em;
-   		padding: 0 2em;
-    	flex: 1 0 10vw;
+		gap: 2em;
+   		padding: 0 1em;
+    	flex-grow: 1;
 	}
 
 	.other-wrapper {
-		flex-grow: 1;
+		flex-grow: 20;
 		display: flex;
 		flex-direction: column;
 		gap: 1em;
@@ -221,7 +221,7 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 @media (min-aspect-ratio: 1/1) {
 	.album-page {
 		flex-direction: row;
-		align-items: center;
+		align-items: stretch;
 		padding-left: 1rem;
 	}
 }
