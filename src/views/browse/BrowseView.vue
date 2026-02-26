@@ -108,8 +108,8 @@ watch(
 <template>
 	<div style="height: 100%; position: relative">
 		<div style="height: 100%;" :style="longLoading ? { opacity: 0.5, transition: '500ms' } : {}">
-			<NothingFound v-if="!libraryItem" />
-			<KeepAlive :include="['Explorer', 'CinemaLibraryPage', 'PhotoLibraryPage']">
+			<NothingFound v-if="!loading && !libraryItem" />
+			<KeepAlive :include="['Explorer', 'CinemaLibraryPage', 'PhotoLibraryPage']" v-if="!longLoading">
 				<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'cinema'">
 					<CinemaLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :directoryItems="directory!.libraryItems" />
 				</template>
