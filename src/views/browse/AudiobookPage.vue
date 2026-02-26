@@ -430,9 +430,9 @@ const menuItems = [{
 				/>
 			</div>
 			<div class="flex flex-column align-items-center gap-2">
-				<div class="flex align-items-center gap-2">
+				<div class="flex align-items-center gap-2 relative">
 					<h3>{{ libraryItem.title }}</h3>
-					<LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" />
+					<div class="absolute top-0 bottom-0 right-0" style="top: 50%; translate: 100% -50%"><LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" /></div>
 				</div>
 				<div class="flex align-items-center justify-content-center">
 					<span v-if="libraryItem.author">{{ libraryItem.author }}&nbsp;-&nbsp;</span>
