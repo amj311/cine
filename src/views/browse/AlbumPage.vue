@@ -130,16 +130,14 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 					:aspectRatio="'square'"
 				/>
 			</div>
-			<div class="flex flex-column align-items-center gap-2">
-				<div class="flex align-items-center gap-2 relative">
+			<div class="flex flex-column align-items-center gap-2 relative">
+				<div class="flex align-items-center gap-2">
 					<h3>{{ libraryItem.title }}</h3>
-					<div class="absolute top-0 bottom-0 right-0" style="top: 50%; translate: 100% -50%"><LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" /></div>
 				</div>
-				<div class="flex align-items-center justify-content-center gap-2">
-					<span v-if="libraryItem.artist">{{ libraryItem.artist }}&nbsp;-&nbsp;</span>
-					<span v-if="libraryItem.year">{{ libraryItem.year }}&nbsp;-&nbsp;</span>
-					<span>{{ formatRuntime(totalTime) }}</span>
+				<div class="flex align-items-center justify-content-center">
+					{{ [libraryItem.artist, libraryItem.year, formatRuntime(totalTime)].filter(Boolean).join(' - ') }}
 				</div>
+				<div class="absolute right-0" style="top: 50%; translate: 100% -50%"><LibraryItemActions ref="libraryItemActions" :libraryItem="libraryItem" /></div>
 			</div>
 		</div>
 		<div class="other-wrapper">

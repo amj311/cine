@@ -20,7 +20,7 @@ const { libraryItem, reload, additionalItems } = defineProps<{
 	reload?: () => void,
 }>();
 
-const mainMediaTypes = ['cinema', 'audiobook', 'audio'];
+const mainMediaTypes = ['cinema', 'audiobook', 'album'];
 
 const canSurprise = computed(() => {
 	return useUserStore().currentUser.isOwner && mainMediaTypes.includes(libraryItem.type);

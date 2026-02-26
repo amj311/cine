@@ -386,6 +386,7 @@ export class LibraryService {
 				title: firstTrackProbe?.album,
 				artist: firstTrackProbe?.album_artist || firstTrackProbe?.artist,
 				genre: firstTrackProbe?.genre,
+				year: firstTrackProbe?.year,
 				cover_thumb: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=300`,
 				cover: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=500`,
 				relativePath: path.relativePath,
