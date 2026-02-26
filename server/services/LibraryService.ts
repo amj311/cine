@@ -238,7 +238,7 @@ type Video = LibraryFileData & {
 	takenAt?: string,
 }
 
-const AudioTypes = ['mp3', 'm4a', 'm4b', 'aac'] as const;
+const AudioTypes = ['mp3', 'm4a', 'm4b', 'aac', 'flac'] as const;
 type AudioType = typeof AudioTypes[number];
 type Audio = LibraryFileData & {
 	type: 'audio',
@@ -925,10 +925,10 @@ export class LibraryService {
 			}
 			for (const file of files) {
 				// Not currently saving any images in library other than photos, so we can rely on that here
-				if (file.name.endsWith('.jpg') || file.name.endsWith('.jpeg') || file.name.endsWith('.png')) {
+				if (PhotoTypes.some(a => file.name.endsWith(a))) {
 					return 'photos';
 				}
-				if (file.name.endsWith('.mp3')) {
+				if (AudioTypes.some(a => file.name.endsWith(a))) {
 					return 'audio';
 				}
 			}
