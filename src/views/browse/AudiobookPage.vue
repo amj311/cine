@@ -428,12 +428,19 @@ const imageError = ref('');
 					<img src="@/assets/square-book-3d-trans.png"" class="w-full" style="object-fit: contain; width: 100%; height: 100%; user-select: none;" />
 				</div>
 				<div style="position: absolute; aspect-ratio: 1; top: 0%; right: 10%; bottom: -2%; perspective: 1400px;">
-					<img
+					<div
+						class="relative overflow-hidden"
 						v-if="libraryItem?.cover && !imageError"
 						:src="useApiStore().resolve(libraryItem?.cover)"
 						style="width: 100%; aspect-ratio: 1; transform: rotateY(-31deg); transform-origin: right center; border-radius: 1%;"
-						@error="imageError = 'Failed to load cover'"
-					/>
+					>
+						<img
+							class="absolute"
+							:src="useApiStore().resolve(libraryItem?.cover)" style="inset: 0; width: 100%; aspect-ratio: 1;"
+							@error="imageError = 'Failed to load cover'"
+						/>
+						<div class="book-texture absolute" style="inset: 0px; background-image: linear-gradient(to right, transparent 4%, #fff3 5%, transparent 6%), linear-gradient(to right, transparent 1%, #0008 4%, transparent 5%); box-shadow: inset 3px 3px 2px 0px #fff3, inset -2px -2px 1px 0px #0005;" />
+					</div>
 				</div>
 			</div>
 			<div class="flex flex-column align-items-center gap-2 relative">
