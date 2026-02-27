@@ -96,3 +96,7 @@ export async function logoutOwnerUser(token: string) {
 export function getSessionEmail() {
 	return sessionStore.getStore()?.email || '';
 }
+
+export function isOwner() {
+	return getSessionEmail() === process.env.VITE_OWNER_EMAIL;
+}

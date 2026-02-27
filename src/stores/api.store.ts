@@ -93,9 +93,6 @@ export const useApiStore = defineStore('Api', () => {
 		}
 		isInitializing.value = false;
 	}
-	connectToDomainHost().catch((error) => {
-		console.error('Error connecting to domain host:', error);
-	});
 
 	async function connectToHost(host: Host) {
 		if (host.baseUrl) {
@@ -148,6 +145,7 @@ export const useApiStore = defineStore('Api', () => {
 	}
 
 	return {
+		connectToDomainHost,
 		isInitializing,
 		selectedHost,
 		baseUrl,

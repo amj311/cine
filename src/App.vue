@@ -65,7 +65,8 @@ onMounted(async () => {
 	window.addEventListener('keydown', (e)=>lastKey.value = e.key);
 
 	// Allow auth some time to warm up and check for active session
-	AuthService.initialize();
+	await useApiStore().connectToDomainHost();
+	await AuthService.initialize();
 	await new Promise(res => setTimeout(res, 500));
 	await useUserStore().loadSessionData();
 	isInitializing.value = false;

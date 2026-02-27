@@ -20,19 +20,18 @@ let auth;
 export const AuthService = {
 	pauseAuthListeners: false,
 
-	initialize() {
-		this.setAuthUser(this.getInitialUser());
-		if (!this.authUser) {
-			firebaseApp = initializeApp(firebaseConfig);
-			auth = getAuth(firebaseApp);
+	async initialize() {
+		firebaseApp = initializeApp(firebaseConfig);
+		auth = getAuth(firebaseApp);
 
-			auth.useDeviceLanguage();
-			onAuthStateChanged(auth, (authUser) => {
-				if (!this.pauseAuthListeners) {
-					AuthService.onFbAuthChange(authUser);
-				}
-			});
-		}
+		auth.useDeviceLanguage();
+		onAuthStateChanged(auth, (authUser) => {
+			if (!this.pauseAuthListeners) {
+				AuthService.onFbAuthChange(authUser);
+			}
+		});
+
+		await this.restoreActiveSession();
 	},
 
 	info: [''],
@@ -42,24 +41,23 @@ export const AuthService = {
 		isFb?: boolean,
 	},
 
-	getInitialUser() {
-		const isOwner = localStorage.getItem('isOwner') === 'true';
-		if (isOwner) {
-			return {
-				email: import.meta.env.VITE_OWNER_EMAIL,
-				isOwner: true,
-			};
+	async restoreActiveSession() {
+		try {
+			const { data } = await useApiStore().api.get('/session');
+			if (data) {
+				this.setAuthUser({
+					email: data.email,
+					isOwner: data.isOwner,
+				})
+			}
 		}
-		return null;
+		catch {
+			return null;
+		}
 	},
 
 	onLogInOrOut: (authUser) => { },
 	setAuthUser(authUser) {
-		const isOwner = authUser?.email === import.meta.env.VITE_OWNER_EMAIL;
-		if (isOwner) {
-			authUser.isOwner = true;
-		}
-
 		this.authUser = authUser || null;
 		this.onLogInOrOut(authUser);
 	},
@@ -99,38 +97,40 @@ export const AuthService = {
 
 	async signInWithEmail(email, password) {
 		try {
-			// if (email === import.meta.env.VITE_OWNER_EMAIL && password === import.meta.env.VITE_OWNER_PASS) {
-			if (email === import.meta.env.VITE_OWNER_EMAIL) {
+			// first try direct login
+			try {
 				// authenticate with server directly for LAN setup
-				await useApiStore().api.post('/auth', {
+				const { data } = await useApiStore().api.post('/auth', {
 					emailHash: SHA256(email),
 					passHash: SHA256(password),
 				});
 				this.info.push('signing in as owner');
-				localStorage.setItem('isOwner', 'true');
 				this.setAuthUser({
-					email: import.meta.env.VITE_OWNER_EMAIL,
+					email: data.email,
+					isOwner: data.isOwner,
 				});
+				return;
 			}
-			else {
-				this.pauseAuthListeners = true;
-				const userCredential = await signInWithEmailAndPassword(auth, email, password);
+			catch { }
 
-				// authenticate with server with fb token
-				await useApiStore().api.post('/auth', {}, {
-					headers: {
-						Authorization: await this.getToken(),
-					}
-				});
+			// then try firebase
+			this.pauseAuthListeners = true;
+			const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-				const user = userCredential.user;
-				this.setAuthUser({
-					email: user.email || '',
-					isFb: true,
-				});
-				this.pauseAuthListeners = false;
-				this.onFbAuthChange(this.authUser);
-			}
+			// authenticate with server with fb token
+			await useApiStore().api.post('/auth', {}, {
+				headers: {
+					Authorization: await this.getToken(),
+				}
+			});
+
+			const user = userCredential.user;
+			this.setAuthUser({
+				email: user.email || '',
+				isFb: true,
+			});
+			this.pauseAuthListeners = false;
+			this.onFbAuthChange(this.authUser);
 		} catch (error: any) {
 			console.error('signInWithEmail error', error)
 			throw new Error(error.message);
@@ -176,11 +176,9 @@ export const AuthService = {
 			if (auth && !AuthService.authUser?.isOwner) {
 				await signOut(auth);
 			}
-			localStorage.removeItem('isOwner');
 			await useApiStore().api.post('/auth/signout');
 			AuthService.setAuthUser(null);
 			AuthService.onLogInOrOut?.call(null, null);
-			this.initialize();
 		} catch (error: any) {
 			throw new Error(error.message);
 		}

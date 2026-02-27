@@ -123,7 +123,10 @@ app.post('/api/auth', async (req, res) => {
 		return res.status(401).send();
 	}
 	res.cookie('otofbt', token, { signed: true });
-	res.send();
+	res.send({
+		email: getSessionEmail(),
+		isOwner: isOwner(),
+	});
 })
 
 app.post('/api/auth/signout', async (req, res) => {
@@ -138,11 +141,27 @@ app.use('/api', (req, res, next) => {
 	sessionAuthMiddleware(otofbt, req, res, next);
 })
 
-app.use('/api', async (req, res, next) => {
-	const { path: pathQ } = req.query;
-	const { path: pathB } = req.body;
-	const { path: pathP } = req.params;
-	const path = decodeMediaPath(pathB || pathP || pathQ || '');
+app.use('/api/session', (req, res, next) => {
+	res.send({
+		email: getSessionEmail(),
+		isOwner: isOwner(),
+	})
+})
+
+
+// get login status
+
+
+app.use('/api/*', async (req, res, next) => {
+	let path = '';
+	if (typeof req.query?.path === 'string') {
+		path = decodeMediaPath(req.query.path);
+		req.query.path = path;
+	};
+	if (typeof req.body?.path === 'string') {
+		path = decodeMediaPath(req.body.path);
+		req.body.path = path;
+	};
 
 	if (path) {
 		const isShared = await SharingService.isShared(path, getSessionEmail());
@@ -171,7 +190,7 @@ app.use('/api/loan', loanRoute);
 
 import { decodeMediaPath, safeParseInt } from './utils/miscUtils';
 import { JobService } from './services/JobService';
-import { getSessionEmail, loginOwnerUser, logoutOwnerUser, sessionAuthMiddleware, sessionStore } from './services/SessionService';
+import { getSessionEmail, isOwner, loginOwnerUser, logoutOwnerUser, sessionAuthMiddleware, sessionStore } from './services/SessionService';
 import { SharingService } from './services/SharingService';
 import { LoanService } from './services/LoanService';
 
