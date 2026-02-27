@@ -86,3 +86,18 @@ export function decodeMediaPath(path: string) {
 export function objectOrder<T, A>(list: Array<T>, getComp: (item: T) => A) {
 	return list.sort((a, b) => (getComp(a) < getComp(b)) ? -1 : (getComp(b) < getComp(a) ? 2 : 0));
 }
+
+
+declare global {
+	interface Array<T> {
+		peek(): T | undefined;
+	}
+}
+
+if (!Array.prototype.peek) {
+	Array.prototype.peek = function <T>(this: T[]): T | undefined {
+		return this[this.length - 1];
+	};
+}
+
+export { };

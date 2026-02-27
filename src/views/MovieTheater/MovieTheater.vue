@@ -343,10 +343,10 @@ const progressUpdateInterval = setInterval(async () => {
  * METADATA
  */
 
-const nextEpisode = computed(() => findNextEpisode(1)?.episodes[0]);
-const prevEpisode = computed(() => findNextEpisode(-1)?.episodes[0]);
+const nextEpisode = computed(() => findNextEpisodeFile(1)?.episodes[0]);
+const prevEpisode = computed(() => findNextEpisodeFile(-1)?.episodes[0]);
 
-function findNextEpisode(delta: number) {
+function findNextEpisodeFile(delta: number) {
 	if (playable.value?.type !== 'episodeFile') {
 		return null;
 	}
@@ -539,11 +539,13 @@ const parentExtrasToShow = computed(() => {
 		return extras?.length > 0 ? extras : undefined;
 	}
 	if (parentLibrary.value?.cinemaType === 'series') {
-		const lastSeason = parentLibrary.value?.seasons?.slice().pop();
-		const lastEpFile = lastSeason.episodes?.slice().pop();
+		console.log(parentLibrary.value?.seasons)
+		const lastSeason = parentLibrary.value?.seasons?.peek();
+		const lastEpFile = lastSeason?.episodeFiles.peek();
+		console.log(lastEpFile)
 
 		// show series extras for very final episode or other series extra
-		if (parentLibrary.value?.extras?.some(e => e.relativePath === playable.value?.relativePath) || lastEpFile.relativePath === playable.value?.relativePath) {
+		if (parentLibrary.value?.extras?.some(e => e.relativePath === playable.value?.relativePath) || lastEpFile?.relativePath === playable.value?.relativePath) {
 			const extras = parentLibrary.value?.extras?.filter(e => e.relativePath !== playable.value?.relativePath);
 			return extras?.length > 0 ? extras : undefined;
 		}
@@ -552,7 +554,7 @@ const parentExtrasToShow = computed(() => {
 
 const seasonExtrasToShow = computed(() => {
 	// only show extras on last episode of season
-	if (currentSeason.value && (playable.value.type === 'extra' || playable.value?.episodeNumber === currentSeason.value?.episodes?.pop()?.episodeNumber)) {
+	if (currentSeason.value && (playable.value.type === 'extra' || playable.value?.episodeNumber === currentSeason.value?.episodeFiles?.peek()?.episodeNumber)) {
 		const extras = currentSeason.value?.extras?.filter(e => e.relativePath !== playable.value?.relativePath);
 		return extras?.length > 0 ? extras : undefined;
 	}
@@ -805,7 +807,7 @@ const nextExtra = computed(() => {
 						</div>
 
 						<div v-if="parentExtrasToShow" class="w-full overflow-hidden">
-							<h3>Extras</h3>
+							<h3>{{ parentLibrary?.name }} Extras</h3>
 							<ExtrasList :extras="parentExtrasToShow" />
 						</div>
 

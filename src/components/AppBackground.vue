@@ -143,7 +143,7 @@ const showCustomBackgrounds = computed(() => {
 		opacity: 0;
 		transition: all 600ms;
 
-		&.drawn.show {
+		&.show {
 			opacity: .7;
 		}
 	}

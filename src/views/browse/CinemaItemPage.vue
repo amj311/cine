@@ -455,7 +455,8 @@ async function returnLoan() {
 										@click="toggleMissingEpisode(episode)"
 										small
 										severity="secondary"
-										class="btn-blur flex-row-center gap-3"
+										btn-blur
+										class="flex-row-center gap-3"
 									>
 										View missing episodes
 										<span>
