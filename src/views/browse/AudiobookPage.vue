@@ -427,7 +427,7 @@ const imageError = ref('');
 				<div style="position: absolute; inset: -6% -31% -36% -27%;">
 					<img src="@/assets/square-book-3d-trans.png"" class="w-full" style="object-fit: contain; width: 100%; height: 100%; user-select: none;" />
 				</div>
-				<div style="position: absolute; aspect-ratio: 1; top: 0%; right: 10%; bottom: -2%; perspective: 1400px;">
+				<div style="position: absolute; aspect-ratio: 1; top: 0%; right: 10%; bottom: -2%; perspective: 1550px;">
 					<div
 						class="relative overflow-hidden"
 						v-if="libraryItem?.cover && !imageError"
