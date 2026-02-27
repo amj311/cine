@@ -12,7 +12,7 @@ export class ThumbnailService {
 	 * Receives the path to a file, loads and shrinks the image with Shrp.js, and returns the result as a stream for the client to consume.
 	 * @param filePath 
 	 */
-	public static async streamThumbnail(filePath: ConfirmedPath, width: number = 300, seek = 3): Promise<Buffer> {
+	public static async streamThumbnail(filePath: ConfirmedPath, width: number = 300, seek = 0): Promise<Buffer> {
 		try {
 			const cachedThumbnail = this.getCachedThumbnail(filePath.relativePath, width, seek);
 			if (cachedThumbnail) {

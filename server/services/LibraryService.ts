@@ -729,6 +729,7 @@ export class LibraryService {
 					seasonNumber,
 					episodeNumber,
 					startTime,
+					still_thumb: `/thumb/${file.confirmedPath.relativePath}?width=300&seek=${startTime + 3}`
 				}));
 
 				return {
@@ -795,7 +796,7 @@ export class LibraryService {
 				relativePath: parentPath.append(file).relativePath,
 				confirmedPath: parentPath.append(file),
 				// watchProgress: await WatchProgressService.getWatchProgress(parentPath.append(file)),
-				still_thumb: `/thumb/${parentPath.append(file).relativePath}?width=300`
+				still_thumb: `/thumb/${parentPath.append(file).relativePath}?width=300&seek=3`
 			}
 		}));
 	}

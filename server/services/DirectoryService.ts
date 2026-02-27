@@ -1,4 +1,4 @@
-import { existsSync } from 'fs';
+import { existsSync, lstatSync } from 'fs';
 import { readdir } from 'fs/promises';
 import path from 'path';
 import { decodeMediaPath } from '../utils/miscUtils';
@@ -71,6 +71,10 @@ export class DirectoryService {
 
 	static async listDirectory(dirPath: ConfirmedPath) {
 		try {
+			if (!lstatSync(dirPath.absolutePath).isDirectory()) {
+				return { folders: [], files: [] };
+			}
+
 			const files = (await readdir(dirPath.absolutePath, { withFileTypes: true })).map((f) => {
 				return {
 					isDirectory: f.isDirectory(),

@@ -98,7 +98,7 @@ const mergedSeasons = computed(() => {
 				hasFile: true,
 				...episode,
 				...metadataEpisode,
-				still_thumb: episode.still_thumb || metadataEpisode?.still_thumb || useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(episode.relativePath),
+				still_thumb: metadataEpisode?.still_thumb || episode.still_thumb,
 			};
 		});
 		const missingEpisodes = metadataSeason?.episodes.filter(me => !fileEpisodes.some((e: any) => e.episodeNumber === me.episodeNumber)) || [];

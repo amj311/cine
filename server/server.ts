@@ -26,8 +26,6 @@ import { useFfmpeg } from './utils/ffmpeg';
 import { getBuildNumber } from './utils/versionService';
 import { GetListByKeyword } from 'youtube-search-api';
 import ytdl from '@distube/ytdl-core'
-import ffmpeg from 'fluent-ffmpeg';
-import axios from 'axios';
 
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
 	.split(',')
@@ -293,12 +291,12 @@ app.get('/api/stream-yt-search', async (req, res) => {
 
 
 app.get("/api/stream", async function (req, res) {
-	let { path } = req.query;
-	if (!path) {
+	let { path: relativePath } = req.query;
+	if (!relativePath) {
 		res.status(400).send("Requires src query param");
 		return;
 	}
-	const resolvedPath = DirectoryService.resolvePath(path as string);
+	const resolvedPath = DirectoryService.resolvePath(relativePath as string);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");
 		return;
@@ -313,10 +311,7 @@ app.get("/api/stream", async function (req, res) {
 		const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp4');
 		await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
 			// Convert 3GP to MP4
-			ffmpeg(resolvedPath.absolutePath)
-				.output(outputFilePath)
-				.videoCodec('copy') // Copy the video stream without re-encoding
-				.audioCodec('aac')  // Encode the audio stream in AAC
+			ffmpeg.output(outputFilePath)
 				.on('end', () => {
 					resolve();
 				})
