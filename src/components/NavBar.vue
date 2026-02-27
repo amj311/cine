@@ -14,14 +14,14 @@ import SettingsModal from './SettingsModal.vue';
 import { AuthService } from '@/services/AuthService';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import SharingModal from './SharingModal.vue';
+import NavTrigger from './utils/NavTrigger/NavTrigger.vue';
 
 const navStore = useAppNavigationStore();
-const lastClickedItem = ref<string | null>(null);
-
-const useMobileNav = computed(() => useScreenStore().isSkinnyScreen);
-const expandMobileNav = ref(false);
 const queryPathStore = useQueryPathStore();
 
+const useMobileNav = computed(() => useScreenStore().isSkinnyScreen);
+const mobileTrigger = ref<InstanceType<typeof NavTrigger>>();
+const expandMobileNav = computed(() => mobileTrigger.value?.show);
 
 const props = defineProps<{
 }>()
@@ -66,7 +66,6 @@ const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1
 /** USER */
 const avatarInitial = computed(() => useUserStore().currentUser?.email?.[0]);
 
-
 const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 const sharingModal = ref<InstanceType<typeof SharingModal>>();
 </script>
@@ -74,7 +73,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 <template>
 	<div class="navbar" :class="{ [`mobile-expanded ${focusAreaClass}`]: expandMobileNav }">
 		<div class="top">
-			<div class="logo" tabindex="0" @click="() => { expandMobileNav = false; $router.push({ name: 'home' }) }">
+			<div class="logo" tabindex="0" @click="() => { $router.push({ name: 'home' }) }">
 				<Logo :width="125" />
 				<div class="build-version">v{{ getBuildNumber() }}</div>
 			</div>
@@ -84,7 +83,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 					v-if="!expandMobileNav"
 					variant="text"
 					severity="contrast"
-					@click="expandMobileNav = !expandMobileNav"
+					@click="() => mobileTrigger?.open()"
 					style="max-width: 100%;"
 				>
 					<div v-if="singleNavLabel" class="text-ellipsis">{{ singleNavLabel }}</div>
@@ -143,7 +142,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 				<Button
 					variant="text"
 					severity="contrast"
-					@click="expandMobileNav = !expandMobileNav"
+					@click="() => mobileTrigger?.close()"
 				>
 					<i class="pi pi-times" />
 				</Button>
@@ -164,35 +163,41 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 
 		</div>
 
-		<div class="mobile-nav" :class="{ tvNavigationNoFocus: !expandMobileNav }" @click="expandMobileNav = false">
-			<div class="flex flex-column" v-if="expandMobileNav">
-				<template 
-					v-for="library in navStore.libraries"
-					:key="library.relativePath"
-				>
-					<Button
-						variant="text"
-						size="large"
-						:severity="($route?.query?.path as any)?.startsWith(encodeMediaPath(library.relativePath)) ? 'contrast' : 'secondary'"
-						@click="useQueryPathStore().goTo(library.relativePath)"
-					>
-						{{ library.libraryItem?.name || library.folderName }}
-					</Button>
-					<template v-if="library.relativePath === queryPathStore.rootLibrary">
-						<Button
-							v-for="item in navPathItems"
-							variant="text"
-							class="subpath"
-							@click="item.command"
-							:key="item.label"
-							:severity="($route?.query?.path as any)?.endsWith(encodeMediaPath(item.folderName)) ? 'contrast' : 'secondary'"
+		<NavTrigger
+			ref="mobileTrigger"
+		>
+			<template #default="{ show }">
+				<div class="mobile-nav" v-if="useMobileNav">
+					<div class="flex flex-column" v-if="show">
+						<template 
+							v-for="library in navStore.libraries"
+							:key="library.relativePath"
 						>
-							{{ item.label }}
-						</Button>
-					</template>
-				</template>
-			</div>
-		</div>
+							<Button
+								variant="text"
+								size="large"
+								:severity="($route?.query?.path as any)?.startsWith(encodeMediaPath(library.relativePath)) ? 'contrast' : 'secondary'"
+								@click="useQueryPathStore().goTo(library.relativePath)"
+							>
+								{{ library.libraryItem?.name || library.folderName }}
+							</Button>
+							<template v-if="library.relativePath === queryPathStore.rootLibrary">
+								<Button
+									v-for="item in navPathItems"
+									variant="text"
+									class="subpath"
+									@click="item.command"
+									:key="item.label"
+									:severity="($route?.query?.path as any)?.endsWith(encodeMediaPath(item.folderName)) ? 'contrast' : 'secondary'"
+								>
+									{{ item.label }}
+								</Button>
+							</template>
+						</template>
+					</div>
+				</div>
+			</template>
+		</NavTrigger>
 	</div>
 
 	<SettingsModal ref="settingsModal" />
