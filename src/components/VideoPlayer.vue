@@ -491,7 +491,7 @@ function goToNextChapter() {
 </script>
 
 <template>
-	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls tvNavigationNoFocus': showControls && !hideControls }">
+	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls tvNavigationNoFocus': showControls }">
 		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="use-credentials" allow :style="{ backgroundColor: background }">
 			<source :src="videoUrl" :type="'video/mp4'" />
 			<!-- <track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" /> -->
@@ -503,65 +503,69 @@ function goToNextChapter() {
 			<img v-if="loadingSplash" :src="loadingSplash" />
 			<i class="pi pi-spin pi-spinner text-7xl" />
 		</div>
-		<div class="overlay overlay-fade"></div>
 
-		<div class="top-controls w-full flex flex-column justify-content-end">
-			<div class="overlay flex align-items-center gap-2">
-				<Button v-if="close" variant="text" severity="contrast" icon="pi pi-arrow-left" @click="close" />
-				<div class="title text-ellipsis" :class="{ clickable: onTitleClick }" @click="onTitleClick">{{ title }}</div>
-				<div class="flex-grow-1"></div>
-				<div class="flex align-items-center">
-					<slot name="topButtons"></slot>
-					<div v-if="timer" class="timer-trigger" @click="toggleTimer">
-						<Button :text="showTimer ? false : true" :severity="showTimer ? 'secondary' : 'contrast'" :icon="'pi pi-stopwatch'" />
+		<template v-if="!hideControls">
+			<div class="overlay overlay-fade"></div>
+
+			<div class="top-controls w-full flex flex-column justify-content-end">
+				<div class="overlay flex align-items-center gap-2">
+					<Button v-if="close" variant="text" severity="contrast" icon="pi pi-arrow-left" @click="close" />
+					<div class="title text-ellipsis" :class="{ clickable: onTitleClick }" @click="onTitleClick">{{ title }}</div>
+					<div class="flex-grow-1"></div>
+					<div class="flex align-items-center">
+						<slot name="topButtons"></slot>
+						<div v-if="timer" class="timer-trigger" @click="toggleTimer">
+							<Button :text="showTimer ? false : true" :severity="showTimer ? 'secondary' : 'contrast'" :icon="'pi pi-stopwatch'" />
+						</div>
 					</div>
 				</div>
-			</div>
-			<div v-if="showTimer" class="flex align-items-start">
-				<div class="flex-grow-1"></div>
-				<div><MediaTimer :mediaEl="videoRef" :inPlayer="true" /></div>
-			</div>
-		</div>
-		<div v-if="hasLoaded" class="center-controls overlay flex-row-center">
-			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" :disabled="prevChapterStart === null" @click="prevChapterStart !== null && doSeek(prevChapterStart)">
-				<i class="material-symbols-outlined">fast_rewind</i>
-			</Button>
-			<Button class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" @click="skipBack">
-				<i class="material-symbols-outlined">replay_10</i>
-			</Button>
-			<Button class="square text-7xl" text btn-blur-hover btn-drop-shadow severity="contrast" data-focus-priority="1" @click="togglePlay">
-				<i class="material-symbols-outlined">{{ isPlaying ? 'pause' : 'play_arrow' }}</i>
-			</Button>
-			<Button class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" @click="skipForward">
-				<i class="material-symbols-outlined">forward_10</i>
-			</Button>
-			<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" :disabled="!nextChapterStart" @click="nextChapterStart && doSeek(nextChapterStart)">
-				<i class="material-symbols-outlined">fast_forward</i>
-			</Button>
-		</div>
-		<div class="bottom-controls overlay">
-			<div class="flex-row-center">
-				<span v-if="showTime">-{{ msToTimestamp(secToMs(remaining)) }}</span>
-				<div class="flex-grow-1" />
-				<slot name="bottomButtons"></slot>
-				<div class="subtitle-select" v-if="subtitleTracks.length">
-					<DropdownMenu :items="subtitleMenuItems">
-						<Button variant="text" severity="contrast"><span class="material-symbols-outlined">subtitles</span></Button>
-					</DropdownMenu>
+				<div v-if="showTimer" class="flex align-items-start">
+					<div class="flex-grow-1"></div>
+					<div><MediaTimer :mediaEl="videoRef" :inPlayer="true" /></div>
 				</div>
-				<div class="audio-select" v-if="props.audio && props.audio.length > 1">
-					<DropdownMenu :items="audioMenuItems">
-						<Button variant="text" severity="contrast"><span class="material-symbols-outlined">movie_speaker</span></Button>
-					</DropdownMenu>
-				</div>
-				<Button v-if="allowFullscreen" text severity="contrast" @click="useFullscreenStore().userToggle">
-					<span class="material-symbols-outlined">{{ useFullscreenStore().isAppInFullscreenMode ? 'fullscreen_exit' : 'fullscreen' }}</span>
+			</div>
+			<div v-if="hasLoaded" class="center-controls overlay flex-row-center">
+				<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" :disabled="prevChapterStart === null" @click="prevChapterStart !== null && doSeek(prevChapterStart)">
+					<i class="material-symbols-outlined">fast_rewind</i>
+				</Button>
+				<Button class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" @click="skipBack">
+					<i class="material-symbols-outlined">replay_10</i>
+				</Button>
+				<Button class="square text-7xl" text btn-blur-hover btn-drop-shadow severity="contrast" data-focus-priority="1" @click="togglePlay">
+					<i class="material-symbols-outlined">{{ isPlaying ? 'pause' : 'play_arrow' }}</i>
+				</Button>
+				<Button class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" @click="skipForward">
+					<i class="material-symbols-outlined">forward_10</i>
+				</Button>
+				<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" :disabled="!nextChapterStart" @click="nextChapterStart && doSeek(nextChapterStart)">
+					<i class="material-symbols-outlined">fast_forward</i>
 				</Button>
 			</div>
-			<div v-if="!seekerEl" class="seeker-wrapper relative">
-				<VideoProgressBar :mediaRelativePath="relativePath" v-if="videoRef" :videoRef="videoRef" :chapters="chapters" />
+			<div class="bottom-controls overlay">
+				<div class="flex-row-center">
+					<span v-if="showTime">-{{ msToTimestamp(secToMs(remaining)) }}</span>
+					<div class="flex-grow-1" />
+					<slot name="bottomButtons"></slot>
+					<div class="subtitle-select" v-if="subtitleTracks.length">
+						<DropdownMenu :items="subtitleMenuItems">
+							<Button variant="text" severity="contrast"><span class="material-symbols-outlined">subtitles</span></Button>
+						</DropdownMenu>
+					</div>
+					<div class="audio-select" v-if="props.audio && props.audio.length > 1">
+						<DropdownMenu :items="audioMenuItems">
+							<Button variant="text" severity="contrast"><span class="material-symbols-outlined">movie_speaker</span></Button>
+						</DropdownMenu>
+					</div>
+					<Button v-if="allowFullscreen" text severity="contrast" @click="useFullscreenStore().userToggle">
+						<span class="material-symbols-outlined">{{ useFullscreenStore().isAppInFullscreenMode ? 'fullscreen_exit' : 'fullscreen' }}</span>
+					</Button>
+				</div>
+				<div v-if="!seekerEl" class="seeker-wrapper relative">
+					<VideoProgressBar :mediaRelativePath="relativePath" v-if="videoRef" :videoRef="videoRef" :chapters="chapters" />
+				</div>
 			</div>
-		</div>
+		</template>
+		
 		<div class="cards" :class="{ lift: showControls }">
 			<slot name="cards" />
 		</div>

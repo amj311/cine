@@ -3,6 +3,7 @@ import path from 'path';
 import { ConfirmedPath, DirectoryService, RelativePath } from './DirectoryService';
 import sharp from 'sharp';
 import { useFfmpeg } from '../utils/ffmpeg';
+import { ProbeService } from './ProbeService';
 
 const MAX_CACHE_SIZE = 500; // Maximum number of thumbnails to cache
 const thumbCache = new Map<string, Buffer>();
@@ -46,11 +47,15 @@ export class ThumbnailService {
 				fileBuffer = await readFile(filePath.absolutePath);
 			}
 			let thumbnailBuffer: Buffer = Buffer.from([]);
+			if (fileBuffer.length === 0) {
+				console.log("file buffer is empty");
+				return thumbnailBuffer;
+			}
 			try {
 				thumbnailBuffer = await ThumbnailService.resizeBuffer(fileBuffer, width);
 			}
 			catch (err: any) {
-				console.log("Error while resizing image:", err.message);
+				console.log("Error while getting thumbnail:", err.message);
 				console.log("Attempting to fix JPEG file", filePath);
 				const newBuffer = await ThumbnailService.attemptFixJpeg(fileBuffer);
 				if (newBuffer) {
@@ -98,23 +103,28 @@ export class ThumbnailService {
 	 * @param buffer 
 	 * @returns 
 	 */
-	private static async getVideoFrame(filePath: ConfirmedPath, seek: number = 3) {
+	private static async getVideoFrame(filePath: ConfirmedPath, seek: number = 0) {
+		const probe = await ProbeService.getProbeData(filePath);
+
+		const maxSeek = Math.min(probe?.glossary.duration_s ? probe?.glossary.duration_s - 1 : Infinity, seek);
+
 		return await useFfmpeg<Buffer>(filePath.absolutePath, (ffmpeg, resolve, reject) => {
 			const chunks: Buffer[] = [];
 
-			ffmpeg.on('error', (err: any) => {
-				console.error("Error while processing video:", err.message);
-				reject(err);
-			})
+			ffmpeg
 				// Seek on the input rather than output, but for some reason this doesn't work for album covers
-				.inputOptions(seek > 0 ? [`-ss ${seek}`] : [])
+				.inputOptions(maxSeek > 0 ? [`-ss ${maxSeek}`] : [])
 				.outputOptions([
-					...(seek === 0 ? [`-ss ${seek}`] : []),
+					...(maxSeek === 0 ? [`-ss ${maxSeek}`] : []),
 					'-frames:v 1',  // Extract only one frame
 					'-vf scale=iw*sar:ih', // This corrects for pixel aspect ratio
 					'-f image2pipe' // Output as a pipe
 				])
 				.outputFormat('image2pipe') // Output format as image
+				.on('error', (err: any) => {
+					console.error("Error while processing video:", err.message);
+					reject(err);
+				})
 				.pipe()
 				.on('data', (chunk: any) => {
 					chunks.push(chunk);
