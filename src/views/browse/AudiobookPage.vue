@@ -522,7 +522,6 @@ const menuItems = [{
 .album-page {
 	display: flex;
 	flex-direction: column;
-	gap: 1em;
 	height: 100%;
 	min-height: 0;
 	max-height: 100%;
@@ -533,13 +532,13 @@ const menuItems = [{
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		gap: 2em;
+		gap: 1.5em;
    		padding: 0 1em;
     	flex-grow: 1;
 	}
 
 	.other-wrapper {
-		flex-grow: 20;
+		flex-grow: 2;
 		display: flex;
 		flex-direction: column;
 		gap: 1em;
@@ -560,7 +559,7 @@ const menuItems = [{
 
 
 .poster-wrapper {
-	width: min(100%, 20rem);
+	width: min(100%, 20rem, 40vh)
 }
 
 .chapters-list-wrapper {

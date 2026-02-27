@@ -138,7 +138,7 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 					{{ [libraryItem.artist, libraryItem.year, formatRuntime(totalTime)].filter(Boolean).join(' - ') }}
 				</div>
 			</div>
-			<div class="controls px-2 flex align-items-center w-full">
+			<div class="controls flex align-items-center w-full">
 				<div class="audio-controls flex-grow-1">
 					<audio v-show="currentTrack" ref="audio" :src="useApiStore().apiUrl + '/stream?path=' + libraryItem?.tracks[0]?.relativePath" preload="auto" controls crossorigin="use-credentials" />
 					<Button
@@ -190,7 +190,6 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 .album-page {
 	display: flex;
 	flex-direction: column;
-	gap: 1em;
 	height: 100%;
 	min-height: 0;
 	max-height: 100%;
@@ -201,13 +200,13 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		gap: 2em;
+		gap: 1.5em;
    		padding: 0 1em;
     	flex-grow: 1;
 	}
 
 	.other-wrapper {
-		flex-grow: 20;
+		flex-grow: 2;
 		display: flex;
 		flex-direction: column;
 		gap: 1em;
@@ -228,7 +227,7 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 
 
 .poster-wrapper {
-	width: min(100%, 20rem);
+	width: min(100%, 20rem, 40vh)
 }
 
 .tracks-list-wrapper {

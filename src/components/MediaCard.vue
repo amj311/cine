@@ -174,7 +174,7 @@ function activate() {
 	</NavModal>
 </template>
 
-<style lang="scss">
+<style scoped lang="scss">
 .media-card {
 	transition: transform 50ms ease-in-out;
 	user-select: none;
