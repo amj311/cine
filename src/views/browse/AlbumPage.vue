@@ -117,18 +117,24 @@ function playNextTrack() {
 	playTrack(nextTrack);
 }
 
-
-const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
+const imageError = ref('');
 </script>
 
 <template>
 	<div class="album-page">
 		<div class="top-wrapper my-3">
-			<div class="poster-wrapper">
-				<MediaCard
-					:imageUrl="libraryItem?.cover"
-					:aspectRatio="'square'"
-				/>
+			<div class="poster-wrapper relative" style="aspect-ratio: 1.16; user-select: none;">
+				<div style="position: absolute; z-index: 2; inset: 0 0 0 0;">
+					<img src="@/assets/cd-case.png" class="w-full relative" style="object-fit: contain; width: 100%; height: 100%; user-select: none;" />
+				</div>
+				<div style="position: absolute; z-index: 1; inset: 2px 2px 3px 9.5%; background: #222;">
+					<img
+						v-if="libraryItem?.cover && !imageError"
+						:src="useApiStore().resolve(libraryItem?.cover)"
+						style="object-fit: contain; width: 100%; height: 100%"
+						@error="imageError = 'Failed to load cover'"
+					/>
+				</div>
 			</div>
 			<div class="flex flex-column align-items-center gap-2">
 				<div class="flex align-items-center gap-2">
@@ -201,8 +207,8 @@ const libraryItemActions = ref<InstanceType<typeof LibraryItemActions>>();
 		align-items: center;
 		text-align: center;
 		gap: 1.5em;
-   		padding: 0 1em;
-    	flex-grow: 1;
+		padding: 0 1em;
+		flex-grow: 1;
 	}
 
 	.other-wrapper {
