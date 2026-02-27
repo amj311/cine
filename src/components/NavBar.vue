@@ -39,29 +39,27 @@ function removeExtensionsFromFileName(filename: string) {
 }
 
 const navPathItems = computed(() => {
-	const pathItems = queryPathStore.currentDir.slice(1, -1).map((dir) => ({
+	const pathItems = queryPathStore.currentDir.slice(1).map((dir) => ({
 		folderName: dir,
 		label: removeExtensionsFromFileName(dir),
 		command: () => {
 			queryPathStore.goToAncestor(dir);
 		},
 	}));
-	// include the current folder if it is not a media item
-	if (queryPathStore.currentFile && !isInMediaFolder.value && queryPathStore.currentFile !== queryPathStore.rootLibrary) {
-		pathItems.push({
-			folderName: queryPathStore.currentFile,
-			label: removeExtensionsFromFileName(queryPathStore.currentFile!),
-		} as any);
-	}
+	// // include the current folder if it is not a media item
+	// if (queryPathStore.currentFile && !isInMediaFolder.value && queryPathStore.currentFile !== queryPathStore.rootLibrary) {
+	// 	pathItems.push({
+	// 		folderName: queryPathStore.currentFile,
+	// 		label: removeExtensionsFromFileName(queryPathStore.currentFile!),
+	// 	} as any);
+	// }
 	return pathItems;
 });
 
-const numHiddenBreadcrumbs = computed(() => Math.max(0, navPathItems.value.length - 2));
+const maxVisibleBreadcrumbs = 2;
+const numHiddenBreadcrumbs = computed(() => Math.max(0, navPathItems.value.length - maxVisibleBreadcrumbs));
 const hiddenBreadcrumbs = computed(() => (navPathItems.value.slice(0, numHiddenBreadcrumbs.value)));
 const visibleBreadcrumbs = computed(() => (navPathItems.value.slice(numHiddenBreadcrumbs.value)));
-
-const singleNavLabel = computed(() => navPathItems[navPathItems.value.length - 1]?.label || removeExtensionsFromFileName(queryPathStore.currentFile || ''));
-
 
 /** USER */
 const avatarInitial = computed(() => useUserStore().currentUser?.email?.[0]);
@@ -74,7 +72,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 	<div class="navbar" :class="{ [`mobile-expanded ${focusAreaClass}`]: expandMobileNav }">
 		<div class="top">
 			<div class="logo" tabindex="0" @click="() => { $router.push({ name: 'home' }) }">
-				<Logo :width="125" />
+				<Logo :width="useScreenStore().isSkinnyScreen ? 100 : 115" />
 				<div class="build-version">v{{ getBuildNumber() }}</div>
 			</div>
 
@@ -86,7 +84,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 					@click="() => mobileTrigger?.open()"
 					style="max-width: 100%;"
 				>
-					<div v-if="singleNavLabel" class="text-ellipsis">{{ singleNavLabel }}</div>
+					<div class="text-ellipsis">{{ removeExtensionsFromFileName(queryPathStore.currentFile || '') }}</div>
 					<i class="pi pi-angle-down" />
 				</Button>
 			</div>
@@ -104,7 +102,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 				/>
 			</div>
 
-			<div v-else-if="$route.name === 'browse'" class="breadcrumbs ml-2" :class="{ bg: isInMediaFolder }">
+			<div v-else-if="$route.name === 'browse'" class="breadcrumbs ml-1" :class="{ bg: isInMediaFolder }">
 				<Button btn-blur-hover @click="() => queryPathStore.goToAncestor(queryPathStore.rootLibrary!)" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.rootLibrary }}</button>
 				<template v-if="hiddenBreadcrumbs.length > 0">
 					<i class="pi pi-angle-right opacity-50" />
@@ -117,35 +115,37 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 						variant="text"
 						btn-blur-hover
 						:severity="($route?.query?.path as any)?.endsWith(encodeMediaPath(item.folderName)) ? 'contrast' : 'secondary'"
+						class="text-ellipsis"
 					>
 						{{ item.label }}
 					</button>
 				</template>
 			</div>
 
-			<div class="flex-grow-1 flex justify-content-end">
-				<Button
-					btn-blur-hover
-					btn-drop-shadow
-					v-if="queryPathStore.currentPath && useUserStore().currentUser.isOwner"
-					text
-					size="small text-5xl"
-					:severity="useMobileNav ? 'contrast' :'secondary'"
-					@click="sharingModal?.open"
-				>
-					<template #icon><i class="pi pi-users text-xl" /></template>
-				</Button>
+			<div class="flex-grow-1" />
 
-			</div>
+			<Button
+				btn-blur-hover
+				btn-drop-shadow
+				v-if="queryPathStore.currentPath && useUserStore().currentUser.isOwner && (!useScreenStore().isSkinnyScreen || expandMobileNav)"
+				text
+				size="small text-5xl"
+				severity="contrast"
+				class="flex-shrink-0"
+				@click="sharingModal?.open"
+			>
+				<template #icon><i class="pi pi-users text-xl" /></template>
+			</Button>
 
 			<div v-if="useMobileNav && expandMobileNav">
 				<Button
 					variant="text"
 					severity="contrast"
+					icon="pi pi-times"
+					btn-blur-hover
+					btn-drop-shadow
 					@click="() => mobileTrigger?.close()"
-				>
-					<i class="pi pi-times" />
-				</Button>
+				/>
 			</div>
 
 			<div>

@@ -221,7 +221,7 @@ body {
 		backdrop-filter: blur(15px);
 
 		.p-tieredmenu-item:not(.p-disabled) > .p-tieredmenu-item-content:hover, .p-select-option:not(.p-select-option-selected):not(.p-disabled).p-focus {
-			background: transparentize($color: #059669, $amount: .3) !important;
+			background: transparentize($color: #10b981, $amount: .3) !important;
 		}
 	}
 

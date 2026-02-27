@@ -252,7 +252,8 @@ function formatRuntime(minutes: number) {
 	}
 
 	.feed-row-items-list {
-		padding: 10px var(--padding);
+		padding: 5px;
+		padding-left: var(--padding);
 		display: flex;
 		gap: 5px;
 	}
