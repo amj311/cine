@@ -29,8 +29,6 @@ admin.initializeApp(firebaseConfig);
 export const sessionAuthMiddleware = async (otofbt: string | false, req: Request, res: Response, next: NextFunction) => {
 	try {
 		if (!otofbt) {
-			console.log('no token', req.path)
-			// Send 401 for no auth
 			return res.status(401).send();
 		}
 
