@@ -427,7 +427,7 @@ const imageError = ref('');
 				<div style="position: absolute; inset: -6% -31% -36% -27%;">
 					<img src="@/assets/square-book-3d-trans.png"" class="w-full" style="object-fit: contain; width: 100%; height: 100%; user-select: none;" />
 				</div>
-				<div style="position: absolute; aspect-ratio: 1; top: 0%; right: 10%; bottom: -2%; perspective: 1550px;">
+				<div style="position: absolute; aspect-ratio: 1; top: 0%; right: 9.5%; bottom: -2%; perspective: 1550px;">
 					<div
 						class="relative overflow-hidden"
 						v-if="libraryItem?.cover && !imageError"
@@ -439,7 +439,7 @@ const imageError = ref('');
 							:src="useApiStore().resolve(libraryItem?.cover)" style="inset: 0; width: 100%; aspect-ratio: 1;"
 							@error="imageError = 'Failed to load cover'"
 						/>
-						<div class="book-texture absolute" style="inset: 0px; background-image: linear-gradient(to right, transparent 4%, #fff3 5%, transparent 6%), linear-gradient(to right, transparent 1%, #0008 4%, transparent 5%); box-shadow: inset 3px 3px 2px 0px #fff3, inset -2px -2px 1px 0px #0005;" />
+						<div class="book-texture absolute" style="inset: 0px; background-image: linear-gradient(to right, transparent 1%, rgba(0, 0, 0, 0.533) 4%, transparent 5%), linear-gradient(to right, transparent 4%, rgba(255, 255, 255, 0.1) 6%, transparent 9%); box-shadow: inset 3px 3px 2px 0px #fff3, inset -2px -2px 1px 0px #0005;" />
 					</div>
 				</div>
 			</div>
