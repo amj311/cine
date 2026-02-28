@@ -124,7 +124,8 @@ function doFormSubmit() {
  * CODE LOGIN
  */
 const quickCode = ref('');
-const validateCodeQr = computed(() => quickCode.value ? getQrUrl(`https://cine.simplyoliveapps.com/validate-signin-code?code=${quickCode.value}`) : '');
+const validateUrl = computed(() => `web+oliveplex://validate-signin-code?code=${quickCode.value}`);
+const validateCodeQr = computed(() => quickCode.value ? getQrUrl(validateUrl.value) : '');
 // const validateCodeQr = computed(() => quickCode.value ? getQrUrl(location.origin + `/validate-signin-code?code=${quickCode.value}`) : '');
 let checkCodeTimer = 0;
 let discontinueTimer = 0;
@@ -361,7 +362,7 @@ onBeforeUnmount(() => {
 				</div>
 				<div class="p-3">
 					<div class="flex-center-all w-full">
-						<img :src="validateCodeQr" class="border-round-xl" style="border: 1em solid #fff" />
+						<a target="_blank" :href="validateUrl"><img :src="validateCodeQr" class="border-round-xl" style="border: 1em solid #fff" /></a>
 					</div>
 				</div>
 			</div>

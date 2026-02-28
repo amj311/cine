@@ -11,5 +11,11 @@
             "src": "/public/Popcorn-Emoji-512.png",
             "sizes": "512x512"
         }
-    ]
+    ],
+	"protocol_handlers": [
+		{
+			"protocol": "web+oliveplex",
+			"url": "/protocol-handler-page?path=%s"
+		}
+	]
 }

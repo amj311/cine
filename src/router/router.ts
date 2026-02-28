@@ -29,6 +29,11 @@ const router = createRouter({
 			name: 'ValidateSigninCode',
 			component: () => import('@/views/ValidateSigninCode.vue'),
 		},
+		{
+			path: '/protocol-handler-page',
+			name: 'ProtocolHandler',
+			component: () => import('@/views/ProtocolHandler.vue'),
+		},
 	],
 	scrollBehavior: (to, from) => {
 		if (to.path === from.path) {

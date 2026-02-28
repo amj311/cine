@@ -83,8 +83,9 @@ const showNavbar = computed(() => {
 	<AppBackground />
 	<div class="dark-app app-wrapper" :style="{ maxHeight: '100%', height: '100%', overflowY: 'hidden' }">
 		<template v-if="isInitializing || apiStore.isInitializing || !useUserStore().hasLoadedSessionData">
-			<div id="longLoading" class="flex-col-center gap-7 text-3xl">
+			<div id="longLoading" class="flex-col-center gap-5 text-4xl">
 				<Logo />
+				<br />
 				<i class="pi pi-spinner pi-spin" />
 			</div>
 		</template>
