@@ -2,7 +2,7 @@
 	setup
 	lang="ts"
 >
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useBackgroundStore } from '@/stores/background.store';
 import { useApiStore } from '@/stores/api.store';
 import { useWatchProgressStore, type WatchProgress } from '@/stores/watchProgress.store';
@@ -417,30 +417,46 @@ const menuItems = [{
 	},
 }]
 
+const imageLoaded = ref(false);
 const imageError = ref('');
+function loadImage() {
+	imageLoaded.value = false;
+	imageError.value = '';
+	const img = document.createElement('img');
+	img.src = useApiStore().resolve(props.libraryItem?.cover);
+	img.onerror = () => imageError.value = 'Error';
+	img.onload = () => imageLoaded.value = true;
+}
+watch(() => useApiStore().resolve(props.libraryItem?.cover), loadImage, { immediate: true });
+
 </script>
 
 <template>
 	<div class="album-page">
 		<div class="top-wrapper my-3">
 			<div class="poster-wrapper relative" style="aspect-ratio: 1; user-select: none;">
-				<div style="position: absolute; inset: -6% -31% -36% -27%;">
-					<img src="@/assets/square-book-3d-trans.png" class="w-full" style="object-fit: contain; width: 100%; height: 100%; user-select: none;" />
-				</div>
-				<div style="position: absolute; aspect-ratio: 1; top: 0%; right: 9.5%; bottom: -2%; perspective: 1550px;">
-					<div
-						class="relative overflow-hidden"
-						v-if="libraryItem?.cover && !imageError"
-						:src="useApiStore().resolve(libraryItem?.cover)"
-						style="width: 100%; aspect-ratio: 1; transform: rotateY(-31deg); transform-origin: right center; border-radius: 1%;"
-					>
-						<img
-							class="absolute"
-							:src="useApiStore().resolve(libraryItem?.cover)" style="inset: 0; width: 100%; aspect-ratio: 1;"
-							@error="imageError = 'Failed to load cover'"
-						/>
-						<div class="book-texture absolute" style="inset: 0px; background-image: linear-gradient(to right, transparent 1%, rgba(0, 0, 0, 0.533) 4%, transparent 5%), linear-gradient(to right, transparent 4%, rgba(255, 255, 255, 0.1) 6%, transparent 9%); box-shadow: inset 3px 3px 2px 0px #fff3, inset -2px -2px 1px 0px #0005;" />
+				<template v-if="imageLoaded">
+					<div style="position: absolute; inset: -6% -31% -36% -27%;">
+						<img src="@/assets/square-book-3d-trans.png" class="w-full" style="object-fit: contain; width: 100%; height: 100%; user-select: none;" />
 					</div>
+					<div style="position: absolute; aspect-ratio: 1; top: 0%; right: 9.5%; bottom: -2%; perspective: 1550px;">
+						<div
+							class="relative overflow-hidden"
+							v-if="libraryItem?.cover && !imageError"
+							:src="useApiStore().resolve(libraryItem?.cover)"
+							style="width: 100%; aspect-ratio: 1; transform: rotateY(-31deg); transform-origin: right center; border-radius: 1%;"
+						>
+							<img
+								class="absolute"
+								:src="useApiStore().resolve(libraryItem?.cover)" style="inset: 0; width: 100%; aspect-ratio: 1;"
+								@error="imageError = 'Failed to load cover'"
+							/>
+							<div class="book-texture absolute" style="inset: 0px; background-image: linear-gradient(to right, transparent 1%, rgba(0, 0, 0, 0.533) 4%, transparent 5%), linear-gradient(to right, transparent 4%, rgba(255, 255, 255, 0.1) 6%, transparent 9%); box-shadow: inset 3px 3px 2px 0px #fff3, inset -2px -2px 1px 0px #0005;" />
+						</div>
+					</div>
+				</template>
+				<div v-else class="absolute h-full w-full flex-center-all">
+					<i class="pi pi-spin pi-spinner" />
 				</div>
 			</div>
 			<div class="flex flex-column align-items-center gap-2 relative">

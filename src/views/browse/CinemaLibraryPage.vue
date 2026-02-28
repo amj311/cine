@@ -198,8 +198,8 @@ const letterGroups = computed(() => {
 <style scoped lang="scss">
 
 .card-wrapper {
-	width: min(min(7rem, 19vh), 20vw);
-	min-width: min(min(7rem, 19vh), 20vw);
+	width: min(9rem, 19vh, 20vw);
+	flex-shrink: 0;
 }
 
 .categories-row {

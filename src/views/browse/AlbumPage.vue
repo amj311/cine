@@ -2,7 +2,7 @@
 	setup
 	lang="ts"
 >
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useBackgroundStore } from '@/stores/background.store';
 import { useApiStore } from '@/stores/api.store';
 import LibraryItemActions from '@/components/LibraryItemActions.vue';
@@ -117,23 +117,41 @@ function playNextTrack() {
 	playTrack(nextTrack);
 }
 
+
+const imageLoaded = ref(false);
 const imageError = ref('');
+function loadImage() {
+	imageLoaded.value = false;
+	imageError.value = '';
+	const img = document.createElement('img');
+	img.src = useApiStore().resolve(props.libraryItem?.cover);
+	img.onerror = () => imageError.value = 'Error';
+	img.onload = () => imageLoaded.value = true;
+}
+watch(() => useApiStore().resolve(props.libraryItem?.cover), loadImage, { immediate: true });
+
 </script>
 
 <template>
 	<div class="album-page">
 		<div class="top-wrapper my-3">
 			<div class="poster-wrapper relative" style="aspect-ratio: 1.16; user-select: none;">
-				<div style="position: absolute; z-index: 2; inset: 0 0 0 0;">
-					<img src="@/assets/cd-case.png" class="w-full relative" style="object-fit: contain; width: 100%; height: 100%; user-select: none;" />
-				</div>
-				<div style="position: absolute; z-index: 1; inset: 2px 2px 3px 9.5%; background: #222;">
-					<img
-						v-if="libraryItem?.cover && !imageError"
-						:src="useApiStore().resolve(libraryItem?.cover)"
-						style="object-fit: contain; width: 100%; height: 100%"
-						@error="imageError = 'Failed to load cover'"
-					/>
+				<template v-if="imageLoaded">
+					<div style="position: absolute; z-index: 2; inset: 0 0 0 0;">
+						<img src="@/assets/cd-case.png" class="w-full relative" style="object-fit: contain; width: 100%; height: 100%; user-select: none;" />
+					</div>
+					<div style="position: absolute; z-index: 1; inset: 2px 2px 3px 9.5%; background: #222;">
+						<img
+							v-if="libraryItem?.cover && !imageError"
+							:src="useApiStore().resolve(libraryItem?.cover)"
+							style="object-fit: contain; width: 100%; height: 100%"
+							@error="imageError = 'Failed to load cover'"
+							@load="imageLoaded = true"
+						/>
+					</div>
+				</template>
+				<div v-else class="absolute h-full w-full flex-center-all">
+					<i class="pi pi-spin pi-spinner" />
 				</div>
 			</div>
 			<div class="flex flex-column align-items-center gap-2">
