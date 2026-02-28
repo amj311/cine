@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import express, { Response } from 'express';
+import 'express-async-errors';
 const app = express();
 
 import cors from 'cors';
@@ -34,6 +35,7 @@ const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
 
 const corsOptions: cors.CorsOptions = {
 	origin: (origin: string, callback: any) => {
+		// console.log(origin, allowedOrigins)
 		// Allow non-browser clients or same-origin requests (no Origin header)
 		if (!origin) {
 			return callback(null, true);
@@ -112,45 +114,18 @@ app.use((req: any, res: any, next: any) => {
 
 app.get('/health', (_, res) => res.sendStatus(200));
 
-// authentication
-app.post('/api/auth', async (req, res) => {
-	const { emailHash, passHash } = req.body;
-	let token = req.headers.authorization;
-	if (!token) {
-		token = await loginOwnerUser(emailHash, passHash);
-	}
-	if (!token) {
-		return res.status(401).send();
-	}
-	res.cookie('otofbt', token, { signed: true });
-	res.send({
-		email: getSessionEmail(),
-		isOwner: isOwner(),
-	});
-})
 
-app.post('/api/auth/signout', async (req, res) => {
-	const otofbt = req.signedCookies?.otofbt;
-	await logoutOwnerUser(otofbt);
-	res.clearCookie('otofbt', { signed: true, path: '/' });
-	res.send();
-})
+// authentication routes
+import authRoute from './routes/auth.route'
+app.use('/api/auth', authRoute);
+import { getSession, getSessionEmail, SessionService } from './services/SessionService';
 
-app.use('/api', (req, res, next) => {
-	let otofbt = req.signedCookies?.otofbt;
-	sessionAuthMiddleware(otofbt, req, res, next);
-})
+// authentication middleware, gates all other endpoints
+app.use('/api/*', SessionService.sessionAuthMiddleware)
 
 app.use('/api/session', (req, res, next) => {
-	res.send({
-		email: getSessionEmail(),
-		isOwner: isOwner(),
-	})
+	res.send(getSession())
 })
-
-
-// get login status
-
 
 app.use('/api/*', async (req, res, next) => {
 	let path = '';
@@ -190,7 +165,6 @@ app.use('/api/loan', loanRoute);
 
 import { decodeMediaPath, safeParseInt } from './utils/miscUtils';
 import { JobService } from './services/JobService';
-import { getSessionEmail, isOwner, loginOwnerUser, logoutOwnerUser, sessionAuthMiddleware, sessionStore } from './services/SessionService';
 import { SharingService } from './services/SharingService';
 import { LoanService } from './services/LoanService';
 
@@ -849,7 +823,11 @@ app.get('/api/subtitles', async (req, res) => {
 		}
 		const probe = await ProbeService.getProbeData(fullPath);
 
-		const subtitleStream = probe?.full.streams[index];
+		const parsedIndex = safeParseInt(index);
+		if (!parsedIndex) {
+			throw new Error('No valid index');
+		}
+		const subtitleStream = probe?.full.streams[parsedIndex];
 
 		if (subtitleStream && (subtitleStream.codec_type === 'subtitle' || subtitleStream.tags?.handler_name === 'SubtitleHandler')) {
 			if (subtitleStream.codec_name === 'mov_text') {
@@ -875,7 +853,7 @@ app.get('/api/subtitles', async (req, res) => {
 								}
 							});
 						})
-						.on('error', (err) => {
+						.on('error', (err: any) => {
 							console.error("Error while extracting subtitles:", err);
 							res.status(500).send("Error extracting subtitles");
 						});
@@ -915,7 +893,7 @@ app.get('/api/subtitles', async (req, res) => {
 								res.status(500).send("Error during OCR processing");
 							}
 						})
-						.on('error', (ffmpegError) => {
+						.on('error', (ffmpegError: any) => {
 							console.error("Error while extracting VobSub subtitles:", ffmpegError);
 							res.status(500).send("Error extracting VobSub subtitles");
 						})
@@ -947,7 +925,7 @@ app.get('/api/subtitles', async (req, res) => {
 								}
 							});
 						})
-						.on('error', (err) => {
+						.on('error', (err: any) => {
 							console.error("Error while extracting subtitles:", err);
 							res.status(500).send("Error extracting subtitles");
 						});
@@ -1005,7 +983,7 @@ app.use('/api/thumb', (req, res) => {
 			const thumbnailBuffer = await ThumbnailService.streamThumbnail(resolvedPath, safeParseInt(width), safeParseInt(seek));
 			safeRes(res)?.setHeader('Content-Type', 'image/jpeg');
 			safeRes(res)?.send(thumbnailBuffer);
-		} catch (err) {
+		} catch (err: any) {
 			console.error("Error while generating thumbnail for image:", relativePath);
 			console.error(err.message);
 			safeRes(res)?.status(500).send("Error generating thumbnail");

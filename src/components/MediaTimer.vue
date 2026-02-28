@@ -7,6 +7,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import DurationInput from './utils/DurationInput.vue';
 import { msToTimestamp } from '@/utils/miscUtils';
 import ToggleSwitch from '@/components/utils/ToggleSwitch.vue';
+import { getQrUrl } from '@/utils/qr';
 
 const { mediaEl, inPlayer = false } = defineProps<{
 	mediaEl?: HTMLMediaElement;
@@ -216,7 +217,7 @@ const strokeWidth = computed(() => inPlayer ? 25 : 10);
 
 const showPhoneQR = ref(false);
 const remoteUrl = computed(() => location.origin + '/remote');
-const qrUrl = computed(() => "https://api.qrserver.com/v1/create-qr-code/?data=" + encodeURIComponent(remoteUrl.value))
+const qrUrl = computed(() => getQrUrl(remoteUrl.value))
 </script>
 
 <template>
@@ -336,7 +337,8 @@ const qrUrl = computed(() => "https://api.qrserver.com/v1/create-qr-code/?data="
 			<img
 				:src='qrUrl'
 				id="remoteQR"
-				class="w-full max-w-15rem square"
+				class="w-full max-w-15rem square border-round-xl"
+				style="border: 1em solid #fff"
 			/>
 		</div>
 		

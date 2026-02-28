@@ -154,7 +154,7 @@ function activate() {
 		</div>
 		<div v-if="title || subtitle" class="mt-1 p-1">
 			<div v-if="title" class="title">{{ hideSurprise ? (surprise?.title || 'Surprise!') : title }}</div>
-			<div v-if="subtitle" class="subtitle" style="opacity: .7">{{ hideSurprise ? (canRevealSurprise ? 'Open now!' : 'Coming soon') : subtitle }}</div>
+			<div v-if="subtitle" class="subtitle text-capitalize" style="opacity: .7">{{ hideSurprise ? (canRevealSurprise ? 'Open now!' : 'Coming soon') : subtitle }}</div>
 		</div>
 	</div>
 

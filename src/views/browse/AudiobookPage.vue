@@ -444,14 +444,14 @@ watch(() => useApiStore().resolve(props.libraryItem?.cover), loadImage, { immedi
 							class="relative overflow-hidden"
 							v-if="libraryItem?.cover && !imageError"
 							:src="useApiStore().resolve(libraryItem?.cover)"
-							style="width: 100%; aspect-ratio: 1; transform: rotateY(-31deg); transform-origin: right center; border-radius: 1%;"
+							style="width: 100%; aspect-ratio: 1; transform: rotateY(-31deg); transform-origin: right center; border-radius: 1% 2% 2% 1%;"
 						>
 							<img
 								class="absolute"
-								:src="useApiStore().resolve(libraryItem?.cover)" style="inset: 0; width: 100%; aspect-ratio: 1;"
+								:src="useApiStore().resolve(libraryItem?.cover)" style="inset: -1px; width: calc(100% + 2px); aspect-ratio: 1;"
 								@error="imageError = 'Failed to load cover'"
 							/>
-							<div class="book-texture absolute" style="inset: 0px; background-image: linear-gradient(to right, transparent 1%, rgba(0, 0, 0, 0.533) 4%, transparent 5%), linear-gradient(to right, transparent 4%, rgba(255, 255, 255, 0.1) 6%, transparent 9%); box-shadow: inset 3px 3px 2px 0px #fff3, inset -2px -2px 1px 0px #0005;" />
+							<div class="book-texture absolute" style="inset: 0px; background-image: linear-gradient(to right, transparent 1%, rgba(0, 0, 0, 0.4) 4%, transparent 5%), linear-gradient(to right, transparent 4%, rgba(255, 255, 255, 0.2) 6%, transparent 9%); box-shadow: inset 3px 3px 2px 0px #fff3, inset -4px -2px 2px 0px #0005;" />
 						</div>
 					</div>
 				</template>

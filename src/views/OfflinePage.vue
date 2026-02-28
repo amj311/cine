@@ -76,7 +76,7 @@ function changeHostUrl(host: Host) {
 		<h3>Failed to connect to any servers!</h3>
 		<div class="flex flex-column gap-2" style="width: 100%; max-width: 25rem;">
 			<div
-				class="host-card flex gap-3 align-items-center bg-soft p-3 w-full border-round cursor-pointer"
+				class="host-card bg-blur flex gap-3 align-items-center p-3 w-full border-round cursor-pointer"
 				v-for="host in apiStore.availableHosts"
 				:key="host.hostname"
 				@click="attemptHostConnection(host)"

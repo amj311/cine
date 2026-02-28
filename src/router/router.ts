@@ -24,6 +24,11 @@ const router = createRouter({
 			name: 'remote',
 			component: () => import('@/views/RemoteControlView.vue'),
 		},
+		{
+			path: '/validate-signin-code',
+			name: 'ValidateSigninCode',
+			component: () => import('@/views/ValidateSigninCode.vue'),
+		},
 	],
 	scrollBehavior: (to, from) => {
 		if (to.path === from.path) {

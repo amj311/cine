@@ -117,8 +117,12 @@ const letterGroups = computed(() => {
 	<Scroll>
 		<div class="cinema-page mt-2 pl-3 flex flex-column gap-3">
 
-			<div class="filters flex justify-content-center">
+			<div class="filters flex-row-center flex-wrap gap-2 pr-2">
 				<SelectButton v-model="displayMode" :options="['Categories', 'A - Z']" size="large" />
+				<template v-if="displayMode === 'A - Z'">
+					<div class="flex-grow-1" />
+					<CinemaItemsFilter ref="filter" :items="cinemaItems" />
+				</template>
 			</div>
 
 			<div v-if="displayMode === 'Categories'" class="categories flex flex-column gap-1">
@@ -158,11 +162,6 @@ const letterGroups = computed(() => {
 			</div>
 
 			<template v-if="displayMode === 'A - Z'">
-
-				<div class="flex justify-content-end">
-					<CinemaItemsFilter ref="filter" :items="cinemaItems" />
-				</div>
-
 				<div class="flex flex-wrap gap-3">
 					<div
 						class="letter-group"

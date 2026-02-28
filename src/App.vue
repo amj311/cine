@@ -89,12 +89,12 @@ const showNavbar = computed(() => {
 			</div>
 		</template>
 
-		<template v-else-if="!useUserStore().isLoggedIn">
-			<LoginPage />
-		</template>
-
 		<template v-else-if="!apiStore.selectedHost">
 			<OfflinePage />
+		</template>
+
+		<template v-else-if="!useUserStore().isLoggedIn">
+			<LoginPage />
 		</template>
 
 		<template v-else>

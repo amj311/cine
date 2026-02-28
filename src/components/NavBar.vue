@@ -15,6 +15,7 @@ import { AuthService } from '@/services/AuthService';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import SharingModal from './SharingModal.vue';
 import NavTrigger from './utils/NavTrigger/NavTrigger.vue';
+import router from '@/router/router';
 
 const navStore = useAppNavigationStore();
 const queryPathStore = useQueryPathStore();
@@ -84,7 +85,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 					@click="() => mobileTrigger?.open()"
 					style="max-width: 100%;"
 				>
-					<div class="text-ellipsis">{{ removeExtensionsFromFileName(queryPathStore.currentFile || '') }}</div>
+					<div class="text-ellipsis" v-if="queryPathStore.currentFile">{{ removeExtensionsFromFileName(queryPathStore.currentFile || '') }}</div>
 					<i class="pi pi-angle-down" />
 				</Button>
 			</div>
@@ -152,6 +153,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 				<DropdownMenu :items="[
 					{ label: useUserStore().currentUser?.email, icon: 'pi pi-user', disabled: true },
 					{ label: 'Settings', icon: 'pi pi-cog', command: settingsModal?.open, },
+					{ label: 'Quick Login', icon: 'pi pi-unlock', command: () => router.push('/validate-signin-code'), },
 					{ label: 'Sign out', icon: 'pi pi-sign-out', command: AuthService.signOut },
 				]">
 					<div class="square w-2rem h-2rem border-circle overflow-hidden border-1 border-white-alpha-30 text-upper flex-center-all no-select bg-black-alpha-30 cursor-pointer">

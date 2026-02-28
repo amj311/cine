@@ -115,7 +115,7 @@ const showCustomBackgrounds = computed(() => {
 		right: 0;
 		bottom: 0;
 		background-size: cover;
-		background-position: top;
+		background-position: center 75%;
 		background-repeat: no-repeat;
 		background-image: url(@/assets/bg.jpg);
 		filter: blur(50px);
@@ -129,7 +129,7 @@ const showCustomBackgrounds = computed(() => {
 		right: 0;
 		bottom: 0;
 		background-color: var(--color-background);
-		opacity: 0.7;
+		opacity: 0.6;
 		z-index: -1;
 	}
 
