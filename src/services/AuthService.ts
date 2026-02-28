@@ -100,15 +100,11 @@ export const AuthService = {
 			// first try direct login
 			try {
 				// authenticate with server directly for LAN setup
-				const { data } = await useApiStore().api.post('/auth', {
+				await useApiStore().api.post('/auth', {
 					emailHash: SHA256(email),
 					passHash: SHA256(password),
 				});
-				this.info.push('signing in as owner');
-				this.setAuthUser({
-					email: data.email,
-					isOwner: data.isOwner,
-				});
+				await this.restoreActiveSession();
 				return;
 			}
 			catch { }

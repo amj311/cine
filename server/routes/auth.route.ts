@@ -21,7 +21,7 @@ route.post('', async (req, res) => {
 		return res.status(401).send();
 	}
 	setTokenCookie(res, token);
-	res.send(getSession());
+	res.send();
 })
 
 route.post('/signout', async (req, res) => {
