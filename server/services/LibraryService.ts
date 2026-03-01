@@ -32,6 +32,7 @@ type LibraryItemStratBase = Stratified<
 		listName: string,
 		sortKey: string,
 		imdbId?: string,
+		poster?: string,
 	},
 	{},
 	{
@@ -305,6 +306,9 @@ export class LibraryService {
 		const { name, year, imdbId } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
 
+		const posterFile = children.files.find(f => f.name.includes('poster.'));
+		const posterPath = posterFile ? '/media/' + posterFile.confirmedPath.relativePath : undefined;
+
 		// Take care of series and movies first
 		if (year) {
 			// Search for "Season" folders
@@ -321,6 +325,7 @@ export class LibraryService {
 					numSeasons: allSeasonFolders.length,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
+					poster: posterPath,
 				};
 			}
 
@@ -353,6 +358,7 @@ export class LibraryService {
 					movie: moviePlayable,
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
+					poster: posterPath,
 				};
 			}
 		}
@@ -379,6 +385,7 @@ export class LibraryService {
 					listName: firstTrackProbe?.album || name,
 					fileName: path.absolutePath,
 					chapterStrategy: isMb4b ? 'chapters' : 'tracks',
+					poster: posterPath,
 				}
 			}
 			else return {
@@ -396,6 +403,7 @@ export class LibraryService {
 				name: firstTrackProbe?.album || name,
 				listName: firstTrackProbe?.album || name,
 				fileName: path.absolutePath,
+				poster: posterPath,
 			};
 		}
 

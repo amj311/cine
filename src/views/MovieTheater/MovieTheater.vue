@@ -511,7 +511,7 @@ const loadSplashUrl = computed(() => {
 	if (playable.value?.type === 'extra') {
 		return useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaPath.value) + '?width=1200';
 	}
-	return currentEpisodeMetadata.value?.still_full || parentLibrary.value?.metadata?.background;
+	return currentEpisodeMetadata.value?.still_full || parentLibrary.value?.metadata?.background || parentLibrary.value?.poster;
 })
 
 

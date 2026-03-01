@@ -311,7 +311,7 @@ async function returnLoan() {
 				<div>
 					<div class="poster-wrapper">
 						<MediaCard
-							:imageUrl="metadata?.poster_full"
+							:imageUrl="libraryItem?.poster || metadata?.poster_full"
 							:progress="isSeries? undefined : resumable?.watchProgress"
 							:loading="isLoadingMetadata"
 						>

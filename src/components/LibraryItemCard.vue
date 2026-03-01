@@ -15,7 +15,7 @@ const props = defineProps<{
 		<template #default="{ metadata, isLoadingMetadata }">
 			<MediaCard
 				v-if="libraryItem.cinemaType === 'movie'"
-				:imageUrl="metadata?.poster_thumb"
+				:imageUrl="libraryItem.poster || metadata?.poster_thumb"
 				:aspectRatio="'tall'"
 				:title="libraryItem.name"
 				:subtitle="libraryItem.year"
@@ -30,7 +30,7 @@ const props = defineProps<{
 			<MediaCard
 				v-if="libraryItem.cinemaType === 'series'"
 				tvNavable
-				:imageUrl="metadata?.poster_thumb"
+				:imageUrl="libraryItem.poster || metadata?.poster_thumb"
 				:aspectRatio="'tall'"
 				:title="libraryItem.name"
 				:subtitle="`${libraryItem.numSeasons} Season${libraryItem.numSeasons.length ? 's' : ''}`"
@@ -45,7 +45,7 @@ const props = defineProps<{
 			<MediaCard
 				v-if="libraryItem.type === 'album' || libraryItem.type === 'audiobook'"
 				tvNavable
-				:imageUrl="libraryItem.cover_thumb"
+				:imageUrl="libraryItem.poster || libraryItem.cover_thumb"
 				:aspectRatio="'square'"
 				:title="libraryItem.title"
 				:subtitle="libraryItem.artist || libraryItem.author"
