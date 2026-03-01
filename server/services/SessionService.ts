@@ -46,10 +46,6 @@ async function checkFirebaseAuth(authToken: string) {
 }
 
 async function checkServerTokens(authToken: string) {
-	await authTokens.migrate(old => {
-		return { ...old.data, token: old.key }
-	})
-
 	// first delete all expired tokens
 	const allTokens = await authTokens.getAll();
 	for (const token of allTokens) {
