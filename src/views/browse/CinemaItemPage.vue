@@ -61,7 +61,7 @@ const isSeries = computed(() => props.libraryItem.cinemaType === 'series');
 
 
 function playVideo(path: string, startTime?: number) {
-	useMediaStore().playMedia(path, { start: startTime });
+	useMediaStore().playMedia(path, { startTime: startTime });
 }
 
 function formatRuntime(minutes: number) {

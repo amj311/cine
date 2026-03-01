@@ -6,7 +6,7 @@ export const useMediaStore = defineStore('Media', () => {
 	const router = useRouter();
 	const currentPath = ref(router.currentRoute?.value?.query.path || new URLSearchParams(location.search).get('path'));
 
-	function playMedia(relativePath: string, props: { start?: number } = {}) {
+	function playMedia(relativePath: string, props: { startTime?: number, restart?: boolean } = {}) {
 		if (!relativePath) {
 			return;
 		}
@@ -14,20 +14,24 @@ export const useMediaStore = defineStore('Media', () => {
 		currentPath.value = relativePath;
 		const isPlayRoute = router.currentRoute.value?.name === 'play';
 
+		const startTime = props.restart ? '0' : String(props.startTime || '');
+
+		const playParams = {
+			path: relativePath,
+			startTime,
+		}
+
 		if (isPlayRoute) {
 			history.replaceState(
 				{},
 				'',
-				router.currentRoute.value.path + '?' + new URLSearchParams({ ...(router.currentRoute.value.query || {}), path: relativePath }).toString(),
+				router.currentRoute.value.path + '?' + new URLSearchParams({ ...(router.currentRoute.value.query || {}), ...playParams }).toString(),
 			);
 		}
 		else {
 			router.push({
 				name: 'play',
-				query: {
-					path: relativePath,
-					startTime: props.start ?? undefined,
-				}
+				query: playParams,
 			})
 		}
 	}

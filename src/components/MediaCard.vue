@@ -39,7 +39,7 @@ function playVideo() {
 		return;
 	}
 	useMediaStore().playMedia(props.playSrc, {
-		start: ((props.progress?.percentage < 90 && props.progress?.time) || props.overrideStartTime) ?? undefined,
+		startTime: ((props.progress?.percentage < 90 && props.progress?.time) || props.overrideStartTime) ?? undefined,
 	})
 }
 

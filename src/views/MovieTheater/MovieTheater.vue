@@ -157,13 +157,7 @@ async function attemptAutoFullscreen() {
 }
 
 async function playMedia(pathToLoad: string, restart = false) {
-	useMediaStore().playMedia(pathToLoad);
-
-	nextTick(async () => {
-		if (!restart) {
-			await initialProgress();
-		}
-	})
+	useMediaStore().playMedia(pathToLoad, { restart });
 }
 
 
@@ -204,6 +198,7 @@ watch(() => mediaPath.value, async () => {
 	nextTick(async () => {
 		if (playerRef.value?.videoRef) {
 			await useScrubberStore().initForMedia(pathToLoad, playerRef.value.videoRef);
+			await initialProgress();
 		}
 	})
 }, {
