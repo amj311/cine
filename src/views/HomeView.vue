@@ -138,7 +138,7 @@ function formatRuntime(minutes: number) {
 												</MediaCard>
 												<MediaCard
 													v-else
-													:imageUrl="useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(item.libraryItem.playable.relativePath) + '?seek=' + item.watchProgress.time"
+													:imageUrl="item.isUpNext ? metadata?.background_thumb : useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(item.libraryItem.playable.relativePath) + '?seek=' + Math.max(5, item.watchProgress.time)"
 													:fallbackImage="item.libraryItem.playable.still_thumb || metadata?.background_thumb || metadata?.poster_thumb"
 													:imagePosition="'top'"
 													:playSrc="item.relativePath"
@@ -152,7 +152,7 @@ function formatRuntime(minutes: number) {
 													<template #fallbackIcon>🎞️</template>
 													<template #poster v-if="item.isUpNext">
 														<div class="h-full w-full flex align-items-end justify-content-start p-2">
-															<div class="border-round p-2 bg-gray-700">Up Next</div>
+															<div class="border-round p-2 bg-blur">Up Next</div>
 														</div>
 													</template>
 												</MediaCard>
