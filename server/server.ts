@@ -1028,6 +1028,9 @@ const server = app.listen(port, () => {
 	console.log(`Listening on port ${port}`);
 	console.log(`Process ID: ${process.pid}`);
 	console.log(`Node.js version: ${process.version}`);
+
+	// kick off library cache so users don't have to wait later
+	LibraryService.getFlatTree(DirectoryService.resolvePath('/')!).catch(console.error)
 });
 
 // Graceful shutdown handling
