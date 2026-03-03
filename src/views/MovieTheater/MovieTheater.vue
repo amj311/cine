@@ -341,22 +341,31 @@ watch(() => playerProgress.value?.time, (old, newTime) => {
 	if (!playerProgress.value || !playable.value) {
 		return;
 	}
-	const endScreenPercentages = {
-		'movie': 99, // would like this to be smaller, but older movies with credits at the beginning go to the very very end
-		'episodeFile': 98, // based on the latest credit start time in our collection
+	const endCardPercentages = {
+		'movie': 95,
+		'episodeFile': 97,
 	}
-	const noEndScreenThreshold_s = 10; // if there's not much time left I'd prefer to just stick around to the end
+	const endScreenPercentages = {
+		'movie': 100,
+		'episodeFile': 98.5,
+	}
+	const noEndScreenThreshold_s = 15; // if there's not much time left I'd prefer to just stick around to the end
 
-	if (Boolean((playerProgress.value.percentage >= endScreenPercentages[playable.value.type]))) {
+	if (Boolean((playerProgress.value.percentage >= endCardPercentages[playable.value.type]))) {
 		showEndingCards.value = true;
-
-		const timeLeft = playerProgress.value.duration - playerProgress.value.time;
-		if (!userLeftEndScreen.value && timeLeft > noEndScreenThreshold_s) {
-			goToEndScreen();
-		}
 	}
 	else {
 		showEndingCards.value = false;
+	}
+
+	const timeLeft = playerProgress.value.duration - playerProgress.value.time;
+	console.log(timeLeft, playerProgress.value.percentage)
+	if (
+		!userLeftEndScreen.value
+		&& timeLeft > noEndScreenThreshold_s
+		&& Boolean((playerProgress.value.percentage >= endScreenPercentages[playable.value.type]))
+	) {
+		goToEndScreen();
 	}
 });
 
