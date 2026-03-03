@@ -80,7 +80,7 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 		localStorage.removeItem(key);
 	}
 
-	function createProgress(currentTime: number, duration: number, sub?: SubWatchProgress) {
+	function createProgress(currentTime: number, duration: number, sub?: SubWatchProgress): WatchProgress {
 		return {
 			time: currentTime,
 			duration: duration,

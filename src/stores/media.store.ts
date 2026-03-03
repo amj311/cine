@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 export const useMediaStore = defineStore('Media', () => {
 	const router = useRouter();
 	const currentPath = ref(router.currentRoute?.value?.query.path || new URLSearchParams(location.search).get('path'));
+	const updated = ref(0);
 
 	function playMedia(relativePath: string, props: { startTime?: number, restart?: boolean } = {}) {
 		if (!relativePath) {
@@ -34,9 +35,12 @@ export const useMediaStore = defineStore('Media', () => {
 				query: playParams,
 			})
 		}
+
+		updated.value++;
 	}
 
 	return {
+		updated,
 		currentPath,
 		playMedia,
 	}

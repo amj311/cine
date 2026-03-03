@@ -83,7 +83,7 @@ defineExpose({
 	getProgress() {
 		if (!videoRef.value) {
 			console.warn("Video element is not rendered yet")
-			return;
+			return null;
 		}
 		return useWatchProgressStore().createProgress(videoRef.value.currentTime, videoRef.value.duration);
 	},
@@ -666,7 +666,7 @@ function goToNextChapter() {
 
 	.cards {
 		position: absolute;
-		bottom: 1rem;
+		bottom: 2rem;
 		right: 1rem;
 		transition: bottom 500ms;
 

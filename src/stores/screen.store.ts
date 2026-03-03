@@ -6,6 +6,7 @@ import { useSettingsStore } from './settings.store';
 type Direction = 'up' | 'down' | 'left' | 'right';
 
 export const focusAreaClass = 'tvNavigationFocusArea';
+export const noFocusClass = 'tvNavigationNoFocus';
 
 
 export const useScreenStore = defineStore('Screen', () => {
@@ -420,6 +421,7 @@ export const useScreenStore = defineStore('Screen', () => {
 				}
 				currentElement = currentElement.parentElement;
 			} while (currentElement);
+
 			focusTargets.set(el, {
 				element: el,
 				focusGroupStack: scrollableStack,
@@ -635,5 +637,9 @@ export const useScreenStore = defineStore('Screen', () => {
 		tvNavEnabled,
 
 		setFocus,
+		updateFocus() {
+			gatherFocusTargets();
+			findFocus();
+		}
 	}
 })

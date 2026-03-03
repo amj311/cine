@@ -161,6 +161,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 
+.absolute-full {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
 
 
 :root {
@@ -186,7 +194,6 @@ h1, h2, h3, h4, h5, h6 {
 [tv-focus] {
 	outline: 2px solid var(--color-contrast) !important;
 	outline-offset: 2px !important;
-	filter: drop-shadow(0 0 5px #000);
 	border-radius: .35rem;
 	z-index: 9999;
 }
@@ -230,7 +237,7 @@ body {
 
 	.bg-blur {
 		background: #3334 !important;
-		backdrop-filter: blur(20px) !important;
+		backdrop-filter: blur(10px) !important;
 	}
 
 

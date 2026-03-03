@@ -7,12 +7,12 @@ import VideoPlayer from '@/components/VideoPlayer.vue'
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useRoute, useRouter } from 'vue-router';
-import { useScreenStore } from '@/stores/screen.store';
+import { focusAreaClass, noFocusClass, useScreenStore } from '@/stores/screen.store';
 import { useBackgroundStore } from '@/stores/background.store';
 import { usePageTitleStore } from '@/stores/pageTitle.store';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
 import MediaCard from '@/components/MediaCard.vue';
-import { useWatchProgressStore } from '@/stores/watchProgress.store';
+import { useWatchProgressStore, type WatchProgress } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
 import { useApiStore } from '@/stores/api.store';
 import { useScrubberStore } from './scrubber.store';
@@ -35,10 +35,12 @@ const didAutoFullscreen = ref(false);
 const hasLoaded = ref(false);
 const hasEnded = ref(false);
 const showEndScreen = ref(false);
-const playerProgress = ref<any>(null); // WatchProgress type
+const userLeftEndScreen = ref(false);
+const endScreenHasContent = computed(() => Boolean(nextEpisode.value || parentExtrasToShow.value || seasonExtrasToShow.value));
+const playerProgress = ref<WatchProgress | null>(null); // WatchProgress type
 
 const showPlayer = computed(() => {
-	return Boolean(mediaPath.value);
+	return Boolean(mediaPath.value && !hasEnded.value);
 });
 
 const isLoadingLibrary = ref(false);
@@ -79,14 +81,16 @@ async function initialProgress() {
 	if (!mediaPath.value) {
 		return;
 	}
-	const query = route?.query;
-	if (query.startTime) {
-		playerRef.value?.setTime(Number(query.startTime));
+	const urlParams = new URL(location.href).searchParams;
+	const queryTime = new URL(location.href).searchParams.get('startTime');
+	if (queryTime) {
+		playerRef.value?.setTime(Number(queryTime));
+		urlParams.delete('startTime');
 		// remove route start time
 		history.replaceState(
 			{},
 			'',
-			route.path + '?' + new URLSearchParams({ ...(route.query || {}), startTime: '' }).toString(),
+			route.path + '?' + urlParams.toString(),
 		)
 		return;
 	}
@@ -100,7 +104,7 @@ async function initialProgress() {
 				}
 			})
 			if (data.data) {
-				playerRef.value?.setTime(data.data.time)
+				watchProgress = data.data;
 			}
 		}
 		catch (e) {
@@ -109,7 +113,7 @@ async function initialProgress() {
 	}
 
 	if (watchProgress && watchProgress.time < watchProgress.duration) {
-		playerRef.value?.setTime(playable.value.watchProgress.time);
+		playerRef.value?.setTime(watchProgress.time);
 		return;
 	}
 }
@@ -161,22 +165,20 @@ async function playMedia(pathToLoad: string, restart = false) {
 }
 
 
-watch(() => mediaPath.value, async () => {
+watch(() => useMediaStore().updated, async () => {
 	if (!mediaPath.value) {
 		return;
 	}
 	const pathToLoad = mediaPath.value;
-	// history.replaceState(
-	// 	{},
-	// 	'',
-	// 	router.currentRoute.value.path + '?' + new URLSearchParams({ ...(router.currentRoute.value.query || {}), path: pathToLoad }).toString(),
-	// );
 	
+	// RESET ALL THE THINGS
 	playerRef.value?.setTime(0);
-	playerProgress.value = playerRef.value?.getProgress();
+	playerProgress.value = playerRef.value?.getProgress() || null;
+	if (playerRef.value?.videoRef) playerRef.value.videoRef.currentTime = 0;
 	hasEnded.value = false;
 	hasLoaded.value = false;
-	showEndScreen.value = false;
+	userLeftEndScreen.value = false;
+	leaveEndScreen(false);
 
 	await loadMediaData(pathToLoad);
 
@@ -199,6 +201,7 @@ watch(() => mediaPath.value, async () => {
 		if (playerRef.value?.videoRef) {
 			await useScrubberStore().initForMedia(pathToLoad, playerRef.value.videoRef);
 			await initialProgress();
+			playerRef.value?.videoRef.play();
 		}
 	})
 }, {
@@ -293,8 +296,8 @@ async function onEnd() {
 	if (willAutoplay.value) {
 		return playNext();
 	}
-	else if (nextEpisode.value || parentExtrasToShow.value || seasonExtrasToShow.value) {
-		showEndScreen.value = true;
+	else if (endScreenHasContent.value) {
+		goToEndScreen();
 	}
 	else {
 		carefulBackNav();
@@ -305,14 +308,15 @@ const PROGRESS_INTERVAL = 1000 * 5;
 let lastPostTime = 0;
 const progressUpdateInterval = setInterval(async () => {
 	const lastProgressTime = playerProgress.value?.time;
-	playerProgress.value = playerRef.value?.getProgress();
+	playerProgress.value = playerRef.value?.getProgress() || null;
 	if (!playerProgress.value) {
 		return;
 	}
+	
 	if (lastProgressTime === playerProgress.value?.time) {
 		return;
 	}
-
+	
 	// Only post to server for certain intervals
 	const POST_INTERVAL = 30; // Progress time is in seconds
 	if (!lastPostTime || Math.abs(playerProgress.value?.time - lastPostTime) > POST_INTERVAL) {
@@ -333,6 +337,28 @@ const progressUpdateInterval = setInterval(async () => {
 	}
 }, PROGRESS_INTERVAL);
 
+watch(() => playerProgress.value?.time, (old, newTime) => {
+	if (!playerProgress.value || !playable.value) {
+		return;
+	}
+	const endScreenPercentages = {
+		'movie': 99, // would like this to be smaller, but older movies with credits at the beginning go to the very very end
+		'episodeFile': 98, // based on the latest credit start time in our collection
+	}
+	const noEndScreenThreshold_s = 10; // if there's not much time left I'd prefer to just stick around to the end
+
+	if (Boolean((playerProgress.value.percentage >= endScreenPercentages[playable.value.type]))) {
+		showEndingCards.value = true;
+
+		const timeLeft = playerProgress.value.duration - playerProgress.value.time;
+		if (!userLeftEndScreen.value && timeLeft > noEndScreenThreshold_s) {
+			goToEndScreen();
+		}
+	}
+	else {
+		showEndingCards.value = false;
+	}
+});
 
 /***************
  * METADATA
@@ -379,9 +405,7 @@ const nextEpisodeTitle = computed(() => {
 	return nameIsNotEpisodeNumber ? ` "${metadataName}"` : nextEpisode.value.name;
 });
 
-const showNextEpisodeCard = computed(() => {
-	return Boolean(nextEpisode.value && (playerProgress.value?.duration - playerProgress.value?.time < 30));
-});
+const showEndingCards = ref(false);
 
 const currentEpisodeMetadata = computed(() => {
 	if (playable.value?.type !== 'episodeFile') {
@@ -528,16 +552,35 @@ function openPersonModal(person) {
 /**************
  * END SCREEN
  */
+
+function goToEndScreen() {
+	if (showEndScreen.value) {
+		return;
+	}
+	showEndScreen.value = true;
+	console.log(showEndScreen.value)
+	closeMenuPanel();
+}
+
+function leaveEndScreen(preventReturn = true) {
+	if (!showEndScreen.value) {
+		return;
+	}
+	if (preventReturn) {	
+		userLeftEndScreen.value = true;
+	}
+	showEndScreen.value = false;
+	useScreenStore().updateFocus();
+}
+
 const parentExtrasToShow = computed(() => {
 	if (parentLibrary.value?.cinemaType === 'movie') {
 		const extras = parentLibrary.value?.extras?.filter(e => e.relativePath !== playable.value?.relativePath);
 		return extras?.length > 0 ? extras : undefined;
 	}
 	if (parentLibrary.value?.cinemaType === 'series') {
-		console.log(parentLibrary.value?.seasons)
 		const lastSeason = parentLibrary.value?.seasons?.peek();
 		const lastEpFile = lastSeason?.episodeFiles.peek();
-		console.log(lastEpFile)
 
 		// show series extras for very final episode or other series extra
 		if (parentLibrary.value?.extras?.some(e => e.relativePath === playable.value?.relativePath) || lastEpFile?.relativePath === playable.value?.relativePath) {
@@ -567,113 +610,192 @@ const nextExtra = computed(() => {
 
 <template>
 	<div class="fixed top-0 bottom-0 left-0 right-0" style="background: #000">
-		<div v-if="!showEndScreen" class="theater-wrapper md:flex-row flex-column">
-			<div class="movie-theater flex-grow-1">
-				<VideoPlayer
-					v-if="mediaPath"
-					:key="mediaPath"
-					v-show="showPlayer"
-					:loadingSplash="loadSplashUrl"
-					:title="videoTitle"
-					:onTitleClick="onTitleClick"
-					:close="carefulBackNav"
-					:autoplay="true"
-					:controls="true"
-					ref="playerRef"
-					:relativePath="mediaPath"
-					:onLoadedData="() => hasLoaded = true"
-					:onPlay="onPlay"
-					:onPause="releaseWakeLock"
-					:onEnd="onEnd"
-					:onNextTrack="playNext"
-					:onPrevTrack="playPrev"
-					:subtitles="probe?.subtitles"
-					:audio="probe?.audio"
-					:chapters="probe?.chapters"
-					timer
-					allowFullscreen
-					showTime
+	
+
+		<div class="theater-wrapper md:flex-row flex-column">
+			<div class="w-full h-full relative">
+				<div
+					class="end-screen absolute top-0 bottom-0 left-0 right-0 flex-column"
+					v-if="showEndScreen"
+					:class="{ visible: showEndScreen }"
+					:style="{ background: `radial-gradient(ellipse at top right, transparent, #000a max(40%, calc(100% - 50rem)), #000e 80%), url('${loadSplashUrl}') 40% 0% / cover no-repeat` }"
 				>
-					<template #topButtons>
-						<!-- INFO BUTTON -->
-						<Button
-							text
-							severity="contrast"
-							@click="toggleDetailsMenu"
-							v-if="mediaInfo"
-						>
-							<template #icon><span class="material-symbols-outlined">info</span></template>
-						</Button>
+					<div class="flex-grow-1 overflow-hidden">
+						<Scroll>
+							<div class="flex-column align-items-start gap-5" style="padding: max(1rem, 3%); min-height: 100vh">
+								<div>
+									<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-arrow-left" label="Leave" @click="carefulBackNav" />
+									<br />
+									<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-replay" label="Replay" @click="() => playMedia(playable?.relativePath, true)" />
+								</div>
 
-						<!-- SCRUB BUTTON -->
-						<Button
-							:text="useScrubberStore().isScrubbing ? false : true"
-							:severity="useScrubberStore().isScrubbing ? 'secondary' : 'contrast'"
-							@click="toggleScrubMenu"
-						>
-							<template #icon><span class="material-symbols-outlined">mop</span></template>
-						</Button>
+								<div class="flex-grow-1" />
 
-						<!-- AUTOPLAY BUTTON -->
-						<DropdownTrigger v-if="canAutoplay">
-							<div class="autoplay" @click="">
-								<Button :text="willAutoplay ? false : true" :severity="willAutoplay ? 'secondary' : 'contrast'">
-									<template #icon>
-										<span class="material-symbols-outlined">autoplay</span>
-										<span v-if="autoplayTimes">&nbsp;{{ autoplayTimes }}</span>
-									</template>
-								</Button>
-							</div>
-							<template #content>
-								<div class="p-2 flex-row-center">
-									&nbsp;Autoplay:&nbsp;
-									<div class="flex-row-center">
-										<Button text icon="pi pi-arrow-down" @click="autoplayTimes = Math.max(0, autoplayTimes - 1)" />
-										<div class="w-1rem text-center">{{ autoplayTimes }}</div>
-										<Button text icon="pi pi-arrow-up" @click="autoplayTimes++" />
-										<Button text icon="pi pi-trash" @click="autoplayTimes = 0" />
+								<div v-if="nextEpisode">
+									<h3>{{ nextEpisode.seasonNumber === playable.seasonNumber ? 'Next Episode' : 'Begin Next Season' }}</h3>
+									<div class="episode-item flex gap-3 mt-3">
+										<div class="episode-poster-wrapper flex-shrink-0" style="width: min(250px, 30vw, 30vh);">
+											<MediaCard
+												navJumpRow="seasons"
+												:imageUrl="nextEpisodeMetadata?.still_thumb"
+												:aspectRatio="'wide'"
+												:playSrc="nextEpisode.relativePath"
+												:overrideStartTime="nextEpisode.startTime"
+												:progress="nextEpisode.watchProgress"
+											>
+												<template #fallbackIcon>📺</template>
+											</MediaCard>
+										</div>
+										<div class="episode-info flex-grow-1">
+											<div class="flex-column gap-2">
+												<h3>{{ nextEpisodeTitle }}{{ nextEpisode.version ? ` (${nextEpisode.version})` : '' }}</h3>
+												<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+													<span>Season {{ nextEpisode.seasonNumber }} Episode {{ nextEpisode.episodeNumber }}</span>
+													<span v-if="nextEpisodeMetadata?.runtime">{{ formatRuntime_m(nextEpisodeMetadata?.runtime) }}</span>
+													<span v-if="nextEpisodeMetadata?.content_rating">{{ nextEpisodeMetadata?.content_rating }}</span>
+												</div>
+											</div>
+											
+											<div class="mt-3 line-clamp-4" style="max-width: 30rem">
+												{{ nextEpisodeMetadata?.overview }}
+											</div>
+										</div>
 									</div>
 								</div>
-							</template>
-						</DropdownTrigger>
-					</template>
 
-					<template #bottomButtons>
-						<!-- PREV EPISODE BUTTON -->
-						<Button v-if="prevEpisode" text severity="contrast" @click="playPrev">
-							<template #icon><span class="material-symbols-outlined">skip_previous</span></template>
-						</Button>
-						<!-- NEXT EPISODE BUTTON -->
-						<Button v-if="nextEpisode" text severity="contrast" @click="playNext">
-							<template #icon><span class="material-symbols-outlined">skip_next</span></template>
-						</Button>
-					</template>
+								<div v-if="nextExtra" class="w-full overflow-hidden">
+									<h3>Next Extra</h3>
+									<ExtrasList :extras="[nextExtra]" />
+								</div>
 
-					<template #cards>
-						<Button v-if="showNextEpisodeCard" data-focus-priority="2" severity="secondary" class="next-episode-card" :class="{ 'text-2xl': hasEnded }" @click="playNext">
-							<div class="play-icon">
-								<div class="w-full">
-									<MediaCard
-										:imageUrl="nextEpisodeMetadata?.still_thumb"
-										:aspectRatio="'wide'"
-									>
-										<template #fallbackIcon><i class="pi pi-play" /></template>
-									</MediaCard>
+								<div v-if="parentExtrasToShow" class="w-full overflow-hidden">
+									<h3>{{ parentLibrary?.name }} Extras</h3>
+									<ExtrasList :extras="parentExtrasToShow" />
+								</div>
+
+								<div v-if="seasonExtrasToShow" class="w-full overflow-hidden">
+									<h3>Season {{ currentSeason.seasonNumber }} Extras</h3>
+									<ExtrasList :extras="seasonExtrasToShow" />
 								</div>
 							</div>
-							<div>
-								<div class="flex align-items-center gap-1">
-									<template v-if="willAutoplay">
-										<span class="material-symbols-outlined">autoplay</span>
-										Autoplay ({{ autoplayTimes }})
-									</template>
-									<span v-else>Play Next</span>
+							
+						</Scroll>
+					</div>
+				</div>
+
+				<div v-show="showPlayer" class="main-video-wrapper flex-grow-1" :class="{ 'mini bg-blur-hover border-round overflow-hidden cursor-pointer': showEndScreen, focusAreaClass: !showEndScreen }" tabindex="0" @click="() => showEndScreen && leaveEndScreen()">
+					<VideoPlayer
+						v-if="mediaPath"
+						ref="playerRef"
+						:key="mediaPath"
+						:loadingSplash="loadSplashUrl"
+						:title="videoTitle"
+						:onTitleClick="onTitleClick"
+						:close="carefulBackNav"
+						:autoplay="true"
+						:hideControls="showEndScreen"
+						:relativePath="mediaPath"
+						:onLoadedData="() => hasLoaded = true"
+						:onPlay="onPlay"
+						:onPause="releaseWakeLock"
+						:onEnd="onEnd"
+						:onNextTrack="playNext"
+						:onPrevTrack="playPrev"
+						:subtitles="probe?.subtitles"
+						:audio="probe?.audio"
+						:chapters="probe?.chapters"
+						timer
+						allowFullscreen
+						showTime
+					>
+						<template #topButtons>
+							<!-- INFO BUTTON -->
+							<Button
+								text
+								severity="contrast"
+								@click="toggleDetailsMenu"
+								v-if="mediaInfo"
+							>
+								<template #icon><span class="material-symbols-outlined">info</span></template>
+							</Button>
+
+							<!-- SCRUB BUTTON -->
+							<Button
+								:text="useScrubberStore().isScrubbing ? false : true"
+								:severity="useScrubberStore().isScrubbing ? 'secondary' : 'contrast'"
+								@click="toggleScrubMenu"
+							>
+								<template #icon><span class="material-symbols-outlined">mop</span></template>
+							</Button>
+
+							<!-- AUTOPLAY BUTTON -->
+							<DropdownTrigger v-if="canAutoplay">
+								<div class="autoplay" @click="">
+									<Button :text="willAutoplay ? false : true" :severity="willAutoplay ? 'secondary' : 'contrast'">
+										<template #icon>
+											<span class="material-symbols-outlined">autoplay</span>
+											<span v-if="autoplayTimes">&nbsp;{{ autoplayTimes }}</span>
+										</template>
+									</Button>
 								</div>
-								<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
+								<template #content>
+									<div class="p-2 flex-row-center">
+										&nbsp;Autoplay:&nbsp;
+										<div class="flex-row-center">
+											<Button text icon="pi pi-arrow-down" @click="autoplayTimes = Math.max(0, autoplayTimes - 1)" />
+											<div class="w-1rem text-center">{{ autoplayTimes }}</div>
+											<Button text icon="pi pi-arrow-up" @click="autoplayTimes++" />
+											<Button text icon="pi pi-trash" @click="autoplayTimes = 0" />
+										</div>
+									</div>
+								</template>
+							</DropdownTrigger>
+						</template>
+
+						<template #bottomButtons>
+							<!-- PREV EPISODE BUTTON -->
+							<Button v-if="prevEpisode" text severity="contrast" @click="playPrev">
+								<template #icon><span class="material-symbols-outlined">skip_previous</span></template>
+							</Button>
+							<!-- NEXT EPISODE BUTTON -->
+							<Button v-if="nextEpisode" text severity="contrast" @click="playNext">
+								<template #icon><span class="material-symbols-outlined">skip_next</span></template>
+							</Button>
+						</template>
+
+						<template #cards>
+							<div class="flex-row-stretch gap-2" v-if="showEndingCards && !showEndScreen">
+								<Button v-if="nextEpisode" data-focus-priority="2" severity="secondary" class="next-episode-card text-xl" @click="playNext">
+									<div class="play-icon">
+										<div class="w-full">
+											<MediaCard
+												:imageUrl="nextEpisodeMetadata?.still_thumb"
+												:aspectRatio="'wide'"
+											>
+												<template #fallbackIcon><i class="pi pi-play" /></template>
+											</MediaCard>
+										</div>
+									</div>
+									<div>
+										<div class="flex align-items-center gap-1">
+											<template v-if="willAutoplay">
+												<span class="material-symbols-outlined">autoplay</span>
+												Autoplay ({{ autoplayTimes }})
+											</template>
+											<span v-else>Play Next</span>
+										</div>
+										<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
+									</div>
+								</Button>
+								<Button v-if="endScreenHasContent" severity="secondary" class="square text-xl" @click.stop="goToEndScreen">
+									<i class="pi pi-window-maximize" />
+								</Button>
 							</div>
-						</Button>
-					</template>
-				</VideoPlayer>
+						</template>
+					</VideoPlayer>
+					<div v-if="showEndScreen" class="absolute-full" />
+				</div>
+
 			</div>
 
 			<NavTrigger
@@ -750,71 +872,6 @@ const nextExtra = computed(() => {
 			<PersonModal ref="personModal" />
 		</div>
 
-		<div
-			class="end-screen absolute top-0 bottom-0 left-0 right-0 flex-column"
-			:class="{ visible: showEndScreen }"
-			:style="{ background: `radial-gradient(ellipse at top right, transparent, #000a max(40%, calc(100% - 50rem)), #000e 80%), url('${loadSplashUrl}') 40% 0% / cover no-repeat` }"
-		>
-			<div class="flex-grow-1 overflow-hidden">
-				<Scroll>
-					<div class="flex-column align-items-start gap-5" style="padding: max(1rem, 3%); min-height: 100vh">
-						<div class="flex-grow-1" >
-							<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-arrow-left" label="Return" @click="carefulBackNav" />
-							<br />
-							<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-replay" label="Replay" @click="showEndScreen = false" />
-						</div>
-
-						<div v-if="nextEpisode">
-							<h3>{{ nextEpisode.seasonNumber === playable.seasonNumber ? 'Next Episode' : 'Begin Next Season' }}</h3>
-							<div class="episode-item flex gap-3 mt-3">
-								<div class="episode-poster-wrapper flex-shrink-0" style="width: min(250px, 30vw, 30vh);">
-									<MediaCard
-										navJumpRow="seasons"
-										:imageUrl="nextEpisodeMetadata?.still_thumb"
-										:aspectRatio="'wide'"
-										:playSrc="nextEpisode.relativePath"
-										:overrideStartTime="nextEpisode.startTime"
-										:progress="nextEpisode.watchProgress"
-									>
-										<template #fallbackIcon>📺</template>
-									</MediaCard>
-								</div>
-								<div class="episode-info flex-grow-1">
-									<div class="flex-column gap-2">
-										<h3>{{ nextEpisodeTitle }}{{ nextEpisode.version ? ` (${nextEpisode.version})` : '' }}</h3>
-										<div style="display: flex; gap: 10px; flex-wrap: wrap;">
-											<span>Season {{ nextEpisode.seasonNumber }} Episode {{ nextEpisode.episodeNumber }}</span>
-											<span v-if="nextEpisodeMetadata?.runtime">{{ formatRuntime_m(nextEpisodeMetadata?.runtime) }}</span>
-											<span v-if="nextEpisodeMetadata?.content_rating">{{ nextEpisodeMetadata?.content_rating }}</span>
-										</div>
-									</div>
-									
-									<div class="mt-3 line-clamp-4" style="max-width: 30rem">
-										{{ nextEpisodeMetadata?.overview }}
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<div v-if="nextExtra" class="w-full overflow-hidden">
-							<h3>Next Extra</h3>
-							<ExtrasList :extras="[nextExtra]" />
-						</div>
-
-						<div v-if="parentExtrasToShow" class="w-full overflow-hidden">
-							<h3>{{ parentLibrary?.name }} Extras</h3>
-							<ExtrasList :extras="parentExtrasToShow" />
-						</div>
-
-						<div v-if="seasonExtrasToShow" class="w-full overflow-hidden">
-							<h3>Season {{ currentSeason.seasonNumber }} Extras</h3>
-							<ExtrasList :extras="seasonExtrasToShow" />
-						</div>
-					</div>
-					
-				</Scroll>
-			</div>
-		</div>
 	</div>
 </template>
 
@@ -853,14 +910,27 @@ const nextExtra = computed(() => {
 	}
 }
 
-.movie-theater {
+.main-video-wrapper {
+	top: 0;
+	right: 0;
     width: 100%;
-	position: relative;
+    bottom: 0;
+	position: absolute;
 	background-image: none;
 	background-size: contain;
 	background-position: center;
 	background-repeat: no-repeat;
 	background-color: black;
+	transition: all 500ms;
+
+	&.mini {
+		--width: min(20rem, 35vw, 30vh);
+		top: 1rem;
+		right: 1rem;
+		width: var(--width);
+		bottom: calc(100% - 1rem - (var(--width) * 2 / 3));
+		// aspect-ratio: 3 / 2;
+	}
 
 	.next-episode-card {
 		display: flex;
@@ -885,11 +955,12 @@ const nextExtra = computed(() => {
 .end-screen {
 	opacity: 0;
 	pointer-events: none;
+	transition: 1000ms;
 
 	&.visible {
 		opacity: 1;
 		pointer-events: all;
-		transition: 500ms;
 	}
+
 }
 </style>
