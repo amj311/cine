@@ -634,7 +634,7 @@ const nextExtra = computed(() => {
 	
 
 		<div class="theater-wrapper md:flex-row flex-column">
-			<div class="w-full h-full relative">
+			<div class="w-full flex-grow-1 relative">
 				<div
 					class="end-screen absolute top-0 bottom-0 left-0 right-0 flex-column"
 					v-if="showEndScreen"
