@@ -100,4 +100,6 @@ if (!Array.prototype.peek) {
 	};
 }
 
-export { };
+export function pluralize(qty: number) {
+	return qty === 1 ? '' : 's';
+}

@@ -18,7 +18,7 @@ import { useApiStore } from '@/stores/api.store';
 import { useScrubberStore } from './scrubber.store';
 import ScrubSettings from './ScrubSettings.vue';
 import DropdownTrigger from '@/components/utils/DropdownTrigger.vue';
-import { encodeMediaPath, formatRuntime_m } from '@/utils/miscUtils';
+import { encodeMediaPath, formatRuntime_m, pluralize } from '@/utils/miscUtils';
 import type NavTrigger from '@/components/utils/NavTrigger/NavTrigger.vue';
 import ToggleSwitch from '@/components/utils/ToggleSwitch.vue';
 import PersonModal from '@/components/PersonModal.vue';
@@ -26,6 +26,7 @@ import Scroll from '@/components/Scroll.vue';
 import ExtrasList from '@/components/ExtrasList.vue';
 import { useMediaStore } from '@/stores/media.store';
 
+const toast = useToast();
 const router = useRouter();
 const api = useApiStore().api;
 
@@ -304,7 +305,7 @@ async function onEnd() {
 	}
 }
 
-const PROGRESS_INTERVAL = 1000 * 5;
+const PROGRESS_INTERVAL = 1000;
 let lastPostTime = 0;
 const progressUpdateInterval = setInterval(async () => {
 	const lastProgressTime = playerProgress.value?.time;
@@ -339,6 +340,11 @@ const progressUpdateInterval = setInterval(async () => {
 
 watch(() => playerProgress.value?.time, (old, newTime) => {
 	if (!playerProgress.value || !playable.value) {
+		return;
+	}
+
+	// don't interfere with onEnd stuff
+	if (playerProgress.value.percentage > 99) {
 		return;
 	}
 	const endCardPercentages = {
@@ -479,7 +485,8 @@ watch(videoTitle, (newTitle) => {
  */
 const autoplayTimes = ref(0);
 const canAutoplay = computed(() => Boolean(nextEpisode.value));
-const willAutoplay = computed(() => autoplayTimes.value > 0 && canAutoplay.value && !hasEnded.value);
+const willAutoplay = computed(() => autoplayTimes.value > 0 && canAutoplay.value);
+const timeTillAutoPlay = computed(() => (willAutoplay.value && playerProgress.value) ? Math.ceil(playerProgress.value.duration - playerProgress.value.time) : null);
 
 function playPrev() {
 	if (!prevEpisode.value) return;
@@ -487,7 +494,14 @@ function playPrev() {
 }
 function playNext() {
 	if (!nextEpisode.value) return;
-	autoplayTimes.value = Math.max(0, autoplayTimes.value - 1);
+	if (willAutoplay.value) {
+		autoplayTimes.value = Math.max(0, autoplayTimes.value - 1);
+		toast.add({
+			life: 5000,
+			summary: `${autoplayTimes.value} auto-play${pluralize(autoplayTimes.value)} remaining`,
+			severity: 'info',
+		})
+	}
 	playMedia(nextEpisode.value!.relativePath);
 }
 
@@ -639,7 +653,10 @@ const nextExtra = computed(() => {
 								<div class="flex-grow-1" />
 
 								<div v-if="nextEpisode">
-									<h3>{{ nextEpisode.seasonNumber === playable.seasonNumber ? 'Next Episode' : 'Begin Next Season' }}</h3>
+									<h3>
+										{{ nextEpisode.seasonNumber === playable.seasonNumber ? 'Next Episode' : 'Next Season' }}
+										{{ (willAutoplay && playerProgress) ? `starting in ${timeTillAutoPlay}` : '' }}
+									</h3>
 									<div class="episode-item flex gap-3 mt-3">
 										<div class="episode-poster-wrapper flex-shrink-0" style="width: min(250px, 30vw, 30vh);">
 											<MediaCard
@@ -771,8 +788,8 @@ const nextExtra = computed(() => {
 						</template>
 
 						<template #cards>
-							<div class="flex-row-stretch gap-2" v-if="showEndingCards && !showEndScreen">
-								<Button v-if="nextEpisode" data-focus-priority="2" severity="secondary" class="next-episode-card text-xl" @click="playNext">
+							<template v-if="showEndingCards && !showEndScreen">
+								<Button v-if="nextEpisode" data-focus-priority="2" severity="secondary" class="next-episode-card text-lg" @click="playNext">
 									<div class="play-icon">
 										<div class="w-full">
 											<MediaCard
@@ -785,19 +802,18 @@ const nextExtra = computed(() => {
 									</div>
 									<div>
 										<div class="flex align-items-center gap-1">
+											Play Next
 											<template v-if="willAutoplay">
-												<span class="material-symbols-outlined">autoplay</span>
-												Autoplay ({{ autoplayTimes }})
+												({{ timeTillAutoPlay }})
 											</template>
-											<span v-else>Play Next</span>
 										</div>
 										<div style="opacity: .7">{{ nextEpisodeTitle }}</div>
 									</div>
 								</Button>
-								<Button v-if="endScreenHasContent" severity="secondary" class="square text-xl" @click.stop="goToEndScreen">
+								<Button v-if="endScreenHasContent" severity="secondary" class="square text-lg" @click.stop="goToEndScreen">
 									<i class="pi pi-window-maximize" />
 								</Button>
-							</div>
+							</template>
 						</template>
 					</VideoPlayer>
 					<div v-if="showEndScreen" class="absolute-full" />

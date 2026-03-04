@@ -9,6 +9,7 @@ import { useFullscreenStore } from '@/stores/fullscreenStore.store';
 import { useScreenStore } from '@/stores/screen.store';
 import { JobPinger } from '@/utils/JobPinger';
 import VideoProgressBar from './VideoProgressBar.vue';
+import type Message from 'primevue/message';
 
 const toast = useToast();
 
@@ -567,7 +568,14 @@ function goToNextChapter() {
 		</template>
 		
 		<div class="cards" :class="{ lift: showControls }">
-			<slot name="cards" />
+			<div class="flex-row-stretch gap-2">
+				<Message
+					v-if="audio && audio?.length > 1 && playingState.currentTime >= 5 && playingState.currentTime < 10"
+				>
+					This video has additional audio tracks!				
+				</Message>
+				<slot name="cards" />
+			</div>
 		</div>
 	</div>
 </template>

@@ -285,6 +285,20 @@ body {
 			color: #fff6;
 		}
 	}
+
+
+	.p-message {
+	    backdrop-filter: blur(8px);
+		--p-message-info-color: var(--p-blue-100);
+		--p-message-info-background: color-mix(in srgb, var(--p-blue-500), transparent 40%);
+	}
+
+	.p-toast {
+	    backdrop-filter: blur(8px);
+		--p-toast-info-color: var(--p-blue-100);
+		--p-toast-info-background: color-mix(in srgb, var(--p-blue-400), transparent 60%);
+		--p-toast-info-border-color: color-mix(in srgb, var(--p-blue-300), transparent 60%);
+	}
 }
 
 
