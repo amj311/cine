@@ -19,7 +19,7 @@ const props = defineProps<{
 	title?: string;
 	subtitle?: string;
 	progress?: any; // Progress
-	overrideStartTime?: number;
+	startTime?: number;
 	playSrc?: string;
 	tvNavable?: boolean;
 	action?: () => void;
@@ -39,7 +39,7 @@ function playVideo() {
 		return;
 	}
 	useMediaStore().playMedia(props.playSrc, {
-		startTime: ((props.progress?.percentage < 90 && props.progress?.time) || props.overrideStartTime) ?? undefined,
+		startTime: ((props.progress?.percentage < 90 ? props.progress?.time : null) || props.startTime) ?? undefined,
 	})
 }
 

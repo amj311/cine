@@ -160,7 +160,7 @@ async function attemptAutoFullscreen() {
 	}
 }
 
-async function playMedia(pathToLoad: string, restart = false) {
+async function playMedia(pathToLoad: string, restart = true) {
 	useMediaStore().playMedia(pathToLoad, { restart });
 }
 
@@ -359,7 +359,6 @@ watch(() => playerProgress.value?.time, (old, newTime) => {
 	}
 
 	const timeLeft = playerProgress.value.duration - playerProgress.value.time;
-	console.log(timeLeft, playerProgress.value.percentage)
 	if (
 		!userLeftEndScreen.value
 		&& timeLeft > noEndScreenThreshold_s
@@ -484,12 +483,12 @@ const willAutoplay = computed(() => autoplayTimes.value > 0 && canAutoplay.value
 
 function playPrev() {
 	if (!prevEpisode.value) return;
-	playMedia(prevEpisode.value!.relativePath, true);
+	playMedia(prevEpisode.value!.relativePath);
 }
 function playNext() {
 	if (!nextEpisode.value) return;
 	autoplayTimes.value = Math.max(0, autoplayTimes.value - 1);
-	playMedia(nextEpisode.value!.relativePath, true);
+	playMedia(nextEpisode.value!.relativePath);
 }
 
 
@@ -567,7 +566,6 @@ function goToEndScreen() {
 		return;
 	}
 	showEndScreen.value = true;
-	console.log(showEndScreen.value)
 	closeMenuPanel();
 }
 
@@ -635,7 +633,7 @@ const nextExtra = computed(() => {
 								<div>
 									<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-arrow-left" label="Leave" @click="carefulBackNav" />
 									<br />
-									<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-replay" label="Replay" @click="() => playMedia(playable?.relativePath, true)" />
+									<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-replay" label="Replay" @click="() => playMedia(playable?.relativePath)" />
 								</div>
 
 								<div class="flex-grow-1" />
@@ -649,7 +647,7 @@ const nextExtra = computed(() => {
 												:imageUrl="nextEpisodeMetadata?.still_thumb"
 												:aspectRatio="'wide'"
 												:playSrc="nextEpisode.relativePath"
-												:overrideStartTime="nextEpisode.startTime"
+												:startTime="0"
 												:progress="nextEpisode.watchProgress"
 											>
 												<template #fallbackIcon>📺</template>

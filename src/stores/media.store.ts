@@ -15,7 +15,7 @@ export const useMediaStore = defineStore('Media', () => {
 		currentPath.value = relativePath;
 		const isPlayRoute = router.currentRoute.value?.name === 'play';
 
-		const startTime = props.restart ? '0' : String(props.startTime || '');
+		const startTime = props.restart ? '0' : String(props.startTime ?? '');
 
 		const playParams = {
 			path: relativePath,

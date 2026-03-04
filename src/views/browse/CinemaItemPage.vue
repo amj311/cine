@@ -472,7 +472,7 @@ async function returnLoan() {
 											:imageUrl="episode.still_thumb"
 											:aspectRatio="'wide'"
 											:playSrc="canStream ? episode.relativePath : undefined"
-											:overrideStartTime="episode.startTime"
+											:startTime="episode.startTime"
 											:progress="episode.watchProgress"
 											:loading="isLoadingMetadata"
 											:tvNavable="true"
