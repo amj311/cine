@@ -643,11 +643,13 @@ const nextExtra = computed(() => {
 				>
 					<div class="flex-grow-1 overflow-hidden">
 						<Scroll>
-							<div class="flex-column align-items-start gap-5" style="padding: max(1rem, 3%); min-height: 100vh">
-								<div>
-									<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-arrow-left" label="Leave" @click="carefulBackNav" />
-									<br />
-									<Button style="zoom: 1.3" variant="text" severity="contrast" icon="pi pi-replay" label="Replay" @click="() => playMedia(playable?.relativePath)" />
+							<div class="flex-column align-items-start gap-5" style="padding: max(1rem, 1%); min-height: 100vh">
+								<div class="flex-column-center gap-1" style="zoom: 1.3">
+									<div class="flex-row-center gap-1">
+										<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="carefulBackNav" />
+										<div class="title text-ellipsis" :class="{ 'link': onTitleClick }" @click="onTitleClick">{{ videoTitle }}</div>
+									</div>
+									<Button variant="text" severity="contrast" icon="pi pi-replay" label="Replay" @click="() => playMedia(playable?.relativePath)" />
 								</div>
 
 								<div class="flex-grow-1" />
@@ -944,11 +946,11 @@ const nextExtra = computed(() => {
 	background-position: center;
 	background-repeat: no-repeat;
 	background-color: black;
-	transition: all 500ms;
+	transition: all 700ms;
 
 	&.mini {
 		--width: min(20rem, 35vw, 30vh);
-		top: 1rem;
+		top: calc(1% + 4rem);
 		right: 1rem;
 		width: var(--width);
 		bottom: calc(100% - 1rem - (var(--width) * 2 / 3));

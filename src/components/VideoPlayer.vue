@@ -511,7 +511,7 @@ function goToNextChapter() {
 			<div class="top-controls w-full flex flex-column justify-content-end">
 				<div class="overlay flex align-items-center gap-2">
 					<Button v-if="close" variant="text" severity="contrast" icon="pi pi-arrow-left" @click="close" />
-					<div class="title text-ellipsis" :class="{ clickable: onTitleClick }" @click="onTitleClick">{{ title }}</div>
+					<div class="title text-ellipsis" :class="{ 'link': onTitleClick }" @click="onTitleClick">{{ title }}</div>
 					<div class="flex-grow-1"></div>
 					<div class="flex align-items-center">
 						<slot name="topButtons"></slot>

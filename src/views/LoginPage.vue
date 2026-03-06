@@ -271,7 +271,7 @@ onBeforeUnmount(() => {
 							<small>
 								Already have an account?
 								<a
-									class="link"
+									class="link text-primary"
 									@click="state.mode = 'login'"
 								>
 									Sign in
@@ -303,7 +303,7 @@ onBeforeUnmount(() => {
 								<small>
 									New here?
 									<a
-										class="link"
+										class="link text-primary"
 										@click="state.mode = 'signup'"
 									>
 										Create account
@@ -311,7 +311,7 @@ onBeforeUnmount(() => {
 								</small>
 								<small>
 									<a
-										class="link"
+										class="link text-primary"
 										@click="state.mode = 'reset_password'"
 									>
 										Forgot password?
@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
 								class="w-full my-3 justify-content-around"
 							>Send Email</button>
 							<small>Back to <a
-									class="link"
+									class="link text-primary"
 									@click="leaveRestPasswordMode"
 								>Sign in</a></small>
 						</template>
