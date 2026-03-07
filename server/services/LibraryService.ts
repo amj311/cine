@@ -2,6 +2,7 @@
  * Parses file system into directories of media.
  */
 
+import { objectOrder } from "../utils/miscUtils";
 import { AbsolutePath, ConfirmedPath, DirectoryService, RelativePath } from "./DirectoryService";
 import { Loan, LoanService } from "./LoanService";
 import { MediaMetadataService } from "./metadata/MetadataService";
@@ -239,7 +240,7 @@ type Video = LibraryFileData & {
 	takenAt?: string,
 }
 
-export const AudioTypes = ['mp3', 'm4a', 'm4b', 'aac', 'flac'] as const;
+export const AudioTypes = ['mp4', 'mp3', 'm4a', 'm4b', 'aac', 'flac'] as const;
 type AudioType = typeof AudioTypes[number];
 type Audio = LibraryFileData & {
 	type: 'audio',
@@ -480,7 +481,7 @@ export class LibraryService {
 				}
 			}
 			else if (item.type === 'audiobook' || item.type === 'album') {
-				const tracks = await Promise.all(childrenDir.files.map(async (file) => {
+				let tracks = await Promise.all(childrenDir.files.map(async (file) => {
 					const probe = await ProbeService.getTrackData(file.confirmedPath);
 					const title = probe?.title || LibraryService.removeExtensionsFromFileName(file.name);
 					return {
@@ -495,11 +496,13 @@ export class LibraryService {
 						name: title,
 						fileName: file.name,
 						relativePath: path.relativePath + '/' + file.name,
-						sortKey: (probe?.trackNumber ? (String(probe.trackNumber).padStart(3, '0')) + '_' : '') + file.name,
+						sortKey: `${String(probe.discNumber || '').padStart(3, '0')}_${String(probe.trackNumber || '').padStart(3, '0')}_` + file.name,
 						listName: title,
 						chapters: probe?.chapters
 					} as any;
 				}));
+
+				tracks = objectOrder(tracks, t => t.sortKey);
 
 				// Compute the start offset for each track
 				tracks.reduce((acc, track) => {

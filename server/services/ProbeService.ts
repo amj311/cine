@@ -46,6 +46,8 @@ export class ProbeService {
 			const probe = await ProbeService.getProbeData(path);
 			// make tags uniform lowercase
 			const tags = Object.fromEntries(Array.from(Object.entries(probe?.full?.format?.tags || {})).map(([key, value]) => [key.toLowerCase(), value]));
+			const stringDiscNumber = typeof tags.disc === 'string' ? tags.disc as string : null;
+			const slashDiscNumber = stringDiscNumber?.includes('/');
 			const stringTrackNumber = typeof tags.track === 'string' ? tags.track as string : null;
 			const slashTrackNumber = stringTrackNumber?.includes('/');
 
@@ -53,6 +55,8 @@ export class ProbeService {
 				...tags,
 				year: safeParseInt(tags.date),
 				subtitles: probe?.glossary?.subtitles || [],
+				discNumber: slashDiscNumber ? stringDiscNumber!.split('/')[0] : safeParseInt(tags.disc),
+				discTotal: slashDiscNumber ? stringDiscNumber!.split('/')[1] : safeParseInt(tags.disc),
 				trackNumber: slashTrackNumber ? stringTrackNumber!.split('/')[0] : safeParseInt(tags.track),
 				trackTotal: slashTrackNumber ? stringTrackNumber!.split('/')[1] : safeParseInt(tags.track),
 				duration: probe?.full?.format?.duration,
