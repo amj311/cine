@@ -134,7 +134,7 @@ const loadError = ref<any>(null);
 				@load="(e) => { checkForPanoramic(e); loadError = false; }"
 			/>
 			<VideoPlayer
-				v-else-if="file.fileType === 'video'"
+				v-else-if="file.fileType === 'video' || file.fileName.endsWith('.mp4')"
 				ref="videoPlayer"
 				:relativePath="file.relativePath"
 				:hideControls="hideControls"
