@@ -17,10 +17,14 @@ const props = defineProps<{
 
 const extraTypeLabels = {
 	'trailer': 'Trailer',
+	// Small documentary-type shoots that are not behind the scenes but also not short films
 	'featurette': 'Featurette',
+	'short': 'Short Film',
 	'behindthescenes': 'Behind the Scenes',
 	'deleted': 'Deleted',
+	'musicvideo': 'Music Video',
 }
+
 const sortedExtras = computed(() => {
 	return props.extras.sort((a, b) => {
 		if (a.extraType === b.extraType) {
