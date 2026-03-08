@@ -636,12 +636,14 @@ app.get('/api/feed', async (req, res) => {
 			watchedAt: progress.watchedAt,
 			confirmedPath: DirectoryService.resolvePath(progress.relativePath),
 		})).filter(i => i.confirmedPath) as ContinueWatchingItem[];
+
+
 		const lastFinishedEpisodes = await WatchProgressService.getLastFinishedEpisodes();
 		await Promise.all(lastFinishedEpisodes.map(async ep => {
 			if (ep && DirectoryService.resolvePath(ep.relativePath)) {
 				const nextEpisode = await LibraryService.getNextEpisode(DirectoryService.resolvePath(ep.relativePath)!);
 				if (nextEpisode) {
-					watchItems.unshift({ ...nextEpisode, watchedAt: ep.watchedAt, isUpNext: true } as any);
+					watchItems.push({ ...nextEpisode, watchedAt: ep.watchedAt, isUpNext: true } as any);
 				}
 			}
 		}));
@@ -649,23 +651,25 @@ app.get('/api/feed', async (req, res) => {
 		// make sure all watchItems are STILL accessible to email
 		watchItems = await SharingService.getSharedOnly(watchItems, getSessionEmail(), w => w.relativePath);
 
-		if (watchItems.length > 0) {
+		const continueFeedItems = (await Promise.all(watchItems.map(async (item) => ({
+			title: LibraryService.parseNamePieces(item.relativePath).name,
+			relativePath: item.relativePath,
+			watchProgress: item,
+			watchedAt: item.watchedAt,
+			metadata: MediaMetadataService.getMetadata(
+				LibraryService.determineMediaTypeFromPath(item.relativePath) as any,
+				item.confirmedPath,
+			),
+			duration_s: (await ProbeService.getProbeData(item.confirmedPath))?.glossary.duration_s,
+			libraryItems: await LibraryService.getLibraryForContentFile(item.confirmedPath),
+			isUpNext: item.isUpNext,
+		})))).sort((a, b) => b.watchedAt - a.watchedAt).filter(i => i.libraryItems && !i.libraryItems.parentTitle?.surprise && !i.libraryItems);
+
+		if (continueFeedItems.length > 0) {
 			feedLists.push({
 				title: "Continue Watching",
 				type: "continue-watching",
-				items: (await Promise.all(watchItems.map(async (item) => ({
-					title: LibraryService.parseNamePieces(item.relativePath).name,
-					relativePath: item.relativePath,
-					watchProgress: item,
-					watchedAt: item.watchedAt,
-					metadata: MediaMetadataService.getMetadata(
-						LibraryService.determineMediaTypeFromPath(item.relativePath) as any,
-						item.confirmedPath,
-					),
-					duration_s: (await ProbeService.getProbeData(item.confirmedPath))?.glossary.duration_s,
-					libraryItem: await LibraryService.getLibraryForContentFile(item.confirmedPath),
-					isUpNext: item.isUpNext,
-				})))).sort((a, b) => b.watchedAt - a.watchedAt).filter(i => !i.libraryItem.parentTitle?.surprise && !(i.libraryItem.content as any).surprise),
+				items: continueFeedItems,
 			});
 		}
 

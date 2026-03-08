@@ -345,7 +345,6 @@ export class LibraryService {
 		if (year) {
 			// Search for "Season" folders
 			const allSeasonFolders = children.folders.filter((folder) => folder.name.toLowerCase().includes('season'));
-			console.log(path.relativePath, year, allSeasonFolders)
 			if (allSeasonFolders.length > 0) {
 				return {
 					libraryTier: 'title',
@@ -397,6 +396,27 @@ export class LibraryService {
 					poster: posterPath,
 				};
 			}
+		}
+
+		// Find feedOrder if specified in the folder name like ".feedorder-1"
+		const feedOrderMatch = folderName.match(/\.feedorder-(\d{1,3})/);
+		const feedOrder = feedOrderMatch ? parseInt(feedOrderMatch[1]) : null;
+
+
+		// If any children folders are cinema, consider it a cinema collection
+		const cinemaFolder = children.folders.find((folder) => Boolean(LibraryService.parseNamePieces(folder.name).year));
+		if (Boolean(cinemaFolder)) {
+			// const childrenPaths = children.folders.map((folder) => folder.confirmedPath.relativePath);
+			return {
+				libraryTier: 'directory',
+				type: 'collection',
+				name,
+				relativePath: path.relativePath,
+				folderName: folderName,
+				feedOrder,
+				sortKey: LibraryService.createSortKey(folderName),
+				listName: name,
+			};
 		}
 
 
@@ -462,28 +482,6 @@ export class LibraryService {
 					listName: name,
 				}
 			}
-		}
-
-
-		// Find feedOrder if specified in the folder name like ".feedorder-1"
-		const feedOrderMatch = folderName.match(/\.feedorder-(\d{1,3})/);
-		const feedOrder = feedOrderMatch ? parseInt(feedOrderMatch[1]) : null;
-
-
-		// If all children folders are media, consider it a collection
-		const allChildrenAreMedia = children.folders.length > 0 && children.folders.every((folder) => Boolean(LibraryService.parseNamePieces(folder.name).year));
-		if (allChildrenAreMedia) {
-			const childrenPaths = children.folders.map((folder) => folder.confirmedPath.relativePath);
-			return {
-				libraryTier: 'directory',
-				type: 'collection',
-				name,
-				relativePath: path.relativePath,
-				folderName: folderName,
-				feedOrder,
-				sortKey: LibraryService.createSortKey(folderName),
-				listName: name,
-			};
 		}
 
 		return {
@@ -864,7 +862,8 @@ export class LibraryService {
 
 	public static async getLibraryForContentFile(filePath: ConfirmedPath) {
 		if (DirectoryService.isFolder(filePath)) {
-			throw new Error('Content file cannot be a folder!')
+			console.error('Content file cannot be a folder!');
+			return null;
 		}
 		let content: ContentFileBase | null = null;
 
@@ -876,7 +875,7 @@ export class LibraryService {
 
 		let parentTitle;
 
-		// find parent title by moving through parents until finding a folder of libraryTie 'title'
+		// find parent title by moving through parents until finding a folder of libraryTier 'title'
 		// the parent title MUST be a folder and not the file itself
 		for (const ancestor of ancestors) {
 			const item = await LibraryService.parseFolderToItem(ancestor, true, true);
@@ -886,14 +885,12 @@ export class LibraryService {
 			}
 		}
 
-		console.log({ parentTitle })
-
 		// if there is no parent folder that is a 'title', the content is just a gallery file
 		if (!parentTitle) {
 			content = await LibraryService.parseFileToGalleryItem(filePath);
 		}
 
-		// otherwise, TitleContent items are current computed in the details of the parent tile.
+		// otherwise, TitleContent items are currently computed in the details of the parent tile.
 		// This could be revisited, it's not the best lookup strategy
 		if (parentTitle) {
 			// Identify content within the parent library
@@ -906,14 +903,16 @@ export class LibraryService {
 			if (!content && parentTitle.type === 'cinema' && parentTitle.cinemaType === 'series') {
 				content = (parentTitle as Full<SeriesCinemaStrat>).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => filePath.relativePath === episodeFile.relativePath) || null;
 			}
+			if ('chapters' in parentTitle) {
+				content = (parentTitle as Full<AudiobookStrat>).chapters?.find((chapter) => filePath.relativePath === chapter.relativePath) || null;
+				console.log("found audiobook content with parent", { content, parentTitle })
+			}
 		}
 
 
 		if (!content) {
 			console.warn(`No content file found for ${filePath.relativePath}`);
-			return {
-				parentTitle,
-			};
+			return null;
 		}
 		return {
 			parentTitle,
@@ -922,7 +921,7 @@ export class LibraryService {
 	}
 
 	public static async getNextEpisode(path: ConfirmedPath) {
-		const { parentTitle, content } = await LibraryService.getLibraryForContentFile(path);
+		const { parentTitle, content } = (await LibraryService.getLibraryForContentFile(path)) || {};
 		if (!parentTitle || !content || content.type !== 'episodeFile') {
 			return null;
 		}

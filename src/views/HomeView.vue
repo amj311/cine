@@ -101,52 +101,52 @@ function formatRuntime(minutes: number) {
 								<div class="feed-row-items-list">
 									<div
 										class="feed-row-card-wrapper"
-										:class="item.libraryItem.content?.type"
+										:class="item.libraryItems.content?.type"
 										v-for="item in feedRow.items"
 										:key="item.relativePath"
 									>
-										<MetadataLoader :media="item.libraryItem.parentTitle">
+										<MetadataLoader :media="item.libraryItems.parentTitle">
 											<template #default="{ metadata, isLoadingMetadata }">
 												<!-- Failure case -->
 												<MediaCard
-													v-if="!item.libraryItem.content || !item.libraryItem.parentTitle"
+													v-if="!item.libraryItems.content || !item.libraryItems.parentTitle"
 													tvNavable
 													:action="() => useQueryPathStore().goTo(item.relativePath)"
 													:progress="item.watchProgress"
 													:aspectRatio="'wide'"
 													:title="item.title"
 													:subtitle="`${timeRemaining(item.watchProgress)} left`"
-													:surprise="item.libraryItem.parentTitle.surprise"
+													:surprise="item.libraryItems.parentTitle.surprise"
 												>
 													<template #fallbackIcon>💿</template>
 												</MediaCard>
 
 												<MediaCard
-													v-else-if="item.libraryItem.content.type === 'album' || item.libraryItem.content.type === 'audiobook'"
+													v-else-if="item.libraryItems.content.type === 'album' || item.libraryItems.content.type === 'audiobook'"
 													tvNavable
-													:action="() => useQueryPathStore().goTo(item.libraryItem.content.relativePath)"
-													:imageUrl="item.libraryItem.content.cover_thumb"
+													:action="() => useQueryPathStore().goTo(item.libraryItems.content.relativePath)"
+													:imageUrl="item.libraryItems.content.cover_thumb"
 													:imagePosition="'top'"
 													:progress="item.watchProgress"
 													:aspectRatio="'square'"
-													:title="item.libraryItem.content.title"
+													:title="item.libraryItems.content.title"
 													:subtitle="`${timeRemaining(item.watchProgress)} left`"
-													:surprise="item.libraryItem.parentTitle.surprise"
+													:surprise="item.libraryItems.parentTitle.surprise"
 													:loading="isLoadingMetadata"
 												>
 													<template #fallbackIcon>💿</template>
 												</MediaCard>
 												<MediaCard
 													v-else
-													:imageUrl="item.isUpNext ? metadata?.background_thumb : useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(item.libraryItem.content.relativePath) + '?seek=' + Math.max(5, item.watchProgress.time)"
-													:fallbackImage="item.libraryItem.content.still_thumb || metadata?.background_thumb || metadata?.poster_thumb"
+													:imageUrl="item.isUpNext ? metadata?.background_thumb : useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(item.libraryItems.content.relativePath) + '?seek=' + Math.max(5, item.watchProgress.time)"
+													:fallbackImage="item.libraryItems.content.still_thumb || metadata?.background_thumb || metadata?.poster_thumb"
 													:imagePosition="'top'"
 													:playSrc="item.relativePath"
 													:progress="item.watchProgress"
 													:aspectRatio="'wide'"
-													:title="contentName(item.libraryItem.content, item.libraryItem.parentTitle)"
+													:title="contentName(item.libraryItems.content, item.libraryItems.parentTitle)"
 													:subtitle="item.isUpNext ? (item.duration_s ? formatRuntime(item.duration_s / 60) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
-													:surprise="item.libraryItem.parentTitle.surprise"
+													:surprise="item.libraryItems.parentTitle.surprise"
 													:loading="isLoadingMetadata"
 												>
 													<template #fallbackIcon>🎞️</template>
