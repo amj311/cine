@@ -59,7 +59,7 @@ export type Playable = {
 	duration?: number,
 }
 
-const ExtraTypes = ['behindthescenes', 'deleted', 'featurette', 'trailer'] as const;
+const ExtraTypes = ['behindthescenes', 'deleted', 'featurette', 'short', 'trailer', 'musicvideo'] as const;
 type ExtraType = typeof ExtraTypes[number];
 type Extra = Playable & {
 	type: 'extra',
