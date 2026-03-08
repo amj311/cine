@@ -29,7 +29,7 @@ const canRefresh = computed(() => {
 	return mainMediaTypes.includes(libraryItem.type);
 })
 
-const playableObject = computed(() => {
+const contentObject = computed(() => {
 	if (libraryItem.cinemaType === 'movie') {
 		return libraryItem.movie;
 	}
@@ -86,7 +86,7 @@ const menuItems = computed(() => [
 			}
 		},
 	},
-	playableObject.value?.watchProgress && {
+	contentObject.value?.watchProgress && {
 		label: 'Clear Watch History',
 		icon: 'pi pi-eraser',
 		command: async () => {
@@ -96,7 +96,7 @@ const menuItems = computed(() => [
 			};
 			try {
 				toast.add(pendingMessage);
-				await useWatchProgressStore().removeProgress(playableObject.value?.relativePath);
+				await useWatchProgressStore().removeProgress(contentObject.value?.relativePath);
 				toast.add({
 					severity: 'success',
 					summary: 'Removed watch progress!',

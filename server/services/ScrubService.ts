@@ -1,5 +1,5 @@
 import { Store } from "./DataService";
-import { AnyPlayable, Playable } from "./LibraryService";
+import { AnyContent, TitleContent } from "./LibraryService";
 
 export type ScrubProfile = {
 	/**
@@ -41,7 +41,7 @@ export class ScrubService {
 		return `name__${this.norm(target.name)}::year__${this.norm(target.year)}::season__${this.norm(target.seasonNumber)}::episode__${this.norm(target.episodeNumber)}::version__${this.norm(target.version)}`;
 	}
 
-	private static createTargetForMedia(media: AnyPlayable): ScrubTarget {
+	private static createTargetForMedia(media: AnyContent): ScrubTarget {
 		return {
 			name: media.seriesName || media.name, // use seriesName for episodes, or just name for others
 			year: media.year || undefined,
@@ -51,11 +51,11 @@ export class ScrubService {
 		};
 	}
 
-	private static createKeyFromMedia(media: AnyPlayable): string {
+	private static createKeyFromMedia(media: AnyContent): string {
 		return this.createScrubKey(this.createTargetForMedia(media));
 	}
 
-	public static async createProfileForMedia(media: AnyPlayable) {
+	public static async createProfileForMedia(media: AnyContent) {
 		// Don't overwrite existing keys!
 		const target = this.createTargetForMedia(media);
 		const key = this.createScrubKey(target);
@@ -77,7 +77,7 @@ export class ScrubService {
 		await ScrubStore.set(key, profile);
 	}
 
-	public static async getProfileForMedia(media: AnyPlayable) {
+	public static async getProfileForMedia(media: AnyContent) {
 		const key = this.createKeyFromMedia(media);
 		return await ScrubStore.getByKey(key);
 	}

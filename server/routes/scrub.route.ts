@@ -16,15 +16,15 @@ route.get('/media', async (req, res) => {
 			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(path as string)}`);
 		}
 
-		const media = await LibraryService.getLibraryForPlayable(mediaPath);
+		const media = await LibraryService.getLibraryForContentFile(mediaPath);
 
-		if (!media.playable) {
-			throw new Error(`Could not find playable for path ${path}`);
+		if (!media.content) {
+			throw new Error(`Could not find content for path ${path}`);
 		}
 
 		res.send({
 			success: true,
-			data: await ScrubService.getProfileForMedia(media.playable),
+			data: await ScrubService.getProfileForMedia(media.content),
 		});
 	}
 	catch (e) {
@@ -47,15 +47,15 @@ route.post('/media', async (req, res) => {
 			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(path as string)}`);
 		}
 
-		const media = await LibraryService.getLibraryForPlayable(mediaPath);
+		const media = await LibraryService.getLibraryForContentFile(mediaPath);
 
-		if (!media.playable) {
-			throw new Error(`Could not find playable for path ${path}`);
+		if (!media.content) {
+			throw new Error(`Could not find content for path ${path}`);
 		}
 
 		res.send({
 			success: true,
-			data: await ScrubService.createProfileForMedia(media.playable),
+			data: await ScrubService.createProfileForMedia(media.content),
 		});
 	}
 	catch (e) {

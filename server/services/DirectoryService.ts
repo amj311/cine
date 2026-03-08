@@ -69,6 +69,10 @@ export class DirectoryService {
 		return new ConfirmedPath(joinedPath as AbsolutePath);
 	}
 
+	static isFolder(path: ConfirmedPath): boolean {
+		return lstatSync(path.absolutePath).isDirectory();
+	}
+
 	static async listDirectory(dirPath: ConfirmedPath) {
 		try {
 			if (!lstatSync(dirPath.absolutePath).isDirectory()) {

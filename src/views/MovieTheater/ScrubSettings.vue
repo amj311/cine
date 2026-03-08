@@ -13,7 +13,7 @@ import { v4 as uuid } from 'uuid';
 const scrubStore = useScrubberStore();
 
 const props = defineProps<{
-	playable: NonNullable<any>,
+	content: NonNullable<any>,
 }>();
 
 const editingScrubId = ref('');
@@ -133,7 +133,7 @@ function discardChanges() {
 		<template v-else="scrubStore.activeProfile">
 			<div class="flex flex-column align-items-center justify-content-center h-full gap-3">
 				<div>No scrub profile found for this media.</div>
-				<Button icon="pi pi-plus" label="Start Scrubbing" @click="scrubStore.createProfileForMedia(playable)" />
+				<Button icon="pi pi-plus" label="Start Scrubbing" @click="scrubStore.createProfileForMedia(content)" />
 			</div>
 		</template>
 	</div>

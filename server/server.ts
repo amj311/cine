@@ -194,7 +194,7 @@ app.get("/api/dir/", async function (req, res) {
 				files: files.map((file) => file.name),
 				folders: folders,
 				libraryItems: (await Promise.all(folders.map(async (folder) => await LibraryService.parseFolderToItem(folder.confirmedPath)))).filter(Boolean).sort((a, b) => a!.sortKey?.localeCompare(b!.sortKey || '') || 0),
-				galleryFiles: (await Promise.all(files.map(async (file) => await LibraryService.parseFileToItem(file.confirmedPath)))).filter(Boolean),
+				galleryFiles: (await Promise.all(files.map(async (file) => await LibraryService.parseFileToGalleryItem(file.confirmedPath)))).filter(Boolean),
 			},
 		});
 	} catch (err) {
@@ -206,6 +206,7 @@ app.get("/api/dir/", async function (req, res) {
 app.post("/api/emptyCaches", async function (req, res) {
 	try {
 		LibraryService.emptyCaches();
+		ProbeService.clearEntireCache();
 		return safeResponse.send(res, 200);
 	} catch (err) {
 		console.error(err);
@@ -221,6 +222,8 @@ app.post("/api/refresh", async function (req, res) {
 			return safeResponse.error(res, "Directory not found", 404);
 		}
 
+		// clear probe cache first so library gets fresh data
+		ProbeService.clearCacheForPath(resolvedPath.relativePath);
 		const newItem = await LibraryService.reloadLibraryItemData(resolvedPath);
 		if (newItem?.type === 'cinema') {
 			await MediaMetadataService.getMetadata(newItem.cinemaType, resolvedPath, false, true);
@@ -584,12 +587,12 @@ app.get('/api/theaterData', async (req, res) => {
 			res.status(404).send("File not found");
 			return;
 		}
-		const libraryData = await LibraryService.getLibraryForPlayable(resolvedPath);
+		const libraryData = await LibraryService.getLibraryForContentFile(resolvedPath);
 		const probe = await ProbeService.getProbeData(resolvedPath);
 		res.json({
 			data: {
-				playable: libraryData.playable,
-				parentLibrary: libraryData.parentLibrary,
+				content: libraryData.content,
+				parentTitle: libraryData.parentTitle,
 				probe: probe?.glossary,
 			},
 		})
@@ -660,9 +663,9 @@ app.get('/api/feed', async (req, res) => {
 						item.confirmedPath,
 					),
 					duration_s: (await ProbeService.getProbeData(item.confirmedPath))?.glossary.duration_s,
-					libraryItem: await LibraryService.getLibraryForPlayable(item.confirmedPath),
+					libraryItem: await LibraryService.getLibraryForContentFile(item.confirmedPath),
 					isUpNext: item.isUpNext,
-				})))).sort((a, b) => b.watchedAt - a.watchedAt).filter(i => !i.libraryItem.parentLibrary?.surprise && !(i.libraryItem.playable as any).surprise),
+				})))).sort((a, b) => b.watchedAt - a.watchedAt).filter(i => !i.libraryItem.parentTitle?.surprise && !(i.libraryItem.content as any).surprise),
 			});
 		}
 

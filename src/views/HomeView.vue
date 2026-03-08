@@ -41,11 +41,11 @@ onBeforeMount(() => {
 	loadFeed();
 });
 
-function playableName(playable: any, parentLibraryItem: any) {
-	if (playable.type === 'episodeFile') {
-		return `"${playable.name}" ${parentLibraryItem.name}`;
+function contentName(content: any, parentTitleItem: any) {
+	if (content.type === 'episodeFile') {
+		return `"${content.name}" ${parentTitleItem.name}`;
 	}
-	return playable.name;
+	return content.name;
 }
 
 /**
@@ -101,52 +101,52 @@ function formatRuntime(minutes: number) {
 								<div class="feed-row-items-list">
 									<div
 										class="feed-row-card-wrapper"
-										:class="item.libraryItem.playable?.type"
+										:class="item.libraryItem.content?.type"
 										v-for="item in feedRow.items"
 										:key="item.relativePath"
 									>
-										<MetadataLoader :media="item.libraryItem.parentLibrary">
+										<MetadataLoader :media="item.libraryItem.parentTitle">
 											<template #default="{ metadata, isLoadingMetadata }">
 												<!-- Failure case -->
 												<MediaCard
-													v-if="!item.libraryItem.playable || !item.libraryItem.parentLibrary"
+													v-if="!item.libraryItem.content || !item.libraryItem.parentTitle"
 													tvNavable
 													:action="() => useQueryPathStore().goTo(item.relativePath)"
 													:progress="item.watchProgress"
 													:aspectRatio="'wide'"
 													:title="item.title"
 													:subtitle="`${timeRemaining(item.watchProgress)} left`"
-													:surprise="item.libraryItem.parentLibrary.surprise"
+													:surprise="item.libraryItem.parentTitle.surprise"
 												>
 													<template #fallbackIcon>💿</template>
 												</MediaCard>
 
 												<MediaCard
-													v-else-if="item.libraryItem.playable.type === 'album' || item.libraryItem.playable.type === 'audiobook'"
+													v-else-if="item.libraryItem.content.type === 'album' || item.libraryItem.content.type === 'audiobook'"
 													tvNavable
-													:action="() => useQueryPathStore().goTo(item.libraryItem.playable.relativePath)"
-													:imageUrl="item.libraryItem.playable.cover_thumb"
+													:action="() => useQueryPathStore().goTo(item.libraryItem.content.relativePath)"
+													:imageUrl="item.libraryItem.content.cover_thumb"
 													:imagePosition="'top'"
 													:progress="item.watchProgress"
 													:aspectRatio="'square'"
-													:title="item.libraryItem.playable.title"
+													:title="item.libraryItem.content.title"
 													:subtitle="`${timeRemaining(item.watchProgress)} left`"
-													:surprise="item.libraryItem.parentLibrary.surprise"
+													:surprise="item.libraryItem.parentTitle.surprise"
 													:loading="isLoadingMetadata"
 												>
 													<template #fallbackIcon>💿</template>
 												</MediaCard>
 												<MediaCard
 													v-else
-													:imageUrl="item.isUpNext ? metadata?.background_thumb : useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(item.libraryItem.playable.relativePath) + '?seek=' + Math.max(5, item.watchProgress.time)"
-													:fallbackImage="item.libraryItem.playable.still_thumb || metadata?.background_thumb || metadata?.poster_thumb"
+													:imageUrl="item.isUpNext ? metadata?.background_thumb : useApiStore().apiUrl + '/api/thumb/' + encodeMediaPath(item.libraryItem.content.relativePath) + '?seek=' + Math.max(5, item.watchProgress.time)"
+													:fallbackImage="item.libraryItem.content.still_thumb || metadata?.background_thumb || metadata?.poster_thumb"
 													:imagePosition="'top'"
 													:playSrc="item.relativePath"
 													:progress="item.watchProgress"
 													:aspectRatio="'wide'"
-													:title="playableName(item.libraryItem.playable, item.libraryItem.parentLibrary)"
+													:title="contentName(item.libraryItem.content, item.libraryItem.parentTitle)"
 													:subtitle="item.isUpNext ? (item.duration_s ? formatRuntime(item.duration_s / 60) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
-													:surprise="item.libraryItem.parentLibrary.surprise"
+													:surprise="item.libraryItem.parentTitle.surprise"
 													:loading="isLoadingMetadata"
 												>
 													<template #fallbackIcon>🎞️</template>

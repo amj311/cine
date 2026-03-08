@@ -179,4 +179,12 @@ export class ProbeService {
 		}
 		return null;
 	}
+
+	public static clearCacheForPath(path: RelativePath) {
+		probeCache.delete(path);
+	}
+
+	public static clearEntireCache() {
+		probeCache.clear();
+	}
 }

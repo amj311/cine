@@ -17,13 +17,13 @@ export type Loan = {
 const loanStore = new Store<Loan>('loans');
 
 export class LoanService {
-	public static async canStreamMedia(playablePath: ConfirmedPath, email: string): Promise<Boolean> {
-		// only prevent streaming if this is a media playable
-		const playableLibraryItem = await LibraryService.getLibraryForPlayable(playablePath);
+	public static async canStreamMedia(contentPath: ConfirmedPath, email: string): Promise<Boolean> {
+		// only prevent streaming if this is a media content
+		const contentLibraryItem = await LibraryService.getLibraryForContentFile(contentPath);
 		const shouldPrevent = (
-			playableLibraryItem.parentLibrary?.type === 'cinema'
-			|| playableLibraryItem.parentLibrary?.type === 'album'
-			|| playableLibraryItem.parentLibrary?.type === 'audiobook'
+			contentLibraryItem.parentTitle?.type === 'cinema'
+			|| contentLibraryItem.parentTitle?.type === 'album'
+			|| contentLibraryItem.parentTitle?.type === 'audiobook'
 		);
 		if (!shouldPrevent) {
 			return true;
@@ -31,10 +31,10 @@ export class LoanService {
 
 		// if loaned, only the borrower can stream
 		// loans are done on parent items, so that needs to have been identified
-		if (!playableLibraryItem.parentLibrary) {
+		if (!contentLibraryItem.parentTitle) {
 			throw new Error("Streamable file must have parent library!");
 		}
-		const loan = await this.getLoan(playableLibraryItem.parentLibrary.relativePath);
+		const loan = await this.getLoan(contentLibraryItem.parentTitle.relativePath);
 		return loan ? email === loan.email : email === process.env.VITE_OWNER_EMAIL;
 	}
 
