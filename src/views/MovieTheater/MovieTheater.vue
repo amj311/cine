@@ -550,7 +550,7 @@ async function toggleScrubMenu() {
 
 const loadSplashUrl = computed(() => {
 	if (content.value?.type === 'extra') {
-		return useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaPath.value) + '?width=1200';
+		return useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaPath.value) + '?width=1200&seek=3';
 	}
 	return currentEpisodeMetadata.value?.still_full || parentTitle.value?.metadata?.background || parentTitle.value?.poster;
 })
