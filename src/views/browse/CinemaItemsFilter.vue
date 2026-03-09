@@ -2,8 +2,6 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import SelectButton from 'primevue/selectbutton';
 import InputText from 'primevue/inputtext';
-import type InputGroup from 'primevue/inputgroup';
-import type InputGroupAddon from 'primevue/inputgroupaddon';
 
 const { items } = defineProps<{
 	items: Array<any>;

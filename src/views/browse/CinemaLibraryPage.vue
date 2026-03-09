@@ -6,6 +6,8 @@ import InputText from 'primevue/inputtext';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 import CinemaItemsFilter from './CinemaItemsFilter.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
+import LibraryItemCard from '@/components/LibraryItemCard.vue';
+import MediaCard from '@/components/MediaCard.vue';
 
 const props = defineProps<{
 	libraryItem: any; // libraryItem
@@ -13,11 +15,13 @@ const props = defineProps<{
 }>();
 
 const allFlatItems = ref<any[]>([]);
+const allFlatFiles = ref<any[]>([]);
 const api = useApiStore().api;
 async function loadItems() {
 	try {
 		const { data } = await api.get('/flat?path=' + encodeMediaPath(props.libraryItem.relativePath));
 		allFlatItems.value = data.data?.items || [];
+		allFlatFiles.value = data.data?.files || [];
 		collectCategorySamples();
 	}
 	catch (error) {
@@ -40,6 +44,7 @@ watch(displayMode, (newVal, oldVal) => {
 });
 
 const cinemaItems = computed(() => allFlatItems.value.filter(item => item.type === 'cinema'));
+const shortsExtras = computed(() => allFlatFiles.value.filter(item => item.extraType === 'short'));
 
 const categoryOrder: Record<string, number> = {};
 function initializeRandomOrder() {
@@ -118,10 +123,11 @@ const letterGroups = computed(() => {
 		<div class="cinema-page mt-2 pl-3 flex flex-column gap-3">
 
 			<div class="filters flex-row-center flex-wrap gap-2 pr-2">
-				<SelectButton v-model="displayMode" :options="['Categories', 'A - Z']" size="large" />
+				<SelectButton v-model="displayMode" :options="['Categories', 'A - Z', 'Shorts']" />
 				<template v-if="displayMode === 'A - Z'">
-					<div class="flex-grow-1" />
-					<CinemaItemsFilter ref="filter" :items="cinemaItems" />
+					<div class="flex-grow-1 flex  justify-content-end">
+						<CinemaItemsFilter ref="filter" :items="cinemaItems" />
+					</div>
 				</template>
 			</div>
 
@@ -162,14 +168,14 @@ const letterGroups = computed(() => {
 			</div>
 
 			<template v-if="displayMode === 'A - Z'">
-				<div class="flex flex-wrap gap-3">
+				<div class="flex flex-wrap gap-3 mt-3">
 					<div
 						class="letter-group"
 						v-for="group in letterGroups"
 						:key="group.letter"
 					>
 						<div class="mb-2">
-							<span class="text-5xl font-bold">
+							<span class="text-4xl font-bold">
 								<template v-if="group.letter === 'surprise'"><i class="pi pi-gift" /></template>
 								<template v-else>{{ group.letter }}</template>
 							</span>
@@ -189,6 +195,22 @@ const letterGroups = computed(() => {
 				</div>
 			</template>
 
+			<template v-if="displayMode === 'Shorts'">
+				<div class="extras-grid">
+					<div
+						class="grid-tile"
+						v-for="item in shortsExtras"
+						:key="item.relativePath"
+					>
+						<MediaCard
+							:aspectRatio="'wide'"
+							:imageUrl="item.still_thumb"
+							:title="item.name"
+							:playSrc="item.relativePath"
+						/>
+					</div>
+				</div>
+			</template>
 		</div>
 		<br />
 	</Scroll>
@@ -228,6 +250,16 @@ const letterGroups = computed(() => {
 	&.on {
 		opacity: 1;
 		width: 10rem;
+	}
+}
+
+.extras-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(10rem, 27vh, 30vw), 1fr));
+	gap: 15px;
+	
+	.grid-tile {
+		width: 100%;
 	}
 }
 

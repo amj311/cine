@@ -47,7 +47,7 @@ type LibraryItemStratBase = Stratified<
 
 type ContentFileBase = {
 	libraryTier: 'content-file',
-	fileName: string,
+	fileName?: string,
 	relativePath: RelativePath,
 }
 
@@ -69,7 +69,7 @@ export type TitleContent = {
 	seasonNumber?: number,
 	episodeNumber?: number,
 	version?: string | null,
-	fileName: string,
+	fileName?: string,
 	relativePath: RelativePath,
 	confirmedPath: ConfirmedPath,
 	watchProgress?: WatchProgress | null,
@@ -291,7 +291,7 @@ type GalleryFile = Photo | Video | Audio;
 export class LibraryService {
 	static readonly itemCache = new Map<string, Base<LibraryItemStrat>>();
 	static readonly itemDetailCache = new Map<string, LibraryItemStrat['details']>();
-	static readonly fileCache = new Map<string, GalleryFile | null>();
+	static readonly fileCache = new Map<string, ContentFileBase | null>();
 
 	public static emptyCaches() {
 		this.itemCache.clear()
@@ -368,18 +368,7 @@ export class LibraryService {
 				return file.name.endsWith('.mp4') && mediaName === name && fileYear === year;
 			});
 			if (movieFile) {
-				const { version: movieVersion } = LibraryService.parseNamePieces(movieFile.name);
-
-				const movieContent: MovieContent = {
-					libraryTier: 'content-file',
-					type: 'movie',
-					name,
-					year,
-					version: movieVersion,
-					fileName: movieFile.name,
-					relativePath: movieFile.confirmedPath.relativePath,
-					confirmedPath: movieFile.confirmedPath,
-				};
+				const movieContent: MovieContent = this.createMovieContent(movieFile.confirmedPath)!;
 
 				return {
 					libraryTier: 'title',
@@ -508,14 +497,14 @@ export class LibraryService {
 			if (item.type === 'cinema' && item.cinemaType === 'series') {
 				const allSeasonFolders = childrenDir.folders.filter((folder) => folder.name.toLowerCase().includes('season'));
 				details = {
-					extras: await LibraryService.prepareExtras(childrenDir.files.map((file) => file.name), path),
+					extras: LibraryService.prepareExtras(childrenDir.files.map((file) => file.confirmedPath)),
 					seasons: await LibraryService.extractSeasons(allSeasonFolders.map((folder) => folder.confirmedPath), item.name, item.year)
 				};
 			}
 			else if (item.type === 'cinema' && item.cinemaType === 'movie') {
 				const extraVideos = childrenDir.files.filter((file) => file.confirmedPath.relativePath !== item.movie.relativePath);
 				details = {
-					extras: await LibraryService.prepareExtras(extraVideos.map((file) => file.name), path)
+					extras: LibraryService.prepareExtras(extraVideos.map((file) => file.confirmedPath))
 				}
 			}
 			else if (item.type === 'audiobook' || item.type === 'album') {
@@ -579,7 +568,7 @@ export class LibraryService {
 				// Allow collections to have extras - video files at the root of the collection folder
 				const extraVideos = childrenDir.files.filter((file) => !childrenPaths.includes(file.confirmedPath.relativePath));
 				details = {
-					extras: await LibraryService.prepareExtras(extraVideos.map((file) => file.name), path),
+					extras: LibraryService.prepareExtras(extraVideos.map((file) => file.confirmedPath)),
 				};
 			}
 
@@ -627,18 +616,31 @@ export class LibraryService {
 	}
 
 
-	public static async parseFileToGalleryItem(path: ConfirmedPath): Promise<GalleryFile | null> {
+	public static async parseFileToContentItem(path: ConfirmedPath): Promise<ContentFileBase | null> {
 		const key = `${path.relativePath}`;
-		let cached = this.fileCache.get(key);
+		let cached = this.fileCache.get(key) || null;
 		if (!cached) {
 			const item = await this.computeFileToItem(path);
-			cached = item || null;
-			this.fileCache.set(path.relativePath, item);
+			if (item) {
+				cached = item || null;
+				this.fileCache.set(path.relativePath, item);
+			}
 		}
 		return cached;
 	}
 
-	private static async computeFileToItem(path: ConfirmedPath): Promise<GalleryFile | null> {
+	private static async computeFileToItem(path: ConfirmedPath): Promise<ContentFileBase | null> {
+		const { name, year } = this.parseNamePieces(path.relativePath);
+		if (name && year) {
+			return this.createMovieContent(path);
+		}
+		const { type: extraType } = this.getExtraNameAndType(path.relativePath);
+		if (extraType) {
+			const extraFile = this.prepareExtras([path])[0] || null;
+			if (extraFile) {
+				return extraFile;
+			}
+		}
 		const fileType = FileTypeDictionary[path.relativePath.split('.').pop() as keyof typeof FileTypeDictionary];
 		if (!fileType) {
 			return null;
@@ -682,7 +684,7 @@ export class LibraryService {
 
 	public static async getFlatTree(path: ConfirmedPath) {
 		const items: Array<Base<LibraryItemStrat>> = [];
-		const files: Array<GalleryFile> = [];
+		const files: Array<ContentFileBase> = [];
 		async function parseDirectory(confirmedPath: ConfirmedPath) {
 			const { folders, files: childrenFiles } = await DirectoryService.listDirectory(confirmedPath);
 			const libraryItem = await LibraryService.parseFolderToItem(confirmedPath);
@@ -690,7 +692,7 @@ export class LibraryService {
 				items.push(libraryItem);
 			}
 			await Promise.all(childrenFiles.map(async (file) => {
-				const fileItem = await LibraryService.parseFileToGalleryItem(file.confirmedPath);
+				const fileItem = await LibraryService.parseFileToContentItem(file.confirmedPath);
 				if (fileItem) {
 					files.push(fileItem);
 				}
@@ -814,7 +816,7 @@ export class LibraryService {
 				}
 			}));
 
-			const extras = await this.prepareExtras(extraFiles.map(f => f.name), folderPath);
+			const extras = await this.prepareExtras(extraFiles.map(f => f.confirmedPath));
 			const seasonRecord = seasons.get(folderSeasonNumber) || {
 				libraryTier: 'title-directory',
 				seasonNumber: folderSeasonNumber,
@@ -844,21 +846,20 @@ export class LibraryService {
 		})).sort((a, b) => a.seasonNumber - b.seasonNumber);
 	}
 
-	private static async prepareExtras(fileNames: string[], parentPath: ConfirmedPath): Promise<Extra[]> {
-		return await Promise.all(fileNames.filter(p => p.endsWith('.mp4')).map(async (file) => {
-			const { name: extraName, type: extraType } = LibraryService.getExtraNameAndType(file);
+	private static prepareExtras(filePaths: Array<ConfirmedPath>): Extra[] {
+		return filePaths.filter(p => p.relativePath.endsWith('.mp4')).map((filePath) => {
+			const { name: extraName, type: extraType } = LibraryService.getExtraNameAndType(filePath.relativePath);
 			return {
 				libraryTier: 'content-file',
 				type: 'extra',
 				name: extraName,
 				extraType,
-				fileName: file,
-				relativePath: parentPath.append(file).relativePath,
-				confirmedPath: parentPath.append(file),
+				relativePath: filePath.relativePath,
+				confirmedPath: filePath,
 				// watchProgress: await WatchProgressService.getWatchProgress(parentPath.append(file)),
-				still_thumb: `/thumb/${parentPath.append(file).relativePath}?width=300&seek=3`
+				still_thumb: `/thumb/${filePath.relativePath}?width=300&seek=3`
 			}
-		}));
+		});
 	}
 
 
@@ -889,7 +890,7 @@ export class LibraryService {
 
 		// if there is no parent folder that is a 'title', the content is just a gallery file
 		if (!parentTitle) {
-			content = await LibraryService.parseFileToGalleryItem(filePath);
+			content = await LibraryService.parseFileToContentItem(filePath);
 		}
 
 		// otherwise, TitleContent items are currently computed in the details of the parent tile.
@@ -936,6 +937,23 @@ export class LibraryService {
 			...nextEpisode,
 			confirmedPath: DirectoryService.resolvePath(nextEpisode.relativePath)!,
 		} : null;
+	}
+
+	private static createMovieContent(path: ConfirmedPath): MovieContent | null {
+		const { name, year, version } = this.parseNamePieces(path.relativePath);
+		if (!name || !year) {
+			return null;
+		}
+
+		return {
+			libraryTier: 'content-file',
+			type: 'movie',
+			name,
+			year,
+			version,
+			relativePath: path.relativePath,
+			confirmedPath: path,
+		};
 	}
 
 	/*********
