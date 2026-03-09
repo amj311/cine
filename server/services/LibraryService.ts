@@ -530,6 +530,8 @@ export class LibraryService {
 						year: probe?.year,
 						trackNumber: probe?.trackNumber,
 						trackTotal: probe?.trackTotal,
+						discNumber: probe?.discNumber,
+						discTotal: probe?.discTotal,
 						duration: probe?.duration,
 						name: title,
 						fileName: file.name,
@@ -905,7 +907,6 @@ export class LibraryService {
 			}
 			if ('chapters' in parentTitle) {
 				content = (parentTitle as Full<AudiobookStrat>).chapters?.find((chapter) => filePath.relativePath === chapter.relativePath) || null;
-				console.log("found audiobook content with parent", { content, parentTitle })
 			}
 		}
 

@@ -522,21 +522,30 @@ watch(() => useApiStore().resolve(props.libraryItem?.cover), loadImage, { immedi
 			<div class="chapters-list-wrapper" v-if="libraryItem?.chapters">
 				<Scroll>
 					<div class="chapters-list">
-						<div
-							class="chapter-item"
-							:class="{ 'active': currentChapter ? chapter === currentChapter : index === lastWatched?.chapterIndex }"
+						<template
 							v-for="(chapter, index) in libraryItem.chapters"
 							:key="index"
-							@click="() => playChapter(chapter)"
-							tabindex="0"
 						>
-							<div class="number">
-								<i v-if="chapter === currentChapter" class="pi pi-volume-up" />
-								<div v-else>{{ Number(index) + 1 }}</div>
+							<div
+								v-if="chapter.discNumber && chapter.discNumber !== libraryItem.chapters[Number(index) - 1]?.discNumber"
+								class="p-3 opacity-70"	
+							>
+								Disc {{ Number(chapter.discNumber) }}
 							</div>
-							<div class="title">{{ chapter.title }}</div>
-							<div class="duration">{{ formatRuntime(chapter.bookStartOffset) }}</div>
-						</div>
+							<div
+								class="chapter-item bg-blur-hover"
+								:class="{ 'active': currentChapter ? chapter === currentChapter : index === lastWatched?.chapterIndex }"
+								@click="() => playChapter(chapter)"
+								tabindex="0"
+							>
+								<div class="number">
+									<i v-if="chapter === currentChapter" class="pi pi-volume-up" />
+									<div v-else>{{ chapter.trackNumber || Number(index) + 1 }}</div>
+								</div>
+								<div class="title">{{ chapter.title }}</div>
+								<div class="duration">{{ formatRuntime(chapter.bookStartOffset) }}</div>
+							</div>
+						</template>
 					</div>
 					<br />
 				</Scroll>
@@ -611,9 +620,6 @@ watch(() => useApiStore().resolve(props.libraryItem?.cover), loadImage, { immedi
 	&.active {
 		background-color: #fff1;
 		.title { font-weight: bold; }
-	}
-	&:hover {
-		background-color: #fff2;
 	}
 
 	.number {
