@@ -44,7 +44,7 @@ watch(displayMode, (newVal, oldVal) => {
 });
 
 const cinemaItems = computed(() => allFlatItems.value.filter(item => item.type === 'cinema'));
-const shortsExtras = computed(() => allFlatFiles.value.filter(item => item.extraType === 'short'));
+const shortsExtras = computed(() => allFlatFiles.value.filter(item => item.extraType === 'featurette'));
 
 const categoryOrder: Record<string, number> = {};
 function initializeRandomOrder() {

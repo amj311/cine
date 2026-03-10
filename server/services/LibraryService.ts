@@ -983,12 +983,15 @@ export class LibraryService {
 	}
 
 	private static removeExtensionsFromFileName(filename: string) {
+		// make sure we're dealing with just a file name, not a full path
+		const justName = filename.split('/').pop()!;
 		// Extensions are everything after a '.' AFTER any spaces
 		// Regexp for extension: a . followed by anything other than a space
-		return filename.split(RegExp(/\.[\S]{1,50}/g))[0] || filename;
+		return justName.split(RegExp(/\.[\S]{1,50}/g))[0] || filename;
 	}
 
 	private static getExtraNameAndType(file: string) {
+		console.log('extra file', file)
 		const withoutExtensions = LibraryService.removeExtensionsFromFileName(file);
 		const type = ExtraTypes.find((type) => withoutExtensions.toLowerCase().endsWith('-' + type));
 		const name = type ? withoutExtensions.split('-' + type,)[0].trim() : withoutExtensions;
