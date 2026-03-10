@@ -991,7 +991,6 @@ export class LibraryService {
 	}
 
 	private static getExtraNameAndType(file: string) {
-		console.log('extra file', file)
 		const withoutExtensions = LibraryService.removeExtensionsFromFileName(file);
 		const type = ExtraTypes.find((type) => withoutExtensions.toLowerCase().endsWith('-' + type));
 		const name = type ? withoutExtensions.split('-' + type,)[0].trim() : withoutExtensions;
