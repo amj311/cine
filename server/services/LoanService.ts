@@ -20,6 +20,8 @@ export class LoanService {
 	public static async canStreamMedia(contentPath: ConfirmedPath, email: string): Promise<Boolean> {
 		// only prevent streaming if this is a media content
 		const contentLibraryItem = await LibraryService.getLibraryForContentFile(contentPath);
+		if (!contentLibraryItem) return false;
+
 		const shouldPrevent = (
 			contentLibraryItem.parentTitle?.type === 'cinema'
 			|| contentLibraryItem.parentTitle?.type === 'album'

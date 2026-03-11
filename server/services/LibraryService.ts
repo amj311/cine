@@ -909,6 +909,9 @@ export class LibraryService {
 			if ('chapters' in parentTitle) {
 				content = (parentTitle as Full<AudiobookStrat>).chapters?.find((chapter) => filePath.relativePath === chapter.relativePath) || null;
 			}
+			if ('tracks' in parentTitle) {
+				content = (parentTitle as Full<AlbumStrat>).tracks?.find((track) => filePath.relativePath === track.relativePath) || null;
+			}
 		}
 
 
