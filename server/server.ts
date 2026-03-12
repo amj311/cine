@@ -194,7 +194,7 @@ app.get("/api/dir/", async function (req, res) {
 				files: files.map((file) => file.name),
 				folders: folders,
 				libraryItems: (await Promise.all(folders.map(async (folder) => await LibraryService.parseFolderToItem(folder.confirmedPath)))).filter(Boolean).sort((a, b) => a!.sortKey?.localeCompare(b!.sortKey || '') || 0),
-				galleryFiles: (await Promise.all(files.map(async (file) => await LibraryService.parseFileToGalleryItem(file.confirmedPath)))).filter(Boolean),
+				galleryFiles: (await Promise.all(files.map(async (file) => await LibraryService.parseFileToContentItem(file.confirmedPath)))).filter(Boolean),
 			},
 		});
 	} catch (err) {
@@ -272,7 +272,7 @@ app.get('/api/stream-yt-search', async (req, res) => {
 					}
 				});
 		}).catch(err => {
-			console.error("Error getting YouTube info:", err);
+			console.error("Error getting YouTube info:", err, url);
 			if (!res.headersSent) {
 				res.status(500).send("Error processing YouTube video");
 			}
@@ -381,9 +381,9 @@ app.get("/api/stream", async function (req, res) {
 });
 
 app.post('/api/prepareAudio', async (req, res) => {
-	const { path, index } = req.body;
+	const { path: relativePath, index } = req.body;
 
-	if (!path) {
+	if (!relativePath) {
 		res.status(400).send("Requires src query param");
 		return;
 	}
@@ -391,7 +391,7 @@ app.post('/api/prepareAudio', async (req, res) => {
 		res.status(400).send("Requires index query param");
 		return;
 	}
-	const resolvedPath = DirectoryService.resolvePath(path as string);
+	const resolvedPath = DirectoryService.resolvePath(relativePath as string);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");
 		return;
@@ -588,6 +588,10 @@ app.get('/api/theaterData', async (req, res) => {
 			return;
 		}
 		const libraryData = await LibraryService.getLibraryForContentFile(resolvedPath);
+		if (!libraryData) {
+			res.status(404).send("Data not found");
+			return;
+		}
 		const probe = await ProbeService.getProbeData(resolvedPath);
 		res.json({
 			data: {
