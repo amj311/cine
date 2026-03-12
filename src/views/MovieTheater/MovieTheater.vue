@@ -949,12 +949,12 @@ const nextExtra = computed(() => {
 	transition: all 700ms;
 
 	&.mini {
+		--from-top: calc(1% + 4rem);
 		--width: min(20rem, 35vw, 30vh);
-		top: calc(1% + 4rem);
+		top: var(--from-top);
 		right: 1rem;
 		width: var(--width);
-		bottom: calc(100% - 1rem - (var(--width) * 2 / 3));
-		// aspect-ratio: 3 / 2;
+		bottom: calc(100% - var(--from-top) - (var(--width) * 2 / 3));
 	}
 
 	.next-episode-card {
