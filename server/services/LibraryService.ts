@@ -906,10 +906,12 @@ export class LibraryService {
 			if (!content && parentTitle.type === 'cinema' && parentTitle.cinemaType === 'series') {
 				content = (parentTitle as Full<SeriesCinemaStrat>).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => filePath.relativePath === episodeFile.relativePath) || null;
 			}
-			if ('chapters' in parentTitle) {
+			if (!content && 'chapters' in parentTitle) {
+				console.log("HERE")
 				content = (parentTitle as Full<AudiobookStrat>).chapters?.find((chapter) => filePath.relativePath === chapter.relativePath) || null;
 			}
-			if ('tracks' in parentTitle) {
+			if (!content && 'tracks' in parentTitle) {
+				console.log("HERE222")
 				content = (parentTitle as Full<AlbumStrat>).tracks?.find((track) => filePath.relativePath === track.relativePath) || null;
 			}
 		}
