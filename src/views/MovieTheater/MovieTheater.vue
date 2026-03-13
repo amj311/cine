@@ -46,7 +46,7 @@ const showPlayer = computed(() => {
 
 const isLoadingLibrary = ref(false);
 const parentTitle = ref<any>(null);
-const content = ref<any>(null);
+const contentFile = ref<any>(null);
 const probe = ref<any>(null);
 
 async function loadMediaData(pathToLoad: string) {
@@ -58,7 +58,7 @@ async function loadMediaData(pathToLoad: string) {
 			}
 		});
 		parentTitle.value = data.data.parentTitle;
-		content.value = data.data.content;
+		contentFile.value = data.data.content;
 		probe.value = data.data.probe;
 
 		parentTitle.value.metadata = await MetadataService.getMetadata(parentTitle.value, true);
@@ -77,48 +77,6 @@ async function loadMediaData(pathToLoad: string) {
 }
 
 const route = useRoute();
-
-async function initialProgress() {
-	if (!mediaPath.value) {
-		return;
-	}
-	const urlParams = new URL(location.href).searchParams;
-	const queryTime = new URL(location.href).searchParams.get('startTime');
-	if (queryTime) {
-		playerRef.value?.setTime(Number(queryTime));
-		urlParams.delete('startTime');
-		// remove route start time
-		history.replaceState(
-			{},
-			'',
-			route.path + '?' + urlParams.toString(),
-		)
-		return;
-	}
-
-	let watchProgress = content.value.watchProgress;
-	if (!watchProgress) {
-		try {
-			const { data } = await api.get('/watchProgress', {
-				params: {
-					path: mediaPath.value,
-				}
-			})
-			if (data.data) {
-				watchProgress = data.data;
-			}
-		}
-		catch (e) {
-			console.error("error loading watchProgress", e)
-		}
-	}
-
-	if (watchProgress && watchProgress.time < watchProgress.duration) {
-		playerRef.value?.setTime(watchProgress.time);
-		return;
-	}
-}
-
 let wakeLock: WakeLockSentinel | null = null;
 
 function carefulBackNav() {
@@ -202,6 +160,7 @@ watch(() => useMediaStore().updated, async () => {
 		if (playerRef.value?.videoRef) {
 			await useScrubberStore().initForMedia(pathToLoad, playerRef.value.videoRef);
 			await initialProgress();
+			await initialAudio();
 			playerRef.value?.videoRef.play();
 		}
 	})
@@ -259,6 +218,65 @@ onBeforeUnmount(async () => {
 		} catch (e) {}
 	}
 });
+
+async function initialProgress() {
+	if (!mediaPath.value) {
+		return;
+	}
+	const urlParams = new URL(location.href).searchParams;
+	const queryTime = urlParams.get('startTime');
+	if (queryTime) {
+		playerRef.value?.setTime(Number(queryTime));
+		urlParams.delete('startTime');
+		// remove route start time
+		history.replaceState(
+			{},
+			'',
+			route.path + '?' + urlParams.toString(),
+		)
+		return;
+	}
+
+	let watchProgress = contentFile.value.watchProgress;
+	if (!watchProgress) {
+		try {
+			const { data } = await api.get('/watchProgress', {
+				params: {
+					path: mediaPath.value,
+				}
+			})
+			if (data.data) {
+				watchProgress = data.data;
+			}
+		}
+		catch (e) {
+			console.error("error loading watchProgress", e)
+		}
+	}
+
+	if (watchProgress && watchProgress.time < watchProgress.duration) {
+		playerRef.value?.setTime(watchProgress.time);
+		return;
+	}
+}
+
+async function initialAudio() {
+	if (!mediaPath.value) {
+		return;
+	}
+	const urlParams = new URL(location.href).searchParams;
+	const audioTrack = urlParams.get('audioTrack');
+	if (audioTrack) {
+		playerRef.value?.setAudio(Number(audioTrack));
+		urlParams.delete('audioTrack');
+		// remove route start time
+		history.replaceState(
+			{},
+			'',
+			route.path + '?' + urlParams.toString(),
+		)
+	}
+}
 
 async function requestWakeLock() {
 	if ('wakeLock' in navigator) {
@@ -339,7 +357,7 @@ const progressUpdateInterval = setInterval(async () => {
 }, PROGRESS_INTERVAL);
 
 watch(() => playerProgress.value?.time, (old, newTime) => {
-	if (!playerProgress.value || !content.value) {
+	if (!playerProgress.value || !contentFile.value) {
 		return;
 	}
 
@@ -357,7 +375,7 @@ watch(() => playerProgress.value?.time, (old, newTime) => {
 	}
 	const noEndScreenThreshold_s = 15; // if there's not much time left I'd prefer to just stick around to the end
 
-	if (Boolean((playerProgress.value.percentage >= endCardPercentages[content.value.type]))) {
+	if (Boolean((playerProgress.value.percentage >= endCardPercentages[contentFile.value.type]))) {
 		showEndingCards.value = true;
 	}
 	else {
@@ -368,7 +386,7 @@ watch(() => playerProgress.value?.time, (old, newTime) => {
 	if (
 		!userLeftEndScreen.value
 		&& timeLeft > noEndScreenThreshold_s
-		&& Boolean((playerProgress.value.percentage >= endScreenPercentages[content.value.type]))
+		&& Boolean((playerProgress.value.percentage >= endScreenPercentages[contentFile.value.type]))
 	) {
 		goToEndScreen();
 	}
@@ -382,10 +400,10 @@ const nextEpisode = computed(() => findNextEpisodeFile(1)?.episodes[0]);
 const prevEpisode = computed(() => findNextEpisodeFile(-1)?.episodes[0]);
 
 function findNextEpisodeFile(delta: number) {
-	if (content.value?.type !== 'episodeFile') {
+	if (contentFile.value?.type !== 'episodeFile') {
 		return null;
 	}
-	const currEpFile = content.value;
+	const currEpFile = contentFile.value;
 	const allEpisodes = parentTitle.value?.seasons
 		.flatMap((season: any) => season.episodeFiles);
 	let currentIndex = allEpisodes?.findIndex((episode: any) => episode.name === currEpFile.name);
@@ -422,22 +440,22 @@ const nextEpisodeTitle = computed(() => {
 const showEndingCards = ref(false);
 
 const currentEpisodeMetadata = computed(() => {
-	if (content.value?.type !== 'episodeFile') {
+	if (contentFile.value?.type !== 'episodeFile') {
 		return null;
 	}
-	return parentTitle.value?.metadata?.seasons?.find((season: any) => season.seasonNumber === content.value.seasonNumber)?.episodes
-		.find((episode: any) => episode.episodeNumber === content.value?.firstEpisodeNumber);
+	return parentTitle.value?.metadata?.seasons?.find((season: any) => season.seasonNumber === contentFile.value.seasonNumber)?.episodes
+		.find((episode: any) => episode.episodeNumber === contentFile.value?.firstEpisodeNumber);
 });
 
 const currentSeason = computed(() => {
-	return parentTitle.value?.seasons?.find(s => s.seasonNumber === content.value?.seasonNumber || s.extras.some(e => e.relativePath === content.value.relativePath))
+	return parentTitle.value?.seasons?.find(s => s.seasonNumber === contentFile.value?.seasonNumber || s.extras.some(e => e.relativePath === contentFile.value.relativePath))
 });
 
 const mediaInfo = computed(() => {
-	if (content.value?.type === 'episodeFile' && currentEpisodeMetadata.value) {
+	if (contentFile.value?.type === 'episodeFile' && currentEpisodeMetadata.value) {
 		return {
 			name: currentEpisodeMetadata.value.name,
-			episodeLabel: content.value.name,
+			episodeLabel: contentFile.value.name,
 			...currentEpisodeMetadata.value,
 			credits: {
 				cast: parentTitle.value?.metadata?.credits.cast,
@@ -446,31 +464,31 @@ const mediaInfo = computed(() => {
 			}
 		};
 	}
-	if (content.value?.type === 'movie') {
+	if (contentFile.value?.type === 'movie') {
 		return {
-			name: content.value.name,
-			year: content.value.year,
+			name: contentFile.value.name,
+			year: contentFile.value.year,
 			...parentTitle.value?.metadata,
 		}
 	}
 });
 
 const videoTitle = computed(() => {
-	if (!content.value) {
+	if (!contentFile.value) {
 		return '';
 	}
-	if (content.value?.type === 'extra') {
-		return content.value.name + " - " + parentTitle.value?.folderName;
+	if (contentFile.value?.type === 'extra') {
+		return contentFile.value.name + " - " + parentTitle.value?.folderName;
 	}
-	if (content.value?.type === 'movie') {
-		return `${content.value.name} (${content.value.year})`;
+	if (contentFile.value?.type === 'movie') {
+		return `${contentFile.value.name} (${contentFile.value.year})`;
 	}
-	if (content.value?.type === 'episodeFile') {
+	if (contentFile.value?.type === 'episodeFile') {
 		const metadataName = currentEpisodeMetadata.value?.name;
 		const nameIsNotEpisodeNumber = metadataName && !metadataName.toLowerCase().match(/episode \d{1,3}/);
-		return (nameIsNotEpisodeNumber ? `"${metadataName}" ` : '') + `${content.value?.name} - ${parentTitle.value?.name}`;
+		return (nameIsNotEpisodeNumber ? `"${metadataName}" ` : '') + `${contentFile.value?.name} - ${parentTitle.value?.name}`;
 	}
-	return content.value.name;
+	return contentFile.value.name;
 });
 
 
@@ -549,7 +567,7 @@ async function toggleScrubMenu() {
  */
 
 const loadSplashUrl = computed(() => {
-	if (content.value?.type === 'extra') {
+	if (contentFile.value?.type === 'extra') {
 		return useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaPath.value) + '?width=1200&seek=3';
 	}
 	return currentEpisodeMetadata.value?.still_full || parentTitle.value?.metadata?.background || parentTitle.value?.poster;
@@ -596,7 +614,7 @@ function leaveEndScreen(preventReturn = true) {
 
 const parentExtrasToShow = computed(() => {
 	if (parentTitle.value?.cinemaType === 'movie') {
-		const extras = parentTitle.value?.extras?.filter(e => e.relativePath !== content.value?.relativePath);
+		const extras = parentTitle.value?.extras?.filter(e => e.relativePath !== contentFile.value?.relativePath);
 		return extras?.length > 0 ? extras : undefined;
 	}
 	if (parentTitle.value?.cinemaType === 'series') {
@@ -604,8 +622,8 @@ const parentExtrasToShow = computed(() => {
 		const lastEpFile = lastSeason?.episodeFiles.peek();
 
 		// show series extras for very final episode or other series extra
-		if (parentTitle.value?.extras?.some(e => e.relativePath === content.value?.relativePath) || lastEpFile?.relativePath === content.value?.relativePath) {
-			const extras = parentTitle.value?.extras?.filter(e => e.relativePath !== content.value?.relativePath);
+		if (parentTitle.value?.extras?.some(e => e.relativePath === contentFile.value?.relativePath) || lastEpFile?.relativePath === contentFile.value?.relativePath) {
+			const extras = parentTitle.value?.extras?.filter(e => e.relativePath !== contentFile.value?.relativePath);
 			return extras?.length > 0 ? extras : undefined;
 		}
 	}
@@ -613,18 +631,25 @@ const parentExtrasToShow = computed(() => {
 
 const seasonExtrasToShow = computed(() => {
 	// only show extras on last episode of season
-	if (currentSeason.value && (content.value.type === 'extra' || content.value?.episodeNumber === currentSeason.value?.episodeFiles?.peek()?.episodeNumber)) {
-		const extras = currentSeason.value?.extras?.filter(e => e.relativePath !== content.value?.relativePath);
+	if (currentSeason.value && (contentFile.value.type === 'extra' || contentFile.value?.episodeNumber === currentSeason.value?.episodeFiles?.peek()?.episodeNumber)) {
+		const extras = currentSeason.value?.extras?.filter(e => e.relativePath !== contentFile.value?.relativePath);
 		return extras?.length > 0 ? extras : undefined;
 	}
 })
 
 const nextExtra = computed(() => {
 	const extras = parentTitle.value?.extras || currentSeason.value?.extras;
-	if (extras && content.value.type === 'extra') {
-		const idx = extras.findIndex(e => e.relativePath === content.value.relativePath);
+	if (extras && contentFile.value.type === 'extra') {
+		const idx = extras.findIndex(e => e.relativePath === contentFile.value.relativePath);
 		return extras[idx + 1];
 	}
+})
+
+const secondaryAudioOptions = computed(() => {
+	return probe.value.audio.slice(1).map(track => ({
+		label: track.name,
+		value: track.index,
+	}));
 })
 
 </script>
@@ -646,17 +671,22 @@ const nextExtra = computed(() => {
 							<div class="flex-column align-items-start gap-5" style="padding: max(1rem, 1%); min-height: 100vh">
 								<div class="flex-column-center gap-1" style="zoom: 1.3">
 									<div class="flex-row-center gap-1">
-										<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="carefulBackNav" />
+										<Button variant="text" severity="contrast" btn-blur-hover icon="pi pi-arrow-left" @click="carefulBackNav" />
 										<div class="title text-ellipsis" :class="{ 'link': onTitleClick }" @click="onTitleClick">{{ videoTitle }}</div>
 									</div>
-									<Button variant="text" severity="contrast" icon="pi pi-replay" label="Replay" @click="() => playMedia(content?.relativePath)" />
+									<Button variant="text" severity="contrast" btn-blur-hover icon="pi pi-replay" label="Replay" @click="() => playMedia(contentFile?.relativePath)" />
+									<div v-if="secondaryAudioOptions.length">
+										<Button variant="text" severity="contrast" btn-blur-hover :label="`Watch with '${ secondaryAudioOptions[0].label }'`" @click="() => useMediaStore().playMedia(contentFile?.relativePath, { restart: true, audioTrack: secondaryAudioOptions[0].value })">
+											<template #icon><i class="material-symbols-outlined">movie_speaker</i></template>
+										</Button>
+									</div>
 								</div>
 
 								<div class="flex-grow-1" />
 
 								<div v-if="nextEpisode">
 									<h3>
-										{{ nextEpisode.seasonNumber === content.seasonNumber ? 'Next Episode' : 'Next Season' }}
+										{{ nextEpisode.seasonNumber === contentFile.seasonNumber ? 'Next Episode' : 'Next Season' }}
 										{{ (willAutoplay && playerProgress) ? `starting in ${timeTillAutoPlay}` : '' }}
 									</h3>
 									<div class="episode-item flex gap-3 mt-3">
@@ -845,7 +875,7 @@ const nextExtra = computed(() => {
 										/>
 									</div>
 									<div class="flex-grow-1 overflow-y-auto">
-										<ScrubSettings :content="content" />
+										<ScrubSettings :content="contentFile" />
 									</div>
 								</div>
 							</template>
