@@ -40,7 +40,6 @@ const props = defineProps<{
 		start_s: number,
 		end_s: number,
 	}>;
-	timer?: boolean;
 	background?: string,
 	allowFullscreen?: boolean,
 	showTime?: boolean,
@@ -77,28 +76,6 @@ const supportedVideoTypes = [
 const goodType = computed(() => {
 	return supportedVideoTypes.find(type => videoUrl.value.endsWith(type));
 });
-
-defineExpose({
-	videoRef,
-	showControls,
-	getProgress() {
-		if (!videoRef.value) {
-			console.warn("Video element is not rendered yet")
-			return null;
-		}
-		return useWatchProgressStore().createProgress(videoRef.value.currentTime, videoRef.value.duration);
-	},
-	setTime(time) {
-		videoRef.value!.currentTime = time;
-	},
-
-	async play() {
-		await videoRef.value?.play();
-	},
-	togglePlay,
-	skipBack,
-	skipForward,
-})
 
 const playingState = ref({
 	paused: false,
@@ -397,7 +374,7 @@ async function turnOnSecondaryAudio(audio) {
 			});
 
 			if (completedJob.status === 'failed') {
-				console.log("job failed", completedJob);
+				console.error("job failed", completedJob);
 				throw new Error("Job Failed");
 			}
 
@@ -446,11 +423,6 @@ const audioMenuItems = computed(() => {
 	}));
 });
 
-const showTimer = ref(false);
-function toggleTimer() {
-	showTimer.value = !showTimer.value;
-}
-
 /**************
  * CHAPTERS
  *************/
@@ -489,6 +461,33 @@ function goToNextChapter() {
 	}
 }
 
+defineExpose({
+	videoRef,
+	showControls,
+	getProgress() {
+		if (!videoRef.value) {
+			console.warn("Video element is not rendered yet")
+			return null;
+		}
+		return useWatchProgressStore().createProgress(props.relativePath, videoRef.value.currentTime, videoRef.value.duration);
+	},
+	setTime(time) {
+		videoRef.value!.currentTime = time;
+	},
+
+	async play() {
+		await videoRef.value?.play();
+	},
+	togglePlay,
+	skipBack,
+	skipForward,
+
+	/** Set the audio but PROBE TRACK INDEX, not audio array index */
+	setAudio(trackIndex?: number) {
+		selectedAudioIndex.value = props.audio?.findIndex(t => t.index === trackIndex) || 0;
+	}
+})
+
 </script>
 
 <template>
@@ -515,15 +514,9 @@ function goToNextChapter() {
 					<div class="flex-grow-1"></div>
 					<div class="flex align-items-center">
 						<slot name="topButtons"></slot>
-						<div v-if="timer" class="timer-trigger" @click="toggleTimer">
-							<Button :text="showTimer ? false : true" :severity="showTimer ? 'secondary' : 'contrast'" :icon="'pi pi-stopwatch'" />
-						</div>
 					</div>
 				</div>
-				<div v-if="showTimer" class="flex align-items-start">
-					<div class="flex-grow-1"></div>
-					<div><MediaTimer :mediaEl="videoRef" :inPlayer="true" /></div>
-				</div>
+				<slot name="permanentTop"></slot>
 			</div>
 			<div v-if="hasLoaded" class="center-controls overlay flex-row-center">
 				<Button v-if="chapters && chapters.length > 1" class="square text-xl" text btn-blur-hover btn-drop-shadow severity="contrast" :disabled="prevChapterStart === null" @click="prevChapterStart !== null && doSeek(prevChapterStart)">

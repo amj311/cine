@@ -67,8 +67,6 @@ async function loadMediaData(pathToLoad: string) {
 		// 	useBackgroundStore().setBackgroundUrl(parentTitle.value?.metadata.background);
 		// }
 
-		// consider this a new movie and reset the timer
-		await api.put('/timer/reset');
 	} catch (error) {
 		console.error('Error loading media data', error);
 	} finally {
@@ -169,6 +167,9 @@ watch(() => useMediaStore().updated, async () => {
 })
 
 onMounted(async () => {
+	// consider this a new watching session and reset the timer
+	await api.put('/timer/reset');
+
 	// playMedia(mediaPath.value).catch((e) => {
 	// 	console.error("Failed to load media data", e);
 	// });
@@ -307,7 +308,7 @@ async function onEnd() {
 	const finishedTime = playerRef.value?.videoRef?.duration || 1; // just to satisfy TS and avoid division by 0
 	await useWatchProgressStore().postProgress(
 		mediaPath.value,
-		useWatchProgressStore().createProgress(finishedTime, finishedTime),
+		useWatchProgressStore().createProgress(contentFile.value.relativePath, finishedTime, finishedTime),
 	);
 
 	releaseWakeLock();
@@ -652,6 +653,17 @@ const secondaryAudioOptions = computed(() => {
 	}));
 })
 
+
+
+/************
+ * TIMER
+ */
+
+const showTimer = ref(false);
+function toggleTimer() {
+	showTimer.value = !showTimer.value;
+}
+
 </script>
 
 <template>
@@ -743,7 +755,6 @@ const secondaryAudioOptions = computed(() => {
 					<VideoPlayer
 						v-if="mediaPath"
 						ref="playerRef"
-						:key="mediaPath"
 						:loadingSplash="loadSplashUrl"
 						:title="videoTitle"
 						:onTitleClick="onTitleClick"
@@ -760,7 +771,6 @@ const secondaryAudioOptions = computed(() => {
 						:subtitles="probe?.subtitles"
 						:audio="probe?.audio"
 						:chapters="probe?.chapters"
-						timer
 						allowFullscreen
 						showTime
 					>
@@ -806,6 +816,18 @@ const secondaryAudioOptions = computed(() => {
 									</div>
 								</template>
 							</DropdownTrigger>
+
+							<!-- TIMER BUTTON -->
+							<div class="timer-trigger" @click="toggleTimer">
+								<Button :text="showTimer ? false : true" :severity="showTimer ? 'secondary' : 'contrast'" :icon="'pi pi-stopwatch'" />
+							</div>
+						</template>
+
+						<template #permanentTop>
+							<div v-if="showTimer" class="flex align-items-start">
+								<div class="flex-grow-1"></div>
+								<div><MediaTimer :mediaEl="playerRef?.videoRef" :inPlayer="true" /></div>
+							</div>
 						</template>
 
 						<template #bottomButtons>
