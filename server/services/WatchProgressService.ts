@@ -155,19 +155,6 @@ export class WatchProgressService {
 	 * Only shows the most recently watched episode froma series if there are multiple.
 	 */
 	public static async getContinueWatchingList() {
-		// temp migration
-		// drop all items that do not exist or are not files
-		const allEntries = await watchingStore.getEntries();
-		for (const [path] of allEntries) {
-			await watchingStore.delete(path);
-		}
-		// completely drop all bookmarks
-		const allBookmarkEntries = await bookmarkStore.getEntries();
-		for (const [path] of allBookmarkEntries) {
-			const resolved = DirectoryService.resolvePath(path);
-			await bookmarkStore.delete(resolved!.relativePath);
-		}
-
 		const recent = await WatchProgressService.getAllRecentlyWatched();
 		return WatchProgressService.getLatestPerTitle(recent).filter(i => !WatchProgressService.isFinished(i));
 	}
