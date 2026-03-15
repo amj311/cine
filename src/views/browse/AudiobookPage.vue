@@ -573,7 +573,7 @@ watch(() => useApiStore().resolve(props.libraryItem?.cover), loadImage, { immedi
 							</div>
 							<div
 								class="chapter-item bg-blur-hover"
-								:class="{ 'active': currentChapter ? chapter === currentChapter : index === findChapterIndexAtTime(lastWatched.relativePath, lastWatched.time) }"
+								:class="{ 'active': currentChapter ? chapter === currentChapter : (lastWatched && index === findChapterIndexAtTime(lastWatched.relativePath, lastWatched.time)) }"
 								@click="() => playChapter(chapter)"
 								tabindex="0"
 							>
