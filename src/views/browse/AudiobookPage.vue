@@ -15,6 +15,8 @@ type Track = {
 	duration: number,
 	watchProgress?: WatchProgress,
 	titleStartOffset: number,
+	discNumber?: number,
+	trackNumber?: number,
 }
 
 type Chapter = {
@@ -26,8 +28,6 @@ type Chapter = {
 	trackDuration: number,
 	duration: number,
 	titleStartOffset: number,
-	discNumber?: number,
-	trackNumber?: number,
 }
 
 const props = defineProps<{
@@ -468,6 +468,11 @@ function loadImage() {
 }
 watch(() => useApiStore().resolve(props.libraryItem?.cover), loadImage, { immediate: true });
 
+function getChapterTrack(chapter: Chapter) {
+	if (!chapter) return null;
+	return props.libraryItem.tracks.find(t => t.relativePath === chapter.relativePath);
+}
+
 </script>
 
 <template>
@@ -566,10 +571,10 @@ watch(() => useApiStore().resolve(props.libraryItem?.cover), loadImage, { immedi
 							:key="index"
 						>
 							<div
-								v-if="chapter.discNumber && chapter.discNumber !== libraryItem.chapters[Number(index) - 1]?.discNumber"
+								v-if="getChapterTrack(chapter)?.discNumber && getChapterTrack(chapter)?.discNumber !== getChapterTrack(libraryItem.chapters[Number(index) - 1])?.discNumber"
 								class="p-3 opacity-70"	
 							>
-								Disc {{ Number(chapter.discNumber) }}
+								Disc {{ Number(getChapterTrack(chapter)?.discNumber) }}
 							</div>
 							<div
 								class="chapter-item bg-blur-hover"
@@ -579,7 +584,7 @@ watch(() => useApiStore().resolve(props.libraryItem?.cover), loadImage, { immedi
 							>
 								<div class="number">
 									<i v-if="chapter === currentChapter" class="pi pi-volume-up" />
-									<div v-else>{{ chapter.trackNumber || Number(index) + 1 }}</div>
+									<div v-else>{{ getChapterTrack(chapter)?.trackNumber || Number(index) + 1 }}</div>
 								</div>
 								<div class="title">{{ chapter.title }}</div>
 								<div class="duration">{{ formatRuntime(chapter.titleStartOffset) }}</div>

@@ -225,8 +225,6 @@ type Chapter = {
 	trackDuration: number,
 	duration: number,
 	titleStartOffset: number,
-	discNumber?: number,
-	trackNumber?: number,
 	start_s: number,
 	end_s: number,
 }
