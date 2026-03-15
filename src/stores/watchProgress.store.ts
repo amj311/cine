@@ -2,10 +2,12 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useApiStore } from './api.store';
 
-type SubWatchProgress = {
-	relativePath: string;
-	time: number;
-	duration: number;
+
+export type Bookmark = WatchProgress & {
+	id: string;
+	name: string;
+	titlePath: string,
+	isAuto?: boolean;
 }
 
 export type WatchProgress = {
@@ -13,14 +15,19 @@ export type WatchProgress = {
 	duration: number;
 	percentage: number;
 	watchedAt: number;
-	relativePath?: string;
-	sub?: SubWatchProgress;
+	relativePath: string;
+}
+
+type BookmarkKeys = {
+	id: string,
+	titlePath: string,
+	name: string,
 }
 
 export const useWatchProgressStore = defineStore('WatchProgress', () => {
-	const lastWatchProgress = ref<any>(null);
+	const lastWatchProgress = ref<{ relativePath: string, progress: WatchProgress } | null>(null);
 
-	async function postProgress(relativePath: string, progress: any, bookmarkId?: string, local: boolean = false) {
+	async function postProgress(relativePath: string, progress: any, bookmarkKeys?: BookmarkKeys, localKey?: string) {
 		lastWatchProgress.value = {
 			relativePath,
 			progress,
@@ -29,11 +36,11 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 		await useApiStore().api.post('/watchProgress', {
 			path: relativePath,
 			progress,
-			bookmarkId,
+			bookmarkKeys,
 		});
 
-		if (local) {
-			updateLocalProgress(relativePath, progress);
+		if (localKey) {
+			updateLocalProgress(localKey, progress);
 		}
 	}
 
@@ -56,8 +63,8 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 	}
 
 
-	function getLocalProgress(relativePath: string) {
-		const key = `localProgress_${relativePath}`;
+	function getLocalProgress(localKey: string) {
+		const key = `localProgress_${localKey}`;
 		const localProgress = localStorage.getItem(key);
 		if (localProgress) {
 			return JSON.parse(localProgress);
@@ -65,8 +72,8 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 		return null;
 	}
 
-	function updateLocalProgress(relativePath: string, progress: any) {
-		const key = `localProgress_${relativePath}`;
+	function updateLocalProgress(localKey: string, progress: any) {
+		const key = `localProgress_${localKey}`;
 		if (progress.percentage >= 99) {
 			// Remove the progress from local storage if the video is finished
 			localStorage.removeItem(key);
@@ -75,18 +82,18 @@ export const useWatchProgressStore = defineStore('WatchProgress', () => {
 		localStorage.setItem(key, JSON.stringify(progress));
 	}
 
-	function deleteLocalProgress(relativePath: string) {
-		const key = `localProgress_${relativePath}`;
+	function deleteLocalProgress(localKey: string) {
+		const key = `localProgress_${localKey}`;
 		localStorage.removeItem(key);
 	}
 
-	function createProgress(currentTime: number, duration: number, sub?: SubWatchProgress): WatchProgress {
+	function createProgress(mediaFilePath: string, currentTime: number, duration: number): WatchProgress {
 		return {
+			relativePath: mediaFilePath,
 			time: currentTime,
 			duration: duration,
 			percentage: parseInt((currentTime / duration * 100).toFixed(5)),
 			watchedAt: Date.now(),
-			sub,
 		};
 	}
 

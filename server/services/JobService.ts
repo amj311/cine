@@ -135,6 +135,7 @@ export class JobService {
 			job.status = 'completed';
 		}
 		catch (err) {
+			console.error("Job failed!", err)
 			job.status = 'failed';
 			job.error = err;
 		}

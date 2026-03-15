@@ -41,9 +41,13 @@ export class Store<T = any, N extends namespace = namespace> {
 		return this.versions.size;
 	}
 
-	public async getAll(): Promise<Array<T>> {
+	public async getValues(): Promise<Array<T>> {
 		const data = (await DataService.findAll(this.namespace)) as Array<Datum<T>>;
 		return data.map(this.migrateDatum.bind(this)).map(d => d.data);
+	}
+
+	public async getEntries(): Promise<Array<[string, Datum<T>]>> {
+		return await DataService.entries(this.namespace)
 	}
 
 	public async getByKey(key: string): Promise<T | null> {
@@ -98,6 +102,9 @@ export class Store<T = any, N extends namespace = namespace> {
 	}
 	public async delete(key: string) {
 		await DataService.delete(this.namespace, key);
+	}
+	public async clear() {
+		await DataService.clear(this.namespace);
 	}
 }
 
@@ -275,6 +282,11 @@ class DataService {
 		return await Array.from(Object.values(space));
 	}
 
+	public static async entries(namespace: namespace) {
+		const space = await this.loadNamespace(namespace);
+		return await Array.from(Object.entries(space));
+	}
+
 	private static async doUpdate(namespace: namespace, key: datumKey, datum: Datum | undefined) {
 		await this.touchNamespace(namespace);
 		if (datum) {
@@ -291,5 +303,11 @@ class DataService {
 	}
 	public static async delete(namespace: namespace, key: datumKey) {
 		await this.doUpdate(namespace, key, undefined);
+	}
+
+	public static async clear(namespace: namespace) {
+		await this.touchNamespace(namespace);
+		this.storeData[namespace] = {};
+		this.updates += 1;
 	}
 }

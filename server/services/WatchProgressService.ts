@@ -3,7 +3,8 @@
  */
 
 import { Store } from "./DataService";
-import { ConfirmedPath, RelativePath } from "./DirectoryService";
+import { ConfirmedPath, DirectoryService, RelativePath } from "./DirectoryService";
+import { LibraryService } from "./LibraryService";
 import { getSessionEmail } from "./SessionService";
 
 export type WatchProgress = {
@@ -12,35 +13,30 @@ export type WatchProgress = {
 	percentage: number,
 	watchedAt: number,
 	relativePath: RelativePath,
-	sub?: {
-		relativePath: RelativePath,
-		duration: number,
-		time: number,
-	}
 }
 
-// A bookmark saves additional timestamps for a media
-export type Bookmark = WatchProgress & {
+/**
+ * Bookmarks are saved by the path to a Title, with a WatchProgress for any track within that title
+ * Note that this setup will only really work for audiobooks
+ */
+type BookmarkKeys = {
+	id: string,
+	titlePath: RelativePath,
 	name: string,
 }
 
-type WatchProgressWithBookmarks = WatchProgress & {
-	bookmarks: Bookmark[],
-}
-
-// const watching = new Map<RelativePath, WatchProgress>();
-// const bookmarks = new Map<RelativePath, Map<string, Bookmark>>();
-
+// A bookmark saves additional timestamps for a media
+export type Bookmark = WatchProgress & BookmarkKeys;
 
 
 /**
  * store all progress by email for a path
  */
 type WatchProgressStoreRecord = Record<string, WatchProgress>; // <email, progress>
-type BookmarkStoreRecord = Record<string, Record<string, Bookmark>>;
+type BookmarkStoreRecord = Record<string, Record<string, Bookmark>>; // <email, bookmarkId, Bookmark>
 
-const watchingStore = new Store<WatchProgressStoreRecord>('watchProgress');
-const bookmarkStore = new Store<BookmarkStoreRecord>('bookmarks');
+const watchingStore = new Store<WatchProgressStoreRecord>('watchProgress'); // <content media path, WatchProgressStoreRecord>
+const bookmarkStore = new Store<BookmarkStoreRecord>('bookmarks'); // <title item path, BookmarkStoreRecord>
 
 export class WatchProgressService {
 	/**
@@ -50,7 +46,11 @@ export class WatchProgressService {
 	 * @param path The id of the media.
 	 * @param percentage The percentage of the media that has been watched.
 	 */
-	public static async updateWatchProgress(path: ConfirmedPath, progress: WatchProgress, bookmarkId?: string) {
+	public static async updateWatchProgress(path: ConfirmedPath, progress: WatchProgress, bookmarkKeys?: BookmarkKeys) {
+		if (path.isFolder) {
+			throw new Error("Watch progress path must be for a media file!")
+		}
+
 		// Always save the overall progress
 		const fullProgress: WatchProgress = {
 			...progress,
@@ -58,12 +58,12 @@ export class WatchProgressService {
 		}
 		await this.upsertProgressForEmail(fullProgress, getSessionEmail());
 
-		if (bookmarkId) {
+		if (bookmarkKeys) {
 			// Save the bookmark progress
 			const fullBookmark: Bookmark = {
 				...progress,
+				...bookmarkKeys,
 				relativePath: path.relativePath,
-				name: bookmarkId,
 			}
 			await this.upsertBookmarkForEmail(fullBookmark, getSessionEmail());
 		}
@@ -74,38 +74,10 @@ export class WatchProgressService {
 	 * @param path The id of the media.
 	 * @returns The watching progress of the media.
 	 */
-	public static async getWatchProgress(path: ConfirmedPath): Promise<WatchProgressWithBookmarks | null> {
+	public static async getWatchProgress(path: ConfirmedPath): Promise<WatchProgress | null> {
 		const allProgress = (await watchingStore.getByKey(path.relativePath)) || {};
 		const progress = allProgress[getSessionEmail()];
-		if (progress) {
-			const allBookmarks = (await bookmarkStore.getByKey(path.relativePath)) || {};
-			const bookmarks = allBookmarks[getSessionEmail()] || {};
-			return {
-				...progress,
-				bookmarks: Array.from(Object.values(bookmarks)),
-			}
-		}
-		return null;
-	}
-
-	public static async deleteWatchProgress(path: ConfirmedPath): Promise<void> {
-		await watchingStore.delete(path.relativePath);
-		await bookmarkStore.delete(path.relativePath);
-	}
-
-	public static async deleteBookmark(path: ConfirmedPath, bookmarkId: string) {
-		const bookmarksForMedia = await bookmarkStore.getByKey(path.relativePath);
-		if (bookmarksForMedia) {
-			delete bookmarksForMedia[bookmarkId];
-			await bookmarkStore.set(path.relativePath, bookmarksForMedia);
-		}
-	}
-
-	private static async upsertBookmarkForEmail(bookmark: Bookmark, email: string) {
-		const allBookmarks = await bookmarkStore.getByKey(bookmark.relativePath) || {};
-		const emailBookmarks = allBookmarks[email] || {};
-		emailBookmarks[bookmark.name] = bookmark;
-		await bookmarkStore.set(bookmark.relativePath, allBookmarks);
+		return progress || null;
 	}
 
 	private static async upsertProgressForEmail(progress: WatchProgress, email: string) {
@@ -114,12 +86,45 @@ export class WatchProgressService {
 		await watchingStore.set(progress.relativePath, allProgress);
 	}
 
-	public static async getAllRecentlyWatched(): Promise<WatchProgress[]> {
-		const allProgresses = await watchingStore.getAll();
+	public static async deleteWatchProgress(path: ConfirmedPath): Promise<void> {
+		const allProgress = await watchingStore.getByKey(path.relativePath) || {};
+		delete allProgress[getSessionEmail()];
+		await watchingStore.set(path.relativePath, allProgress);
+	}
+
+	public static async deleteBookmark(titlePath: ConfirmedPath, bookmarkId: string) {
+		const bookmarksForMedia = (await bookmarkStore.getByKey(titlePath.relativePath)) || {};
+		const bookmarksForEmail = bookmarksForMedia[getSessionEmail()];
+		if (bookmarksForEmail) {
+			delete bookmarksForEmail[bookmarkId];
+			bookmarksForMedia[getSessionEmail()] = bookmarksForEmail;
+			await bookmarkStore.set(titlePath.relativePath, bookmarksForMedia);
+		}
+	}
+
+	private static async upsertBookmarkForEmail(bookmark: Bookmark, email: string) {
+		const allTitleBookmarks = await bookmarkStore.getByKey(bookmark.titlePath) || {};
+		const emailBookmarks = allTitleBookmarks[email] || {};
+		emailBookmarks[bookmark.id] = bookmark;
+		allTitleBookmarks[email] = emailBookmarks;
+		await bookmarkStore.set(bookmark.titlePath, allTitleBookmarks);
+	}
+
+	public static async getBookmarksForTitle(path: ConfirmedPath) {
+		const allTitleBookmarks = await bookmarkStore.getByKey(path.relativePath);
+		return allTitleBookmarks?.[getSessionEmail()] || {};
+	}
+
+
+	/** Returns SORTED recently watched items */
+	public static async getAllRecentlyWatched(cutoff_ms = 1000 * 60 * 60 * 24 * 30 * 6): Promise<WatchProgress[]> {
+		const allProgresses = await watchingStore.getValues();
 		const emailProgresses = allProgresses.map(p => p[getSessionEmail()]).filter(Boolean);
-		return (emailProgresses).sort((a, b) => {
+		const sorted = emailProgresses.sort((a, b) => {
 			return b.watchedAt - a.watchedAt;
-		}).slice(0, 50);
+		});
+		const cutoffIdx = sorted.findIndex(s => s.watchedAt < Date.now() - cutoff_ms);
+		return cutoffIdx < 0 ? sorted : sorted.slice(0, cutoffIdx);
 	}
 
 	private static isEpisode(relativePath: RelativePath): boolean {
@@ -128,24 +133,21 @@ export class WatchProgressService {
 
 	/**
 	 * Filters watch list items to only a single episode per series.
+	 * Expects that watch list is already sorted!!!!!!! Silly thing to expect
 	 * @param list
 	 * @returns 
 	 */
-	private static filterOutExtraEpisodes(list: WatchProgress[]): WatchProgress[] {
-		const seenSeries = new Set<string>();
-		const continueWatching = list.filter((item) => {
-			const isEpisode = WatchProgressService.isEpisode(item.relativePath);
-			if (!isEpisode) {
-				return true;
-			}
-			let series = item.relativePath.split("/").slice(0, -2).join("/");
-			if (seenSeries.has(series)) {
+	private static getLatestPerTitle(list: WatchProgress[]): WatchProgress[] {
+		const seenTitles = new Set<string>();
+		const filtered = list.filter((item) => {
+			let titlePath = LibraryService.getTitlePath(item.relativePath);
+			if (seenTitles.has(titlePath)) {
 				return false;
 			}
-			seenSeries.add(series);
+			seenTitles.add(titlePath);
 			return true;
 		});
-		return continueWatching;
+		return filtered;
 	}
 
 	/**
@@ -153,21 +155,36 @@ export class WatchProgressService {
 	 * Only shows the most recently watched episode froma series if there are multiple.
 	 */
 	public static async getContinueWatchingList() {
+		// temp migration
+		// drop all items that do not exist or are not files
+		const allEntries = await watchingStore.getEntries();
+		for (const [path] of allEntries) {
+			await watchingStore.delete(path);
+		}
+		// completely drop all bookmarks
+		const allBookmarkEntries = await bookmarkStore.getEntries();
+		for (const [path] of allBookmarkEntries) {
+			const resolved = DirectoryService.resolvePath(path);
+			await bookmarkStore.delete(resolved!.relativePath);
+		}
+
 		const recent = await WatchProgressService.getAllRecentlyWatched();
-		return WatchProgressService.filterOutExtraEpisodes(recent).filter((item) => {
-			// must be < 90% done and > 1 minute remaining
-			return item.percentage < 90 && (item.duration - item.time > 60);
-		});
+		return WatchProgressService.getLatestPerTitle(recent).filter(i => !WatchProgressService.isFinished(i));
 	}
 
 	/**
 	 * Finds an episode that is the most recently watched of a series and was also finished.
 	 * @param list The list of watched items to check.
 	 */
-	public static async getLastFinishedEpisodes(cnt = 2): Promise<WatchProgress[]> {
+	public static async getLastFinishedEpisodes(cnt = 3): Promise<WatchProgress[]> {
 		const recent = await WatchProgressService.getAllRecentlyWatched();
-		const episodesOnly = WatchProgressService.filterOutExtraEpisodes(recent).filter((item) => WatchProgressService.isEpisode(item.relativePath));
-		const lastFinished = episodesOnly.filter((item) => item.percentage >= 90);
-		return lastFinished.slice(0, cnt);
+		const episodesOnly = WatchProgressService.getLatestPerTitle(recent).filter((item) => WatchProgressService.isEpisode(item.relativePath));
+		const finished = episodesOnly.filter(WatchProgressService.isFinished);
+		return finished.slice(0, cnt);
+	}
+
+	private static isFinished(progress: WatchProgress) {
+		// finished is < 1min remaining or > 90%
+		return (progress.duration - progress.time < 60) || progress.percentage > 90;
 	}
 }

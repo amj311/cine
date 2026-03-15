@@ -35,17 +35,41 @@ type ProbeData = {
 	full: ffmpeg.FfprobeData;
 }
 
+/** A mix of known tags and custom tags */
+type Tags = {
+	title?: string,
+	disc?: string | number,
+	track?: string | number,
+	album?: string,
+	artist?: string,
+	album_artist?: string,
+	genre?: string,
+} & { [key: string]: string }
+
+type ProbeChapter = {
+	id: number,
+	time_base: string,
+	start: number,
+	start_time: number,
+	end: number
+	end_time: number,
+	'TAG:title': string
+}
 
 export class ProbeService {
 
-	public static async getTrackData(path: ConfirmedPath): Promise<any> {
+	public static async getTrackData(path: ConfirmedPath) {
 		if (!path) {
 			return null;
 		}
 		try {
 			const probe = await ProbeService.getProbeData(path);
+			if (!probe) {
+				return null;
+			}
+
 			// make tags uniform lowercase
-			const tags = Object.fromEntries(Array.from(Object.entries(probe?.full?.format?.tags || {})).map(([key, value]) => [key.toLowerCase(), value]));
+			const tags = Object.fromEntries(Array.from(Object.entries(probe.full.format.tags || {})).map(([key, value]) => [key.toLowerCase(), value])) as Tags;
 			const stringDiscNumber = typeof tags.disc === 'string' ? tags.disc as string : null;
 			const slashDiscNumber = stringDiscNumber?.includes('/');
 			const stringTrackNumber = typeof tags.track === 'string' ? tags.track as string : null;
@@ -54,13 +78,20 @@ export class ProbeService {
 			return {
 				...tags,
 				year: safeParseInt(tags.date),
-				subtitles: probe?.glossary?.subtitles || [],
-				discNumber: slashDiscNumber ? stringDiscNumber!.split('/')[0] : safeParseInt(tags.disc),
-				discTotal: slashDiscNumber ? stringDiscNumber!.split('/')[1] : safeParseInt(tags.disc),
-				trackNumber: slashTrackNumber ? stringTrackNumber!.split('/')[0] : safeParseInt(tags.track),
-				trackTotal: slashTrackNumber ? stringTrackNumber!.split('/')[1] : safeParseInt(tags.track),
-				duration: probe?.full?.format?.duration,
-				chapters: probe?.full?.chapters,
+				subtitles: probe.glossary.subtitles || [],
+				discNumber: slashDiscNumber ? safeParseInt(stringDiscNumber!.split('/')[0]) : safeParseInt(tags.disc),
+				discTotal: slashDiscNumber ? safeParseInt(stringDiscNumber!.split('/')[1]) : safeParseInt(tags.discTotal),
+				trackNumber: slashTrackNumber ? safeParseInt(stringTrackNumber!.split('/')[0]) : safeParseInt(tags.track),
+				trackTotal: slashTrackNumber ? safeParseInt(stringTrackNumber!.split('/')[1]) : safeParseInt(tags.trackTotal),
+				duration: probe.full.format.duration,
+				chapters: probe.full.chapters.map((chapter: ProbeChapter) => ({
+					id: chapter.id,
+					title: chapter['TAG:title'] || "Chapter " + (chapter.id + 1),
+					start_s: chapter.start_time,
+					end_s: chapter.end_time,
+					duration: chapter.end_time - chapter.start_time,
+				})),
+				tags,
 			}
 		}
 		catch (err) {

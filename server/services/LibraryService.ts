@@ -9,7 +9,7 @@ import { MediaMetadataService } from "./metadata/MetadataService";
 import { EitherMetadata } from "./metadata/MetadataTypes";
 import { ProbeService } from "./ProbeService";
 import { SurpriseRecord, SurpriseService } from "./SurpriseService";
-import { WatchProgress, WatchProgressService } from "./WatchProgressService";
+import { Bookmark, WatchProgress, WatchProgressService } from "./WatchProgressService";
 
 type Stratified<B = {}, D = {}, M = {}> = {
 	base: B,
@@ -74,6 +74,8 @@ export type TitleContent = {
 	confirmedPath: ConfirmedPath,
 	watchProgress?: WatchProgress | null,
 	duration?: number,
+	listName?: string,
+	sortKey?: string,
 }
 
 /**
@@ -171,17 +173,30 @@ type AlbumStrat = Join<LibraryItemStratBase, Stratified<
 		cover: string,
 	},
 	{
-		tracks?: Array<TitleContent & {
-			relativePath: RelativePath,
-			title?: string,
-			artist?: string,
-			album?: string,
-			trackNumber?: number,
-			trackTotal?: number,
-			duration: number,
-		}>,
+		tracks?: Array<AudioTrack>,
+		totalRuntime_s: number,
 	}
 >>
+
+type AudioTrack = TitleContent & {
+	title?: string,
+	artist?: string,
+	album?: string,
+	trackNumber?: number,
+	trackTotal?: number,
+	discNumber?: number,
+	discTotal?: number,
+	duration?: number,
+	sortKey: string,
+	titleStartOffset: number,
+	trackSegments?: Array<{
+		title?: string,
+		duration: number,
+		start_s: number,
+		end_s: number,
+		titleStartOffset: number,
+	}>
+}
 
 type AudiobookStrat = Join<LibraryItemStratBase, Stratified<
 	{
@@ -192,21 +207,29 @@ type AudiobookStrat = Join<LibraryItemStratBase, Stratified<
 		author?: string,
 		cover_thumb: string,
 		cover: string,
-		chapterStrategy: 'tracks' | 'chapters',
+		confirmedPath: ConfirmedPath,
 	},
 	{
-		// each chapter references a file, but multiple chapters can be in one file
-		// in the case of .m4b files all chapters are in one file
-		chapters?: Array<TitleContent & {
-			relativePath: RelativePath,
-			title?: string,
-			trackDuration: number,
-			chapterDuration: number,
-			bookStartOffset: number,
-			trackStartOffset: number, // for multiple chapters in the same track
-		}>,
+		bookmarks: Array<Bookmark>,
+		tracks?: Array<AudioTrack>,
+		// A flattened array of all chapters, either from an entire track or from track segments
+		chapters?: Array<Chapter>,
+		totalRuntime_s: number,
 	}
 >>
+
+type Chapter = {
+	id: string,
+	title?: string,
+	relativePath: RelativePath,
+	trackDuration: number,
+	duration: number,
+	titleStartOffset: number,
+	discNumber?: number,
+	trackNumber?: number,
+	start_s: number,
+	end_s: number,
+}
 
 export type AnyContent = MovieContent | Episode | EpisodeFile | Base<AlbumStrat> | Base<AudiobookStrat> | Extra;
 
@@ -420,9 +443,10 @@ export class LibraryService {
 					type: 'audiobook',
 					title: firstTrackProbe?.album,
 					author: firstTrackProbe?.album_artist || firstTrackProbe?.artist,
-					year: firstTrackProbe?.year,
+					year: firstTrackProbe?.year ? String(firstTrackProbe?.year) : undefined,
 					cover_thumb: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=300`,
 					cover: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=500`,
+					confirmedPath: path,
 					relativePath: path.relativePath,
 					// confirmedPath: path,
 					folderName: folderName,
@@ -430,7 +454,6 @@ export class LibraryService {
 					// name: firstTrackProbe?.album || name,
 					listName: firstTrackProbe?.album || name,
 					// fileName: path.absolutePath,
-					chapterStrategy: isMb4b ? 'chapters' : 'tracks',
 					poster: posterPath,
 				}
 			}
@@ -440,7 +463,7 @@ export class LibraryService {
 				title: firstTrackProbe?.album,
 				artist: firstTrackProbe?.album_artist || firstTrackProbe?.artist,
 				genre: firstTrackProbe?.genre,
-				year: firstTrackProbe?.year,
+				year: firstTrackProbe?.year ? String(firstTrackProbe?.year) : undefined,
 				cover_thumb: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=300`,
 				cover: `/thumb/${path.relativePath + '/' + children.files[0].name}?width=500`,
 				relativePath: path.relativePath,
@@ -511,12 +534,13 @@ export class LibraryService {
 				let tracks = await Promise.all(childrenDir.files.map(async (file) => {
 					const probe = await ProbeService.getTrackData(file.confirmedPath);
 					const title = probe?.title || LibraryService.removeExtensionsFromFileName(file.name);
-					return {
+					const track: AudioTrack = {
+						libraryTier: 'content-file',
 						type: 'track',
 						title,
 						artist: probe?.artist,
 						album: probe?.album,
-						year: probe?.year,
+						year: probe?.year ? String(probe.year) : undefined,
 						trackNumber: probe?.trackNumber,
 						trackTotal: probe?.trackTotal,
 						discNumber: probe?.discNumber,
@@ -524,42 +548,63 @@ export class LibraryService {
 						duration: probe?.duration,
 						name: title,
 						fileName: file.name,
-						relativePath: path.relativePath + '/' + file.name,
-						sortKey: `${String(probe.discNumber || '').padStart(3, '0')}_${String(probe.trackNumber || '').padStart(3, '0')}_` + file.name,
+						relativePath: file.confirmedPath.relativePath,
+						confirmedPath: file.confirmedPath,
+						sortKey: `${String(probe?.discNumber || '').padStart(3, '0')}_${String(probe?.trackNumber || '').padStart(3, '0')}_` + file.name,
 						listName: title,
-						chapters: probe?.chapters
-					} as any;
+						trackSegments: probe?.chapters?.map(chapter => ({
+							...chapter,
+							// still to be computed
+							titleStartOffset: 0,
+						})),
+						// still to be computed
+						titleStartOffset: 0,
+					}
+					return track;
 				}));
 
 				tracks = objectOrder(tracks, t => t.sortKey);
 
 				// Compute the start offset for each track
-				tracks.reduce((acc, track) => {
-					track.startOffset = acc;
-					acc += track.duration;
+				const totalRuntime_s = tracks.reduce((acc, track) => {
+					track.titleStartOffset = acc;
+					acc += track.duration || 0;
+
+					// Compute the start offset for each track segment
+					track.trackSegments?.reduce((segmentAcc, segment) => {
+						segment.titleStartOffset = track.titleStartOffset + segmentAcc;
+						segmentAcc += segment.duration;
+						return segmentAcc;
+					}, 0);
+
 					return acc;
 				}, 0);
 
 				details = {
-					tracks: item.type === 'album' ? tracks : undefined,
+					totalRuntime_s,
+					tracks,
 					chapters: item.type === 'audiobook' ? tracks.flatMap((track) => {
-						if (item.chapterStrategy === 'tracks' || !track.chapters || track.chapters.length === 0) {
-							return {
-								...track,
-								trackDuration: track.duration,
-								chapterDuration: track.duration,
-								bookStartOffset: track.startOffset || 0,
-								trackStartOffset: 0,
-							}
+						let chapters: Array<Chapter>;
+						if (!track.trackSegments || track.trackSegments.length === 0) {
+							chapters = [{
+								id: track.relativePath,
+								title: track.title || track.fileName,
+								relativePath: track.relativePath,
+								trackDuration: track.duration || 0,
+								duration: track.duration || 0,
+								titleStartOffset: track.titleStartOffset,
+								start_s: 0,
+								end_s: track.duration || 0,
+							}]
+							return chapters;
 						}
-						return track.chapters.map((chapter: any) => ({
-							...track,
-							title: chapter['TAG:title'] || track.title,
-							trackDuration: track.duration,
-							chapterDuration: chapter.duration,
-							bookStartOffset: chapter.start_time || 0,
-							trackStartOffset: chapter.start_time || 0,
+						chapters = track.trackSegments.map(chapter => ({
+							...chapter,
+							id: track.relativePath + '_' + chapter.duration,
+							relativePath: track.relativePath,
+							trackDuration: track.duration || 0,
 						}));
+						return chapters;
 					}) : undefined,
 				}
 			}
@@ -600,10 +645,13 @@ export class LibraryService {
 
 	/** Many library items have nested Content items. This will find watchProgress for all of them. */
 	private static async joinProgressDeep(item: Record<any, any>) {
-		const diveAttributes = ['movie', 'extras', 'seasons', 'episodeFiles', 'episodes', 'chapters', 'tracks'];
+		const diveAttributes = ['movie', 'extras', 'seasons', 'episodeFiles', 'episodes', 'tracks'];
 		// All items with watchProgress have confirmedPath
-		if (item.confirmedPath) {
+		if (item.libraryTier === 'content-file') {
 			item.watchProgress = await WatchProgressService.getWatchProgress(item.confirmedPath);
+		}
+		if (item.type === 'audiobook') {
+			item.bookmarks = await WatchProgressService.getBookmarksForTitle(item.confirmedPath);
 		}
 		await Promise.all(Array.from(Object.keys(item)).map(async key => {
 			if (diveAttributes.includes(key) && item[key]) {
@@ -862,6 +910,15 @@ export class LibraryService {
 		});
 	}
 
+	public static getTitlePath(relativePath: string) {
+		// title right now is always the parent folder OR grandparent if parent is season
+		const ancestry = relativePath.split('/');
+		const parentIdx = ancestry.length - 2;
+		const grandparentIdx = ancestry.length - 3;
+
+		const titleIndex = ancestry[parentIdx].toLowerCase().match(/^season \d/g) ? grandparentIdx : parentIdx;
+		return ancestry.slice(0, titleIndex + 1).join('/');
+	}
 
 	public static async getLibraryForContentFile(filePath: ConfirmedPath) {
 		if (DirectoryService.isFolder(filePath)) {
@@ -906,12 +963,7 @@ export class LibraryService {
 			if (!content && parentTitle.type === 'cinema' && parentTitle.cinemaType === 'series') {
 				content = (parentTitle as Full<SeriesCinemaStrat>).seasons?.flatMap((season) => season.episodeFiles).find((episodeFile) => filePath.relativePath === episodeFile.relativePath) || null;
 			}
-			if (!content && 'chapters' in parentTitle) {
-				console.log("HERE")
-				content = (parentTitle as Full<AudiobookStrat>).chapters?.find((chapter) => filePath.relativePath === chapter.relativePath) || null;
-			}
 			if (!content && 'tracks' in parentTitle) {
-				console.log("HERE222")
 				content = (parentTitle as Full<AlbumStrat>).tracks?.find((track) => filePath.relativePath === track.relativePath) || null;
 			}
 		}
@@ -1054,7 +1106,7 @@ export class LibraryService {
 		return name.replace(/^(the|a|an)\s+/i, '');
 	}
 
-	public static createSortKey(folderName: string, providedYear?: string) {
+	public static createSortKey(folderName: string, providedYear?: string | number) {
 		const { name, year } = LibraryService.parseNamePieces(folderName);
 		const withoutArticles = LibraryService.removeArticlesFromName(name);
 		let collectionName = '';

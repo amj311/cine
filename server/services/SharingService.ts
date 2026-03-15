@@ -29,7 +29,7 @@ export class SharingService {
 	 * @returns 
 	 */
 	public static async getSharedOnly<T = string>(args: Array<T>, email: string, getPath = (arg: T) => String(arg)): Promise<Array<T>> {
-		const allShared = await shareStore.getAll();
+		const allShared = await shareStore.getValues();
 		const accesses = await Promise.all(args.map(async arg => ({
 			...arg,
 			access: await this.determineEmailPathAccess(getPath(arg), email, allShared),
@@ -43,7 +43,7 @@ export class SharingService {
 		}
 
 		if (!fromShares) {
-			fromShares = await shareStore.getAll();
+			fromShares = await shareStore.getValues();
 		}
 
 		for (const shared of fromShares) {
@@ -89,7 +89,7 @@ export class SharingService {
 	}
 
 	public static async getAllPathAccess(path: ConfirmedPath): Promise<SharedAccessWithType[]> {
-		const allShares = await shareStore.getAll();
+		const allShares = await shareStore.getValues();
 		// find all shares with some sort of access to this path
 		const sharedAccess = allShares.map(s => ({
 			...s,

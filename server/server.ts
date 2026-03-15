@@ -510,14 +510,14 @@ app.get('/api/watchProgress', async (req, res) => {
 });
 app.post('/api/watchProgress', async (req, res) => {
 	try {
-		const { path, progress, bookmarkId } = req.body;
+		const { path, progress, bookmarkKeys } = req.body;
 		const resolvedPath = DirectoryService.resolvePath(path);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
 		}
 
-		await WatchProgressService.updateWatchProgress(resolvedPath, progress, bookmarkId);
+		await WatchProgressService.updateWatchProgress(resolvedPath, progress, bookmarkKeys);
 		res.json({
 			success: true,
 		})
@@ -667,7 +667,7 @@ app.get('/api/feed', async (req, res) => {
 			duration_s: (await ProbeService.getProbeData(item.confirmedPath))?.glossary.duration_s,
 			libraryItems: await LibraryService.getLibraryForContentFile(item.confirmedPath),
 			isUpNext: item.isUpNext,
-		})))).sort((a, b) => b.watchedAt - a.watchedAt).filter(i => i.libraryItems && !i.libraryItems.parentTitle?.surprise && !i.libraryItems);
+		})))).sort((a, b) => b.watchedAt - a.watchedAt).filter(i => i.libraryItems && !i.libraryItems.parentTitle?.surprise);
 
 		if (continueFeedItems.length > 0) {
 			feedLists.push({

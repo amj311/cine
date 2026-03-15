@@ -47,7 +47,7 @@ async function checkFirebaseAuth(authToken: string) {
 
 async function checkServerTokens(authToken: string) {
 	// first delete all expired tokens
-	const allTokens = await authTokens.getAll();
+	const allTokens = await authTokens.getValues();
 	for (const token of allTokens) {
 		if (token.expires < Date.now()) {
 			await authTokens.delete(token.token)
@@ -167,7 +167,7 @@ export const SessionService = {
 	 */
 	async checkForValidatedCode(code: string) {
 		// first delete all expired codes
-		const allCodes = await signinCodes.getAll();
+		const allCodes = await signinCodes.getValues();
 		for (const savedCode of allCodes) {
 			if (savedCode.expires < Date.now()) {
 				await authTokens.delete(String(savedCode.code));

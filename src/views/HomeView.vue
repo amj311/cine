@@ -11,6 +11,7 @@ import { useQueryPathStore } from '@/stores/queryPath.store';
 import NothingFound from '@/components/NothingFound.vue';
 import { useUserStore } from '@/stores/user.store';
 import { useAppNavigationStore } from '@/stores/appNavigation.store';
+import { useWatchProgressStore } from '@/stores/watchProgress.store';
 
 const feed = ref<any[]>([]);
 
@@ -122,14 +123,18 @@ function formatRuntime(minutes: number) {
 												</MediaCard>
 
 												<MediaCard
-													v-else-if="item.libraryItems.content.type === 'album' || item.libraryItems.content.type === 'audiobook'"
+													v-else-if="item.libraryItems.content.type === 'track'"
 													tvNavable
-													:action="() => useQueryPathStore().goTo(item.libraryItems.content.relativePath)"
-													:imageUrl="item.libraryItems.content.cover_thumb"
+													:action="() => useQueryPathStore().goTo(item.libraryItems.parentTitle.relativePath)"
+													:imageUrl="item.libraryItems.parentTitle.cover_thumb"
 													:imagePosition="'top'"
-													:progress="item.watchProgress"
+													:progress="useWatchProgressStore().createProgress(
+														item.libraryItems.parentTitle.relativePath,
+														item.libraryItems.content.titleStartOffset + item.watchProgress.time,
+														item.libraryItems.parentTitle.totalRuntime_s
+													)"
 													:aspectRatio="'square'"
-													:title="item.libraryItems.content.title"
+													:title="item.libraryItems.parentTitle.title"
 													:subtitle="`${timeRemaining(item.watchProgress)} left`"
 													:surprise="item.libraryItems.parentTitle.surprise"
 													:loading="isLoadingMetadata"
@@ -264,7 +269,7 @@ function formatRuntime(minutes: number) {
 		min-width: var(--baseWidth);
 		max-width: var(--baseWidth);
 
-		&.album, &.audiobook {
+		&.track {
 			--mult: 0.66;
 			width: calc(var(--baseWidth) * var(--mult));
 			min-width: calc(var(--baseWidth) * var(--mult));

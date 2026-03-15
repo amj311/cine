@@ -31,6 +31,13 @@ export class ConfirmedPath {
 		this.relativePath = DirectoryService.getRelativePath(absolutePath) as RelativePath;
 	}
 
+	get isFile() {
+		return !DirectoryService.isFolder(this);
+	}
+	get isFolder() {
+		return DirectoryService.isFolder(this);
+	}
+
 	get rootFolder() {
 		return new ConfirmedPath(DirectoryService.resolvePath(this.relativePath.split('/')[0])!.absolutePath);
 	}

@@ -50,7 +50,7 @@ export class LoanService {
 	}
 
 	public static async getAllLoans() {
-		return await loanStore.getAll();
+		return await loanStore.getValues();
 	}
 
 	public static async upsertLoan(loan: Loan) {
