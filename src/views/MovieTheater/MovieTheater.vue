@@ -755,6 +755,7 @@ function toggleTimer() {
 					<VideoPlayer
 						v-if="mediaPath"
 						ref="playerRef"
+						:key="mediaPath"
 						:loadingSplash="loadSplashUrl"
 						:title="videoTitle"
 						:onTitleClick="onTitleClick"
