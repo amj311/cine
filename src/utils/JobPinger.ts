@@ -13,7 +13,7 @@ export class JobPinger {
 
 	constructor(
 		readonly jobId: string,
-		readonly interval_ms: number = 5000,
+		readonly interval_ms: number = 1000,
 		readonly timeout: number = 1000 * 60 * 5,
 	) { }
 

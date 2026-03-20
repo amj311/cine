@@ -308,6 +308,7 @@ app.get("/api/stream", async function (req, res) {
 		await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
 			// Convert 3GP to MP4
 			ffmpeg.output(outputFilePath)
+				.outputOptions('-preset veryfast')
 				.on('end', () => {
 					resolve();
 				})
@@ -402,10 +403,11 @@ app.post('/api/prepareAudio', async (req, res) => {
 		type: 'extract_audio_stream',
 		priority: true,
 		handler: async ({ progress }) => {
-			// Use ffmpeg to extract indicated audio stream from video file as mp3
-			const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp3');
+			// Use ffmpeg to extract indicated audio stream from video file as mp4
+			// This should be coming from an m-4 video file, so keeping the same codec means we can do a direct copy
+			const outputFilePath = path.join(__dirname, '../dist/assets/secondary-audio.mp4');
 			await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
-				ffmpeg.outputOptions(`-map 0:${index}`)
+				ffmpeg.outputOptions([`-map 0:${index}`, '-c copy'])
 					.output(outputFilePath)
 					.on('progress', (data: { percent: number }) => {
 						progress(data.percent)

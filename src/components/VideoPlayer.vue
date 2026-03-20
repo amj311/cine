@@ -63,6 +63,7 @@ function doShowControls() {
 	}, showControlsTime);
 } 
 
+const wrapperRef = ref<HTMLDivElement>();
 const videoRef = ref<HTMLVideoElement>();
 const videoUrl = computed(() => useApiStore().apiUrl + '/stream?path=' + encodeMediaPath(props.relativePath));
 const secondaryAudioPlayer = ref<HTMLAudioElement>();
@@ -157,7 +158,7 @@ onMounted(() => {
 	// Setup control hiding
 	const events = ['mousemove', 'keydown', 'touchstart'];
 	events.forEach((event) => {
-		window.addEventListener(event, doShowControls, { passive: true });
+		wrapperRef.value?.addEventListener(event, doShowControls, { passive: true });
 	});
 
 	// setup keybindings
@@ -174,6 +175,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+	const events = ['mousemove', 'keydown', 'touchstart'];
+	events.forEach((event) => {
+		wrapperRef.value?.removeEventListener(event, doShowControls);
+	});
 	window.removeEventListener('keydown', windowKeyHandler);
 })
 
@@ -378,7 +383,7 @@ async function turnOnSecondaryAudio(audio) {
 				throw new Error("Job Failed");
 			}
 
-			audioPlayer.src = useApiStore().apiUrl + '/assets/conversion.mp3';
+			audioPlayer.src = useApiStore().apiUrl + '/assets/secondary-audio.mp4';
 
 			videoRef.value.muted = true;
 			
