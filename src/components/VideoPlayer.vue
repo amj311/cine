@@ -2,7 +2,7 @@
 import { useApiStore } from '@/stores/api.store';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
-import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import MediaTimer from './MediaTimer.vue';
 import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
@@ -180,6 +180,7 @@ onBeforeUnmount(() => {
 		wrapperRef.value?.removeEventListener(event, doShowControls);
 	});
 	window.removeEventListener('keydown', windowKeyHandler);
+	clearInterval(audioSyncCheck);
 })
 
 function windowKeyHandler(e) {
@@ -336,6 +337,8 @@ watch(secondaryAudio, (audio) => {
 	}
 }, { immediate: true });
 
+let audioSyncCheck: number = 0;
+
 async function turnOffSecondaryAudio() {
 	if (!videoRef.value) {
 		return;
@@ -343,6 +346,7 @@ async function turnOffSecondaryAudio() {
 	videoRef.value.muted = false;
 	await secondaryAudioPlayer.value?.pause();
 	secondaryAudioPlayer.value!.src = '';
+	clearInterval(audioSyncCheck);
 }
 async function turnOnSecondaryAudio(audio) {
 	if (!videoRef.value) {
@@ -391,6 +395,13 @@ async function turnOnSecondaryAudio(audio) {
 			if (isPlaying.value) {
 				await audioPlayer.play();
 			}
+
+			// setup periodic sync check
+			audioSyncCheck = setInterval(() => {
+				if (audioPlayer && videoRef.value) {
+					audioPlayer.currentTime = videoRef.value.currentTime;
+				}
+			}, 5000);
 			
 			loadingAudio.value = false;
 			toast.removeAllGroups();
