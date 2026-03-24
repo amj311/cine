@@ -260,7 +260,7 @@ const subtitleTracks = computed(() => {
 	if (!props.subtitles?.length) {
 		return [];
 	}
-	const supportedFormats = ['mov_text'];
+	const supportedFormats = ['mov_text', 'subrip'];
 	// Sort subtitles by support, but don't hide unsupported ones for transparency
 	const tracks = props.subtitles
 		.map((track, i) => ({

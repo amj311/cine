@@ -843,7 +843,7 @@ app.get('/api/subtitles', async (req, res) => {
 		const subtitleStream = probe?.full.streams[parsedIndex];
 
 		if (subtitleStream && (subtitleStream.codec_type === 'subtitle' || subtitleStream.tags?.handler_name === 'SubtitleHandler')) {
-			if (subtitleStream.codec_name === 'mov_text') {
+			if (subtitleStream.codec_name === 'mov_text' || subtitleStream.codec_name === 'subrip') {
 				const subtitleIndex = subtitleStream.index;
 				const outputFilePath = path.join(__dirname, '../dist/assets/output.vtt');
 
