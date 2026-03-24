@@ -326,7 +326,7 @@ app.get("/api/stream", async function (req, res) {
 		return;
 	}
 
-	const streamable = ['mp4', 'mp3', 'm4b', 'flac'];
+	const streamable = ['mp4', 'mp3', 'm4b', 'flac', 'mkv'];
 	if (!streamable.some((ext) => resolvedPath.relativePath.endsWith(ext))) {
 		res.status(400).send("File type not supported for streaming");
 		return;

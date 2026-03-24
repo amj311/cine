@@ -284,7 +284,7 @@ export type Photo = GalleryFileData & {
 	takenAt?: string,
 }
 
-export const VideoTypes = ['mp4', '3gp', '3g2'] as const;
+export const VideoTypes = ['mp4', '3gp', '3g2', 'mkv'] as const;
 type VideoType = typeof VideoTypes[number];
 type Video = GalleryFileData & {
 	type: 'video',
@@ -756,7 +756,7 @@ export class LibraryService {
 
 		await Promise.all(seasonFolders.map(async (folderPath) => {
 			const { files } = await DirectoryService.listDirectory(folderPath);
-			const videoFiles = files.filter((file) => file.name.endsWith('.mp4'));
+			const videoFiles = files.filter((file) => VideoTypes.some(t => file.confirmedPath.relativePath.endsWith(t)));
 
 			const folderSeasonNumber = parseInt(folderPath.relativePath.split('/').pop()?.replace(/season /gi, '') || '');
 
