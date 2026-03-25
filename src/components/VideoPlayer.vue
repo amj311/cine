@@ -10,7 +10,6 @@ import { useScreenStore } from '@/stores/screen.store';
 import { JobPinger } from '@/utils/JobPinger';
 import VideoProgressBar from './VideoProgressBar.vue';
 import type Message from 'primevue/message';
-import { parseIdx } from '@/utils/idxParser';
 import VobSubCanvas from './VobSubCanvas.vue';
 
 const toast = useToast();

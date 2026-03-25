@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useApiStore } from '@/stores/api.store';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import type { IdxFile } from '../../server/utils/idxParser';
 import { parseSubPacket, type SpuBitmap } from '@/utils/subParser';
 
 const props = defineProps<{
@@ -10,7 +9,7 @@ const props = defineProps<{
 	trackIndex: number;
 }>();
 
-const idxFile = ref<IdxFile | null>(null);
+const idxFile = ref<any | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
