@@ -155,6 +155,9 @@ export class ProbeService {
 						for (const stream of data.streams) {
 							const handler_name = stream.tags?.handler_name;
 							if (stream.codec_type === 'subtitle' || stream.codec_name === 'mov_text' || handler_name === 'SubtitleHandler') {
+								if (stream.codec_name === 'bin_data') {
+									continue;
+								}
 								const language = stream.tags?.language;
 								let name = `${language} (${stream.codec_long_name})`;
 								if (handler_name && handler_name !== 'SubtitleHandler') {

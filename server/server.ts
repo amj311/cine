@@ -161,6 +161,8 @@ import shareRoute from './routes/share.route'
 app.use('/api/share', shareRoute);
 import loanRoute from './routes/loan.route'
 app.use('/api/loan', loanRoute);
+import subtitlesRoute from './routes/subtitles.route'
+app.use('/api/subtitles', subtitlesRoute);
 
 
 import { decodeMediaPath, safeParseInt } from './utils/miscUtils';
@@ -873,77 +875,36 @@ app.get('/api/subtitles', async (req, res) => {
 				});
 
 			}
-			else if (subtitleStream.codec_name === 'dvd_subtitle') {
-				// extract to .idx and .sub, then recognize with tesseract
-				const subtitleIndex = subtitleStream.index;
-				const outFile = path.join(__dirname, '../dist/assets/temp.sup');
-
-				// Extract VobSub subtitles
-				useFfmpeg(fullPath.absolutePath, (ffmpeg) => {
-					ffmpeg.outputOptions(`-map 0:${subtitleIndex}`)
-						.outputOptions('-c:s copy') // Copy the subtitle stream without re-encoding
-						.output(outFile) // Output the .idx file
-						.on('end', async () => {
-							try {
-								console.log("VobSub subtitles extracted successfully");
-								// Perform OCR on the extracted subtitles
-								// const ocrResult = await tesseract.recognize(subFilePath, 'eng');
-
-								// console.log("OCR Result:", ocrResult.data.text);
-
-								// Send the OCR result as plain text
-								const origin = req.headers.origin as string | undefined;
-								if (origin) {
-									res.setHeader('Access-Control-Allow-Origin', origin);
-									res.setHeader('Access-Control-Allow-Credentials', 'true');
-									res.setHeader('Vary', 'Origin');
-								}
-								res.setHeader('Content-Type', 'text/plain');
-								// res.send(ocrResult.data.text);
-								res.send(200);
-							} catch (ocrError) {
-								console.error("Error during OCR processing:", ocrError);
-								res.status(500).send("Error during OCR processing");
-							}
-						})
-						.on('error', (ffmpegError: any) => {
-							console.error("Error while extracting VobSub subtitles:", ffmpegError);
-							res.status(500).send("Error extracting VobSub subtitles");
-						})
-						.run();
-				})
-
-			}
-			else if (subtitleStream.codec_name === 'bin_data') {
-				// Log the binary data as text
-				// use ffmpeg to pass the data into a buffer and send it as text
-				const subtitleIndex = subtitleStream.index;
-				const outputFilePath = path.join(__dirname, '../dist/assets/output.txt');
-				useFfmpeg(fullPath.absolutePath, (ffmpeg) => {
-					ffmpeg.outputOptions(`-map 0:${subtitleIndex}`)
-						.outputOptions('-f srt') // Output format as SRT
-						.save(outputFilePath)
-						.on('end', () => {
-							const origin = req.headers.origin as string | undefined;
-							if (origin) {
-								res.setHeader('Access-Control-Allow-Origin', origin);
-								res.setHeader('Access-Control-Allow-Credentials', 'true');
-								res.setHeader('Vary', 'Origin');
-							}
-							res.setHeader('Content-Type', 'text/plain');
-							res.sendFile(outputFilePath, (err) => {
-								if (err) {
-									console.error("Error while sending subtitle file:", err);
-									res.status(500).send("Error sending subtitle file");
-								}
-							});
-						})
-						.on('error', (err: any) => {
-							console.error("Error while extracting subtitles:", err);
-							res.status(500).send("Error extracting subtitles");
-						});
-				});
-			}
+			// else if (subtitleStream.codec_name === 'bin_data') {
+			// 	// Log the binary data as text
+			// 	// use ffmpeg to pass the data into a buffer and send it as text
+			// 	const subtitleIndex = subtitleStream.index;
+			// 	const outputFilePath = path.join(__dirname, '../dist/assets/output.txt');
+			// 	useFfmpeg(fullPath.absolutePath, (ffmpeg) => {
+			// 		ffmpeg.outputOptions(`-map 0:${subtitleIndex}`)
+			// 			.outputOptions('-f srt') // Output format as SRT
+			// 			.save(outputFilePath)
+			// 			.on('end', () => {
+			// 				const origin = req.headers.origin as string | undefined;
+			// 				if (origin) {
+			// 					res.setHeader('Access-Control-Allow-Origin', origin);
+			// 					res.setHeader('Access-Control-Allow-Credentials', 'true');
+			// 					res.setHeader('Vary', 'Origin');
+			// 				}
+			// 				res.setHeader('Content-Type', 'text/plain');
+			// 				res.sendFile(outputFilePath, (err) => {
+			// 					if (err) {
+			// 						console.error("Error while sending subtitle file:", err);
+			// 						res.status(500).send("Error sending subtitle file");
+			// 					}
+			// 				});
+			// 			})
+			// 			.on('error', (err: any) => {
+			// 				console.error("Error while extracting subtitles:", err);
+			// 				res.status(500).send("Error extracting subtitles");
+			// 			});
+			// 	});
+			// }
 			else {
 				res.status(400).send("Unsupported subtitle format: " + subtitleStream.codec_name);
 			}

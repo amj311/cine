@@ -10,6 +10,8 @@ import { useScreenStore } from '@/stores/screen.store';
 import { JobPinger } from '@/utils/JobPinger';
 import VideoProgressBar from './VideoProgressBar.vue';
 import type Message from 'primevue/message';
+import { parseIdx } from '@/utils/idxParser';
+import VobSubCanvas from './VobSubCanvas.vue';
 
 const toast = useToast();
 
@@ -260,11 +262,12 @@ const subtitleTracks = computed(() => {
 	if (!props.subtitles?.length) {
 		return [];
 	}
-	const supportedFormats = ['mov_text', 'subrip'];
+	const supportedFormats = ['mov_text', 'subrip', 'dvd_subtitle'];
 	// Sort subtitles by support, but don't hide unsupported ones for transparency
 	const tracks = props.subtitles
 		.map((track, i) => ({
 			index: track.index,
+			format: track.format,
 			label: track.name || 'Subtitle ' + (i + 1),
 			url: useApiStore().apiUrl + '/subtitles?path=' + encodeMediaPath(props.relativePath) + '&index=' + track.index,
 			supported: supportedFormats.includes(track.format),
@@ -511,9 +514,10 @@ defineExpose({
 		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="use-credentials" allow :style="{ backgroundColor: background }">
 			<source :src="videoUrl" :type="'video/mp4'" />
 			<!-- <track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" /> -->
-			<track v-if="selectedSubtitle" :key="selectedSubtitle.url" kind="subtitles" :src="selectedSubtitle.url" srclang="en" :label="selectedSubtitle.label" default @error="handleSubtitleError" />
+			<track v-if="selectedSubtitle && selectedSubtitle.format !== 'dvd_subtitle'" :key="selectedSubtitle.url" kind="subtitles" :src="selectedSubtitle.url" srclang="en" :label="selectedSubtitle.label" default @error="handleSubtitleError" />
 		</video>
 		<audio ref="secondaryAudioPlayer" type="audio/mp3" crossorigin="use-credentials" />
+		<VobSubCanvas v-if="selectedSubtitle && selectedSubtitle.format === 'dvd_subtitle'" :videoRef="videoRef" :path="relativePath" :trackIndex="selectedSubtitle.index" :key="selectedSubtitle.index" />
 
 		<div v-if="!hasLoaded" class="loading-splash">
 			<img v-if="loadingSplash" :src="loadingSplash" />

@@ -1,0 +1,20 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.server.prod
+    image: cine-server
+    container_name: cine-server
+    command: yarn server
+    restart: on-failure:max=2
+    labels:
+      - "com.docker.compose.project=cine"
+    environment:
+      - MEDIA_DIR=/media/
+      - DATA_DIR=/data/
+    ports:
+      - 3401:5000
+
+    volumes:
+      - /Users/Arthur/__media_test__:/media
+      - /Users/Arthur/__data_test__:/data
