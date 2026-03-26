@@ -30,7 +30,7 @@ const toast = useToast();
 const router = useRouter();
 const api = useApiStore().api;
 
-const mediaPath = computed(() => useMediaStore().currentPath as string);
+const queryPath = computed(() => useMediaStore().currentPath as string);
 const playerRef = ref<InstanceType<typeof VideoPlayer>>();
 const didAutoFullscreen = ref(false);
 const hasLoaded = ref(false);
@@ -40,14 +40,29 @@ const userLeftEndScreen = ref(false);
 const endScreenHasContent = computed(() => Boolean(nextEpisode.value || parentExtrasToShow.value || seasonExtrasToShow.value));
 const playerProgress = ref<WatchProgress | null>(null); // WatchProgress type
 
-const showPlayer = computed(() => {
-	return Boolean(mediaPath.value && !hasEnded.value);
-});
-
 const isLoadingLibrary = ref(false);
 const parentTitle = ref<any>(null);
 const contentFile = ref<any>(null);
 const probe = ref<any>(null);
+
+const playablePath = computed(() => contentFile.value?.relativePath);
+
+// ensure that content data has loaded before showing player
+const showPlayer = computed(() => {
+	return Boolean(playablePath.value && !hasEnded.value);
+});
+
+function resetState() {
+	playerRef.value?.videoRef?.pause();
+	playerRef.value?.setTime(0);
+	playerProgress.value = null;
+	if (playerRef.value?.videoRef) playerRef.value.videoRef.currentTime = 0;
+	hasEnded.value = false;
+	hasLoaded.value = false;
+	userLeftEndScreen.value = false;
+	leaveEndScreen(false);
+
+}
 
 async function loadMediaData(pathToLoad: string) {
 	try {
@@ -66,7 +81,6 @@ async function loadMediaData(pathToLoad: string) {
 		// if (parentTitle.value?.metadata?.background) {
 		// 	useBackgroundStore().setBackgroundUrl(parentTitle.value?.metadata.background);
 		// }
-
 	} catch (error) {
 		console.error('Error loading media data', error);
 	} finally {
@@ -123,19 +137,13 @@ async function playMedia(pathToLoad: string, restart = true) {
 
 
 watch(() => useMediaStore().updated, async () => {
-	if (!mediaPath.value) {
+	if (!queryPath.value) {
 		return;
 	}
-	const pathToLoad = mediaPath.value;
+	const pathToLoad = queryPath.value;
 	
 	// RESET ALL THE THINGS
-	playerRef.value?.setTime(0);
-	playerProgress.value = playerRef.value?.getProgress() || null;
-	if (playerRef.value?.videoRef) playerRef.value.videoRef.currentTime = 0;
-	hasEnded.value = false;
-	hasLoaded.value = false;
-	userLeftEndScreen.value = false;
-	leaveEndScreen(false);
+	resetState();
 
 	await loadMediaData(pathToLoad);
 
@@ -221,7 +229,7 @@ onBeforeUnmount(async () => {
 });
 
 async function initialProgress() {
-	if (!mediaPath.value) {
+	if (!queryPath.value) {
 		return;
 	}
 	const urlParams = new URL(location.href).searchParams;
@@ -243,7 +251,7 @@ async function initialProgress() {
 		try {
 			const { data } = await api.get('/watchProgress', {
 				params: {
-					path: mediaPath.value,
+					path: queryPath.value,
 				}
 			})
 			if (data.data) {
@@ -262,7 +270,7 @@ async function initialProgress() {
 }
 
 async function initialAudio() {
-	if (!mediaPath.value) {
+	if (!queryPath.value) {
 		return;
 	}
 	const urlParams = new URL(location.href).searchParams;
@@ -307,7 +315,7 @@ async function onEnd() {
 	// update progress to finished
 	const finishedTime = playerRef.value?.videoRef?.duration || 1; // just to satisfy TS and avoid division by 0
 	await useWatchProgressStore().postProgress(
-		mediaPath.value,
+		queryPath.value,
 		useWatchProgressStore().createProgress(contentFile.value.relativePath, finishedTime, finishedTime),
 	);
 
@@ -345,7 +353,7 @@ const progressUpdateInterval = setInterval(async () => {
 				return;
 			}
 			await useWatchProgressStore().postProgress(
-				mediaPath.value,
+				queryPath.value,
 				playerProgress.value,
 			);
 			lastPostTime = playerProgress.value?.time;
@@ -569,7 +577,7 @@ async function toggleScrubMenu() {
 
 const loadSplashUrl = computed(() => {
 	if (contentFile.value?.type === 'extra') {
-		return useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaPath.value) + '?width=1200&seek=3';
+		return useApiStore().apiUrl + '/thumb/' + encodeMediaPath(queryPath.value) + '?width=1200&seek=3';
 	}
 	return currentEpisodeMetadata.value?.still_full || parentTitle.value?.metadata?.background || parentTitle.value?.poster;
 })
@@ -668,7 +676,10 @@ function toggleTimer() {
 
 <template>
 	<div class="fixed top-0 bottom-0 left-0 right-0" style="background: #000">
-	
+		<!-- loading screen -->
+		<div class="absolute-full flex-center-all bg-contain" :style="{ backgroundImage: `url('${loadSplashUrl}')'`}">
+			<i class="pi pi-spin pi-spinner text-5xl" />
+		</div>
 
 		<div class="theater-wrapper md:flex-row flex-column">
 			<div class="w-full flex-grow-1 relative">
@@ -753,16 +764,16 @@ function toggleTimer() {
 
 				<div v-show="showPlayer" class="main-video-wrapper flex-grow-1" :class="{ 'mini bg-blur-hover border-round overflow-hidden cursor-pointer': showEndScreen, focusAreaClass: !showEndScreen }" tabindex="0" @click="() => showEndScreen && leaveEndScreen()">
 					<VideoPlayer
-						v-if="mediaPath"
+						v-if="queryPath"
 						ref="playerRef"
-						:key="mediaPath"
+						:key="playablePath"
 						:loadingSplash="loadSplashUrl"
 						:title="videoTitle"
 						:onTitleClick="onTitleClick"
 						:close="carefulBackNav"
 						:autoplay="true"
 						:hideControls="showEndScreen"
-						:relativePath="mediaPath"
+						:relativePath="queryPath"
 						:onLoadedData="() => hasLoaded = true"
 						:onPlay="onPlay"
 						:onPause="releaseWakeLock"

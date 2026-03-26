@@ -15,7 +15,6 @@ const error = ref<string | null>(null);
 
 onMounted(async () => {
 	try {
-		console.log(props.path, props.trackIndex)
 		await useApiStore().api.post('/subtitles/vobsub/extract', {
 			path: props.path,
 			trackIndex: props.trackIndex,
@@ -59,7 +58,7 @@ function renderBitmap(bitmap: ReturnType<typeof parseSubPacket>) {
 	// Size canvas to match the frame dimensions from the .idx file (fallback to video)
 	const frameWidth = idxFile.value?.size?.width ?? props.videoRef?.videoWidth ?? bitmap.width;
 	const frameHeight = idxFile.value?.size?.height ?? props.videoRef?.videoHeight ?? bitmap.height;
-	canvas.width = frameWidth * .85;
+	canvas.width = frameWidth;
 	canvas.height = frameHeight * 1.25;
 
 	const ctx = canvas.getContext('2d')!;

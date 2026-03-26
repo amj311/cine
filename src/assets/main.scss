@@ -1,6 +1,6 @@
 @use './base.scss';
 @use 'primeflex/primeflex.css';
-
+@use "sass:color";
 
 :root {
 	font-size: 14px;
@@ -170,6 +170,17 @@ h1, h2, h3, h4, h5, h6 {
 	height: 100%;
 }
 
+.bg-contain {
+	background-position: center;
+	background-size: contain;
+	background-repeat: no-repeat;
+}
+
+.bg-cover {
+	background-position: center;
+	background-size: contain;
+	background-repeat: no-repeat;
+}
 
 
 :root {
@@ -234,7 +245,8 @@ body {
 		backdrop-filter: blur(15px);
 
 		.p-tieredmenu-item:not(.p-disabled) > .p-tieredmenu-item-content:hover, .p-select-option:not(.p-select-option-selected):not(.p-disabled).p-focus {
-			background: transparentize($color: #10b981, $amount: .3) !important;
+			$color: #10b981;
+			background: color.adjust($color, $alpha: -0.8) !important;
 		}
 	}
 
@@ -281,7 +293,8 @@ body {
 		}
 
 		&:focus-within, &[tv-focus] {
-			border-color: transparentize($color: #059669, $amount: .2) !important;
+			$color: #059669;
+			border-color: color.adjust($color, $alpha: -0.8) !important;
 		}
 
 		&::placeholder {
