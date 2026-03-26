@@ -47,21 +47,20 @@ const probe = ref<any>(null);
 
 const playablePath = computed(() => contentFile.value?.relativePath);
 
-// ensure that content data has loaded before showing player
 const showPlayer = computed(() => {
-	return Boolean(playablePath.value && !hasEnded.value);
+	return Boolean(queryPath.value && !hasEnded.value);
 });
 
 function resetState() {
 	playerRef.value?.videoRef?.pause();
 	playerRef.value?.setTime(0);
 	playerProgress.value = null;
-	if (playerRef.value?.videoRef) playerRef.value.videoRef.currentTime = 0;
+	parentTitle.value = null;
+	contentFile.value = null;
 	hasEnded.value = false;
 	hasLoaded.value = false;
 	userLeftEndScreen.value = false;
 	leaveEndScreen(false);
-
 }
 
 async function loadMediaData(pathToLoad: string) {
@@ -77,10 +76,6 @@ async function loadMediaData(pathToLoad: string) {
 		probe.value = data.data.probe;
 
 		parentTitle.value.metadata = await MetadataService.getMetadata(parentTitle.value, true);
-
-		// if (parentTitle.value?.metadata?.background) {
-		// 	useBackgroundStore().setBackgroundUrl(parentTitle.value?.metadata.background);
-		// }
 	} catch (error) {
 		console.error('Error loading media data', error);
 	} finally {
@@ -576,10 +571,11 @@ async function toggleScrubMenu() {
  */
 
 const loadSplashUrl = computed(() => {
+	const autoThumb = useApiStore().apiUrl + '/thumb/' + encodeMediaPath(queryPath.value) + '?width=1200&seek=3';
 	if (contentFile.value?.type === 'extra') {
-		return useApiStore().apiUrl + '/thumb/' + encodeMediaPath(queryPath.value) + '?width=1200&seek=3';
+		return autoThumb;
 	}
-	return currentEpisodeMetadata.value?.still_full || parentTitle.value?.metadata?.background || parentTitle.value?.poster;
+	return currentEpisodeMetadata.value?.still_full || parentTitle.value?.metadata?.background || parentTitle.value?.poster || autoThumb;
 })
 
 
@@ -677,7 +673,7 @@ function toggleTimer() {
 <template>
 	<div class="fixed top-0 bottom-0 left-0 right-0" style="background: #000">
 		<!-- loading screen -->
-		<div class="absolute-full flex-center-all bg-contain" :style="{ backgroundImage: `url('${loadSplashUrl}')'`}">
+		<div class="absolute-full flex-center-all bg-contain" :style="{ backgroundImage: `url('${loadSplashUrl}')`}">
 			<i class="pi pi-spin pi-spinner text-5xl" />
 		</div>
 
@@ -764,7 +760,6 @@ function toggleTimer() {
 
 				<div v-show="showPlayer" class="main-video-wrapper flex-grow-1" :class="{ 'mini bg-blur-hover border-round overflow-hidden cursor-pointer': showEndScreen, focusAreaClass: !showEndScreen }" tabindex="0" @click="() => showEndScreen && leaveEndScreen()">
 					<VideoPlayer
-						v-if="queryPath"
 						ref="playerRef"
 						:key="playablePath"
 						:loadingSplash="loadSplashUrl"
@@ -773,7 +768,7 @@ function toggleTimer() {
 						:close="carefulBackNav"
 						:autoplay="true"
 						:hideControls="showEndScreen"
-						:relativePath="queryPath"
+						:relativePath="playablePath"
 						:onLoadedData="() => hasLoaded = true"
 						:onPlay="onPlay"
 						:onPause="releaseWakeLock"
@@ -866,8 +861,8 @@ function toggleTimer() {
 											</MediaCard>
 										</div>
 									</div>
-									<div>
-										<div class="flex align-items-center gap-1">
+									<div class="flex-column align-items-start">
+										<div>
 											Play Next
 											<template v-if="willAutoplay">
 												({{ timeTillAutoPlay }})

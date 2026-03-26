@@ -15,7 +15,7 @@ import VobSubCanvas from './VobSubCanvas.vue';
 const toast = useToast();
 
 const props = defineProps<{
-	relativePath: string;
+	relativePath?: string;
 	loadingSplash?: string,
 	title?: string;
 	onTitleClick?: () => void,
@@ -66,7 +66,7 @@ function doShowControls() {
 
 const wrapperRef = ref<HTMLDivElement>();
 const videoRef = ref<HTMLVideoElement>();
-const videoUrl = computed(() => useApiStore().apiUrl + '/stream?path=' + encodeMediaPath(props.relativePath));
+const videoUrl = computed(() => props.relativePath ? useApiStore().apiUrl + '/stream?path=' + encodeMediaPath(props.relativePath) : '');
 const secondaryAudioPlayer = ref<HTMLAudioElement>();
 
 const supportedVideoTypes = [
@@ -268,7 +268,7 @@ const subtitleTracks = computed(() => {
 			index: track.index,
 			format: track.format,
 			label: track.name || 'Subtitle ' + (i + 1),
-			url: useApiStore().apiUrl + '/subtitles?path=' + encodeMediaPath(props.relativePath) + '&index=' + track.index,
+			url: useApiStore().apiUrl + '/subtitles?path=' + encodeMediaPath(props.relativePath || '') + '&index=' + track.index,
 			supported: supportedFormats.includes(track.format),
 		}))
 		.sort((a, b) => {
@@ -495,7 +495,7 @@ defineExpose({
 			console.warn("Video element is not rendered yet")
 			return null;
 		}
-		return useWatchProgressStore().createProgress(props.relativePath, videoRef.value.currentTime, videoRef.value.duration);
+		return useWatchProgressStore().createProgress(props.relativePath || '', videoRef.value.currentTime, videoRef.value.duration);
 	},
 	setTime(time) {
 		videoRef.value!.currentTime = time;
@@ -524,7 +524,7 @@ defineExpose({
 			<track v-if="selectedSubtitle && selectedSubtitle.format !== 'dvd_subtitle'" :key="selectedSubtitle.url" kind="subtitles" :src="selectedSubtitle.url" srclang="en" :label="selectedSubtitle.label" default @error="handleSubtitleError" />
 		</video>
 		<audio ref="secondaryAudioPlayer" type="audio/mp3" crossorigin="use-credentials" />
-		<VobSubCanvas v-if="selectedSubtitle && selectedSubtitle.format === 'dvd_subtitle'" :videoRef="videoRef" :path="relativePath" :trackIndex="selectedSubtitle.index" :key="selectedSubtitle.index" />
+		<VobSubCanvas v-if="selectedSubtitle && selectedSubtitle.format === 'dvd_subtitle'" :videoRef="videoRef" :path="relativePath || ''" :trackIndex="selectedSubtitle.index" :key="selectedSubtitle.index" />
 
 		<div v-if="!hasLoaded" class="loading-splash">
 			<img v-if="loadingSplash" :src="loadingSplash" />
@@ -582,7 +582,7 @@ defineExpose({
 					</Button>
 				</div>
 				<div v-if="!seekerEl" class="seeker-wrapper relative">
-					<VideoProgressBar :mediaRelativePath="relativePath" v-if="videoRef" :videoRef="videoRef" :chapters="chapters" />
+					<VideoProgressBar :mediaRelativePath="relativePath || ''" v-if="videoRef" :videoRef="videoRef" :chapters="chapters" />
 				</div>
 			</div>
 		</template>
