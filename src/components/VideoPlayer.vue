@@ -274,7 +274,7 @@ const subtitleTracks = computed(() => {
 		.sort((a, b) => {
 			if (a.supported && !b.supported) return -1;
 			if (b.supported && !a.supported) return 1;
-			return 0;
+			return supportedFormats.findIndex(f => a.format === f) - supportedFormats.findIndex(f => b.format === f);
 		});
 
 	// When this changes, choose selected track based on previous selection
@@ -413,6 +413,14 @@ async function turnOnSecondaryAudio(audio) {
 				detail: 'Audio is ready to play',
 				life: 2000,
 			});
+
+			// If subtitles are on and a there is a track for this audio, switch to it
+			if (selectedSubtitle.value) {
+				const subMatch = subtitleTracks.value.find(t => t.label === audio.name);
+				if (subMatch) {
+					selectSubtitle(subMatch);
+				}
+			}
 		}
 		catch (e) {
 			console.error('Error turning on secondary audio', e);
