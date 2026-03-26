@@ -310,11 +310,24 @@ body {
 	}
 
 	.p-toast {
-	    backdrop-filter: blur(8px);
-		--p-toast-info-color: var(--p-blue-100);
-		--p-toast-info-background: color-mix(in srgb, var(--p-blue-400), transparent 60%);
-		--p-toast-info-border-color: color-mix(in srgb, var(--p-blue-300), transparent 60%);
+		--p-toast-blur: 5px;
+
+		@mixin toast-variant($variants) {
+			@each $type, $color in $variants {
+				--p-toast-#{$type}-color: var(--p-#{$color}-100);
+				--p-toast-#{$type}-background: color-mix(in srgb, var(--p-#{$color}-400), transparent 40%);
+				--p-toast-#{$type}-border-color: color-mix(in srgb, var(--p-#{$color}-300), transparent 40%);
+			}
+		}
+
+		@include toast-variant((
+			info: blue,
+			error: red,
+			success: green,
+			warn: amber,
+		));
 	}
+
 }
 
 
