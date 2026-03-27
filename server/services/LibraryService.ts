@@ -955,6 +955,9 @@ export class LibraryService {
 			if ('extras' in parentTitle) {
 				content = (parentTitle.extras as unknown as Array<Extra>)?.find((extra) => filePath.relativePath === extra.relativePath) || null;
 			}
+			if (!content && 'seasons' in parentTitle) {
+				content = (parentTitle as Full<SeriesCinemaStrat>).seasons?.flatMap(s => s.extras).find((extra) => filePath.relativePath === extra.relativePath) || null;
+			}
 			if (!content && 'movie' in parentTitle && (parentTitle as Base<MovieCinemaStrat>).movie.relativePath === filePath.relativePath) {
 				content = parentTitle.movie;
 			}
