@@ -145,6 +145,9 @@ const thumbHover = ref(false);
 	display: contents;
 
 	/* Make all scrollbars hidden initially, with transparent bg, with --color-background-muted bars */
+	// Default hidden on firefox
+	scrollbar-color: transparent transparent;
+
 	& > ::-webkit-scrollbar {
 		width: 8px;
 		height: 8px;
@@ -154,19 +157,23 @@ const thumbHover = ref(false);
 		background-color: transparent;
 	}
 
-
 	& > ::-webkit-scrollbar-thumb {
 		box-shadow: none !important;
 	}
 
-	&:not(.hide) > ::-webkit-scrollbar-thumb {
-		border-radius: 10px;
-		border: 2px solid transparent; /* Add transparent space around the thumb */
-		// use box shadow as the background color
-		box-shadow: inset 0 0 0 20px var(--color-contrast) !important;
-		transition: 500ms;
+	// Show them when not hidden
+	&:not(.hide) {
+		scrollbar-color: var(--color-contrast) transparent;
+	
+		> ::-webkit-scrollbar-thumb {
+			border-radius: 10px;
+			border: 2px solid transparent; /* Add transparent space around the thumb */
+			// use box shadow as the background color
+			box-shadow: inset 0 0 0 20px var(--color-contrast) !important;
+			transition: 500ms;
+		}
 	}
-
+	
 	.scroll-area {
 		overflow: auto;
 		height: 100%;
