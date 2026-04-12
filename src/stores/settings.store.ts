@@ -18,7 +18,7 @@ export const useSettingsStore = defineStore('Settings', () => {
 	}), () => {
 		useScreenStore().setAsTv(localSettings.value.is_tv);
 		useScreenStore().setTvNavigation(localSettings.value.is_tv && localSettings.value.tv_nav);
-	});
+	}, { immediate: true });
 
 	return {
 		localSettings,
