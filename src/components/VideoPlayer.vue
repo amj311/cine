@@ -106,6 +106,7 @@ function loopUpdateState() {
 }
 
 const hasLoaded = ref(false);
+let unsubTvNav: (() => void) | null = null;
 
 onMounted(() => {
 	loopUpdateState();
@@ -162,6 +163,10 @@ onMounted(() => {
 		wrapperRef.value?.addEventListener(event, doShowControls, { passive: true });
 	});
 
+	// also show buttons when tv nav button is detected
+	unsubTvNav = useScreenStore().onTvNav(doShowControls);
+
+
 	// setup keybindings
 	window.addEventListener('keydown', windowKeyHandler);
 
@@ -182,6 +187,7 @@ onBeforeUnmount(() => {
 	});
 	window.removeEventListener('keydown', windowKeyHandler);
 	clearInterval(audioSyncCheck);
+	unsubTvNav?.();
 })
 
 function windowKeyHandler(e) {

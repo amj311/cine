@@ -238,6 +238,8 @@ export const useScreenStore = defineStore('Screen', () => {
 
 		lastFocusTime = Date.now();
 
+		notifyTvNavListeners();
+
 		if (!lastFocusedEl.value) {
 			findFocus();
 			return;
@@ -478,6 +480,11 @@ export const useScreenStore = defineStore('Screen', () => {
 	let suggestTvModeHandler: (() => Promise<boolean>) | null = null;
 	let onTvDetected: (() => Promise<boolean>) | null = null;
 
+	const tvNavListeners: Set<() => void> = new Set();
+	function notifyTvNavListeners() {
+		tvNavListeners.forEach(cb => cb());
+	}
+
 	function determineTvEnvironment(confirmationCb?: () => Promise<boolean>) {
 		suggestTvModeHandler = confirmationCb || null;
 		console.log('Determining TV environment...');
@@ -640,6 +647,10 @@ export const useScreenStore = defineStore('Screen', () => {
 		updateFocus() {
 			gatherFocusTargets();
 			findFocus();
-		}
+		},
+		onTvNav(cb: () => void): () => void {
+			tvNavListeners.add(cb);
+			return () => tvNavListeners.delete(cb);
+		},
 	}
 })
