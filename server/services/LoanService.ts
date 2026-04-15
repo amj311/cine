@@ -11,7 +11,7 @@ import { LibraryService } from "./LibraryService";
 export type Loan = {
 	relativePath: string,
 	email: string,
-	expires: number,
+	expires: number | null,
 }
 
 const loanStore = new Store<Loan>('loans');
@@ -42,7 +42,7 @@ export class LoanService {
 
 	public static async getLoan(path: string) {
 		const loan = await loanStore.getByKey(path);
-		if (loan && loan.expires > Date.now()) {
+		if (loan && (!loan.expires || loan.expires > Date.now())) {
 			return loan;
 		}
 		await loanStore.delete(path);

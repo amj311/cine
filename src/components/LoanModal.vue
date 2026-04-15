@@ -50,6 +50,7 @@ const expireOptions = computed(() => {
 		{ label: '48 hours', value: now + (1000 * 60 * 60 * 48) },
 		{ label: '1 week', value: now + (1000 * 60 * 60 * 48 * 7) },
 		{ label: '1 month', value: now + (1000 * 60 * 60 * 48 * 31) },
+		{ label: 'Forever', value: null },
 	];
 	if (original.value?.expires) {
 		options.unshift({ label: new Date(original.value.expires).toLocaleDateString(), value: original.value.expires });
