@@ -38,36 +38,43 @@ function shouldCache(url) {
 	return CACHE_URL_PATTERNS.some(pattern => pattern.test(path));
 }
 
+const NETWORK_TIMEOUT_MS = 3000;
+
 self.addEventListener('fetch', event => {
 	if (shouldCache(event.request.url)) {
 		event.respondWith((async () => {
 			const cache = await caches.open(CACHE_NAME);
 
-			// load from cache first to avoid delays
-			const cachedResponse = await cache.match(event.request);
-
-			return new Promise((res) => {
-				if (cachedResponse) {
-					// If we have a cached response, resolve it immediately, but still load from network in the background.
-					res(cachedResponse);
-				}
-
-				fetch(event.request).then((fetchResponse) => {
+			try {
+				// Network-first with timeout: serve fresh from the server, but fall back
+				// to cache if the network is too slow or unavailable.
+				const timeoutSignal = AbortSignal.timeout(NETWORK_TIMEOUT_MS);
+				const fetchResponse = await fetch(event.request, { signal: timeoutSignal });
+				if (fetchResponse.ok) {
 					cache.put(event.request, fetchResponse.clone());
-					if (fetchResponse.ok && !cachedResponse) {
-						res(fetchResponse);
-					}
-				}).catch((error) => {
-					if (event.request.mode === 'navigate' && !cachedResponse) {
-						return cache.match(OFFLINE_URL);
-					}
-				});
-			})
+				}
+				return fetchResponse;
+			} catch (error) {
+				// Fall back to cache when offline or request timed out.
+				const cachedResponse = await cache.match(event.request);
+				if (cachedResponse) {
+					return cachedResponse;
+				}
+				if (event.request.mode === 'navigate') {
+					return cache.match(OFFLINE_URL);
+				}
+				throw error;
+			}
 		})());
 	}
 });
 
-// Clean up old caches during the activate event.
+// Skip the waiting phase so the new service worker activates immediately.
+self.addEventListener('install', event => {
+	event.waitUntil(self.skipWaiting());
+});
+
+// Clean up old caches during the activate event and take control of all open pages.
 self.addEventListener('activate', event => {
 	event.waitUntil((async () => {
 		const cacheNames = await caches.keys();
@@ -78,6 +85,7 @@ self.addEventListener('activate', event => {
 				}
 			})
 		);
+		await self.clients.claim();
 	})());
 });
 
