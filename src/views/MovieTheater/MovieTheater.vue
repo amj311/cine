@@ -758,7 +758,7 @@ function toggleTimer() {
 					</div>
 				</div>
 
-				<div v-show="showPlayer" class="main-video-wrapper flex-grow-1" :class="{ 'mini bg-blur-hover border-round overflow-hidden cursor-pointer': showEndScreen, focusAreaClass: !showEndScreen }" tabindex="0" @click="() => showEndScreen && leaveEndScreen()">
+				<div v-show="showPlayer" class="main-video-wrapper flex-grow-1" :class="{ 'mini bg-blur-hover border-round overflow-hidden cursor-pointer': showEndScreen, focusAreaClass: !showEndScreen }" :tabindex="showEndScreen ? 0 : undefined" @click="() => showEndScreen && leaveEndScreen()">
 					<VideoPlayer
 						ref="playerRef"
 						:key="playablePath"

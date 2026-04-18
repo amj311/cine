@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useFullscreenStore } from './fullscreenStore.store';
-import { useSettingsStore } from './settings.store';
 
 type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -10,15 +9,15 @@ export const noFocusClass = 'tvNavigationNoFocus';
 
 
 export const useScreenStore = defineStore('Screen', () => {
-	// load saved settings
-	const localSettings = useSettingsStore().localSettings;
+	// load saved settings (read directly to avoid circular dependency with settings.store)
+	const savedSettings = JSON.parse(localStorage.getItem('_op_localSettings') || '{}');
 
 	const lastMouseMove = ref({ x: 0, y: 0 });
 	const lastMousePosition = ref({ x: 0, y: 0 });
 	const lastDetectedDirection = ref<Direction | null>(null);
 	const lastKeyDown = ref<string | null>(null);
 	const lastMouseMoveTime = ref(0);
-	const detectedTv = ref(localSettings.is_tv || false);
+	const detectedTv = ref(savedSettings.is_tv || false);
 	const detectedTouch = ref(false);
 	const tvWasConfirmed = ref(false);
 	const tvNavEnabled = ref(false);
