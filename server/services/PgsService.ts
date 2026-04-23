@@ -106,7 +106,7 @@ export class PgsService {
 
 			let offset = 0;
 			let setStart = -1;
-			let setPts   = 0;
+			let setPts = 0;
 			let setIsEmpty = false;
 
 			while (offset + PACKET_HEADER <= fileSize) {
@@ -118,12 +118,12 @@ export class PgsService {
 
 				// PTS is a 90 kHz clock value stored as big-endian uint32
 				const pts = ((header[2] << 24) | (header[3] << 16) | (header[4] << 8) | header[5]) >>> 0;
-				const type   = header[10];
+				const type = header[10];
 				const segLen = (header[11] << 8) | header[12];
 
 				if (type === SEG_PCS) {
 					setStart = offset;
-					setPts   = pts / 90; // 90 kHz → milliseconds
+					setPts = pts / 90; // 90 kHz → milliseconds
 
 					// Read up to 11 bytes of PCS segment data to get object_count (byte 10)
 					if (segLen >= 11) {

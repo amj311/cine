@@ -109,10 +109,10 @@ route.get('/pgs/index', async (req, res) => {
  */
 route.get('/pgs/displayset', async (req, res) => {
 	const offset = parseInt(req.query.offset as string, 10);
-	const size   = parseInt(req.query.size   as string, 10);
+	const size = parseInt(req.query.size as string, 10);
 
 	if (isNaN(offset) || offset < 0) return res.sendStatus(400);
-	if (isNaN(size)   || size   <= 0) return res.sendStatus(400);
+	if (isNaN(size) || size <= 0) return res.sendStatus(400);
 
 	try {
 		const chunk = await PgsService.getDisplaySet(offset, size);

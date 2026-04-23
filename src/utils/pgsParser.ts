@@ -123,7 +123,7 @@ const PACKET_HEADER_SIZE = 13;
 // ---------------------------------------------------------------------------
 
 const SCALEBITS = 10;
-const ONE_HALF  = 1 << (SCALEBITS - 1); // 512
+const ONE_HALF = 1 << (SCALEBITS - 1); // 512
 
 function fix(x: number): number {
 	return Math.round(x * (1 << SCALEBITS));
@@ -156,7 +156,7 @@ function clip8(v: number): number {
  * Memory byte order on little-endian: [R, G, B, A].
  */
 function ycrCbToRgba(Y: number, Cr: number, Cb: number, alpha: number, useBt709: boolean): number {
-	const y  = (Y - 16) * Y_SCALE;
+	const y = (Y - 16) * Y_SCALE;
 	const cb = Cb - 128;
 	const cr = Cr - 128;
 
@@ -196,7 +196,7 @@ function ycrCbToRgba(Y: number, Cr: number, Cb: number, alpha: number, useBt709:
  * In practice, most Blu-ray PGS tracks are self-contained per display set.
  */
 export class PgsDecoder {
-	private objects  = new Map<number, PgsObject>();
+	private objects = new Map<number, PgsObject>();
 	private palettes = new Map<number, PgsPalette>();
 
 	/** Flush all cached objects and palettes (call on backward seek). */
@@ -221,9 +221,9 @@ export class PgsDecoder {
 			// Verify magic "PG"
 			if (data[i] !== 0x50 || data[i + 1] !== 0x47) break;
 
-			const type   = data[i + 10];
+			const type = data[i + 10];
 			const segLen = (data[i + 11] << 8) | data[i + 12];
-			const seg    = data.subarray(i + PACKET_HEADER_SIZE, i + PACKET_HEADER_SIZE + segLen);
+			const seg = data.subarray(i + PACKET_HEADER_SIZE, i + PACKET_HEADER_SIZE + segLen);
 			i += PACKET_HEADER_SIZE + segLen;
 
 			switch (type) {
@@ -303,10 +303,10 @@ export class PgsDecoder {
 		// [11..] object refs
 		if (seg.length < 11) return null;
 
-		const videoWidth  = (seg[0] << 8) | seg[1];
+		const videoWidth = (seg[0] << 8) | seg[1];
 		const videoHeight = (seg[2] << 8) | seg[3];
-		const state       = (seg[7] >> 6) & 0x03;
-		const paletteId   = seg[9];
+		const state = (seg[7] >> 6) & 0x03;
+		const paletteId = seg[9];
 		const objectCount = seg[10];
 
 		const objects: PcsObjectRef[] = [];
@@ -315,11 +315,11 @@ export class PgsDecoder {
 		for (let o = 0; o < objectCount; o++) {
 			if (off + 8 > seg.length) break;
 
-			const id              = (seg[off] << 8) | seg[off + 1];
+			const id = (seg[off] << 8) | seg[off + 1];
 			// seg[off + 2] = window_id  (skip)
 			const compositionFlag = seg[off + 3];
-			const x               = (seg[off + 4] << 8) | seg[off + 5];
-			const y               = (seg[off + 6] << 8) | seg[off + 7];
+			const x = (seg[off + 4] << 8) | seg[off + 5];
+			const y = (seg[off + 6] << 8) | seg[off + 7];
 			off += 8;
 
 			// Optional crop data (bit 7 of compositionFlag)
@@ -351,10 +351,10 @@ export class PgsDecoder {
 		let off = 2;
 		while (off + 5 <= seg.length) {
 			const colorId = seg[off];
-			const Y       = seg[off + 1];
-			const Cr      = seg[off + 2];
-			const Cb      = seg[off + 3];
-			const alpha   = seg[off + 4];
+			const Y = seg[off + 1];
+			const Cr = seg[off + 2];
+			const Cb = seg[off + 3];
+			const alpha = seg[off + 4];
 			pal.clut[colorId] = ycrCbToRgba(Y, Cr, Cb, alpha, useBt709);
 			off += 5;
 		}
@@ -379,17 +379,17 @@ export class PgsDecoder {
 		//   [4..]  additional RLE bytes (appended to object's rle buffer)
 		if (seg.length < 4) return;
 
-		const id       = (seg[0] << 8) | seg[1];
+		const id = (seg[0] << 8) | seg[1];
 		const seqFlags = seg[3];
-		const isFirst  = (seqFlags & 0x80) !== 0;
+		const isFirst = (seqFlags & 0x80) !== 0;
 
 		if (isFirst) {
 			if (seg.length < 11) return;
 
 			// Stored length includes the 4 bytes for width + height
 			const rleTotalLen = ((seg[4] << 16) | (seg[5] << 8) | seg[6]) - 4;
-			const width       = (seg[7] << 8) | seg[8];
-			const height      = (seg[9] << 8) | seg[10];
+			const width = (seg[7] << 8) | seg[8];
+			const height = (seg[9] << 8) | seg[10];
 
 			if (width === 0 || height === 0 || rleTotalLen <= 0) return;
 
@@ -400,7 +400,7 @@ export class PgsDecoder {
 				rleExpected: rleTotalLen,
 			};
 
-			const chunk   = seg.subarray(11);
+			const chunk = seg.subarray(11);
 			const copyLen = Math.min(chunk.length, rleTotalLen);
 			obj.rle.set(chunk.subarray(0, copyLen));
 			obj.rleLen = copyLen;
@@ -410,9 +410,9 @@ export class PgsDecoder {
 			const obj = this.objects.get(id);
 			if (!obj) return;
 
-			const chunk     = seg.subarray(4);
+			const chunk = seg.subarray(4);
 			const remaining = obj.rleExpected - obj.rleLen;
-			const copyLen   = Math.min(chunk.length, remaining);
+			const copyLen = Math.min(chunk.length, remaining);
 			obj.rle.set(chunk.subarray(0, copyLen), obj.rleLen);
 			obj.rleLen += copyLen;
 		}
@@ -445,12 +445,12 @@ export class PgsDecoder {
 		const view32 = new Uint32Array(pixels.buffer);
 
 		let pixelCount = 0;
-		let lineCount  = 0;
+		let lineCount = 0;
 		let i = 0;
 
 		while (i < rleLen && lineCount < height) {
 			let color = rle[i++];
-			let run   = 1;
+			let run = 1;
 
 			if (color === 0x00) {
 				if (i >= rleLen) break;
