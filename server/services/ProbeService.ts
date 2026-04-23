@@ -159,7 +159,7 @@ export class ProbeService {
 									continue;
 								}
 								const language = stream.tags?.language;
-								let name = `${language} (${stream.codec_long_name})`;
+								let name = stream.tags?.title || `${language} (${stream.codec_name})`;
 								if (handler_name && handler_name !== 'SubtitleHandler') {
 									name = handler_name;
 								}
@@ -173,7 +173,7 @@ export class ProbeService {
 								probeData.glossary.audio.push({
 									index: stream.index,
 									format: stream.codec_name,
-									name: stream.tags?.handler_name,
+									name: stream.tags?.title || stream.tags?.handler_name,
 								});
 							}
 						}
@@ -182,7 +182,7 @@ export class ProbeService {
 					// format chapters
 					if (data.chapters) {
 						probeData.glossary.chapters = data.chapters.map((c, i) => ({
-							title: c['TAG:title'] || `Chapter ${i + 1}`,
+							title: c.title || c['TAG:title'] || `Chapter ${i + 1}`,
 							start_s: c.start_time,
 							end_s: c.end_time,
 						}))
