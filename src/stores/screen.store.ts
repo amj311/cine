@@ -487,7 +487,7 @@ export const useScreenStore = defineStore('Screen', () => {
 	function determineTvEnvironment(confirmationCb?: () => Promise<boolean>) {
 		suggestTvModeHandler = confirmationCb || null;
 		console.log('Determining TV environment...');
-		const isTv = localSettings.is_tv;// || window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
+		const isTv = savedSettings.is_tv;// || window.matchMedia('(display-mode: fullscreen)').matches || window.matchMedia('(display-mode: minimal-ui)').matches;
 
 		if (isTv) {
 			console.info('TV environment detected');
@@ -520,23 +520,23 @@ export const useScreenStore = defineStore('Screen', () => {
 			console.info('TV environment not detected');
 			detectedTv.value = false;
 			// also remove tv from settings
-			localSettings.is_tv = false;
+			savedSettings.is_tv = false;
 			disengageTvMode();
 			return;
 		}
 
 		detectedTv.value = true;
-		localSettings.is_tv = true;
+		savedSettings.is_tv = true;
 
 		console.info('TV confirmed')
 
 		// auto tv nav
-		let shouldCheckForTvNav = localSettings.tv_nav;
+		let shouldCheckForTvNav = savedSettings.tv_nav;
 
 		if (shouldCheckForTvNav && suggestTvModeHandler) {
 			shouldCheckForTvNav = await suggestTvModeHandler();
 			if (!shouldCheckForTvNav) {
-				// localSettings.tv_nav = false;
+				// savedSettings.tv_nav = false;
 				console.info('TV environment was declined');
 			}
 		}
