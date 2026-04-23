@@ -386,7 +386,7 @@ export class LibraryService {
 			// Identify movie when a child item has the same name and year
 			const movieFile = children.files.find((file) => {
 				const { name: mediaName, year: fileYear } = LibraryService.parseNamePieces(file.name);
-				return FileTypeDictionary[file.name?.split('.').pop() || ''] === 'video' && mediaName === name && fileYear === year;
+				return VideoTypes.includes(file.name.split('.').pop() as any) && mediaName === name && fileYear === year;
 			});
 			if (movieFile) {
 				const movieContent: MovieContent = this.createMovieContent(movieFile.confirmedPath)!;
