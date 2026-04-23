@@ -430,6 +430,26 @@ export class LibraryService {
 		}
 
 
+		// A folder named "Season N" whose parent has name+year components is a cinema season,
+		// not an album — even if all its children are .mp4 files.
+		const isSeasonFolder = /^season\s+\d/i.test(folderName);
+		if (isSeasonFolder) {
+			const parentFolderName = path.relativePath.split('/').slice(0, -1).pop() || '';
+			const { year: parentYear } = LibraryService.parseNamePieces(parentFolderName);
+			if (parentYear) {
+				return {
+					libraryTier: 'directory',
+					type: 'folder',
+					name: folderName,
+					relativePath: path.relativePath,
+					folderName: folderName,
+					feedOrder: null,
+					listName: folderName,
+					sortKey: LibraryService.createSortKey(folderName),
+				};
+			}
+		}
+
 		// Identify an album if all children are audio files
 		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioTypes.includes(file.name.split('.').pop() as AudioType));
 		if (allChildrenAreAudio) {

@@ -692,8 +692,8 @@ app.get('/api/feed', async (req, res) => {
 			const { items } = await LibraryService.getFlatTree(library.confirmedPath);
 			// async filestats for each file
 			return await Promise.all(items.map(async (item, i) => {
-				if (!['cinema', 'audiobook', 'album'].includes(item.type)) {
-					return null; // Skip folders
+				if (item.libraryTier !== 'title') {
+					return null; // Only include title-tier items in the feed
 				}
 				const fullPath = DirectoryService.resolvePath(item.relativePath)?.absolutePath!;
 				const stat = await fs.promises.stat(fullPath).catch(() => null);
