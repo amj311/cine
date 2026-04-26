@@ -913,7 +913,7 @@ export class LibraryService {
 	}
 
 	private static prepareExtras(filePaths: Array<ConfirmedPath>): Extra[] {
-		return filePaths.filter(p => p.relativePath.endsWith('.mp4')).map((filePath) => {
+		return filePaths.filter(p => VideoTypes.some(t => p.relativePath.endsWith(t))).map((filePath) => {
 			const { name: extraName, type: extraType } = LibraryService.getExtraNameAndType(filePath.relativePath);
 			return {
 				libraryTier: 'content-file',
