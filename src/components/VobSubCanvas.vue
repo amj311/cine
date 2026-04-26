@@ -42,6 +42,8 @@ const lastEntryIndex = ref<number>(-1);
 let frameCallbackHandle: number | null = null;
 const bitmapCache = new Map<number, SpuBitmap | null>();
 let currentStopMs: number | null = null;
+let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const FETCH_DEBOUNCE_MS = 150;
 
 function clearCanvas() {
 	const canvas = canvasRef.value;
@@ -129,7 +131,11 @@ function onVideoFrame(_now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMet
 
 	if (entryIndex !== lastEntryIndex.value) {
 		lastEntryIndex.value = entryIndex;
-		fetchSubEntry(entryIndex);
+		if (fetchDebounceTimer !== null) clearTimeout(fetchDebounceTimer);
+		fetchDebounceTimer = setTimeout(() => {
+			fetchDebounceTimer = null;
+			fetchSubEntry(entryIndex);
+		}, FETCH_DEBOUNCE_MS);
 	} else if (currentStopMs !== null && time_ms >= currentStopMs) {
 		clearCanvas();
 		currentStopMs = null;
@@ -143,6 +149,7 @@ function startLoop(el: HTMLVideoElement) {
 }
 
 function stopLoop() {
+	if (fetchDebounceTimer !== null) { clearTimeout(fetchDebounceTimer); fetchDebounceTimer = null; }
 	if (props.videoRef && frameCallbackHandle !== null) {
 		props.videoRef.cancelVideoFrameCallback(frameCallbackHandle);
 		frameCallbackHandle = null;

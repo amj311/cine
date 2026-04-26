@@ -67,7 +67,66 @@ function doShowControls() {
 
 const wrapperRef = ref<HTMLDivElement>();
 const videoRef = ref<HTMLVideoElement>();
-const videoUrl = computed(() => props.relativePath ? useApiStore().apiUrl + '/stream?path=' + encodeMediaPath(props.relativePath) : '');
+const hasLoaded = ref(false);
+
+const isRemuxNeeded = computed(() => props.relativePath?.endsWith('.mkv') ?? false);
+const remuxedUrl = ref<string | null>(null);
+const remuxState = ref<'idle' | 'remuxing' | 'ready' | 'error'>('idle');
+const remuxProgress = ref(0);
+
+async function prepareRemux() {
+	if (!props.relativePath) return;
+	remuxState.value = 'remuxing';
+	remuxProgress.value = 0;
+	toast.add({
+		severity: 'info',
+		summary: 'Preparing Video',
+		detail: 'This may take a few minutes...',
+		progressRef: remuxProgress,
+	} as any);
+	try {
+		const { data } = await useApiStore().api.post('/remux', { path: props.relativePath });
+		const pinger = new JobPinger(data.jobId, 2000);
+		const completedJob = await pinger.start({
+			onPing(job) { remuxProgress.value = job?.progress?.percentage ?? 0; }
+		});
+		if (completedJob.value?.status === 'failed') throw new Error('Remux job failed');
+		remuxedUrl.value = data.path;
+		remuxState.value = 'ready';
+		toast.removeAllGroups();
+		toast.add({
+			severity: 'success',
+			summary: 'Video Ready',
+			life: 2000,
+		});
+	} catch (e) {
+		console.error('Error remuxing MKV', e);
+		remuxState.value = 'error';
+		toast.removeAllGroups();
+		toast.add({
+			severity: 'error',
+			summary: 'Error Preparing Video',
+			detail: 'There was an error preparing the video. Please try again.',
+		});
+	}
+}
+
+watch(() => props.relativePath, () => {
+	remuxedUrl.value = null;
+	remuxState.value = 'idle';
+	remuxProgress.value = 0;
+	hasLoaded.value = false;
+	if (isRemuxNeeded.value) {
+		prepareRemux();
+	}
+}, { immediate: true });
+
+const videoUrl = computed(() => {
+	if (isRemuxNeeded.value) {
+		return remuxedUrl.value ? useApiStore().apiUrl + remuxedUrl.value : '';
+	}
+	return props.relativePath ? useApiStore().apiUrl + '/stream?path=' + encodeMediaPath(props.relativePath) : '';
+});
 const secondaryAudioPlayer = ref<HTMLAudioElement>();
 
 const supportedVideoTypes = [
@@ -106,7 +165,6 @@ function loopUpdateState() {
 	})
 }
 
-const hasLoaded = ref(false);
 let unsubTvNav: (() => void) | null = null;
 
 onMounted(() => {
@@ -525,8 +583,7 @@ defineExpose({
 
 <template>
 	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls tvNavigationNoFocus': showControls }">
-		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType" crossorigin="use-credentials" allow :style="{ backgroundColor: background }">
-			<source :src="videoUrl" :type="'video/mp4'" />
+		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType || isRemuxNeeded" :src="videoUrl || undefined" crossorigin="use-credentials" allow :style="{ backgroundColor: background }">
 			<!-- <track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" /> -->
 			<track v-if="selectedSubtitle && selectedSubtitle.format !== 'dvd_subtitle' && selectedSubtitle.format !== 'hdmv_pgs_subtitle'" :key="selectedSubtitle.url" kind="subtitles" :src="selectedSubtitle.url" srclang="en" :label="selectedSubtitle.label" default @error="handleSubtitleError" />
 		</video>
@@ -536,7 +593,15 @@ defineExpose({
 
 		<div v-if="!hasLoaded" class="loading-splash">
 			<img v-if="loadingSplash" :src="loadingSplash" />
-			<i class="pi pi-spin pi-spinner text-7xl" />
+			<template v-if="remuxState === 'remuxing'">
+				<i class="pi pi-spin pi-spinner text-7xl" />
+				<div class="text-white mt-3">Preparing video{{ remuxProgress ? ' ' + Math.round(remuxProgress) + '%' : '...' }}</div>
+			</template>
+			<template v-else-if="remuxState === 'error'">
+				<i class="pi pi-times-circle text-7xl text-red-400" />
+				<div class="text-white mt-3">Failed to prepare video</div>
+			</template>
+			<i v-else class="pi pi-spin pi-spinner text-7xl" />
 		</div>
 
 		<template v-if="!hideControls">

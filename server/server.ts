@@ -166,6 +166,7 @@ app.use('/api/subtitles', subtitlesRoute);
 
 
 import { decodeMediaPath, safeParseInt } from './utils/miscUtils';
+import { hash } from './utils/hash';
 import { JobService } from './services/JobService';
 import { SharingService } from './services/SharingService';
 import { LoanService } from './services/LoanService';
@@ -434,6 +435,66 @@ app.post('/api/prepareAudio', async (req, res) => {
 			jobId: job.jobId,
 		}
 	})
+});
+
+app.post('/api/remux', async (req, res) => {
+	const { path: relativePath } = req.body;
+	if (!relativePath) {
+		res.status(400).send("Requires path");
+		return;
+	}
+	const resolvedPath = DirectoryService.resolvePath(relativePath);
+	if (!resolvedPath) {
+		res.status(404).send("File not found");
+		return;
+	}
+	if (!resolvedPath.relativePath.endsWith('.mkv')) {
+		res.status(400).send("Only MKV files can be remuxed");
+		return;
+	}
+	if (!await LoanService.canStreamMedia(resolvedPath, getSessionEmail())) {
+		res.status(401).send("Not allowed");
+		return;
+	}
+
+	const cacheDir = path.join(__dirname, '../dist/assets/remux-cache');
+	const cacheKey = Math.abs(hash(relativePath)).toString(16);
+	const cachePath = path.join(cacheDir, `${cacheKey}.mp4`);
+	const clientPath = `/assets/remux-cache/${cacheKey}.mp4`;
+
+	if (!fs.existsSync(cacheDir)) {
+		fs.mkdirSync(cacheDir, { recursive: true });
+	}
+
+	const job = JobService.addJob({
+		type: 'remux_mkv',
+		priority: true,
+		handler: async ({ progress }) => {
+			if (fs.existsSync(cachePath)) {
+				return;
+			}
+			// Remove any previously cached remux files
+			for (const file of fs.readdirSync(cacheDir)) {
+				fs.rmSync(path.join(cacheDir, file));
+			}
+			await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
+				ffmpeg
+					.outputOptions(['-c:v copy', '-c:a copy', '-sn', '-movflags +faststart'])
+					.output(cachePath)
+					.on('progress', (data: { percent: number }) => {
+						progress(data.percent);
+					})
+					.on('end', resolve)
+					.on('error', (err: any) => {
+						console.error('Error remuxing MKV:', err.message);
+						reject(err);
+					})
+					.run();
+			});
+		}
+	});
+
+	res.json({ jobId: job.jobId, path: clientPath });
 });
 
 app.post('/api/metadata', async (req, res) => {
@@ -847,31 +908,31 @@ app.get('/api/subtitles', async (req, res) => {
 		if (subtitleStream && (subtitleStream.codec_type === 'subtitle' || subtitleStream.tags?.handler_name === 'SubtitleHandler')) {
 			if (subtitleStream.codec_name === 'mov_text' || subtitleStream.codec_name === 'subrip') {
 				const subtitleIndex = subtitleStream.index;
-				const outputFilePath = path.join(__dirname, '../dist/assets/output.vtt');
 
-				useFfmpeg(fullPath.absolutePath, (ffmpeg) => {
-					ffmpeg.outputOptions(`-map 0:${subtitleIndex}`)
+				const origin = req.headers.origin as string | undefined;
+				if (origin) {
+					res.setHeader('Access-Control-Allow-Origin', origin);
+					res.setHeader('Access-Control-Allow-Credentials', 'true');
+					res.setHeader('Vary', 'Origin');
+				}
+				res.setHeader('Content-Type', 'text/vtt');
+
+				useFfmpeg(fullPath.absolutePath, (ffmpeg, resolve, reject) => {
+					const command = ffmpeg
+						.outputOptions(`-map 0:${subtitleIndex}`)
 						.outputOptions('-c:s webvtt')
-						.save(outputFilePath)
-						.on('end', () => {
-							const origin = req.headers.origin as string | undefined;
-							if (origin) {
-								res.setHeader('Access-Control-Allow-Origin', origin);
-								res.setHeader('Access-Control-Allow-Credentials', 'true');
-								res.setHeader('Vary', 'Origin');
-							}
-							res.setHeader('Content-Type', 'text/vtt');
-							res.sendFile(outputFilePath, (err) => {
-								if (err) {
-									console.error("Error while sending subtitle file:", err);
-									res.status(500).send("Error sending subtitle file");
-								}
-							});
-						})
-						.on('error', (err: any) => {
-							console.error("Error while extracting subtitles:", err);
+						.format('webvtt');
+
+					command.on('end', () => resolve(undefined));
+					command.on('error', (err: any) => {
+						console.error("Error while extracting subtitles:", err);
+						if (!res.headersSent) {
 							res.status(500).send("Error extracting subtitles");
-						});
+						}
+						reject(err);
+					});
+
+					command.pipe(res, { end: true });
 				});
 
 			}

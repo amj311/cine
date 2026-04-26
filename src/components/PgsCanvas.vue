@@ -44,6 +44,8 @@ onMounted(async () => {
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const lastEntryIndex = ref<number>(-2); // -2 = uninitialized sentinel
 let frameCallbackHandle: number | null = null;
+let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const FETCH_DEBOUNCE_MS = 150;
 
 /**
  * Stateful decoder — persists epoch-level palette and object caches
@@ -156,7 +158,11 @@ function onVideoFrame(_now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMet
 
 	if (entryIdx !== lastEntryIndex.value) {
 		lastEntryIndex.value = entryIdx;
-		fetchAndRender(entryIdx);
+		if (fetchDebounceTimer !== null) clearTimeout(fetchDebounceTimer);
+		fetchDebounceTimer = setTimeout(() => {
+			fetchDebounceTimer = null;
+			fetchAndRender(entryIdx);
+		}, FETCH_DEBOUNCE_MS);
 	}
 
 	frameCallbackHandle = props.videoRef.requestVideoFrameCallback(onVideoFrame);
@@ -167,6 +173,7 @@ function startLoop(el: HTMLVideoElement) {
 }
 
 function stopLoop() {
+	if (fetchDebounceTimer !== null) { clearTimeout(fetchDebounceTimer); fetchDebounceTimer = null; }
 	if (props.videoRef && frameCallbackHandle !== null) {
 		props.videoRef.cancelVideoFrameCallback(frameCallbackHandle);
 		frameCallbackHandle = null;
