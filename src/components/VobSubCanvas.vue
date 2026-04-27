@@ -42,8 +42,7 @@ const lastEntryIndex = ref<number>(-1);
 let frameCallbackHandle: number | null = null;
 const bitmapCache = new Map<number, SpuBitmap | null>();
 let currentStopMs: number | null = null;
-let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-const FETCH_DEBOUNCE_MS = 150;
+let fetchAbortController: AbortController | null = null;
 
 function clearCanvas() {
 	const canvas = canvasRef.value;
@@ -79,7 +78,7 @@ function findEntryIndex(time_ms: number): number {
 	return found;
 }
 
-async function loadBitmap(index: number): Promise<SpuBitmap | null> {
+async function loadBitmap(index: number, signal?: AbortSignal): Promise<SpuBitmap | null> {
 	if (bitmapCache.has(index)) return bitmapCache.get(index) ?? null;
 
 	const track = idxFile.value?.tracks[0];
@@ -92,6 +91,7 @@ async function loadBitmap(index: number): Promise<SpuBitmap | null> {
 	const { data } = await useApiStore().api.get<ArrayBuffer>('/subtitles/vobsub/sub', {
 		params,
 		responseType: 'arraybuffer',
+		signal,
 	});
 
 	const clut = idxFile.value?.palette ?? [];
@@ -103,23 +103,34 @@ async function loadBitmap(index: number): Promise<SpuBitmap | null> {
 async function fetchSubEntry(index: number) {
 	if (index < 0) { clearCanvas(); currentStopMs = null; return; }
 
-	const bitmap = await loadBitmap(index);
+	// Cancel any in-flight fetch for a previous entry
+	fetchAbortController?.abort();
+	const controller = new AbortController();
+	fetchAbortController = controller;
 
-	// Guard against races: only render if this entry is still current
-	if (index !== lastEntryIndex.value) return;
+	try {
+		const bitmap = await loadBitmap(index, controller.signal);
 
-	renderBitmap(bitmap);
-	currentStopMs = bitmap?.stopMs ?? null;
+		// Guard against races: only render if this entry is still current
+		if (index !== lastEntryIndex.value) return;
 
-	// Preload next entry
-	const entries = idxFile.value?.tracks[0]?.entries;
-	if (entries && index + 1 < entries.length) {
-		loadBitmap(index + 1);
-	}
+		renderBitmap(bitmap);
+		currentStopMs = bitmap?.stopMs ?? null;
 
-	// Evict entries before the current one
-	for (const key of bitmapCache.keys()) {
-		if (key < index) bitmapCache.delete(key);
+		// Preload next entry
+		const entries = idxFile.value?.tracks[0]?.entries;
+		if (entries && index + 1 < entries.length) {
+			loadBitmap(index + 1);
+		}
+
+		// Evict entries before the current one
+		for (const key of bitmapCache.keys()) {
+			if (key < index) bitmapCache.delete(key);
+		}
+	} catch (e: any) {
+		// Ignore cancellations triggered by a newer fetch
+		if (e?.code === 'ERR_CANCELED' || e?.name === 'AbortError' || e?.name === 'CanceledError') return;
+		throw e;
 	}
 }
 
@@ -131,11 +142,7 @@ function onVideoFrame(_now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMet
 
 	if (entryIndex !== lastEntryIndex.value) {
 		lastEntryIndex.value = entryIndex;
-		if (fetchDebounceTimer !== null) clearTimeout(fetchDebounceTimer);
-		fetchDebounceTimer = setTimeout(() => {
-			fetchDebounceTimer = null;
-			fetchSubEntry(entryIndex);
-		}, FETCH_DEBOUNCE_MS);
+		fetchSubEntry(entryIndex);
 	} else if (currentStopMs !== null && time_ms >= currentStopMs) {
 		clearCanvas();
 		currentStopMs = null;
@@ -149,7 +156,8 @@ function startLoop(el: HTMLVideoElement) {
 }
 
 function stopLoop() {
-	if (fetchDebounceTimer !== null) { clearTimeout(fetchDebounceTimer); fetchDebounceTimer = null; }
+	fetchAbortController?.abort();
+	fetchAbortController = null;
 	if (props.videoRef && frameCallbackHandle !== null) {
 		props.videoRef.cancelVideoFrameCallback(frameCallbackHandle);
 		frameCallbackHandle = null;

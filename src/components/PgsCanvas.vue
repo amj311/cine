@@ -44,8 +44,7 @@ onMounted(async () => {
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const lastEntryIndex = ref<number>(-2); // -2 = uninitialized sentinel
 let frameCallbackHandle: number | null = null;
-let fetchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-const FETCH_DEBOUNCE_MS = 150;
+let fetchAbortController: AbortController | null = null;
 
 /**
  * Stateful decoder — persists epoch-level palette and object caches
@@ -102,7 +101,7 @@ function findEntryIndex(time_ms: number): number {
 	return found;
 }
 
-async function loadBitmap(entryIdx: number): Promise<PgsBitmap | null> {
+async function loadBitmap(entryIdx: number, signal?: AbortSignal): Promise<PgsBitmap | null> {
 	if (bitmapCache.has(entryIdx)) return bitmapCache.get(entryIdx) ?? null;
 
 	const entry = index.value[entryIdx];
@@ -121,6 +120,7 @@ async function loadBitmap(entryIdx: number): Promise<PgsBitmap | null> {
 	const { data } = await useApiStore().api.get<ArrayBuffer>('/subtitles/pgs/displayset', {
 		params: { offset: entry.offset, size: entry.size },
 		responseType: 'arraybuffer',
+		signal,
 	});
 
 	const bitmap = decoder.parseDisplaySet(new Uint8Array(data), entry.pts_ms);
@@ -132,21 +132,32 @@ async function loadBitmap(entryIdx: number): Promise<PgsBitmap | null> {
 async function fetchAndRender(entryIdx: number) {
 	if (entryIdx < 0) { clearCanvas(); return; }
 
-	const bitmap = await loadBitmap(entryIdx);
+	// Cancel any in-flight fetch for a previous entry
+	fetchAbortController?.abort();
+	const controller = new AbortController();
+	fetchAbortController = controller;
 
-	// Guard against races: only render if this entry is still current
-	if (entryIdx !== lastEntryIndex.value) return;
+	try {
+		const bitmap = await loadBitmap(entryIdx, controller.signal);
 
-	renderBitmap(bitmap);
+		// Guard against races: only render if this entry is still current
+		if (entryIdx !== lastEntryIndex.value) return;
 
-	// Preload the next entry so it is ready without a visible delay
-	if (entryIdx + 1 < index.value.length) {
-		loadBitmap(entryIdx + 1);
-	}
+		renderBitmap(bitmap);
 
-	// Evict cache entries that are far behind current playback
-	for (const key of bitmapCache.keys()) {
-		if (key < entryIdx - 2) bitmapCache.delete(key);
+		// Preload the next entry so it is ready without a visible delay
+		if (entryIdx + 1 < index.value.length) {
+			loadBitmap(entryIdx + 1);
+		}
+
+		// Evict cache entries that are far behind current playback
+		for (const key of bitmapCache.keys()) {
+			if (key < entryIdx - 2) bitmapCache.delete(key);
+		}
+	} catch (e: any) {
+		// Ignore cancellations triggered by a newer fetch
+		if (e?.code === 'ERR_CANCELED' || e?.name === 'AbortError' || e?.name === 'CanceledError') return;
+		throw e;
 	}
 }
 
@@ -158,11 +169,7 @@ function onVideoFrame(_now: DOMHighResTimeStamp, metadata: VideoFrameCallbackMet
 
 	if (entryIdx !== lastEntryIndex.value) {
 		lastEntryIndex.value = entryIdx;
-		if (fetchDebounceTimer !== null) clearTimeout(fetchDebounceTimer);
-		fetchDebounceTimer = setTimeout(() => {
-			fetchDebounceTimer = null;
-			fetchAndRender(entryIdx);
-		}, FETCH_DEBOUNCE_MS);
+		fetchAndRender(entryIdx);
 	}
 
 	frameCallbackHandle = props.videoRef.requestVideoFrameCallback(onVideoFrame);
@@ -173,7 +180,8 @@ function startLoop(el: HTMLVideoElement) {
 }
 
 function stopLoop() {
-	if (fetchDebounceTimer !== null) { clearTimeout(fetchDebounceTimer); fetchDebounceTimer = null; }
+	fetchAbortController?.abort();
+	fetchAbortController = null;
 	if (props.videoRef && frameCallbackHandle !== null) {
 		props.videoRef.cancelVideoFrameCallback(frameCallbackHandle);
 		frameCallbackHandle = null;
