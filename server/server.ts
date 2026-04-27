@@ -24,6 +24,7 @@ import { EitherMetadata } from './services/metadata/MetadataTypes';
 import { ThumbnailService } from './services/ThumbnailService';
 import { ProbeService } from './services/ProbeService';
 import { useFfmpeg } from './utils/ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 import { getBuildNumber } from './utils/versionService';
 import { GetListByKeyword } from 'youtube-search-api';
 import ytdl from '@distube/ytdl-core'
@@ -435,6 +436,46 @@ app.post('/api/prepareAudio', async (req, res) => {
 			jobId: job.jobId,
 		}
 	})
+});
+
+app.get('/api/stream-mkv-preview', async (req, res) => {
+	const { path: relativePath } = req.query;
+	if (!relativePath) {
+		res.status(400).send("Requires path query param");
+		return;
+	}
+	const resolvedPath = DirectoryService.resolvePath(relativePath as string);
+	if (!resolvedPath) {
+		res.status(404).send("File not found");
+		return;
+	}
+	if (!resolvedPath.relativePath.endsWith('.mkv')) {
+		res.status(400).send("Only MKV files supported");
+		return;
+	}
+	if (!await LoanService.canStreamMedia(resolvedPath, getSessionEmail())) {
+		res.status(401).send("Not allowed");
+		return;
+	}
+
+	res.setHeader('Content-Type', 'video/mp4');
+
+	const ff = ffmpeg(resolvedPath.absolutePath)
+		.outputOptions([
+			'-t 300',
+			'-c:v copy',
+			'-c:a copy',
+			'-sn',
+			'-movflags frag_keyframe+empty_moov+default_base_moof',
+			'-f mp4',
+		])
+		.on('error', (err: any) => {
+			console.error('MKV preview stream error:', err.message);
+			if (!res.headersSent) res.status(500).end();
+		});
+
+	ff.pipe(res as any, { end: true });
+	req.on('close', () => ff.kill('SIGKILL'));
 });
 
 app.post('/api/remux', async (req, res) => {
