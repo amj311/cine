@@ -72,25 +72,37 @@ const hasLoaded = ref(false);
 const isRemuxNeeded = computed(() => props.relativePath?.endsWith('.mkv') ?? false);
 const remuxedUrl = ref<string | null>(null);
 const remuxState = ref<'idle' | 'remuxing' | 'ready' | 'error'>('idle');
-const pendingSeekTime = ref<number | null>(null);
-const pendingResume = ref(false);
+const remuxProgress = ref(0);
 
 async function prepareRemux() {
 	if (!props.relativePath) return;
 	remuxState.value = 'remuxing';
+	remuxProgress.value = 0;
+	toast.add({
+		severity: 'info',
+		summary: 'Preparing Video',
+		detail: 'This may take a few minutes...',
+		progressRef: remuxProgress,
+	} as any);
 	try {
 		const { data } = await useApiStore().api.post('/remux', { path: props.relativePath });
 		const pinger = new JobPinger(data.jobId, 2000);
-		const completedJob = await pinger.start({});
+		const completedJob = await pinger.start({
+			onPing(job) { remuxProgress.value = job?.progress?.percentage ?? 0; }
+		});
 		if (completedJob.value?.status === 'failed') throw new Error('Remux job failed');
-		// Save playback state before swapping src
-		pendingSeekTime.value = videoRef.value?.currentTime ?? null;
-		pendingResume.value = !(videoRef.value?.paused ?? true);
 		remuxedUrl.value = data.path;
 		remuxState.value = 'ready';
+		toast.removeAllGroups();
+		toast.add({
+			severity: 'success',
+			summary: 'Video Ready',
+			life: 2000,
+		});
 	} catch (e) {
 		console.error('Error remuxing MKV', e);
 		remuxState.value = 'error';
+		toast.removeAllGroups();
 		toast.add({
 			severity: 'error',
 			summary: 'Error Preparing Video',
@@ -102,6 +114,7 @@ async function prepareRemux() {
 watch(() => props.relativePath, () => {
 	remuxedUrl.value = null;
 	remuxState.value = 'idle';
+	remuxProgress.value = 0;
 	hasLoaded.value = false;
 	if (isRemuxNeeded.value) {
 		prepareRemux();
@@ -110,11 +123,7 @@ watch(() => props.relativePath, () => {
 
 const videoUrl = computed(() => {
 	if (isRemuxNeeded.value) {
-		if (remuxedUrl.value) return useApiStore().apiUrl + remuxedUrl.value;
-		// Stream a preview of the first 5 minutes while remux is processing
-		return props.relativePath
-			? useApiStore().apiUrl + '/stream-mkv-preview?path=' + encodeMediaPath(props.relativePath)
-			: '';
+		return remuxedUrl.value ? useApiStore().apiUrl + remuxedUrl.value : '';
 	}
 	return props.relativePath ? useApiStore().apiUrl + '/stream?path=' + encodeMediaPath(props.relativePath) : '';
 });
@@ -127,7 +136,6 @@ const supportedVideoTypes = [
 ];
 
 const goodType = computed(() => {
-	if (isRemuxNeeded.value) return 'mp4';
 	return supportedVideoTypes.find(type => videoUrl.value.endsWith(type));
 });
 
@@ -171,15 +179,6 @@ onMounted(() => {
 	videoRef.value?.addEventListener('loadeddata', () => {
 		hasLoaded.value = true;
 		updatePlayingState();
-		// Restore position after swapping from preview to full remuxed file
-		if (pendingSeekTime.value !== null) {
-			videoRef.value!.currentTime = pendingSeekTime.value;
-			pendingSeekTime.value = null;
-			if (pendingResume.value) {
-				videoRef.value?.play();
-				pendingResume.value = false;
-			}
-		}
 		if (props.onLoadedData) {
 			props.onLoadedData(videoRef.value);
 		}
