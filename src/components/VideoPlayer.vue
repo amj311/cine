@@ -88,16 +88,9 @@ async function prepareRemux() {
 		pendingResume.value = !(videoRef.value?.paused ?? true);
 		remuxedUrl.value = data.path;
 		remuxState.value = 'ready';
-		toast.removeAllGroups();
-		toast.add({
-			severity: 'success',
-			summary: 'Video Ready',
-			life: 2000,
-		});
 	} catch (e) {
 		console.error('Error remuxing MKV', e);
 		remuxState.value = 'error';
-		toast.removeAllGroups();
 		toast.add({
 			severity: 'error',
 			summary: 'Error Preparing Video',
