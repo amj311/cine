@@ -163,6 +163,8 @@ import loanRoute from './routes/loan.route'
 app.use('/api/loan', loanRoute);
 import subtitlesRoute from './routes/subtitles.route'
 app.use('/api/subtitles', subtitlesRoute);
+import mseRoute from './routes/mse.route'
+app.use('/api/mse', mseRoute);
 
 
 import { decodeMediaPath, safeParseInt } from './utils/miscUtils';

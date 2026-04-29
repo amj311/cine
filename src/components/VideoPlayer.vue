@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useApiStore } from '@/stores/api.store';
+import { useSettingsStore } from '@/stores/settings.store';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
@@ -12,6 +13,7 @@ import VideoProgressBar from './VideoProgressBar.vue';
 import type Message from 'primevue/message';
 import VobSubCanvas from './VobSubCanvas.vue';
 import PgsCanvas from './PgsCanvas.vue';
+import { MseStream } from '@/utils/MseStream';
 
 const toast = useToast();
 
@@ -69,10 +71,13 @@ const wrapperRef = ref<HTMLDivElement>();
 const videoRef = ref<HTMLVideoElement>();
 const hasLoaded = ref(false);
 
-const isRemuxNeeded = computed(() => props.relativePath?.endsWith('.mkv') ?? false);
+const isMseStream = computed(() => useSettingsStore().localSettings.use_mse_streaming && (props.relativePath?.endsWith('.mkv') ?? false));
+
+const isRemuxNeeded = computed(() => !isMseStream.value && (props.relativePath?.endsWith('.mkv') ?? false));
 const remuxedUrl = ref<string | null>(null);
 const remuxState = ref<'idle' | 'remuxing' | 'ready' | 'error'>('idle');
 const remuxProgress = ref(0);
+const mseStream = ref<MseStream | null>(null);
 
 async function prepareRemux() {
 	if (!props.relativePath) return;
@@ -119,6 +124,7 @@ watch(() => props.relativePath, () => {
 	if (isRemuxNeeded.value) {
 		prepareRemux();
 	}
+	// MSE streaming is initialized in onMounted (component is keyed per path)
 }, { immediate: true });
 
 const videoUrl = computed(() => {
@@ -169,6 +175,12 @@ let unsubTvNav: (() => void) | null = null;
 
 onMounted(() => {
 	loopUpdateState();
+
+	if (isMseStream.value && videoRef.value && props.relativePath) {
+		const audioStreamIndex = props.audio?.[selectedAudioIndex.value]?.index;
+		mseStream.value = new MseStream(videoRef.value, props.relativePath, audioStreamIndex);
+		mseStream.value.init().catch((err) => console.error('[VideoPlayer] MseStream init error:', err));
+	}
 
 	secondaryAudioPlayer.value?.addEventListener('play', (e) => {
 		// prevent secondary audio from pausing main video when it plays
@@ -240,6 +252,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+	mseStream.value?.destroy();
+	mseStream.value = null;
 	const events = ['mousemove', 'keydown', 'touchstart'];
 	events.forEach((event) => {
 		wrapperRef.value?.removeEventListener(event, doShowControls);
@@ -383,7 +397,7 @@ const subtitleMenuItems = computed(() => {
 // 0 means default audio, don't load secondary
 const selectedAudioIndex = ref(0);
 const secondaryAudio = computed(() => {
-	if (!props.audio?.length) {
+	if (!props.audio?.length || isMseStream.value) {
 		return null;
 	}
 	if (selectedAudioIndex.value === 0) {
@@ -403,6 +417,28 @@ watch(secondaryAudio, (audio) => {
 		turnOffSecondaryAudio();
 	}
 }, { immediate: true });
+
+// For MSE streams, switching audio means recreating the MseStream with the new track index.
+watch(selectedAudioIndex, async (newIdx) => {
+	if (!isMseStream.value || !videoRef.value || !props.relativePath) return;
+
+	const savedTime = videoRef.value.currentTime;
+	const wasPlaying = isPlaying.value;
+
+	hasLoaded.value = false;
+	mseStream.value?.destroy();
+	mseStream.value = null;
+
+	const audioStreamIndex = props.audio?.[newIdx]?.index;
+	mseStream.value = new MseStream(videoRef.value, props.relativePath, audioStreamIndex);
+	try {
+		await mseStream.value.init();
+		videoRef.value.currentTime = savedTime;
+		if (wasPlaying) await videoRef.value.play();
+	} catch (err) {
+		console.error('[VideoPlayer] MseStream audio switch error:', err);
+	}
+});
 
 let audioSyncCheck: number = 0;
 
@@ -583,7 +619,7 @@ defineExpose({
 
 <template>
 	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls tvNavigationNoFocus': showControls }">
-		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType || isRemuxNeeded" :src="videoUrl || undefined" crossorigin="use-credentials" allow :style="{ backgroundColor: background }">
+		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType || isRemuxNeeded || isMseStream" :src="isMseStream ? undefined : (videoUrl || undefined)" crossorigin="use-credentials" allow :style="{ backgroundColor: background }">
 			<!-- <track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" /> -->
 			<track v-if="selectedSubtitle && selectedSubtitle.format !== 'dvd_subtitle' && selectedSubtitle.format !== 'hdmv_pgs_subtitle'" :key="selectedSubtitle.url" kind="subtitles" :src="selectedSubtitle.url" srclang="en" :label="selectedSubtitle.label" default @error="handleSubtitleError" />
 		</video>

@@ -6,6 +6,7 @@ const defaultSettings = {
 	is_tv: false,
 	tv_nav: false,
 	show_debug: false,
+	use_mse_streaming: false,
 }
 
 export const useSettingsStore = defineStore('Settings', () => {

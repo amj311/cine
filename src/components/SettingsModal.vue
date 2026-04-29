@@ -67,6 +67,11 @@ async function clearLibraryCache() {
 				</div>
 			</div>
 
+			<label>Use experimental streaming</label>
+			<div>
+				<ToggleSwitch v-model="localSettings.use_mse_streaming" />
+			</div>
+
 			<label>Show debug</label>
 			<div>
 				<ToggleSwitch v-model="localSettings.show_debug" />
