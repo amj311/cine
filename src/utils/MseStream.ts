@@ -178,31 +178,33 @@ export class MseStream {
 	// ─── Seek handling ─────────────────────────────────────────────────────
 
 	private async handleSeek(seekTime: number): Promise<void> {
-		// this.seekingInProgress = true;
-		// try {
-		// 	// If seekTime is already buffered, update the chunk cursor and make
-		// 	// sure the next chunk is queued; no need to re-fetch.
-		// 	if (this.isTimeBuffered(seekTime)) {
-		// 		this.nextChunkIdx = this.findChunkIdxForTime(seekTime) + 1;
-		// 		this.maybePreloadNext();
-		// 		return;
-		// 	}
+		this.seekingInProgress = true;
+		try {
+			// // If seekTime is already buffered, update the chunk cursor and make
+			// // sure the next chunk is queued; no need to re-fetch.
+			// if (this.isTimeBuffered(seekTime)) {
+			// 	this.maybePreloadNext();
+			// 	return;
+			// }
 
-		// 	this.cancelFetch();
-		// 	await this.clearBuffers();
-		// 	if (this.destroyed) return;
+			if (!this.isTimeBuffered(seekTime)) {
+				const chunkIdx = this.findChunkIdxForTime(seekTime);
+				await this.fetchAndAppendChunk(chunkIdx);
+			}
 
-		// 	const chunkIdx = this.findChunkIdxForTime(seekTime);
-		// 	await this.fetchAndAppendChunk(chunkIdx);
-		// } finally {
-		// 	this.seekingInProgress = false;
-		// 	// Handle any seek that arrived while we were busy
-		// 	if (this.pendingSeekTime !== null && !this.destroyed) {
-		// 		const pending = this.pendingSeekTime;
-		// 		this.pendingSeekTime = null;
-		// 		await this.handleSeek(pending);
-		// 	}
-		// }
+			// this.cancelFetch();
+			// await this.clearBuffers();
+			// if (this.destroyed) return;
+
+		} finally {
+			this.seekingInProgress = false;
+			// Handle any seek that arrived while we were busy
+			if (this.pendingSeekTime !== null && !this.destroyed) {
+				const pending = this.pendingSeekTime;
+				this.pendingSeekTime = null;
+				await this.handleSeek(pending);
+			}
+		}
 	}
 
 	// ─── Buffering logic ────────────────────────────────────────────────────

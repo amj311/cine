@@ -71,7 +71,7 @@ const wrapperRef = ref<HTMLDivElement>();
 const videoRef = ref<HTMLVideoElement>();
 const hasLoaded = ref(false);
 
-const isMseStream = computed(() => useSettingsStore().localSettings.use_mse_streaming && (props.relativePath?.endsWith('.mkv') ?? false));
+const isMseStream = computed(() => useSettingsStore().localSettings.use_mse_streaming);
 
 const isRemuxNeeded = computed(() => !isMseStream.value && (props.relativePath?.endsWith('.mkv') ?? false));
 const remuxedUrl = ref<string | null>(null);
