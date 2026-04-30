@@ -77,6 +77,13 @@ export class MseStream {
 	/** Guards against overlapping cleanOldBuffers calls. */
 	private cleanupInProgress: boolean = false;
 
+	/**
+	 * Set when endOfStream() has been successfully called. Used to re-signal EOS
+	 * after cleanOldBuffers() calls remove(), which transitions the MediaSource
+	 * back to 'open' and suppresses the video 'ended' event.
+	 */
+	private eosSignaled: boolean = false;
+
 	/** Timestamp (ms) of the last maybePreloadNext evaluation, to throttle timeupdate calls. */
 	private lastPreloadCheck: number = 0;
 	private readonly PRELOAD_COOLDOWN_MS = 5000;
@@ -86,6 +93,8 @@ export class MseStream {
 		this.relativePath = relativePath;
 		this.audioStreamIndex = audioStreamIndex;
 		this.mediaSource = new MediaSource();
+
+		videoEl.addEventListener('ended', console.log)
 	}
 
 	// ─── Public API ─────────────────────────────────────────────
@@ -302,6 +311,8 @@ export class MseStream {
 		if (this.audioStreamIndex !== undefined) url += `&audioIndex=${this.audioStreamIndex}`;
 
 		try {
+			await this.cleanOldBuffers();
+
 			const response = await fetch(url, {
 				signal: controller.signal,
 				credentials: 'include',
@@ -328,13 +339,13 @@ export class MseStream {
 
 			if (this.destroyed) return;
 
+
 			// Signal EOS when this was the last chunk
 			if (chunkIdx + 1 >= this.chunkIndex.length) {
 				this.signalEndOfStream();
 			}
 
 			this.isFetching = false;
-			await this.cleanOldBuffers();
 		} catch (err: any) {
 			this.isFetching = false;
 			if (err?.name === 'AbortError') return;
@@ -433,6 +444,7 @@ export class MseStream {
 		try {
 			if (this.mediaSource.readyState === 'open' && !this.sourceBuffer?.updating) {
 				this.mediaSource.endOfStream();
+				this.eosSignaled = true;
 			}
 		} catch (_) { }
 	}
