@@ -382,21 +382,6 @@ export class MseStream {
 		});
 	}
 
-	/** Remove all buffered data (used before loading a seek position). */
-	private async clearBuffers(): Promise<void> {
-		if (!this.sourceBuffer) return;
-		await this.waitForSourceBuffer();
-		if (this.sourceBuffer.buffered.length === 0) return;
-		return new Promise<void>((resolve) => {
-			const onEnd = () => {
-				this.sourceBuffer!.removeEventListener('updateend', onEnd);
-				resolve();
-			};
-			this.sourceBuffer!.addEventListener('updateend', onEnd);
-			this.sourceBuffer!.remove(0, this.duration + 1);
-		});
-	}
-
 	/** Evict data that is far enough behind currentTime to free memory. */
 	private cleanOldBuffers(): void {
 		if (this.cleanupInProgress || !this.sourceBuffer || this.sourceBuffer.updating) return;
