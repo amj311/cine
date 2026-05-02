@@ -2,10 +2,10 @@
 import { onBeforeMount, ref } from 'vue';
 import { useApiStore } from '@/stores/api.store';
 import { useUserStore } from '@/stores/user.store';
-import LibraryItemCard from '@/components/LibraryItemCard.vue';
+import TheaterPosterFrame from '@/components/TheaterPosterFrame.vue';
 import NothingFound from '@/components/NothingFound.vue';
 import NowPlayingSettingsModal from '@/components/NowPlayingSettingsModal.vue';
-import Button from 'primevue/button';
+import Scroll from '@/components/Scroll.vue';
 
 const titles = ref<any[]>([]);
 const date = ref('');
@@ -35,6 +35,7 @@ const settingsModal = ref<InstanceType<typeof NowPlayingSettingsModal>>();
 </script>
 
 <template>
+	<Scroll>
 	<div class="now-playing-view">
 		<div class="now-playing-header">
 			<h2>Now Playing</h2>
@@ -62,10 +63,11 @@ const settingsModal = ref<InstanceType<typeof NowPlayingSettingsModal>>();
 				class="now-playing-card-wrapper"
 				:class="item.type"
 			>
-				<LibraryItemCard :libraryItem="item" />
+				<TheaterPosterFrame :libraryItem="item" />
 			</div>
 		</div>
 	</div>
+	</Scroll>
 </template>
 
 <style scoped lang="scss">
@@ -104,14 +106,14 @@ const settingsModal = ref<InstanceType<typeof NowPlayingSettingsModal>>();
 	justify-content: center;
 
 	.now-playing-card-wrapper {
-		--baseWidth: min(12rem, 35vw);
+		--baseWidth: min(14rem, 40vw);
 		width: var(--baseWidth);
 		min-width: var(--baseWidth);
 		max-width: var(--baseWidth);
 
 		&.album,
 		&.audiobook {
-			--baseWidth: min(10rem, 30vw);
+			--baseWidth: min(12rem, 35vw);
 		}
 	}
 }
