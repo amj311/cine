@@ -152,6 +152,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 			<div>
 				<DropdownMenu :items="[
 					{ label: useUserStore().currentUser?.email, icon: 'pi pi-user', disabled: true },
+					{ label: 'Now Playing', icon: 'pi pi-play', command: () => router.push('/now-playing') },
 					{ label: 'Timer', icon: 'pi pi-clock', command: () => router.push('/remote') },
 					{ label: 'Settings', icon: 'pi pi-cog', command: settingsModal?.open, },
 					{ label: 'Quick Login', icon: 'pi pi-unlock', command: () => router.push('/validate-signin-code'), },

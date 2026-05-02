@@ -286,7 +286,7 @@ body {
 	}
 
 
-	.p-inputtext[transparent], .p-select[transparent], .p-inputgroupaddon[transparent], .p-datepicker[transparent] > .p-datepicker-input {
+	.p-inputtext[transparent], .p-select[transparent], .p-inputgroupaddon[transparent], .p-datepicker[transparent] > .p-datepicker-input, .p-inputnumber[transparent] input {
 		&:not(.p-invalid) {
 			background-color: #ffffff08;
 			backdrop-filter: blur(25px);

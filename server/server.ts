@@ -165,6 +165,8 @@ import subtitlesRoute from './routes/subtitles.route'
 app.use('/api/subtitles', subtitlesRoute);
 import mseRoute from './routes/mse.route'
 app.use('/api/mse', mseRoute);
+import nowPlayingRoute from './routes/now-playing.route'
+app.use('/api/now-playing', nowPlayingRoute);
 
 
 import { decodeMediaPath, safeParseInt } from './utils/miscUtils';
