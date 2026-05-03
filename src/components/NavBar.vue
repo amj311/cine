@@ -153,8 +153,7 @@ const nowPlayingMode = computed(() => useSettingsStore().localSettings.now_playi
 
 			<div>
 				<DropdownMenu :items="[
-					{ label: useUserStore().currentUser?.email, icon: 'pi pi-user', disabled: true },
-					{ label: 'Timer', icon: 'pi pi-clock', command: () => router.push('/remote') },
+					{ label: useUserStore().currentUser?.email, icon: 'pi pi-user', disabled: true },				{ label: 'Browse', icon: 'pi pi-th-large', command: () => router.push({ name: 'browse' }) },					{ label: 'Timer', icon: 'pi pi-clock', command: () => router.push('/remote') },
 					{ label: 'Settings', icon: 'pi pi-cog', command: settingsModal?.open, },
 					{ label: 'Quick Login', icon: 'pi pi-unlock', command: () => router.push('/validate-signin-code'), },
 					{ label: 'Sign out', icon: 'pi pi-sign-out', command: AuthService.signOut },

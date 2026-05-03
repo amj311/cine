@@ -14,6 +14,8 @@ import CinemaItemPage from './CinemaItemPage.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
 import type { GalleryFile } from '@/components/GalleryFileFrame.vue';
 import NothingFound from '@/components/NothingFound.vue';
+import MediaCard from '@/components/MediaCard.vue';
+import { useAppNavigationStore } from '@/stores/appNavigation.store';
 
 const route = useRoute();
 const api = useApiStore().api;
@@ -30,6 +32,9 @@ const exploreMode = ref<'library' | 'files'>('library');
 
 const queryPathStore = useQueryPathStore();
 queryPathStore.updatePathFromQuery();
+
+const navStore = useAppNavigationStore();
+const isRoot = computed(() => !queryPathStore.currentPath);
 
 // maintain a stack of scroll positions for consistency when navigating backwards
 const scrollStack = new Map<string, number>();
@@ -87,13 +92,19 @@ const fetchDirectory = async () => {
 };
 
 onBeforeMount(() => {
-	fetchDirectory();
+	if (!isRoot.value) fetchDirectory();
 });
 watch(
 	() => encodeMediaPath(queryPathStore.currentPath),
 	(newPath) => {
-		// Only update if the in the 'browse' route
+		// Only update if in the 'browse' route
 		if (route?.name !== 'browse') {
+			return;
+		}
+		if (!queryPathStore.currentPath) {
+			directory.value = null;
+			libraryItem.value = null;
+			rootLibrary.value = null;
 			return;
 		}
 		if (fetchedPath !== newPath) {
@@ -108,7 +119,31 @@ watch(
 <template>
 	<div style="height: 100%; position: relative">
 		<div style="height: 100%;" :style="longLoading ? { opacity: 0.5, transition: '500ms' } : {}">
-			<NothingFound v-if="!loading && !libraryItem" />
+			<div v-if="isRoot" class="root-library-feed">
+				<h3>Libraries</h3>
+				<div class="root-library-list">
+					<div
+						v-for="lib in navStore.libraries"
+						class="root-library-card-wrapper"
+						:key="lib.relativePath"
+					>
+						<MediaCard
+							:action="() => useQueryPathStore().goTo(lib.relativePath)"
+							:title="lib.name"
+							:subtitle="lib.libraryType"
+							aspectRatio="wide"
+						>
+							<template #fallbackIcon>
+								<template v-if="lib.libraryType === 'cinema'">🍿</template>
+								<template v-else-if="lib.libraryType === 'audio'">🎧</template>
+								<template v-else-if="lib.libraryType === 'photos'">📸</template>
+								<template v-else>📁</template>
+							</template>
+						</MediaCard>
+					</div>
+				</div>
+			</div>
+			<NothingFound v-else-if="!loading && !libraryItem" />
 			<KeepAlive :include="['Explorer', 'CinemaLibraryPage', 'PhotoLibraryPage']" v-if="!longLoading">
 				<template v-if="exploreMode === 'library' && libraryItem?.type === 'library' && libraryItem?.libraryType === 'cinema'">
 					<CinemaLibraryPage :libraryItem="libraryItem" :key="libraryItem.relativePath" :directoryItems="directory!.libraryItems" />
@@ -143,6 +178,25 @@ watch(
 </template>
 
 <style scoped lang="scss">
+.root-library-feed {
+	--padding: 15px;
+	padding: var(--padding);
+
+	.root-library-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+		padding: 5px;
+	}
+
+	.root-library-card-wrapper {
+		--baseWidth: min(16rem, 40vw);
+		width: var(--baseWidth);
+		min-width: var(--baseWidth);
+		max-width: var(--baseWidth);
+	}
+}
+
 .loading {
 	position: absolute;
 	top: 5rem;
