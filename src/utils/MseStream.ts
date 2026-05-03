@@ -5,7 +5,7 @@ import { encodeMediaPath } from '@/utils/miscUtils';
  * When fewer than this many seconds remain in the current buffered region,
  * begin fetching the next chunk.
  */
-const PREFETCH_THRESHOLD_S = 10;
+const PREFETCH_THRESHOLD_S = 60;
 
 /**
  * How many seconds behind currentTime to keep in the SourceBuffer.
