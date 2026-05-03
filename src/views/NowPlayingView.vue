@@ -95,7 +95,7 @@ onBeforeMount(() => {
 	justify-content: center;
 
 	.now-playing-card-wrapper {
-		--baseWidth: min(14rem, 40vw);
+		--baseWidth: min(12rem, 35vw);
 		width: var(--baseWidth);
 		min-width: var(--baseWidth);
 		max-width: var(--baseWidth);
