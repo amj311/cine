@@ -31,31 +31,33 @@ onBeforeMount(() => {
 </script>
 
 <template>
-	<Scroll>
-	<div class="now-playing-view">
-		<div class="now-playing-header">
-			<h2>Now Playing</h2>
-		</div>
+	<div class="h-full w-full">
+		<Scroll>
+			<div class="now-playing-view">
+				<div class="now-playing-header">
+					<h2>Now Playing</h2>
+				</div>
 
-		<div v-if="loading" class="now-playing-loading">
-			<i class="pi pi-spinner spin" />
-			Loading...
-		</div>
+				<div v-if="loading" class="now-playing-loading">
+					<i class="pi pi-spinner spin" />
+					Loading...
+				</div>
 
-		<NothingFound v-else-if="notConfigured" />
+				<NothingFound v-else-if="notConfigured" />
 
-		<div v-else class="now-playing-grid">
-			<div
-				v-for="item in titles"
-				:key="item.relativePath"
-				class="now-playing-card-wrapper"
-				:class="item.type"
-			>
-				<TheaterPosterFrame :libraryItem="item" />
+				<div v-else class="now-playing-grid">
+					<div
+						v-for="item in titles"
+						:key="item.relativePath"
+						class="now-playing-card-wrapper"
+						:class="item.type"
+					>
+						<TheaterPosterFrame :libraryItem="item" />
+					</div>
+				</div>
 			</div>
-		</div>
+		</Scroll>
 	</div>
-	</Scroll>
 </template>
 
 <style scoped lang="scss">
@@ -95,7 +97,7 @@ onBeforeMount(() => {
 	justify-content: center;
 
 	.now-playing-card-wrapper {
-		--baseWidth: min(12rem, 35vw);
+		--baseWidth: min(11rem, 35vw);
 		width: var(--baseWidth);
 		min-width: var(--baseWidth);
 		max-width: var(--baseWidth);

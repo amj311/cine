@@ -38,13 +38,13 @@ function subtitle(item: any): string {
 				@keydown.enter.prevent="useQueryPathStore().goTo(libraryItem.relativePath)"
 				@keydown.space.prevent="useQueryPathStore().goTo(libraryItem.relativePath)"
 			>
-				<!-- Corner bolts -->
-				<div class="bolt tl" />
-				<div class="bolt tr" />
-				<div class="bolt bl" />
-				<div class="bolt br" />
-
 				<div class="frame-border">
+					<!-- Corner bolts -->
+					<div class="bolt tl" />
+					<div class="bolt tr" />
+					<div class="bolt bl" />
+					<div class="bolt br" />
+
 					<div class="frame-inner">
 						<img
 							v-if="posterUrl(libraryItem, metadata)"
@@ -81,20 +81,21 @@ function subtitle(item: any): string {
 	// Corner bolts
 	.bolt {
 		position: absolute;
-		width: 10px;
-		height: 10px;
+		width: 4%;
+		aspect-ratio: 1;
 		border-radius: 50%;
 		background: radial-gradient(circle at 35% 35%, #ccc, #555);
 		box-shadow: 0 1px 2px #000a;
 		z-index: 10;
 
-		&.tl { top: 6px; left: 6px; }
-		&.tr { top: 6px; right: 6px; }
-		&.bl { bottom: 46px; left: 6px; }
-		&.br { bottom: 46px; right: 6px; }
+		&.tl { top: 2%; left: 2%; }
+		&.tr { top: 2%; right: 2%; }
+		&.bl { bottom: 2%; left: 2%; }
+		&.br { bottom: 2%; right: 2%; }
 	}
 
 	.frame-border {
+		position: relative;
 		width: 100%;
 		aspect-ratio: 2 / 3;
 		background: linear-gradient(145deg, #3a3a3a, #1a1a1a, #3a3a3a);
