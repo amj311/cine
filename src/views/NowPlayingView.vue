@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
 import { useApiStore } from '@/stores/api.store';
-import { useUserStore } from '@/stores/user.store';
 import TheaterPosterFrame from '@/components/TheaterPosterFrame.vue';
 import NothingFound from '@/components/NothingFound.vue';
-import NowPlayingSettingsModal from '@/components/NowPlayingSettingsModal.vue';
 import Scroll from '@/components/Scroll.vue';
 
 const titles = ref<any[]>([]);
@@ -30,8 +28,6 @@ async function loadTitles() {
 onBeforeMount(() => {
 	loadTitles();
 });
-
-const settingsModal = ref<InstanceType<typeof NowPlayingSettingsModal>>();
 </script>
 
 <template>
@@ -39,15 +35,7 @@ const settingsModal = ref<InstanceType<typeof NowPlayingSettingsModal>>();
 	<div class="now-playing-view">
 		<div class="now-playing-header">
 			<h2>Now Playing</h2>
-			<Button
-				v-if="useUserStore().isOwner"
-				icon="pi pi-cog"
-				variant="text"
-				severity="secondary"
-				@click="settingsModal?.open()"
-			/>
 		</div>
-		<NowPlayingSettingsModal ref="settingsModal" />
 
 		<div v-if="loading" class="now-playing-loading">
 			<i class="pi pi-spinner spin" />
@@ -73,6 +61,7 @@ const settingsModal = ref<InstanceType<typeof NowPlayingSettingsModal>>();
 <style scoped lang="scss">
 .now-playing-view {
 	padding: 1.5rem;
+	padding-top: 0;
 	min-height: 100%;
 	display: flex;
 	flex-direction: column;

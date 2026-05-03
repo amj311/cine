@@ -16,6 +16,7 @@ import { encodeMediaPath } from '@/utils/miscUtils';
 import SharingModal from './SharingModal.vue';
 import NavTrigger from './utils/NavTrigger/NavTrigger.vue';
 import router from '@/router/router';
+import { useSettingsStore } from '@/stores/settings.store';
 
 const navStore = useAppNavigationStore();
 const queryPathStore = useQueryPathStore();
@@ -67,6 +68,7 @@ const avatarInitial = computed(() => useUserStore().currentUser?.email?.[0]);
 
 const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 const sharingModal = ref<InstanceType<typeof SharingModal>>();
+const nowPlayingMode = computed(() => useSettingsStore().localSettings.now_playing_mode);
 </script>
 
 <template>
@@ -77,7 +79,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 				<div class="build-version">v{{ getBuildNumber() }}</div>
 			</div>
 
-			<div v-if="useMobileNav" style="flex-grow: 1; min-width: 0;">
+			<div v-if="useMobileNav && !nowPlayingMode" style="flex-grow: 1; min-width: 0;">
 				<Button
 					v-if="!expandMobileNav"
 					variant="text"
@@ -91,7 +93,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 			</div>
 
 			<!-- Starting point libraries -->
-			<div class="flex align-items-center" v-else-if="showRootNavigation">
+			<div class="flex align-items-center" v-else-if="showRootNavigation && !nowPlayingMode">
 				<Button
 					v-for="library in navStore.libraries"
 					:key="library.relativePath"
@@ -103,7 +105,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 				/>
 			</div>
 
-			<div v-else-if="$route.name === 'browse'" class="breadcrumbs ml-1" :class="{ bg: isInMediaFolder }">
+			<div v-else-if="$route.name === 'browse' && !nowPlayingMode" class="breadcrumbs ml-1" :class="{ bg: isInMediaFolder }">
 				<Button btn-blur-hover @click="() => queryPathStore.goToAncestor(queryPathStore.rootLibrary!)" style="cursor: pointer" variant="text" severity="secondary">{{ queryPathStore.rootLibrary }}</button>
 				<template v-if="hiddenBreadcrumbs.length > 0">
 					<i class="pi pi-angle-right opacity-50" />
@@ -128,7 +130,7 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 			<Button
 				btn-blur-hover
 				btn-drop-shadow
-				v-if="queryPathStore.currentPath && useUserStore().currentUser.isOwner && (!useScreenStore().isSkinnyScreen || expandMobileNav)"
+				v-if="!nowPlayingMode && queryPathStore.currentPath && useUserStore().currentUser.isOwner && (!useScreenStore().isSkinnyScreen || expandMobileNav)"
 				text
 				size="small text-5xl"
 				severity="contrast"
@@ -152,7 +154,6 @@ const sharingModal = ref<InstanceType<typeof SharingModal>>();
 			<div>
 				<DropdownMenu :items="[
 					{ label: useUserStore().currentUser?.email, icon: 'pi pi-user', disabled: true },
-					{ label: 'Now Playing', icon: 'pi pi-play', command: () => router.push('/now-playing') },
 					{ label: 'Timer', icon: 'pi pi-clock', command: () => router.push('/remote') },
 					{ label: 'Settings', icon: 'pi pi-cog', command: settingsModal?.open, },
 					{ label: 'Quick Login', icon: 'pi pi-unlock', command: () => router.push('/validate-signin-code'), },

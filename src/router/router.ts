@@ -34,11 +34,6 @@ const router = createRouter({
 			name: 'ProtocolHandler',
 			component: () => import('@/views/ProtocolHandler.vue'),
 		},
-		{
-			path: '/now-playing',
-			name: 'nowPlaying',
-			component: () => import('@/views/NowPlayingView.vue'),
-		},
 	],
 	scrollBehavior: (to, from) => {
 		if (to.path === from.path) {

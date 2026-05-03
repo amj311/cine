@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { toRef } from 'vue';
 import { useApiStore } from '@/stores/api.store';
 import { useQueryPathStore } from '@/stores/queryPath.store';
 import MetadataLoader from './MetadataLoader.vue';
@@ -7,6 +8,7 @@ const props = defineProps<{
 	libraryItem: any;
 }>();
 
+const libraryItem = toRef(props, 'libraryItem');
 function posterUrl(item: any, metadata: any): string | undefined {
 	return item.poster || item.cover_thumb || metadata?.poster_thumb || undefined;
 }
@@ -25,6 +27,8 @@ function subtitle(item: any): string {
 </script>
 
 <template>
+	<MetadataLoader v-model:media="libraryItem">
+		<template #default="{ metadata }">
 			<div
 				class="theater-frame"
 				role="button"
@@ -43,8 +47,8 @@ function subtitle(item: any): string {
 				<div class="frame-border">
 					<div class="frame-inner">
 						<img
-							v-if="posterUrl(libraryItem, libraryItem.metadata)"
-							:src="useApiStore().resolve(posterUrl(libraryItem, libraryItem.metadata)!)"
+							v-if="posterUrl(libraryItem, metadata)"
+							:src="useApiStore().resolve(posterUrl(libraryItem, metadata)!)"
 							class="poster-img"
 							:alt="title(libraryItem)"
 						/>
@@ -60,6 +64,8 @@ function subtitle(item: any): string {
 					<div v-if="subtitle(libraryItem)" class="subtitle-text">{{ subtitle(libraryItem) }}</div>
 				</div>
 			</div>
+		</template>
+	</MetadataLoader>
 </template>
 
 <style scoped lang="scss">
@@ -176,7 +182,7 @@ function subtitle(item: any): string {
 	}
 
 	// Hover: brighten glow
-	&:hover, &:focus-visible {
+	&:hover, &:focus-visible, &[tv-focus] {
 		outline: none;
 
 		.frame-border {

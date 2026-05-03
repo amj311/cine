@@ -527,7 +527,7 @@ async function returnLoan() {
 				<ExtrasList :extras="libraryItem.extras" :readonly="!canStream" />
 			</div>
 
-			<audio
+			<!-- <audio
 				ref="ytAudio"
 				:src="useApiStore().apiUrl + '/stream-yt-search?q=' + (`${libraryItem.name} ${libraryItem.year} music ost main theme`).replace(/[&?=/]/g, '')"
 				controls
@@ -542,7 +542,7 @@ async function returnLoan() {
 				loop
 			>
 				Your browser does not support the audio element.
-			</audio>
+			</audio> -->
 		</div>
 		<br />
 

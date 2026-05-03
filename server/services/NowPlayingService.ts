@@ -28,7 +28,10 @@ export class NowPlayingService {
 
 	public static async getTodayTitles(): Promise<{ titles: any[]; date: string }> {
 		const now = new Date();
-		const dateString = now.toISOString().slice(0, 10); // YYYY-MM-DD
+		const year = now.getFullYear();
+		const month = String(now.getMonth() + 1).padStart(2, '0');
+		const day = String(now.getDate()).padStart(2, '0');
+		const dateString = `${year}-${month}-${day}`; // YYYY-MM-DD in server local time
 		const dayOfWeek = now.getDay(); // 0 (Sun) – 6 (Sat)
 
 		const config = await NowPlayingService.getConfig();
