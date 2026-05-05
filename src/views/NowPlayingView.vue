@@ -4,6 +4,7 @@ import { useApiStore } from '@/stores/api.store';
 import TheaterPosterFrame from '@/components/TheaterPosterFrame.vue';
 import NothingFound from '@/components/NothingFound.vue';
 import Scroll from '@/components/Scroll.vue';
+import { useProfileStore } from '@/stores/profile.store';
 
 const titles = ref<any[]>([]);
 const date = ref('');
@@ -13,7 +14,12 @@ const notConfigured = ref(false);
 async function loadTitles() {
 	try {
 		loading.value = true;
-		const { data } = await useApiStore().api.get('/now-playing');
+		const profileId = useProfileStore().activeProfileId;
+		if (!profileId) {
+			notConfigured.value = true;
+			return;
+		}
+		const { data } = await useApiStore().api.get('/now-playing', { params: { profileId } });
 		titles.value = data.titles ?? [];
 		date.value = data.date ?? '';
 		notConfigured.value = titles.value.length === 0;

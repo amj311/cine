@@ -5,7 +5,7 @@
 import { RouterView, useRoute } from 'vue-router'
 import { useScreenStore } from './stores/screen.store';
 import AppBackground from './components/AppBackground.vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watchEffect } from 'vue';
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { usePageTitleStore } from './stores/pageTitle.store';
@@ -18,12 +18,19 @@ import { useSettingsStore } from './stores/settings.store';
 import ProgressBar from 'primevue/progressbar';
 import { AuthService } from './services/AuthService';
 import Logo from './components/Logo.vue';
+import { useProfileStore } from './stores/profile.store';
 
 const apiStore = useApiStore();
 
 usePageTitleStore();
 const tvNavigationStore = useScreenStore();
 const showDebug = computed(() => useSettingsStore().localSettings.show_debug);
+
+const profileStore = useProfileStore();
+watchEffect(() => {
+	const profileName = profileStore.activeProfile?.name;
+	usePageTitleStore().setTitle(profileName ? `OlivePlex: ${profileName}` : 'OlivePlex');
+});
 
 const confirm = useConfirm();
 const toast = useToast();
@@ -69,6 +76,16 @@ onMounted(async () => {
 	await AuthService.initialize();
 	await new Promise(res => setTimeout(res, 500));
 	await useUserStore().loadSessionData();
+
+	// Honor ?profile=<id> query param — switch to the specified profile if it exists for this user
+	const paramProfileId = new URLSearchParams(window.location.search).get('profile');
+	if (paramProfileId) {
+		const profileStore = useProfileStore();
+		if (profileStore.profiles.some((p) => p.id === paramProfileId)) {
+			profileStore.setActiveProfile(paramProfileId);
+		}
+	}
+
 	isInitializing.value = false;
 });
 

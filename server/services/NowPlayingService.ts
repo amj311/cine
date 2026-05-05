@@ -1,32 +1,21 @@
-import { Store } from './DataService';
 import { DirectoryService } from './DirectoryService';
 import { LibraryService } from './LibraryService';
 
-export type NowPlayingConfig = {
+export type NowPlayingTitleFilter = 'movie' | 'series' | null;
+
+export type NowPlayingSource = {
+	directory: string;
 	count: number;
-	defaultSource: string | null;
-	dayOverrides: { [day: number]: string | null };
+	filter?: NowPlayingTitleFilter;
 };
 
-const DEFAULT_CONFIG: NowPlayingConfig = {
-	count: 5,
-	defaultSource: null,
-	dayOverrides: {},
+export type NowPlayingConfig = {
+	defaultSources: NowPlayingSource[];
+	dayOverrides: { [day: number]: NowPlayingSource[] | null };
 };
-
-const CONFIG_KEY = 'config';
-const configStore = new Store<NowPlayingConfig>('nowPlayingConfig');
 
 export class NowPlayingService {
-	public static async getConfig(): Promise<NowPlayingConfig> {
-		return (await configStore.getByKey(CONFIG_KEY)) ?? { ...DEFAULT_CONFIG };
-	}
-
-	public static async saveConfig(config: NowPlayingConfig): Promise<void> {
-		await configStore.set(CONFIG_KEY, config);
-	}
-
-	public static async getTodayTitles(): Promise<{ titles: any[]; date: string }> {
+	public static async getTodayTitles(config: NowPlayingConfig): Promise<{ titles: any[]; date: string }> {
 		const now = new Date();
 		const year = now.getFullYear();
 		const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -34,29 +23,37 @@ export class NowPlayingService {
 		const dateString = `${year}-${month}-${day}`; // YYYY-MM-DD in server local time
 		const dayOfWeek = now.getDay(); // 0 (Sun) – 6 (Sat)
 
-		const config = await NowPlayingService.getConfig();
+		const sources: NowPlayingSource[] =
+			dayOfWeek in config.dayOverrides
+				? (config.dayOverrides[dayOfWeek] ?? [])
+				: config.defaultSources;
 
-		const source =
-			config.dayOverrides[dayOfWeek] !== undefined
-				? config.dayOverrides[dayOfWeek]
-				: config.defaultSource;
-
-		if (!source) {
+		if (!sources.length) {
 			return { titles: [], date: dateString };
 		}
 
-		const resolvedPath = DirectoryService.resolvePath(source);
-		if (!resolvedPath) {
-			return { titles: [], date: dateString };
+		const allTitles: any[] = [];
+		for (const source of sources) {
+			const resolvedPath = DirectoryService.resolvePath(source.directory);
+			if (!resolvedPath) continue;
+
+			const { items } = await LibraryService.getFlatTree(resolvedPath);
+			let titleItems = items
+				.filter((item) => item.libraryTier === 'title')
+				.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+
+			if (source.filter === 'movie') {
+				titleItems = titleItems.filter((item: any) => item.cinemaType === 'movie');
+			} else if (source.filter === 'series') {
+				titleItems = titleItems.filter((item: any) => item.cinemaType === 'series');
+			}
+
+			// Seed includes the source directory so different sources get independent shuffles
+			const shuffled = seededShuffle(titleItems, `${dateString}:${source.directory}`);
+			allTitles.push(...shuffled.slice(0, source.count));
 		}
 
-		const { items } = await LibraryService.getFlatTree(resolvedPath);
-		const titleItems = items
-			.filter((item) => item.libraryTier === 'title')
-			.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
-
-		const shuffled = seededShuffle(titleItems, dateString);
-		return { titles: shuffled.slice(0, config.count), date: dateString };
+		return { titles: allTitles, date: dateString };
 	}
 }
 

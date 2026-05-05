@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { AuthService } from '@/services/AuthService';
 import { useApiStore } from './api.store';
 import { useScreenStore } from './screen.store';
+import { useProfileStore } from './profile.store';
 
 export const useUserStore = defineStore('user', () => {
 	const hasLoadedSessionData = ref(false);
@@ -21,6 +22,7 @@ export const useUserStore = defineStore('user', () => {
 			// currentUser.value = null;
 			hasLoadedSessionData.value = true;
 			isLoading.value = false;
+			useProfileStore().reset();
 			return;
 		}
 		try {
@@ -41,6 +43,7 @@ export const useUserStore = defineStore('user', () => {
 			// session.value = data;
 			loginError.value = '';
 			useScreenStore().determineTvEnvironment();
+			await useProfileStore().loadProfiles(authUser.email);
 		}
 		catch (e) {
 			console.log('ERROR LOADING AUTH USER')

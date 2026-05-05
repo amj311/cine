@@ -9,7 +9,6 @@ import ToggleSwitch from '@/components/utils/ToggleSwitch.vue';
 import { useApiStore } from '@/stores/api.store';
 import { useToast } from 'primevue/usetoast';
 import { useUserStore } from '@/stores/user.store';
-import NowPlayingSettingsModal from './NowPlayingSettingsModal.vue';
 
 const toast = useToast();
 const props = defineProps<{
@@ -17,7 +16,6 @@ const props = defineProps<{
 
 const modal = ref<InstanceType<typeof NavModal>>();
 const localSettings = computed(() => useSettingsStore().localSettings);
-const nowPlayingSettingsModal = ref<InstanceType<typeof NowPlayingSettingsModal>>();
 
 defineExpose({
 	open: () => modal.value?.open(),
@@ -79,28 +77,12 @@ async function clearLibraryCache() {
 				<ToggleSwitch v-model="localSettings.show_debug" />
 			</div>
 
-			<div class="flex align-items-center gap-1">
-				<label>Now Playing mode</label>
-				<Button
-					v-if="useUserStore().currentUser.isOwner"
-					icon="pi pi-cog"
-					variant="text"
-					severity="secondary"
-					size="small"
-					@click="nowPlayingSettingsModal?.open()"
-				/>
-			</div>
-			<div>
-				<ToggleSwitch v-model="localSettings.now_playing_mode" />
-			</div>
-
 			<template v-if="useUserStore().currentUser.isOwner">
 				<Button label="Reset directory cache" severity="warn" @click="clearLibraryCache" />
 				<div></div>
 			</template>
 		</div>
 	</NavModal>
-	<NowPlayingSettingsModal ref="nowPlayingSettingsModal" />
 </template>
 
 <style

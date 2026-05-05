@@ -17,6 +17,8 @@ import SharingModal from './SharingModal.vue';
 import NavTrigger from './utils/NavTrigger/NavTrigger.vue';
 import router from '@/router/router';
 import { useSettingsStore } from '@/stores/settings.store';
+import ProfilesModal from './ProfilesModal.vue';
+import { useProfileStore } from '@/stores/profile.store';
 
 const navStore = useAppNavigationStore();
 const queryPathStore = useQueryPathStore();
@@ -68,7 +70,10 @@ const avatarInitial = computed(() => useUserStore().currentUser?.email?.[0]);
 
 const settingsModal = ref<InstanceType<typeof SettingsModal>>();
 const sharingModal = ref<InstanceType<typeof SharingModal>>();
-const nowPlayingMode = computed(() => useSettingsStore().localSettings.now_playing_mode);
+const profilesModal = ref<InstanceType<typeof ProfilesModal>>();
+const profileStore = useProfileStore();
+const nowPlayingMode = computed(() => profileStore.isTheaterMode);
+const activeProfileName = computed(() => profileStore.activeProfile?.name ?? 'Default');
 </script>
 
 <template>
@@ -153,7 +158,9 @@ const nowPlayingMode = computed(() => useSettingsStore().localSettings.now_playi
 
 			<div>
 				<DropdownMenu :items="[
-					{ label: useUserStore().currentUser?.email, icon: 'pi pi-user', disabled: true },				{ label: 'Browse', icon: 'pi pi-th-large', command: () => router.push({ name: 'browse' }) },					{ label: 'Timer', icon: 'pi pi-clock', command: () => router.push('/remote') },
+					{ label: useUserStore().currentUser?.email, icon: 'pi pi-user', disabled: true },
+					{ label: `Profile: ${activeProfileName}`, icon: 'pi pi-id-card', command: profilesModal?.open },
+					{ label: 'Timer', icon: 'pi pi-clock', command: () => router.push('/remote') },
 					{ label: 'Settings', icon: 'pi pi-cog', command: settingsModal?.open, },
 					{ label: 'Quick Login', icon: 'pi pi-unlock', command: () => router.push('/validate-signin-code'), },
 					{ label: 'Sign out', icon: 'pi pi-sign-out', command: AuthService.signOut },
@@ -206,6 +213,7 @@ const nowPlayingMode = computed(() => useSettingsStore().localSettings.now_playi
 
 	<SettingsModal ref="settingsModal" />
 	<SharingModal ref="sharingModal" />
+	<ProfilesModal ref="profilesModal" />
 </template>
 
 <style lang="scss">

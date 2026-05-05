@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useSettingsStore } from '@/stores/settings.store';
-import NowPlayingView from '@/views/NowPlayingView.vue';
 import HomeFeed from '@/components/HomeFeed.vue';
+import NowPlayingView from '@/views/NowPlayingView.vue';
+import { useProfileStore } from '@/stores/profile.store';
 </script>
 
 <template>
-	<NowPlayingView v-if="useSettingsStore().localSettings.now_playing_mode" />
+	<NowPlayingView v-if="useProfileStore().isTheaterMode" />
 	<HomeFeed v-else />
 </template>
