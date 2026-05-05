@@ -75,6 +75,11 @@ function confirmSelection() {
 function cancel() {
 	open.value = false;
 }
+
+const displayValue = computed(() => {
+	if (!props.modelValue) return '';
+	return props.modelValue.split('/').filter(Boolean).map(cleanFolderName).join(' / ');
+});
 </script>
 
 <template>
@@ -82,7 +87,7 @@ function cancel() {
 		<!-- Trigger row -->
 		<div class="picker-trigger" @click="openBrowser">
 			<span class="picker-path" :class="{ placeholder: !modelValue }">
-				{{ modelValue || 'Select directory…' }}
+				{{ displayValue || 'Select directory…' }}
 			</span>
 			<i class="pi pi-folder-open picker-icon" />
 		</div>

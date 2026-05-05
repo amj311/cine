@@ -23,8 +23,7 @@ async function deleteProfile(profile: Profile) {
 }
 
 function copyProfileLink(profile: Profile) {
-	const url = new URL(window.location.href);
-	url.search = '';
+	const url = new URL(window.location.origin);
 	url.searchParams.set('profile', profile.id);
 	navigator.clipboard.writeText(url.toString());
 	toast.add({ severity: 'success', summary: 'Link copied', life: 2000 });
