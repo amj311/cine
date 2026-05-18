@@ -15,7 +15,7 @@ export type NowPlayingConfig = {
 };
 
 export class NowPlayingService {
-	public static async getTodayTitles(config: NowPlayingConfig): Promise<{ titles: any[]; date: string }> {
+	public static getTodaySources(config: NowPlayingConfig): { sources: NowPlayingSource[]; date: string } {
 		const now = new Date();
 		const utcTime = new Date(now.getTime() + now.getTimezoneOffset() * 60000 - 6 * 60 * 60000);
 		const year = utcTime.getFullYear();
@@ -28,6 +28,12 @@ export class NowPlayingService {
 			dayOfWeek in config.dayOverrides
 				? (config.dayOverrides[dayOfWeek] ?? [])
 				: config.defaultSources;
+
+		return { sources, date: dateString };
+	}
+
+	public static async getTodayTitles(config: NowPlayingConfig): Promise<{ titles: any[]; date: string }> {
+		const { sources, date: dateString } = NowPlayingService.getTodaySources(config);
 
 		if (!sources.length) {
 			return { titles: [], date: dateString };
@@ -45,7 +51,8 @@ export class NowPlayingService {
 
 			if (source.filter === 'movie') {
 				titleItems = titleItems.filter((item: any) => item.cinemaType === 'movie');
-			} else if (source.filter === 'series') {
+			}
+ else if (source.filter === 'series') {
 				titleItems = titleItems.filter((item: any) => item.cinemaType === 'series');
 			}
 
@@ -64,7 +71,7 @@ export class NowPlayingService {
  */
 function seededShuffle<T>(arr: T[], seed: string): T[] {
 	const result = [...arr];
-	let s = stringToUint32(seed);
+	const s = stringToUint32(seed);
 	const rand = mulberry32(s);
 	for (let i = result.length - 1; i > 0; i--) {
 		const j = Math.floor(rand() * (i + 1));

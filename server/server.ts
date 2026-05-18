@@ -17,7 +17,9 @@ import cors from 'cors';
 import fs, { readdirSync, watch } from 'fs';
 import { ConfirmedPath, DirectoryService } from './services/DirectoryService';
 import { LibraryService, Photo } from './services/LibraryService';
+import { NowPlayingService } from './services/NowPlayingService';
 import { MediaMetadataService } from './services/metadata/MetadataService';
+import { ProfileService } from './services/ProfileService';
 import { Bookmark, WatchProgressService } from './services/WatchProgressService';
 import mime from 'mime-types';
 import { EitherMetadata } from './services/metadata/MetadataTypes';
@@ -59,7 +61,8 @@ const safeResponse = {
 	send: (res: any, statusCode: number, data?: any) => {
 		if (data) {
 			safeRes(res)?.status(statusCode).json(data);
-		} else {
+		}
+ else {
 			safeRes(res)?.sendStatus(statusCode);
 		}
 	},
@@ -206,7 +209,8 @@ app.get("/api/dir/", async function (req, res) {
 				galleryFiles: (await Promise.all(files.map(async (file) => await LibraryService.parseFileToContentItem(file.confirmedPath)))).filter(Boolean),
 			},
 		});
-	} catch (err) {
+	}
+ catch (err) {
 		console.error(err);
 		safeResponse.error(res, "Error reading directory");
 	}
@@ -217,7 +221,8 @@ app.post("/api/emptyCaches", async function (req, res) {
 		LibraryService.emptyCaches();
 		ProbeService.clearEntireCache();
 		return safeResponse.send(res, 200);
-	} catch (err) {
+	}
+ catch (err) {
 		console.error(err);
 		safeResponse.error(res, "Error reading directory");
 	}
@@ -225,7 +230,7 @@ app.post("/api/emptyCaches", async function (req, res) {
 
 app.post("/api/refresh", async function (req, res) {
 	try {
-		let { path } = req.query;
+		const { path } = req.query;
 		const resolvedPath = DirectoryService.resolvePath(path as string);
 		if (!resolvedPath) {
 			return safeResponse.error(res, "Directory not found", 404);
@@ -239,7 +244,8 @@ app.post("/api/refresh", async function (req, res) {
 		}
 
 		return safeResponse.send(res, 200);
-	} catch (err) {
+	}
+ catch (err) {
 		console.error(err);
 		safeResponse.error(res, "Error reading directory");
 	}
@@ -286,7 +292,8 @@ app.get('/api/stream-yt-search', async (req, res) => {
 				res.status(500).send("Error processing YouTube video");
 			}
 		});
-	} catch (err) {
+	}
+ catch (err) {
 		console.error(err)
 		if (!res.headersSent) {
 			res.status(500).send("Internal system error");
@@ -296,7 +303,7 @@ app.get('/api/stream-yt-search', async (req, res) => {
 
 
 app.get("/api/stream", async function (req, res) {
-	let { path: relativePath } = req.query;
+	const { path: relativePath } = req.query;
 	if (!relativePath) {
 		res.status(400).send("Requires src query param");
 		return;
@@ -874,6 +881,33 @@ app.get('/api/rootLibraries', async (req, res) => {
 	}
 });
 
+app.get('/api/trailers', async (req, res) => {
+	try {
+		const { profileId } = req.query;
+		let trailers;
+		if (profileId) {
+			const profile = await ProfileService.getById(profileId as string);
+			if (profile?.mode === 'theater' && profile.nowPlayingConfig) {
+				const { sources } = NowPlayingService.getTodaySources(profile.nowPlayingConfig);
+				const directories = sources.map(s => s.directory);
+				trailers = await LibraryService.getAllTrailers(directories);
+			} else {
+				trailers = await LibraryService.getAllTrailers();
+			}
+		} else {
+			trailers = await LibraryService.getAllTrailers();
+		}
+		res.json({
+			success: true,
+			data: trailers,
+		})
+	}
+	catch (err) {
+		console.error(err)
+		res.send(500)
+	}
+});
+
 app.get('/api/flat', async (req, res) => {
 	try {
 		const { path } = req.query;
@@ -1024,7 +1058,8 @@ app.use('/api/thumb', (req, res) => {
 			const thumbnailBuffer = await ThumbnailService.streamThumbnail(resolvedPath, safeParseInt(width), safeParseInt(seek));
 			safeRes(res)?.setHeader('Content-Type', 'image/jpeg');
 			safeRes(res)?.send(thumbnailBuffer);
-		} catch (err: any) {
+		}
+ catch (err: any) {
 			console.error("Error while generating thumbnail for image:", relativePath);
 			console.error(err.message);
 			safeRes(res)?.status(500).send("Error generating thumbnail");

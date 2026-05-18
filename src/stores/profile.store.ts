@@ -2,6 +2,8 @@ import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 import { useApiStore } from './api.store';
 
+export const DEFAULT_PROFILE_ID = '__default__';
+
 export type ProfileMode = 'full' | 'theater';
 
 export type NowPlayingTitleFilter = 'movie' | 'series' | null;
@@ -22,6 +24,7 @@ export type Profile = {
 	email: string;
 	name: string;
 	mode: ProfileMode;
+	preRollTrailers?: boolean;
 	nowPlayingConfig?: NowPlayingConfig;
 };
 
@@ -31,14 +34,14 @@ function localStorageKey(email: string) {
 
 export const useProfileStore = defineStore('profile', () => {
 	const profiles = ref<Profile[]>([]);
-	const activeProfileId = ref<string | null>(null);
+	const activeProfileId = ref<string>(DEFAULT_PROFILE_ID);
 	const _email = ref<string | null>(null);
 
-	const activeProfile = computed<Profile | null>(() =>
-		activeProfileId.value ? (profiles.value.find((p) => p.id === activeProfileId.value) ?? null) : null,
-	);
+	const activeProfile = computed<Profile | null>(() => {
+		return profiles.value.find((p) => p.id === activeProfileId.value) ?? null;
+	});
 
-	const isDefaultProfile = computed(() => activeProfileId.value === null);
+	const isDefaultProfile = computed(() => activeProfileId.value === DEFAULT_PROFILE_ID);
 
 	const isTheaterMode = computed(() => activeProfile.value?.mode === 'theater');
 
@@ -47,44 +50,52 @@ export const useProfileStore = defineStore('profile', () => {
 		try {
 			const { data } = await useApiStore().api.get('/profiles');
 			profiles.value = data;
-		} catch (e) {
+		}
+ catch (e) {
 			console.error('Failed to load profiles', e);
 			profiles.value = [];
+		}
+
+		if (!profiles.value.some((p) => p.id === DEFAULT_PROFILE_ID)) {
+			profiles.value.push({ id: DEFAULT_PROFILE_ID, email, name: 'Default', mode: 'full' });
 		}
 
 		// Restore active profile from localStorage
 		const stored = localStorage.getItem(localStorageKey(email));
 		if (stored && profiles.value.some((p) => p.id === stored)) {
 			activeProfileId.value = stored;
-		} else {
-			activeProfileId.value = null;
+		}
+	 else {
+			activeProfileId.value = DEFAULT_PROFILE_ID;
 		}
 	}
 
 	function reset() {
 		profiles.value = [];
-		activeProfileId.value = null;
+		activeProfileId.value = DEFAULT_PROFILE_ID;
 		_email.value = null;
 	}
 
 	function setActiveProfile(id: string | null) {
-		activeProfileId.value = id;
+		const resolved = id ?? DEFAULT_PROFILE_ID;
+		activeProfileId.value = resolved;
 		if (_email.value) {
-			if (id === null) {
+			if (resolved === DEFAULT_PROFILE_ID) {
 				localStorage.removeItem(localStorageKey(_email.value));
-			} else {
-				localStorage.setItem(localStorageKey(_email.value), id);
+			}
+	 else {
+				localStorage.setItem(localStorageKey(_email.value), resolved);
 			}
 		}
 	}
 
-	async function createProfile(name: string, mode: ProfileMode, nowPlayingConfig?: NowPlayingConfig): Promise<Profile> {
-		const { data } = await useApiStore().api.post('/profiles', { name, mode, nowPlayingConfig });
+	async function createProfile(name: string, mode: ProfileMode, preRollTrailers?: boolean, nowPlayingConfig?: NowPlayingConfig): Promise<Profile> {
+		const { data } = await useApiStore().api.post('/profiles', { name, mode, preRollTrailers, nowPlayingConfig });
 		profiles.value = [...profiles.value, data];
 		return data;
 	}
 
-	async function updateProfile(id: string, patch: Partial<Pick<Profile, 'name' | 'mode' | 'nowPlayingConfig'>>): Promise<Profile> {
+	async function updateProfile(id: string, patch: Partial<Pick<Profile, 'name' | 'mode' | 'preRollTrailers' | 'nowPlayingConfig'>>): Promise<Profile> {
 		const { data } = await useApiStore().api.put(`/profiles/${id}`, patch);
 		profiles.value = profiles.value.map((p) => (p.id === id ? data : p));
 		return data;

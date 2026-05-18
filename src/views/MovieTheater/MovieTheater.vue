@@ -1,9 +1,7 @@
-<script
-	setup
-	lang="ts"
->
-import { useQueryPathStore } from '@/stores/queryPath.store'
+<script setup lang="ts">
+	import { useQueryPathStore } from '@/stores/queryPath.store'
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import Trailers from '@/components/Trailers.vue'
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue';
 import { MetadataService } from '@/services/metadataService';
 import { useRoute, useRouter } from 'vue-router';
@@ -40,7 +38,10 @@ const userLeftEndScreen = ref(false);
 const endScreenHasContent = computed(() => Boolean(nextEpisode.value || parentExtrasToShow.value || seasonExtrasToShow.value));
 const playerProgress = ref<WatchProgress | null>(null); // WatchProgress type
 
+const mainPlaybackReady = ref(false);
+const showTrailers = ref(false);
 const isLoadingLibrary = ref(false);
+
 const parentTitle = ref<any>(null);
 const contentFile = ref<any>(null);
 const probe = ref<any>(null);
@@ -48,8 +49,9 @@ const probe = ref<any>(null);
 const playablePath = computed(() => contentFile.value?.relativePath);
 
 const showPlayer = computed(() => {
-	return Boolean(queryPath.value && !hasEnded.value);
+	return Boolean(queryPath.value && !hasEnded.value && !showTrailers.value);
 });
+
 
 function resetState() {
 	playerRef.value?.videoRef?.pause();
@@ -61,9 +63,10 @@ function resetState() {
 	hasLoaded.value = false;
 	userLeftEndScreen.value = false;
 	leaveEndScreen(false);
+	mainPlaybackReady.value = false;
 }
 
-async function loadMediaData(pathToLoad: string) {
+async function initMedia(pathToLoad: string) {
 	try {
 		isLoadingLibrary.value = true;
 		const { data } = await api.get('/theaterData', {
@@ -76,9 +79,21 @@ async function loadMediaData(pathToLoad: string) {
 		probe.value = data.data.probe;
 
 		parentTitle.value.metadata = await MetadataService.getMetadata(parentTitle.value, true);
-	} catch (error) {
+
+		const startTime = await fetchInitialProgress();
+		if (!startTime) {
+			showTrailers.value = true;
+		}
+		else if (playerRef.value?.videoRef) {
+			await nextTick();
+			playerRef.value.setTime(startTime);
+			playerRef.value.play();
+		}
+	}
+ 	catch (error) {
 		console.error('Error loading media data', error);
-	} finally {
+	}
+ 	finally {
 		isLoadingLibrary.value = false;
 	}
 }
@@ -89,7 +104,8 @@ let wakeLock: WakeLockSentinel | null = null;
 function carefulBackNav() {
 	if (router.options?.history?.state?.back) {
 		router.back();
-	} else {
+	}
+ else {
 		router.push({
 			name: 'browse',
 			query: {
@@ -122,7 +138,8 @@ async function attemptAutoFullscreen() {
 
 		useFullscreenStore().tempFullscreen('movie-theater');
 		didAutoFullscreen.value = true;
-	} catch (e) {
+	}
+ catch (e) {
 	}
 }
 
@@ -136,11 +153,20 @@ watch(() => useMediaStore().updated, async () => {
 		return;
 	}
 	const pathToLoad = queryPath.value;
-	
 	// RESET ALL THE THINGS
 	resetState();
+	await initMedia(pathToLoad);
+}, {
+	immediate: true,
+})
 
-	await loadMediaData(pathToLoad);
+function onTrailersEnd() {
+	showTrailers.value = false;
+	mainPlaybackReady.value = true;
+}
+
+watch(mainPlaybackReady, async (ready) => {
+	if (!ready) return;
 
 	if ('mediaSession' in navigator) {
 		navigator.mediaSession.metadata = new MediaMetadata({
@@ -148,26 +174,24 @@ watch(() => useMediaStore().updated, async () => {
 			album: parentTitle.value?.name,
 			artist: parentTitle.value?.name,
 			artwork: [
-				{ src: useApiStore().resolve(loadSplashUrl.value), sizes: '512x512', type: 'image/png' },
-				{ src: useApiStore().resolve(loadSplashUrl.value), sizes: '256x256', type: 'image/png' },
-				{ src: useApiStore().resolve(loadSplashUrl.value), sizes: '96x96', type: 'image/png' }
-			],
-		});
+					{ src: useApiStore().resolve(loadSplashUrl.value), sizes: '512x512', type: 'image/png' },
+					{ src: useApiStore().resolve(loadSplashUrl.value), sizes: '256x256', type: 'image/png' },
+					{ src: useApiStore().resolve(loadSplashUrl.value), sizes: '96x96', type: 'image/png' }
+				],
+			});
 	}
 
 	requestWakeLock();
 
-	nextTick(async () => {
-		if (playerRef.value?.videoRef) {
-			await useScrubberStore().initForMedia(pathToLoad, playerRef.value.videoRef);
-			await initialProgress();
-			await initialAudio();
-			playerRef.value?.videoRef.play();
-		}
-	})
-}, {
-	immediate: true,
-})
+	await nextTick();
+
+	if (playerRef.value?.videoRef) {
+		await useScrubberStore().initForMedia(queryPath.value, playerRef.value.videoRef);
+		await initialAudio();
+		playerRef.value?.videoRef.play();
+	}
+});
+
 
 onMounted(async () => {
 	// consider this a new watching session and reset the timer
@@ -180,7 +204,6 @@ onMounted(async () => {
 	requestWakeLock();
 
 	// Setup fullscreen exit handling
-	// pauseTvMode();
 	attemptAutoFullscreen();
 	useFullscreenStore().addFullscreenChangeListener(navigateBackOnFullscreenExit);
 
@@ -203,13 +226,11 @@ onMounted(async () => {
 onBeforeUnmount(async () => {
 	clearInterval(progressUpdateInterval);
 
-	// Resume TV mode
-	// resumeTvMode();
-	
 	if (didAutoFullscreen.value) {
 		try {
 			document.exitFullscreen();
-		} catch (e) {}
+		}
+ catch (e) {}
 	}
 
 	releaseWakeLock();
@@ -219,18 +240,18 @@ onBeforeUnmount(async () => {
 	if ((screen.orientation as any)?.unlock) {
 		try {
 			await (screen.orientation as any).unlock();
-		} catch (e) {}
+		}
+ catch (e) {}
 	}
 });
 
-async function initialProgress() {
+async function fetchInitialProgress(): Promise<number | void>  {
 	if (!queryPath.value) {
 		return;
 	}
 	const urlParams = new URL(location.href).searchParams;
 	const queryTime = urlParams.get('startTime');
 	if (queryTime) {
-		playerRef.value?.setTime(Number(queryTime));
 		urlParams.delete('startTime');
 		// remove route start time
 		history.replaceState(
@@ -238,7 +259,7 @@ async function initialProgress() {
 			'',
 			route.path + '?' + urlParams.toString(),
 		)
-		return;
+		return Number(queryTime);
 	}
 
 	let watchProgress = contentFile.value.watchProgress;
@@ -259,8 +280,7 @@ async function initialProgress() {
 	}
 
 	if (watchProgress && watchProgress.time < watchProgress.duration) {
-		playerRef.value?.setTime(watchProgress.time);
-		return;
+		return Number(watchProgress.time);
 	}
 }
 
@@ -286,7 +306,8 @@ async function requestWakeLock() {
 	if ('wakeLock' in navigator) {
 		try {
 			wakeLock = await navigator.wakeLock.request('screen');
-		} catch (e) {
+		}
+ catch (e) {
 			console.error("Failed to acquire wake lock", e);
 		}
 	}
@@ -329,6 +350,7 @@ async function onEnd() {
 
 const PROGRESS_INTERVAL = 1000;
 let lastPostTime = 0;
+
 const progressUpdateInterval = setInterval(async () => {
 	const lastProgressTime = playerProgress.value?.time;
 	playerProgress.value = playerRef.value?.getProgress() || null;
@@ -679,19 +701,18 @@ function toggleTimer() {
 
 		<div class="theater-wrapper md:flex-row flex-column">
 			<div class="w-full flex-grow-1 relative">
-				<div
-					class="end-screen absolute top-0 bottom-0 left-0 right-0 flex-column"
-					v-if="showEndScreen"
+				<div class="end-screen absolute top-0 bottom-0 left-0 right-0 flex-column" v-if="showEndScreen"
 					:class="{ visible: showEndScreen }"
-					:style="{ background: `radial-gradient(ellipse at top right, transparent, #000a max(40%, calc(100% - 50rem)), #000e 80%), url('${loadSplashUrl}') 40% 0% / cover no-repeat` }"
-				>
+					:style="{ background: `radial-gradient(ellipse at top right, transparent, #000a max(40%, calc(100% - 50rem)), #000e 80%), url('${loadSplashUrl}') 40% 0% / cover no-repeat` }">
 					<div class="flex-grow-1 overflow-hidden">
 						<Scroll>
-							<div class="flex-column align-items-start gap-5" style="padding: max(1rem, 1%); min-height: 100vh">
+							<div class="flex-column align-items-start gap-5"
+								style="padding: max(1rem, 1%); min-height: 100vh">
 								<div class="flex-column-center gap-1" style="zoom: 1.3">
 									<div class="flex-row-center gap-1">
 										<Button variant="text" severity="contrast" btn-blur-hover icon="pi pi-arrow-left" @click="carefulBackNav" />
-										<div class="title text-ellipsis" :class="{ 'link': onTitleClick }" @click="onTitleClick">{{ videoTitle }}</div>
+										<div class="title text-ellipsis" :class="{ 'link': onTitleClick }"
+											@click="onTitleClick">{{ videoTitle }}</div>
 									</div>
 									<Button variant="text" severity="contrast" btn-blur-hover icon="pi pi-replay" label="Replay" @click="() => playMedia(contentFile?.relativePath)" />
 									<div v-if="secondaryAudioOptions.length">
@@ -705,32 +726,30 @@ function toggleTimer() {
 
 								<div v-if="nextEpisode">
 									<h3>
-										{{ nextEpisode.seasonNumber === contentFile.seasonNumber ? 'Next Episode' : 'Next Season' }}
+										{{ nextEpisode.seasonNumber === contentFile.seasonNumber ? 'Next Episode' :
+										'Next Season' }}
 										{{ (willAutoplay && playerProgress) ? `starting in ${timeTillAutoPlay}` : '' }}
 									</h3>
 									<div class="episode-item flex gap-3 mt-3">
-										<div class="episode-poster-wrapper flex-shrink-0" style="width: min(250px, 30vw, 30vh);">
-											<MediaCard
-												navJumpRow="seasons"
-												:imageUrl="nextEpisodeMetadata?.still_thumb"
-												:aspectRatio="'wide'"
-												:playSrc="nextEpisode.relativePath"
-												:startTime="0"
-												:progress="nextEpisode.watchProgress"
-											>
+										<div class="episode-poster-wrapper flex-shrink-0"
+											style="width: min(250px, 30vw, 30vh);">
+											<MediaCard navJumpRow="seasons" :imageUrl="nextEpisodeMetadata?.still_thumb"
+												:aspectRatio="'wide'" :playSrc="nextEpisode.relativePath" :startTime="0"
+												:progress="nextEpisode.watchProgress">
 												<template #fallbackIcon>📺</template>
 											</MediaCard>
 										</div>
 										<div class="episode-info flex-grow-1">
 											<div class="flex-column gap-2">
-												<h3>{{ nextEpisodeTitle }}{{ nextEpisode.version ? ` (${nextEpisode.version})` : '' }}</h3>
+												<h3>{{ nextEpisodeTitle }}{{ nextEpisode.version ? `
+													(${nextEpisode.version})` : '' }}</h3>
 												<div style="display: flex; gap: 10px; flex-wrap: wrap;">
 													<span>Season {{ nextEpisode.seasonNumber }} Episode {{ nextEpisode.episodeNumber }}</span>
 													<span v-if="nextEpisodeMetadata?.runtime">{{ formatRuntime_m(nextEpisodeMetadata?.runtime) }}</span>
 													<span v-if="nextEpisodeMetadata?.content_rating">{{ nextEpisodeMetadata?.content_rating }}</span>
 												</div>
 											</div>
-											
+
 											<div class="mt-3 line-clamp-4" style="max-width: 30rem">
 												{{ nextEpisodeMetadata?.overview }}
 											</div>
@@ -753,34 +772,27 @@ function toggleTimer() {
 									<ExtrasList :extras="seasonExtrasToShow" />
 								</div>
 							</div>
-							
+
 						</Scroll>
 					</div>
 				</div>
 
-				<div v-show="showPlayer" class="main-video-wrapper flex-grow-1" :class="{ 'mini bg-blur-hover border-round overflow-hidden cursor-pointer': showEndScreen, focusAreaClass: !showEndScreen }" :tabindex="showEndScreen ? 0 : undefined" @click="() => showEndScreen && leaveEndScreen()">
-					<VideoPlayer
-						ref="playerRef"
-						:key="playablePath"
-						:loadingSplash="loadSplashUrl"
-						:title="videoTitle"
-						:onTitleClick="onTitleClick"
-						:close="carefulBackNav"
-						:autoplay="true"
-						:hideControls="showEndScreen"
-						:relativePath="playablePath"
-						:onLoadedData="() => hasLoaded = true"
-						:onPlay="onPlay"
-						:onPause="releaseWakeLock"
-						:onEnd="onEnd"
-						:onNextTrack="playNext"
-						:onPrevTrack="playPrev"
+
+				<!-- Trailers overlay (always rendered, handles itself) -->
+				<Trailers v-if="showTrailers" @end="onTrailersEnd" @close="carefulBackNav" />
+
+				<div v-show="showPlayer" class="main-video-wrapper flex-grow-1"
+					:class="{ 'mini bg-blur-hover border-round overflow-hidden cursor-pointer': showEndScreen, focusAreaClass: !showEndScreen }"
+					:tabindex="showEndScreen ? 0 : undefined" @click="() => showEndScreen && leaveEndScreen()">
+					<VideoPlayer ref="playerRef" :key="playablePath"
+						:loadingSplash="loadSplashUrl" :title="videoTitle"
+						:onTitleClick="onTitleClick" :close="carefulBackNav"
+						:hideControls="showEndScreen" :relativePath="playablePath"
+						:onLoadedData="() => hasLoaded = true" :onPlay="onPlay" :onPause="releaseWakeLock"
+						:onEnd="onEnd" :onNextTrack="playNext" :onPrevTrack="playPrev"
 						:subtitles="probe?.subtitles"
 						:audio="probe?.audio"
-						:chapters="probe?.chapters"
-						allowFullscreen
-						showTime
-					>
+						:chapters="probe?.chapters" allowFullscreen showTime>
 						<template #topButtons>
 							<!-- INFO BUTTON -->
 							<Button
@@ -833,7 +845,9 @@ function toggleTimer() {
 						<template #permanentTop>
 							<div v-if="showTimer" class="flex align-items-start">
 								<div class="flex-grow-1"></div>
-								<div><MediaTimer :mediaEl="playerRef?.videoRef" :inPlayer="true" /></div>
+								<div>
+									<MediaTimer :mediaEl="playerRef?.videoRef" :inPlayer="true" />
+								</div>
 							</div>
 						</template>
 
@@ -882,11 +896,7 @@ function toggleTimer() {
 
 			</div>
 
-			<NavTrigger
-				ref="menuPanelTrigger"
-				triggerKey="movie-menu-panel"
-				:onClose="() => activeMenuPanel = ''"
-			>
+			<NavTrigger ref="menuPanelTrigger" triggerKey="movie-menu-panel" :onClose="() => activeMenuPanel = ''">
 				<template #default="{ show }">
 					<div class="menu-panel" :class="{ ['md:w-23rem w-full md:h-full open']: show }">
 						<!-- Non-shrinking contents -->
@@ -897,11 +907,9 @@ function toggleTimer() {
 										<Button icon="pi pi-times" text severity="secondary" @click="closeMenuPanel" />
 										<h3>Media Scrubs</h3>
 										<div class="flex-grow-1"></div>
-										<ToggleSwitch
-											:modelValue="useScrubberStore().isScrubbing"
+										<ToggleSwitch :modelValue="useScrubberStore().isScrubbing"
 											@update:modelValue="(value) => value ? useScrubberStore().startScrubbing() : useScrubberStore().stopScrubbing()"
-											:disabled="!useScrubberStore().activeProfile"
-										/>
+											:disabled="!useScrubberStore().activeProfile" />
 									</div>
 									<div class="flex-grow-1 overflow-y-auto">
 										<ScrubSettings :content="contentFile" />
@@ -917,7 +925,7 @@ function toggleTimer() {
 									<div class="flex-grow-1 overflow-y-auto flex flex-column gap-4">
 										<div class="flex-column gap-1">
 											<h2>{{ mediaInfo.name }}</h2>
-											
+
 											<div v-if="mediaInfo.episodeLabel">{{ mediaInfo.episodeLabel }}</div>
 											<div v-if="mediaInfo.air_date">Aired: {{ mediaInfo.air_date }}</div>
 											<div v-if="mediaInfo.year">{{ mediaInfo.year }}</div>
@@ -927,14 +935,15 @@ function toggleTimer() {
 
 										<template v-for="creditList, key in mediaInfo.credits">
 											<div v-if="creditList.length" class="flex flex-column gap-2">
-												<h3 style="text-transform: capitalize;">{{ (key as string).split('_').join(' ') }}</h3>
-												<div v-for="person in creditList" class="flex-row-center gap-3 cursor-pointer" tabindex="0" @click="openPersonModal(person)">
+												<h3 style="text-transform: capitalize;">{{ (key as
+													string).split('_').join(' ') }}</h3>
+												<div v-for="person in creditList"
+													class="flex-row-center gap-3 cursor-pointer" tabindex="0"
+													@click="openPersonModal(person)">
 													<div class="w-3 flex-shrink-0">
-														<MediaCard
-															:imageUrl="person.photo"
-															aspectRatio="square"
-														>
-															<template #fallbackIcon><i class="material-symbols-outlined">person</i></template>
+														<MediaCard :imageUrl="person.photo" aspectRatio="square">
+															<template
+																#fallbackIcon><i class="material-symbols-outlined">person</i></template>
 														</MediaCard>
 													</div>
 
@@ -952,99 +961,97 @@ function toggleTimer() {
 					</div>
 				</template>
 			</NavTrigger>
-		
+
 			<PersonModal ref="personModal" />
 		</div>
 
 	</div>
 </template>
 
-<style
-	lang="scss"
-	scoped
->
-.theater-wrapper {
-	height: 100%;
-	position: relative;
-	display: flex;
-
-	.menu-panel {
-		flex-shrink: 0;
-		width: 0;
-		height: 0;
-		background: var(--color-background);
-		transition: all 200ms;
-
+<style lang="scss" scoped>
+	.theater-wrapper {
+		height: 100%;
 		position: relative;
-		overflow: hidden;
-
-		&.open {
-			/* height ratio on skinny screen */
-			flex-grow: 3;
-		}
-
-		.panel-content {
-			position: absolute;
-			height: 100%;
-			overflow-y: auto;
-			overflow-x: hidden;
-
-			padding: 1em;
-		}
-	}
-}
-
-.main-video-wrapper {
-	top: 0;
-	right: 0;
-    width: 100%;
-    bottom: 0;
-	position: absolute;
-	background-image: none;
-	background-size: contain;
-	background-position: center;
-	background-repeat: no-repeat;
-	background-color: black;
-	transition: all 700ms;
-
-	&.mini {
-		--from-top: calc(1% + 4rem);
-		--width: min(20rem, 35vw, 30vh);
-		top: var(--from-top);
-		right: 1rem;
-		width: var(--width);
-		bottom: calc(100% - var(--from-top) - (var(--width) * 2 / 3));
-	}
-
-	.next-episode-card {
 		display: flex;
-		align-items: center;
-		gap: .5em;
-		transition: font-size 500ms;
 
-		&:hover, &[tv-focus] {
-			box-shadow: 0 0 10px rgba(0, 0, 0, .5);
+		.menu-panel {
+			flex-shrink: 0;
+			width: 0;
+			height: 0;
+			background: var(--color-background);
+			transition: all 200ms;
+
+			position: relative;
+			overflow: hidden;
+
+			&.open {
+				/* height ratio on skinny screen */
+				flex-grow: 3;
+			}
+
+			.panel-content {
+				position: absolute;
+				height: 100%;
+				overflow-y: auto;
+				overflow-x: hidden;
+
+				padding: 1em;
+			}
+		}
+	}
+
+	.main-video-wrapper {
+		top: 0;
+		right: 0;
+		width: 100%;
+		bottom: 0;
+		position: absolute;
+		background-image: none;
+		background-size: contain;
+		background-position: center;
+		background-repeat: no-repeat;
+		background-color: black;
+		transition: all 700ms;
+
+		&.mini {
+			--from-top: calc(1% + 4rem);
+			--width: min(20rem, 35vw, 30vh);
+			top: var(--from-top);
+			right: 1rem;
+			width: var(--width);
+			bottom: calc(100% - var(--from-top) - (var(--width) * 2 / 3));
 		}
 
-		.play-icon {
-			width: 4em;
-			color: var(--color-contrast);
+		.next-episode-card {
 			display: flex;
-			justify-content: center;
 			align-items: center;
+			gap: .5em;
+			transition: font-size 500ms;
+
+			&:hover,
+			&[tv-focus] {
+				box-shadow: 0 0 10px rgba(0, 0, 0, .5);
+			}
+
+			.play-icon {
+				width: 4em;
+				color: var(--color-contrast);
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
 		}
 	}
-}
 
-.end-screen {
-	opacity: 0;
-	pointer-events: none;
-	transition: 1000ms;
+	.end-screen {
+		opacity: 0;
+		pointer-events: none;
+		transition: 1000ms;
 
-	&.visible {
-		opacity: 1;
-		pointer-events: all;
+		&.visible {
+			opacity: 1;
+			pointer-events: all;
+		}
+
 	}
-
-}
 </style>

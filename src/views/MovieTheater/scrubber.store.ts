@@ -46,7 +46,7 @@ export const useScrubberStore = defineStore('Scrubber', () => {
 
 	const nextScrub = ref<Scrub | null>(null);
 	let scheduledTimeout: ReturnType<typeof setTimeout> = 0;
-	let mediaEl = ref<HTMLVideoElement | null>(null);
+	const mediaEl = ref<HTMLVideoElement | null>(null);
 
 	async function loadProfileForPath() {
 		try {
@@ -106,7 +106,7 @@ export const useScrubberStore = defineStore('Scrubber', () => {
 	}
 
 	function scheduleScrub() {
-		if (!isScrubbing.value || !mediaEl || !activeProfile.value || activeProfile.value.scrubs.length === 0) {
+		if (!isScrubbing.value || !mediaEl.value || !activeProfile.value || activeProfile.value.scrubs.length === 0) {
 			return;
 		}
 		if (scheduledTimeout) {

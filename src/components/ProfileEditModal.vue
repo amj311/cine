@@ -5,6 +5,7 @@ import SourceList from './utils/SourceList.vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
+import ToggleSwitch from '@/components/utils/ToggleSwitch.vue';
 import { useToast } from 'primevue/usetoast';
 import { useProfileStore, type Profile, type NowPlayingConfig, type NowPlayingSource, type ProfileMode } from '@/stores/profile.store';
 
@@ -44,6 +45,7 @@ const editingId = ref<string | null>(null);
 
 const name = ref('');
 const mode = ref<ProfileMode>('full');
+const preRollTrailers = ref(false);
 const sources = ref<NowPlayingSource[]>([makeEmptySource()]);
 const dayOverrides = ref<{ day: number; sources: NowPlayingSource[] }[]>([]);
 const newOverrideDay = ref<number | null>(null);
@@ -70,6 +72,7 @@ function resetState() {
 	editingId.value = null;
 	name.value = '';
 	mode.value = 'full';
+	preRollTrailers.value = false;
 	sources.value = [makeEmptySource()];
 	dayOverrides.value = [];
 	newOverrideDay.value = null;
@@ -83,16 +86,19 @@ async function submit() {
 		const config: NowPlayingConfig | undefined =
 			mode.value === 'theater' ? sourcesToConfig(sources.value, dayOverrides.value) : undefined;
 		if (formMode.value === 'add') {
-			await profileStore.createProfile(name.value.trim(), mode.value, config);
+			await profileStore.createProfile(name.value.trim(), mode.value, preRollTrailers.value || undefined, config);
 			toast.add({ severity: 'success', summary: 'Profile created', life: 2500 });
-		} else {
-			await profileStore.updateProfile(editingId.value!, { name: name.value.trim(), mode: mode.value, nowPlayingConfig: config });
+		}
+ else {
+			await profileStore.updateProfile(editingId.value!, { name: name.value.trim(), mode: mode.value, preRollTrailers: preRollTrailers.value || undefined, nowPlayingConfig: config });
 			toast.add({ severity: 'success', summary: 'Profile updated', life: 2500 });
 		}
 		modal.value?.close();
-	} catch (e) {
+	}
+ catch (e) {
 		toast.add({ severity: 'error', summary: formMode.value === 'add' ? 'Failed to create profile' : 'Failed to update profile', life: 3000 });
-	} finally {
+	}
+ finally {
 		saving.value = false;
 	}
 }
@@ -109,6 +115,7 @@ defineExpose({
 		editingId.value = profile.id;
 		name.value = profile.name;
 		mode.value = profile.mode;
+		preRollTrailers.value = profile.preRollTrailers ?? false;
 		const cfg = profile.nowPlayingConfig;
 		sources.value = cfg?.defaultSources?.length ? cfg.defaultSources.map((s) => ({ ...s })) : [makeEmptySource()];
 		dayOverrides.value = cfg
@@ -134,6 +141,10 @@ defineExpose({
 			<div class="field-row">
 				<label>Mode</label>
 				<Select transparent v-model="mode" :options="modeOptions" optionLabel="label" optionValue="value" class="w-full" />
+			</div>
+			<div class="field-row">
+				<label>Pre-roll trailers</label>
+				<ToggleSwitch v-model="preRollTrailers" />
 			</div>
 
 			<template v-if="mode === 'theater'">

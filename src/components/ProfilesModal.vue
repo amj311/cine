@@ -4,7 +4,7 @@ import NavModal from './utils/NavModal.vue';
 import ProfileEditModal from './ProfileEditModal.vue';
 import Button from 'primevue/button';
 import { useToast } from 'primevue/usetoast';
-import { useProfileStore, type Profile } from '@/stores/profile.store';
+import { useProfileStore, DEFAULT_PROFILE_ID, type Profile } from '@/stores/profile.store';
 import { useUserStore } from '@/stores/user.store';
 
 const modal = ref<InstanceType<typeof NavModal>>();
@@ -17,7 +17,8 @@ async function deleteProfile(profile: Profile) {
 	try {
 		await profileStore.deleteProfile(profile.id);
 		toast.add({ severity: 'success', summary: `Deleted "${profile.name}"`, life: 2500 });
-	} catch (e) {
+	}
+ catch (e) {
 		toast.add({ severity: 'error', summary: 'Failed to delete profile', life: 3000 });
 	}
 }
@@ -76,12 +77,19 @@ defineExpose({
 						size="small"
 						@click.stop="switchTo(null)"
 					/>
+					<Button
+						icon="pi pi-pencil"
+						variant="text"
+						severity="secondary"
+						size="small"
+						@click.stop="editModal?.openForEdit(profileStore.profiles.find(p => p.id === DEFAULT_PROFILE_ID)!)"
+					/>
 				</div>
 			</div>
 
 			<!-- Named profiles -->
 			<div
-				v-for="profile in profileStore.profiles"
+				v-for="profile in profileStore.profiles.filter(p => p.id !== DEFAULT_PROFILE_ID)"
 				:key="profile.id"
 				class="profile-row"
 				:class="{ active: profileStore.activeProfileId === profile.id }"
