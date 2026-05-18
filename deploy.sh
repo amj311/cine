@@ -18,13 +18,13 @@ if [[ "$VERBOSE" == "-v" ]]; then
 fi
 
 # Run docker compose on host, force build and recreate
-sudo DOCKER_HOST=ssh://${SSH_USER}@${SSH_HOST} docker compose -f docker-compose-prod.yml up -d --build --force-recreate > $OUT
+DOCKER_HOST=ssh://${SSH_USER}@${SSH_HOST} docker compose -f docker-compose-prod.yml up -d --build --force-recreate > $OUT
 SUCCESS=$?
 
 if [[ $SUCCESS == 0 ]]; then
 	# Post build cleanup
 	echo -e "\nCleaning up build cache..."
-	sudo DOCKER_HOST=ssh://${SSH_USER}@${SSH_HOST} docker system prune -f --filter "label=com.docker.compose.project=cine" > $OUT
+	DOCKER_HOST=ssh://${SSH_USER}@${SSH_HOST} docker system prune -f --filter "label=com.docker.compose.project=cine" > $OUT
 
 	echo "Committing build number..."
 	CURRENT_BUILD=$(cat version.json | grep -o '"buildNumber": [0-9]*' | grep -o '[0-9]*')
