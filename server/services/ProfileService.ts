@@ -8,6 +8,7 @@ export type Profile = {
 	email: string;
 	name: string;
 	mode: ProfileMode;
+	preRollTrailers?: boolean;
 	nowPlayingConfig?: NowPlayingConfig;
 };
 
@@ -22,6 +23,16 @@ export class ProfileService {
 	}
 
 	public static async getById(id: string): Promise<Profile | null> {
+		if (id === '__default__') {
+			const all = await profileStore.getValues();
+			const existing = all.find((p) => p.id === '__default__');
+			if (existing) {
+				return existing.nowPlayingConfig
+					? { ...existing, nowPlayingConfig: migrateConfig(existing.nowPlayingConfig) }
+					: existing;
+			}
+			return { id: '__default__', email: '', name: 'Default', mode: 'full' };
+		}
 		const profile = await profileStore.getByKey(id);
 		if (!profile) return null;
 		if (profile.nowPlayingConfig) {
@@ -34,6 +45,7 @@ export class ProfileService {
 		email: string,
 		name: string,
 		mode: ProfileMode,
+		preRollTrailers?: boolean,
 		nowPlayingConfig?: NowPlayingConfig,
 	): Promise<Profile> {
 		const id = crypto.randomUUID();
@@ -42,6 +54,7 @@ export class ProfileService {
 			email,
 			name,
 			mode,
+			...(preRollTrailers !== undefined && { preRollTrailers }),
 			...(mode === 'theater' ? { nowPlayingConfig: nowPlayingConfig ?? defaultNowPlayingConfig() } : {}),
 		};
 		await profileStore.set(id, profile);
@@ -51,8 +64,18 @@ export class ProfileService {
 	public static async updateProfile(
 		id: string,
 		email: string,
-		patch: Partial<Pick<Profile, 'name' | 'mode' | 'nowPlayingConfig'>>,
+		patch: Partial<Pick<Profile, 'name' | 'mode' | 'preRollTrailers' | 'nowPlayingConfig'>>,
 	): Promise<Profile> {
+		if (id === '__default__') {
+			const all = await profileStore.getValues();
+			let existing = all.find((p) => p.id === '__default__' && p.email === email);
+			if (!existing) {
+				existing = { id: '__default__', email, name: 'Default', mode: 'full' };
+			}
+			const updated: Profile = { ...existing, ...patch };
+			await profileStore.set('__default__', updated);
+			return updated;
+		}
 		const existing = await profileStore.getByKey(id);
 		if (!existing) {
 			throw new Error('Profile not found');

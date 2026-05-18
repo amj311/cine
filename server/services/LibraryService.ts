@@ -735,6 +735,62 @@ export class LibraryService {
 		}
 	}
 
+	public static async getAllTrailers(allowedParents?: string[]) {
+		const libraries = await LibraryService.getRootLibraries();
+		const cinemaLibraries = libraries.filter((lib) => lib.libraryType === 'cinema');
+
+		const trailers: Extra[] = [];
+
+		async function collectFromFolder(path: ConfirmedPath) {
+			const { folders } = await DirectoryService.listDirectory(path);
+			for (const folder of folders) {
+				const item = await LibraryService.parseFolderToItem(folder.confirmedPath, true);
+				if (item.type === 'cinema') {
+					const cinemaItem = item as any;
+					if (allowedParents) {
+						const parentMatch = allowedParents.some(p =>
+							cinemaItem.relativePath === p || cinemaItem.relativePath.startsWith(p + '/')
+						);
+						if (!parentMatch) continue;
+					}
+					if (Array.isArray(cinemaItem.extras)) {
+						for (const extra of cinemaItem.extras as Extra[]) {
+							if (extra.extraType === 'trailer') {
+								trailers.push(extra);
+							}
+						}
+					}
+					if (Array.isArray(cinemaItem.seasons)) {
+						for (const season of cinemaItem.seasons) {
+							if (Array.isArray(season.extras)) {
+								for (const extra of season.extras as Extra[]) {
+									if (extra.extraType === 'trailer') {
+										trailers.push(extra);
+									}
+								}
+							}
+						}
+					}
+				}
+				else if (item.libraryTier !== 'title') {
+					await collectFromFolder(folder.confirmedPath);
+				}
+			}
+		}
+
+		for (const lib of cinemaLibraries) {
+			await collectFromFolder(lib.confirmedPath);
+		}
+
+		// Fisher-Yates shuffle
+		for (let i = trailers.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[trailers[i], trailers[j]] = [trailers[j], trailers[i]];
+		}
+
+		return trailers.slice(0, 3);
+	}
+
 	public static async getRootLibraries() {
 		const rootLibraries = await DirectoryService.listDirectory(DirectoryService.resolvePath('/')!);
 		const libraries = await Promise.all(rootLibraries.folders.map(async (folder) => {

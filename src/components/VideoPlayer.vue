@@ -93,7 +93,9 @@ async function prepareRemux() {
 		const { data } = await useApiStore().api.post('/remux', { path: props.relativePath });
 		const pinger = new JobPinger(data.jobId, 2000);
 		const completedJob = await pinger.start({
-			onPing(job) { remuxProgress.value = job?.progress?.percentage ?? 0; }
+			onPing(job) {
+ remuxProgress.value = job?.progress?.percentage ?? 0; 
+}
 		});
 		if (completedJob.value?.status === 'failed') throw new Error('Remux job failed');
 		remuxedUrl.value = data.path;
@@ -104,7 +106,8 @@ async function prepareRemux() {
 			summary: 'Video Ready',
 			life: 2000,
 		});
-	} catch (e) {
+	}
+ catch (e) {
 		console.error('Error remuxing MKV', e);
 		remuxState.value = 'error';
 		toast.removeAllGroups();
@@ -225,8 +228,6 @@ onMounted(() => {
 		videoRef.value?.addEventListener('click', togglePlay);
 	}
 	// videoRef.value?.addEventListener('click', doubleClick);
-
-	doShowControls();
 
 	// Setup control hiding
 	const events = ['mousemove', 'keydown', 'touchstart'];
@@ -413,7 +414,8 @@ watch(secondaryAudio, (audio) => {
 	}
 	if (audio) {
 		turnOnSecondaryAudio(audio);
-	} else {
+	}
+ else {
 		turnOffSecondaryAudio();
 	}
 }, { immediate: true });
@@ -435,7 +437,8 @@ watch(selectedAudioIndex, async (newIdx) => {
 		await mseStream.value.init();
 		videoRef.value.currentTime = savedTime;
 		if (wasPlaying) await videoRef.value.play();
-	} catch (err) {
+	}
+ catch (err) {
 		console.error('[VideoPlayer] MseStream audio switch error:', err);
 	}
 });
