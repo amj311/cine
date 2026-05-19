@@ -170,7 +170,7 @@ watch(() => useMediaStore().updated, async () => {
 })
 
 function onTrailersEnd() {
-	trailersEnded.value = false;
+	trailersEnded.value = true;
 	mainPlaybackReady.value = true;
 }
 

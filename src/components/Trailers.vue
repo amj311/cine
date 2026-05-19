@@ -25,6 +25,7 @@ async function fetchTrailers() {
 
 	try {
 		const lastFinished = localStorage.getItem('lastFinishedTrailers');
+		console.log(lastFinished)
 		if (lastFinished && Number(lastFinished) > Date.now() - (1000 * 60 * 15)) {
 			emit('end');
 			return;
@@ -54,13 +55,13 @@ function onTrailerEnd() {
 	if (currentIndex.value < trailers.value.length - 1) {
 		currentIndex.value++;
 	} else {
+		localStorage.setItem('lastFinishedTrailers', String(Date.now()));
 		emit('end');
 	}
 }
 
 onMounted(() => {
 	if (!profileStore.activeProfile?.preRollTrailers) {
-		localStorage.setItem('lastFinishedTrailers', String(Date.now()));
 		emit('end');
 		return;
 	}

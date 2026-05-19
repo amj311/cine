@@ -553,7 +553,6 @@ app.get('/api/stream-yt-search', async (req, res) => {
 		]);
 
 		ytdl.getInfo(url, { agent }).then(info => {
-			console.log("INFOOOOO", info)
 			ytdl.downloadFromInfo(info, { quality: 'lowest', agent }).pipe(fs.createWriteStream(outputFilePath))
 				.on('finish', () => {
 					if (!res.headersSent) {

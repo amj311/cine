@@ -747,7 +747,6 @@ export class LibraryService {
 		await Promise.all(sources.map(async s => {
 			const flat = await this.getFlatTree(s, true);
 			for (const item of flat.items) {
-				console.log(item)
 				if (mediaPath.startsWith(item.relativePath)) {
 					continue;
 				}
