@@ -15,7 +15,7 @@ route.post('/vobsub/extract', async (req, res) => {
 	try {
 		const { path, trackIndex } = req.body;
 		if (!path || trackIndex === undefined) return res.sendStatus(400);
-		const confirmedPath = DirectoryService.resolvePath(path);
+		const confirmedPath = DirectoryService.confirmPath(path);
 		if (!confirmedPath) return res.sendStatus(404);
 		await VobSubService.extractVobSub(confirmedPath, parseInt(trackIndex, 10));
 		res.sendStatus(200);
@@ -76,7 +76,7 @@ route.post('/pgs/extract', async (req, res) => {
 	try {
 		const { path, trackIndex } = req.body;
 		if (!path || trackIndex === undefined) return res.sendStatus(400);
-		const confirmedPath = DirectoryService.resolvePath(path);
+		const confirmedPath = DirectoryService.confirmPath(path);
 		if (!confirmedPath) return res.sendStatus(404);
 		await PgsService.extractPgs(confirmedPath, parseInt(trackIndex, 10));
 		res.sendStatus(200);

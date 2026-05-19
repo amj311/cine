@@ -41,7 +41,7 @@ export class NowPlayingService {
 
 		const allTitles: any[] = [];
 		for (const source of sources) {
-			const resolvedPath = DirectoryService.resolvePath(source.directory);
+			const resolvedPath = DirectoryService.confirmPath(source.directory);
 			if (!resolvedPath) continue;
 
 			const { items } = await LibraryService.getFlatTree(resolvedPath);

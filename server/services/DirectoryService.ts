@@ -39,7 +39,7 @@ export class ConfirmedPath {
 	}
 
 	get rootFolder() {
-		return new ConfirmedPath(DirectoryService.resolvePath(this.relativePath.split('/')[0])!.absolutePath);
+		return new ConfirmedPath(DirectoryService.confirmPath(this.relativePath.split('/')[0])!.absolutePath);
 	}
 
 	append(newPath: string): ConfirmedPath {
@@ -57,7 +57,7 @@ export class DirectoryService {
 	 * @param anyPath 
 	 * @returns 
 	 */
-	static resolvePath(anyPath: string): ConfirmedPath | undefined {
+	static confirmPath(anyPath: string): ConfirmedPath | undefined {
 		const decodedPath = decodeMediaPath(anyPath);
 		if (!process.env.MEDIA_DIR) {
 			throw new Error('MEDIA_DIR environment variable is not set');

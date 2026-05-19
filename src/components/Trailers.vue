@@ -4,6 +4,10 @@ import { useProfileStore } from '@/stores/profile.store';
 import { useApiStore } from '@/stores/api.store';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 
+const props = defineProps<{
+	mediaPath: string,
+}>();
+
 const emit = defineEmits<{
 	end: [];
 	close: [];
@@ -18,22 +22,33 @@ const isLoading = ref(false);
 
 async function fetchTrailers() {
 	isLoading.value = true;
+
 	try {
+		const lastFinished = localStorage.getItem('lastFinishedTrailers');
+		if (lastFinished && Number(lastFinished) > Date.now() - (1000 * 60 * 15)) {
+			emit('end');
+			return;
+		}
+
 		const { data } = await api.get('/trailers', {
-			params: { profileId: profileStore.activeProfile?.id },
-			});
+			params: { profileId: profileStore.activeProfile?.id, path: props.mediaPath },
+		});
 		if (data?.data?.length) {
 			trailers.value = data.data;
-			} else {
+		}
+		else {
 			emit('end');
-			}
-		} catch (e) {
-		console.error('Failed to fetch trailers', e);
-			emit('end');
-		} finally {
-		isLoading.value = false;
 		}
 	}
+	catch (e) {
+		console.error('Failed to fetch trailers', e);
+		emit('end');
+	}
+	finally {
+		isLoading.value = false;
+	}
+}
+
 
 function onTrailerEnd() {
 	if (currentIndex.value < trailers.value.length - 1) {
@@ -45,6 +60,7 @@ function onTrailerEnd() {
 
 onMounted(() => {
 	if (!profileStore.activeProfile?.preRollTrailers) {
+		localStorage.setItem('lastFinishedTrailers', String(Date.now()));
 		emit('end');
 		return;
 	}
@@ -56,6 +72,7 @@ onMounted(() => {
 <template>
 	<div v-if="trailers[currentIndex]" class="trailers-container">
 		<VideoPlayer
+			:key="currentIndex"
 			:relativePath="trailers[currentIndex].relativePath"
 			:autoplay="true"
 			:onEnd="onTrailerEnd"

@@ -11,7 +11,7 @@ route.get('/', async (req, res) => {
 	const { path } = req.query;
 
 	try {
-		const mediaPath = DirectoryService.resolvePath(path as string);
+		const mediaPath = DirectoryService.confirmPath(path as string);
 		if (!mediaPath) {
 			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(path as string)}`);
 		}
@@ -36,7 +36,7 @@ route.post('/', async (req, res) => {
 	const { path, emails } = req.body;
 
 	try {
-		const mediaPath = DirectoryService.resolvePath(path as string);
+		const mediaPath = DirectoryService.confirmPath(path as string);
 		if (!mediaPath) {
 			throw new Error(`Must provide valid relativePath. ${decodeURIComponent(path as string)}`);
 		}

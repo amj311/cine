@@ -39,7 +39,8 @@ const endScreenHasContent = computed(() => Boolean(nextEpisode.value || parentEx
 const playerProgress = ref<WatchProgress | null>(null); // WatchProgress type
 
 const mainPlaybackReady = ref(false);
-const showTrailers = ref(false);
+const trailersEnded = ref(false);
+const startingAtBeginning = ref(false);
 const isLoadingLibrary = ref(false);
 
 const parentTitle = ref<any>(null);
@@ -52,6 +53,13 @@ const showPlayer = computed(() => {
 	return Boolean(queryPath.value && !hasEnded.value && !showTrailers.value);
 });
 
+const showTrailersForType = computed(() => {
+	return ['episodeFile', 'movie'].includes(contentFile.value?.type);
+});
+
+const showTrailers = computed(() => {
+	return startingAtBeginning.value && showTrailersForType.value && !trailersEnded.value;
+})
 
 function resetState() {
 	playerRef.value?.videoRef?.pause();
@@ -82,9 +90,10 @@ async function initMedia(pathToLoad: string) {
 
 		const startTime = await fetchInitialProgress();
 		if (!startTime) {
-			showTrailers.value = true;
+			startingAtBeginning.value = true;
 		}
 		else if (playerRef.value?.videoRef) {
+			startingAtBeginning.value = false;
 			await nextTick();
 			playerRef.value.setTime(startTime);
 			playerRef.value.play();
@@ -161,7 +170,7 @@ watch(() => useMediaStore().updated, async () => {
 })
 
 function onTrailersEnd() {
-	showTrailers.value = false;
+	trailersEnded.value = false;
 	mainPlaybackReady.value = true;
 }
 
@@ -779,7 +788,7 @@ function toggleTimer() {
 
 
 				<!-- Trailers overlay (always rendered, handles itself) -->
-				<Trailers v-if="showTrailers" @end="onTrailersEnd" @close="carefulBackNav" />
+				<Trailers :mediaPath="queryPath" v-if="showTrailers" @end="onTrailersEnd" @close="carefulBackNav" />
 
 				<div v-show="showPlayer" class="main-video-wrapper flex-grow-1"
 					:class="{ 'mini bg-blur-hover border-round overflow-hidden cursor-pointer': showEndScreen, focusAreaClass: !showEndScreen }"

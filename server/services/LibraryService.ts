@@ -735,52 +735,28 @@ export class LibraryService {
 		}
 	}
 
-	public static async getAllTrailers(allowedParents?: string[]) {
-		const libraries = await LibraryService.getRootLibraries();
-		const cinemaLibraries = libraries.filter((lib) => lib.libraryType === 'cinema');
+	public static async getRandomTrailers(mediaPath: RelativePath, allowedParents?: ConfirmedPath[]) {
+		// only one trailer for episodes
+		const numTrailers = mediaPath.includes('Season') ? 1 : 3;
+
+		const sources: Array<ConfirmedPath> = allowedParents ||
+			(await LibraryService.getRootLibraries()).filter((lib) => lib.libraryType === 'cinema').map(l => l.confirmedPath);
 
 		const trailers: Extra[] = [];
 
-		async function collectFromFolder(path: ConfirmedPath) {
-			const { folders } = await DirectoryService.listDirectory(path);
-			for (const folder of folders) {
-				const item = await LibraryService.parseFolderToItem(folder.confirmedPath, true);
-				if (item.type === 'cinema') {
-					const cinemaItem = item as any;
-					if (allowedParents) {
-						const parentMatch = allowedParents.some(p =>
-							cinemaItem.relativePath === p || cinemaItem.relativePath.startsWith(p + '/')
-						);
-						if (!parentMatch) continue;
-					}
-					if (Array.isArray(cinemaItem.extras)) {
-						for (const extra of cinemaItem.extras as Extra[]) {
-							if (extra.extraType === 'trailer') {
-								trailers.push(extra);
-							}
-						}
-					}
-					if (Array.isArray(cinemaItem.seasons)) {
-						for (const season of cinemaItem.seasons) {
-							if (Array.isArray(season.extras)) {
-								for (const extra of season.extras as Extra[]) {
-									if (extra.extraType === 'trailer') {
-										trailers.push(extra);
-									}
-								}
-							}
-						}
-					}
+		await Promise.all(sources.map(async s => {
+			const flat = await this.getFlatTree(s, true);
+			for (const item of flat.items) {
+				console.log(item)
+				if (mediaPath.startsWith(item.relativePath)) {
+					continue;
 				}
-				else if (item.libraryTier !== 'title') {
-					await collectFromFolder(folder.confirmedPath);
+				if ('extras' in item) {
+					const extras = item.extras as Array<Extra>;
+					trailers.push(...extras.filter(e => e.extraType === 'trailer'))
 				}
 			}
-		}
-
-		for (const lib of cinemaLibraries) {
-			await collectFromFolder(lib.confirmedPath);
-		}
+		}))
 
 		// Fisher-Yates shuffle
 		for (let i = trailers.length - 1; i > 0; i--) {
@@ -788,11 +764,11 @@ export class LibraryService {
 			[trailers[i], trailers[j]] = [trailers[j], trailers[i]];
 		}
 
-		return trailers.slice(0, 3);
+		return trailers.slice(0, numTrailers);
 	}
 
 	public static async getRootLibraries() {
-		const rootLibraries = await DirectoryService.listDirectory(DirectoryService.resolvePath('/')!);
+		const rootLibraries = await DirectoryService.listDirectory(DirectoryService.confirmPath('/')!);
 		const libraries = await Promise.all(rootLibraries.folders.map(async (folder) => {
 			return {
 				folderName: folder.name,
@@ -804,12 +780,12 @@ export class LibraryService {
 	}
 
 
-	public static async getFlatTree(path: ConfirmedPath) {
+	public static async getFlatTree(path: ConfirmedPath, detailed = false) {
 		const items: Array<Base<LibraryItemStrat>> = [];
 		const files: Array<ContentFileBase> = [];
 		async function parseDirectory(confirmedPath: ConfirmedPath) {
 			const { folders, files: childrenFiles } = await DirectoryService.listDirectory(confirmedPath);
-			const libraryItem = await LibraryService.parseFolderToItem(confirmedPath);
+			const libraryItem = await LibraryService.parseFolderToItem(confirmedPath, detailed);
 			if (libraryItem) {
 				items.push(libraryItem);
 			}
@@ -1003,7 +979,7 @@ export class LibraryService {
 
 		const ancestors = filePath.relativePath.split('/').slice(0, -1).reduce((paths, thisPath) => {
 			const lastPath = paths[paths.length - 1];
-			const currentPath = lastPath ? lastPath.append(thisPath) : DirectoryService.resolvePath(thisPath)!;
+			const currentPath = lastPath ? lastPath.append(thisPath) : DirectoryService.confirmPath(thisPath)!;
 			return [...paths, currentPath];
 		}, [] as Array<ConfirmedPath>);
 
@@ -1069,7 +1045,7 @@ export class LibraryService {
 		const nextEpisode = allEpisodes?.[currentEpisodeIndex + 1];
 		return nextEpisode ? {
 			...nextEpisode,
-			confirmedPath: DirectoryService.resolvePath(nextEpisode.relativePath)!,
+			confirmedPath: DirectoryService.confirmPath(nextEpisode.relativePath)!,
 		} : null;
 	}
 

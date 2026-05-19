@@ -127,7 +127,7 @@ route.get('/probe', async (req, res) => {
 		return;
 	}
 
-	const resolvedPath = DirectoryService.resolvePath(path as string);
+	const resolvedPath = DirectoryService.confirmPath(path as string);
 	if (!resolvedPath) {
 		res.status(404).json({ error: 'File not found' });
 		return;
@@ -189,7 +189,7 @@ route.get('/chunk', async (req, res) => {
 		return;
 	}
 
-	const resolvedPath = DirectoryService.resolvePath(path as string);
+	const resolvedPath = DirectoryService.confirmPath(path as string);
 	if (!resolvedPath) {
 		res.status(404).json({ error: 'File not found' });
 		return;

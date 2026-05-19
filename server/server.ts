@@ -9,7 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-import express, { Response } from 'express';
+import express, { Request, Response } from 'express';
 import 'express-async-errors';
 const app = express();
 
@@ -130,6 +130,8 @@ app.use('/api/session', (req, res, next) => {
 	res.send(getSession())
 })
 
+type ReqWithPath = Request & { confirmedPath: ConfirmedPath };
+
 app.use('/api/*', async (req, res, next) => {
 	let path = '';
 	if (typeof req.query?.path === 'string') {
@@ -142,6 +144,12 @@ app.use('/api/*', async (req, res, next) => {
 	};
 
 	if (path) {
+		const confirmedPath = DirectoryService.confirmPath(path);
+		if (!confirmedPath) {
+			res.status(404).send("File not found");
+			return;
+		}
+		(req as ReqWithPath).confirmedPath = confirmedPath;
 		const isShared = await SharingService.isShared(path, getSessionEmail());
 		if (!isShared) {
 			return res.sendStatus(409);
@@ -173,7 +181,6 @@ app.use('/api/now-playing', nowPlayingRoute);
 import profileRoute from './routes/profile.route'
 app.use('/api/profiles', profileRoute);
 
-
 import { decodeMediaPath, safeParseInt } from './utils/miscUtils';
 import { hash } from './utils/hash';
 import { JobService } from './services/JobService';
@@ -191,7 +198,7 @@ app.get("/api/dir/", async function (req, res) {
 			path = "";
 		}
 
-		const resolvedPath = DirectoryService.resolvePath(path as string);
+		const resolvedPath = DirectoryService.confirmPath(path as string);
 		if (!resolvedPath) {
 			return safeResponse.error(res, "Directory not found", 404);
 		}
@@ -231,7 +238,7 @@ app.post("/api/emptyCaches", async function (req, res) {
 app.post("/api/refresh", async function (req, res) {
 	try {
 		const { path } = req.query;
-		const resolvedPath = DirectoryService.resolvePath(path as string);
+		const resolvedPath = DirectoryService.confirmPath(path as string);
 		if (!resolvedPath) {
 			return safeResponse.error(res, "Directory not found", 404);
 		}
@@ -268,8 +275,286 @@ app.get('/api/stream-yt-search', async (req, res) => {
 		const url = `https://www.youtube.com/watch?v=${topResult.id}`;
 		const outputFilePath = path.join(__dirname, '../dist/assets/yt.mp3');
 
-		ytdl.getInfo(url).then(info => {
-			ytdl.downloadFromInfo(info, { quality: 'lowest' }).pipe(fs.createWriteStream(outputFilePath))
+		const agent = ytdl.createAgent([
+			{
+				"name": "__Secure-YNID",
+				"value": "18.YT=y9ovSH8UT8rXa9gd3t1u9p-YLGcNSPtVJvaaUhg1zuuYzIOMdXFIdbVKUR3SyrhHo1B3eaHla0z_tFTbbi0DUKvIksVvLJLJKHWy0k9KP7-DY2vAqC6oiu4-E9XNhre6JOuOi0w3A3tA6oTpieuzTAOi2o6zGL21eHe7zs0ARtQ0AG1L_p1qwVeQKXQHxko4DQKBz603Cdzds-zpiQo2SD6NX-9VtdFn51VB4RZGSJ_VQ3DMjYyrAOlIcev1Lcmr4yfkUEzq4JwGxoJ2VQhY9CAn7FHTzQmg1BP3oDnE94gkDjaoLbxQulfh-K5waRSd63iSWHITde8LyS3TgwbfQQ",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "no_restriction",
+				"expirationDate": 1794760526.969,
+			},
+			{
+				"name": "GPS",
+				"value": "1",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "unspecified",
+				"expirationDate": 1779210327.03,
+			},
+			{
+				"name": "YSC",
+				"value": "6ELcP-ibU9k",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "no_restriction",
+			},
+			{
+				"name": "VISITOR_INFO1_LIVE",
+				"value": "D-p3Zv9FZTs",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "no_restriction",
+				"expirationDate": 1794760530.344,
+			},
+			{
+				"name": "VISITOR_PRIVACY_METADATA",
+				"value": "CgJVUxIEGgAgLA%3D%3D",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "no_restriction",
+				"expirationDate": 1794760530.344,
+			},
+			{
+				"name": "PREF",
+				"value": "f4=4000000&tz=America.Denver",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": false,
+				"sameSite": "unspecified",
+				"expirationDate": 1813768532.045,
+			},
+			{
+				"name": "__Secure-1PSIDTS",
+				"value": "sidts-CjQBhkeRd8cVmecHiYVgYJBl4Iq1XAIlOs_B9wDtO96eEX-8rZlcC-UooeuDjKO5L_d1_hh_EAA",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "unspecified",
+				"expirationDate": 1810755180.358,
+			},
+			{
+				"name": "__Secure-3PSIDTS",
+				"value": "sidts-CjQBhkeRd8cVmecHiYVgYJBl4Iq1XAIlOs_B9wDtO96eEX-8rZlcC-UooeuDjKO5L_d1_hh_EAA",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "no_restriction",
+				"expirationDate": 1810755180.358,
+			},
+			{
+				"name": "HSID",
+				"value": "AlBsyfbOILHaulUV7",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": false,
+				"httpOnly": true,
+				"sameSite": "unspecified",
+				"expirationDate": 1813768529.395,
+			},
+			{
+				"name": "SSID",
+				"value": "AHgF_f4U31cWeMdEp",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "unspecified",
+				"expirationDate": 1813768529.395,
+			},
+			{
+				"name": "APISID",
+				"value": "KZiO8IZhcsA2RbhR/Aa6g2kp2K9m00zGqb",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": false,
+				"httpOnly": false,
+				"sameSite": "unspecified",
+				"expirationDate": 1813768529.395,
+			},
+			{
+				"name": "SAPISID",
+				"value": "oemHn3lacVx6ryg9/Am0jqnFM4MPJygpyW",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": false,
+				"sameSite": "unspecified",
+				"expirationDate": 1813768529.395,
+			},
+			{
+				"name": "__Secure-1PAPISID",
+				"value": "oemHn3lacVx6ryg9/Am0jqnFM4MPJygpyW",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": false,
+				"sameSite": "unspecified",
+				"expirationDate": 1813768529.395,
+			},
+			{
+				"name": "__Secure-3PAPISID",
+				"value": "oemHn3lacVx6ryg9/Am0jqnFM4MPJygpyW",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": false,
+				"sameSite": "no_restriction",
+				"expirationDate": 1813768529.395,
+			},
+			{
+				"name": "SID",
+				"value": "g.a000-Aix0flc3RLP0UG3MdaIYfTShQvz_rsnnoiQqp5f3LUB4vQxqoatwwv4ILYbAYttXplAdgACgYKARQSARYSFQHGX2MikB1t3Z7WfD9p-gbNBmbAthoVAUF8yKplLIxNVy2Az1e_ZswOrb250076",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": false,
+				"httpOnly": false,
+				"sameSite": "unspecified",
+				"expirationDate": 1813768529.395,
+			},
+			{
+				"name": "__Secure-1PSID",
+				"value": "g.a000-Aix0flc3RLP0UG3MdaIYfTShQvz_rsnnoiQqp5f3LUB4vQxtgn2XhXPtoPN4L-JVjVjyQACgYKAZkSARYSFQHGX2MiyNk8GafLvdTuFpBI1LQh5hoVAUF8yKpB82I8HOjffE1FjY7YNnHn0076",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "unspecified",
+				"expirationDate": 1813768529.395,
+			},
+			{
+				"name": "__Secure-3PSID",
+				"value": "g.a000-Aix0flc3RLP0UG3MdaIYfTShQvz_rsnnoiQqp5f3LUB4vQxn0-FiJ5g20BHQDeEm0PWywACgYKARcSARYSFQHGX2MiUcdpH0z9gNakhb39zJPnrBoVAUF8yKo6Mm6VslU91WhspBsCozsG0076",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "no_restriction",
+				"expirationDate": 1813768529.395,
+			},
+			{
+				"name": "LOGIN_INFO",
+				"value": "AFmmF2swRQIhAOCLyElU0EZ9beR1KCuWkERLi5EyZLv79NkP85YH5KoPAiB4Mgfyt-RSlX_jfOAqzHx_Oi2AOAnU9JBkSTtuKT_HQA:QUQ3MjNmemlZdGRJaWJrVGlnLVZXcklQYlgwUmVVOHZ6M0tMaTBjZmQwSE5uYmh1bVl0a0RnQmxodGtfeGFlcUx2V09ubldtckJlbTVhX1I0dGtNTHd3NFRzbW01Vmd2YmtZX0N6R0o3MHZsbDN5d1pYNDFCVElDaXR2RXc4UFVodEdxQ0Zhb1RrZ0FSYXY0TlZ3aHN4czRSY0ZSVlRDdUdn",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "no_restriction",
+				"expirationDate": 1813768529.661,
+			},
+			{
+				"name": "SIDCC",
+				"value": "AKEyXzW5rncppYKXLUfe9Hy4rrMYdwQ77xh3lPf1C8ylAYxP_Jt21rP_eedUpdioOZjp35EPKg",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": false,
+				"httpOnly": false,
+				"sameSite": "unspecified",
+				"expirationDate": 1810755180.358,
+			},
+			{
+				"name": "__Secure-1PSIDCC",
+				"value": "AKEyXzXsrJM-sKV4zUfvHRtXQmGEKASYJ4A2AKJW3bSnsb-dRpDbQAxk0xTNpx3HXT690JqWbw",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "unspecified",
+				"expirationDate": 1810755180.358,
+			},
+			{
+				"name": "__Secure-3PSIDCC",
+				"value": "AKEyXzWRr95qGkxG_v16twbtdj-WVcPQ6d9LdtH2tmo-ZjAbQmGXZJPYJRuJBMXPvpwv9TLv",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": true,
+				"httpOnly": true,
+				"sameSite": "no_restriction",
+				"expirationDate": 1810755180.358,
+			},
+			{
+				"name": "ST-l3hjtt",
+				"value": "session_logininfo=AFmmF2swRQIhAOCLyElU0EZ9beR1KCuWkERLi5EyZLv79NkP85YH5KoPAiB4Mgfyt-RSlX_jfOAqzHx_Oi2AOAnU9JBkSTtuKT_HQA%3AQUQ3MjNmemlZdGRJaWJrVGlnLVZXcklQYlgwUmVVOHZ6M0tMaTBjZmQwSE5uYmh1bVl0a0RnQmxodGtfeGFlcUx2V09ubldtckJlbTVhX1I0dGtNTHd3NFRzbW01Vmd2YmtZX0N6R0o3MHZsbDN5d1pYNDFCVElDaXR2RXc4UFVodEdxQ0Zhb1RrZ0FSYXY0TlZ3aHN4czRSY0ZSVlRDdUdn",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": false,
+				"httpOnly": false,
+				"sameSite": "unspecified",
+				"expirationDate": 1779208536,
+			},
+			{
+				"name": "ST-tladcw",
+				"value": "session_logininfo=AFmmF2swRQIhAOCLyElU0EZ9beR1KCuWkERLi5EyZLv79NkP85YH5KoPAiB4Mgfyt-RSlX_jfOAqzHx_Oi2AOAnU9JBkSTtuKT_HQA%3AQUQ3MjNmemlZdGRJaWJrVGlnLVZXcklQYlgwUmVVOHZ6M0tMaTBjZmQwSE5uYmh1bVl0a0RnQmxodGtfeGFlcUx2V09ubldtckJlbTVhX1I0dGtNTHd3NFRzbW01Vmd2YmtZX0N6R0o3MHZsbDN5d1pYNDFCVElDaXR2RXc4UFVodEdxQ0Zhb1RrZ0FSYXY0TlZ3aHN4czRSY0ZSVlRDdUdn",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": false,
+				"httpOnly": false,
+				"sameSite": "unspecified",
+				"expirationDate": 1779208536,
+			},
+			{
+				"name": "ST-xuwub9",
+				"value": "session_logininfo=AFmmF2swRQIhAOCLyElU0EZ9beR1KCuWkERLi5EyZLv79NkP85YH5KoPAiB4Mgfyt-RSlX_jfOAqzHx_Oi2AOAnU9JBkSTtuKT_HQA%3AQUQ3MjNmemlZdGRJaWJrVGlnLVZXcklQYlgwUmVVOHZ6M0tMaTBjZmQwSE5uYmh1bVl0a0RnQmxodGtfeGFlcUx2V09ubldtckJlbTVhX1I0dGtNTHd3NFRzbW01Vmd2YmtZX0N6R0o3MHZsbDN5d1pYNDFCVElDaXR2RXc4UFVodEdxQ0Zhb1RrZ0FSYXY0TlZ3aHN4czRSY0ZSVlRDdUdn",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": false,
+				"httpOnly": false,
+				"sameSite": "unspecified",
+				"expirationDate": 1779208537,
+			},
+			{
+				"name": "ST-3opvp5",
+				"value": "session_logininfo=AFmmF2swRQIhAOCLyElU0EZ9beR1KCuWkERLi5EyZLv79NkP85YH5KoPAiB4Mgfyt-RSlX_jfOAqzHx_Oi2AOAnU9JBkSTtuKT_HQA%3AQUQ3MjNmemlZdGRJaWJrVGlnLVZXcklQYlgwUmVVOHZ6M0tMaTBjZmQwSE5uYmh1bVl0a0RnQmxodGtfeGFlcUx2V09ubldtckJlbTVhX1I0dGtNTHd3NFRzbW01Vmd2YmtZX0N6R0o3MHZsbDN5d1pYNDFCVElDaXR2RXc4UFVodEdxQ0Zhb1RrZ0FSYXY0TlZ3aHN4czRSY0ZSVlRDdUdn",
+				"domain": ".youtube.com",
+				"hostOnly": false,
+				"path": "/",
+				"secure": false,
+				"httpOnly": false,
+				"sameSite": "unspecified",
+				"expirationDate": 1779219225,
+			}
+		]);
+
+		ytdl.getInfo(url, { agent }).then(info => {
+			console.log("INFOOOOO", info)
+			ytdl.downloadFromInfo(info, { quality: 'lowest', agent }).pipe(fs.createWriteStream(outputFilePath))
 				.on('finish', () => {
 					if (!res.headersSent) {
 						res.sendFile(outputFilePath, (err) => {
@@ -308,7 +593,7 @@ app.get("/api/stream", async function (req, res) {
 		res.status(400).send("Requires src query param");
 		return;
 	}
-	const resolvedPath = DirectoryService.resolvePath(relativePath as string);
+	const resolvedPath = DirectoryService.confirmPath(relativePath as string);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");
 		return;
@@ -408,7 +693,7 @@ app.post('/api/prepareAudio', async (req, res) => {
 		res.status(400).send("Requires index query param");
 		return;
 	}
-	const resolvedPath = DirectoryService.resolvePath(relativePath as string);
+	const resolvedPath = DirectoryService.confirmPath(relativePath as string);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");
 		return;
@@ -456,7 +741,7 @@ app.post('/api/remux', async (req, res) => {
 		res.status(400).send("Requires path");
 		return;
 	}
-	const resolvedPath = DirectoryService.resolvePath(relativePath);
+	const resolvedPath = DirectoryService.confirmPath(relativePath);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");
 		return;
@@ -521,7 +806,7 @@ app.post('/api/metadata', async (req, res) => {
 			});
 			return;
 		}
-		const resolvedPath = DirectoryService.resolvePath(path);
+		const resolvedPath = DirectoryService.confirmPath(path);
 		if (!resolvedPath) {
 			res.json({
 				error: 'File not found',
@@ -569,7 +854,7 @@ app.get('/api/metadata/person/:personId', async (req, res) => {
 app.get('/api/watchProgress', async (req, res) => {
 	try {
 		const { path } = req.query;
-		const resolvedPath = DirectoryService.resolvePath(path as string);
+		const resolvedPath = DirectoryService.confirmPath(path as string);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
@@ -589,7 +874,7 @@ app.get('/api/watchProgress', async (req, res) => {
 app.post('/api/watchProgress', async (req, res) => {
 	try {
 		const { path, progress, bookmarkKeys } = req.body;
-		const resolvedPath = DirectoryService.resolvePath(path);
+		const resolvedPath = DirectoryService.confirmPath(path);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
@@ -610,7 +895,7 @@ app.post('/api/watchProgress', async (req, res) => {
 app.delete('/api/watchProgress/bookmark', async (req, res) => {
 	try {
 		const { path, bookmarkId } = req.body;
-		const resolvedPath = DirectoryService.resolvePath(path);
+		const resolvedPath = DirectoryService.confirmPath(path);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
@@ -630,7 +915,7 @@ app.delete('/api/watchProgress/bookmark', async (req, res) => {
 app.delete('/api/watchProgress', async (req, res) => {
 	try {
 		const { path } = req.body;
-		const resolvedPath = DirectoryService.resolvePath(path);
+		const resolvedPath = DirectoryService.confirmPath(path);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
@@ -660,7 +945,7 @@ app.get('/api/theaterData', async (req, res) => {
 			res.status(400).send("Requires relativePath query param");
 			return;
 		}
-		const resolvedPath = DirectoryService.resolvePath(path as string);
+		const resolvedPath = DirectoryService.confirmPath(path as string);
 		if (!resolvedPath) {
 			res.status(404).send("File not found");
 			return;
@@ -716,14 +1001,14 @@ app.get('/api/feed', async (req, res) => {
 		let watchItems: ContinueWatchingItem[] = (await WatchProgressService.getContinueWatchingList()).map((progress) => ({
 			...progress,
 			watchedAt: progress.watchedAt,
-			confirmedPath: DirectoryService.resolvePath(progress.relativePath),
+			confirmedPath: DirectoryService.confirmPath(progress.relativePath),
 		})).filter(i => i.confirmedPath) as ContinueWatchingItem[];
 
 
 		const lastFinishedEpisodes = await WatchProgressService.getLastFinishedEpisodes();
 		await Promise.all(lastFinishedEpisodes.map(async ep => {
-			if (ep && DirectoryService.resolvePath(ep.relativePath)) {
-				const nextEpisode = await LibraryService.getNextEpisode(DirectoryService.resolvePath(ep.relativePath)!);
+			if (ep && DirectoryService.confirmPath(ep.relativePath)) {
+				const nextEpisode = await LibraryService.getNextEpisode(DirectoryService.confirmPath(ep.relativePath)!);
 				if (nextEpisode) {
 					watchItems.push({ ...nextEpisode, watchedAt: ep.watchedAt, isUpNext: true } as any);
 				}
@@ -769,7 +1054,7 @@ app.get('/api/feed', async (req, res) => {
 				if (item.libraryTier !== 'title') {
 					return null; // Only include title-tier items in the feed
 				}
-				const fullPath = DirectoryService.resolvePath(item.relativePath)?.absolutePath!;
+				const fullPath = DirectoryService.confirmPath(item.relativePath)?.absolutePath!;
 				const stat = await fs.promises.stat(fullPath).catch(() => null);
 				return {
 					...item,
@@ -788,7 +1073,7 @@ app.get('/api/feed', async (req, res) => {
 		const newItems = await Promise.all(allMediaItems.slice(0, 10).map(async (item) => ({
 			libraryItem: {
 				...item,
-				watchProgress: await WatchProgressService.getWatchProgress(DirectoryService.resolvePath(item!.relativePath)!),
+				watchProgress: await WatchProgressService.getWatchProgress(DirectoryService.confirmPath(item!.relativePath)!),
 			},
 			relativePath: item!.relativePath,
 		})));
@@ -883,20 +1168,18 @@ app.get('/api/rootLibraries', async (req, res) => {
 
 app.get('/api/trailers', async (req, res) => {
 	try {
+		const { confirmedPath } = req as ReqWithPath;
 		const { profileId } = req.query;
-		let trailers;
+		let directories: undefined | Array<ConfirmedPath>;
 		if (profileId) {
 			const profile = await ProfileService.getById(profileId as string);
 			if (profile?.mode === 'theater' && profile.nowPlayingConfig) {
 				const { sources } = NowPlayingService.getTodaySources(profile.nowPlayingConfig);
-				const directories = sources.map(s => s.directory);
-				trailers = await LibraryService.getAllTrailers(directories);
-			} else {
-				trailers = await LibraryService.getAllTrailers();
+				directories = sources.map(s => DirectoryService.confirmPath(s.directory)).filter(s => s !== undefined);
 			}
-		} else {
-			trailers = await LibraryService.getAllTrailers();
 		}
+		const trailers = await LibraryService.getRandomTrailers(confirmedPath.relativePath, directories);
+
 		res.json({
 			success: true,
 			data: trailers,
@@ -911,7 +1194,7 @@ app.get('/api/trailers', async (req, res) => {
 app.get('/api/flat', async (req, res) => {
 	try {
 		const { path } = req.query;
-		const resolvedPath = DirectoryService.resolvePath(path as string);
+		const resolvedPath = DirectoryService.confirmPath(path as string);
 		if (!resolvedPath) {
 			throw Error('No such folder')
 		}
@@ -932,7 +1215,7 @@ app.get('/api/flat', async (req, res) => {
 app.get('/api/subtitles', async (req, res) => {
 	try {
 		const { path: relativePath, index } = req.query;
-		const fullPath = DirectoryService.resolvePath(relativePath as string);
+		const fullPath = DirectoryService.confirmPath(relativePath as string);
 		if (!fullPath) {
 			res.status(404).send("File not found");
 			return;
@@ -1037,12 +1320,12 @@ app.use('/serviceworker.js', (req, res) => {
 });
 app.use('/api/media', (req, res) => {
 	const relativePath = req.path;
-	res.sendFile(DirectoryService.resolvePath(relativePath)!.absolutePath);
+	res.sendFile(DirectoryService.confirmPath(relativePath)!.absolutePath);
 });
 app.use('/api/thumb', (req, res) => {
 	const relativePath = req.path;
 	const { width, seek } = req.query;
-	const resolvedPath = DirectoryService.resolvePath(relativePath);
+	const resolvedPath = DirectoryService.confirmPath(relativePath);
 	if (!resolvedPath) {
 		res.status(404).send("File not found");
 		return;
@@ -1106,7 +1389,7 @@ const server = app.listen(port, () => {
 	console.log(`Node.js version: ${process.version}`);
 
 	// kick off library cache so users don't have to wait later
-	LibraryService.getFlatTree(DirectoryService.resolvePath('/')!).catch(console.error)
+	LibraryService.getFlatTree(DirectoryService.confirmPath('/')!).catch(console.error)
 });
 
 // Graceful shutdown handling
