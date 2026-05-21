@@ -1,5 +1,6 @@
 import 'primeflex/primeflex.css'
 import 'primeicons/primeicons.css'
+import 'material-symbols';
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

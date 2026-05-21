@@ -1,6 +1,7 @@
 @use './base.scss';
 @use 'primeflex/primeflex.css';
 @use "sass:color";
+@import 'material-symbols';
 
 :root {
 	font-size: 14px;
@@ -152,7 +153,7 @@ h1, h2, h3, h4, h5, h6 {
 .flex-col-center {
 	@extend .flex;
 	@extend .flex-column;
-	@extend .justify-content-center;
+	@extend .align-items-center;
 }
 
 .flex-center-all {
