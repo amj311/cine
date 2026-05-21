@@ -2,6 +2,7 @@
  * Parses file system into directories of media.
  */
 
+import { readFileSync } from "node:fs";
 import { objectOrder } from "../utils/miscUtils";
 import { AbsolutePath, ConfirmedPath, DirectoryService, RelativePath } from "./DirectoryService";
 import { Loan, LoanService } from "./LoanService";
@@ -111,6 +112,7 @@ type CinemaItemStrat = Join<LibraryItemStratBase, Stratified<
 type MovieCinemaStrat = Join<CinemaItemStrat, Stratified<{
 	cinemaType: 'movie',
 	movie: MovieContent,
+	menu?: object,
 }>>
 
 type MovieContent = TitleContent & {
@@ -390,6 +392,15 @@ export class LibraryService {
 			});
 			if (movieFile) {
 				const movieContent: MovieContent = this.createMovieContent(movieFile.confirmedPath)!;
+				let menu;
+				const menuFile = children.files.find(f => f.name === "menu.json");
+				if (menuFile) {
+					try {
+						menu = JSON.parse(readFileSync(menuFile.confirmedPath.absolutePath, 'utf8'));
+					} catch (e) {
+						console.error("Failed to parse json menu!", path)
+					}
+				}
 
 				return {
 					libraryTier: 'title',
@@ -404,6 +415,7 @@ export class LibraryService {
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
 					poster: posterPath,
+					menu
 				};
 			}
 		}
@@ -1019,7 +1031,6 @@ export class LibraryService {
 				content = (parentTitle as Full<AlbumStrat>).tracks?.find((track) => filePath.relativePath === track.relativePath) || null;
 			}
 		}
-
 
 		if (!content) {
 			console.warn(`No content file found for ${filePath.relativePath}`);

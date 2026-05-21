@@ -23,6 +23,7 @@ import PersonModal from '@/components/PersonModal.vue';
 import Scroll from '@/components/Scroll.vue';
 import ExtrasList from '@/components/ExtrasList.vue';
 import { useMediaStore } from '@/stores/media.store';
+import DvdMenu from '@/components/DvdMenu.vue';
 
 const toast = useToast();
 const router = useRouter();
@@ -49,21 +50,30 @@ const probe = ref<any>(null);
 
 const playablePath = computed(() => contentFile.value?.relativePath);
 
-const showPlayer = computed(() => {
-	return Boolean(queryPath.value && !hasEnded.value && !showTrailers.value);
-});
+const dvdMenuRef = ref<InstanceType<typeof DvdMenu>>();
+const doDvdMenu = computed(() => Boolean(parentTitle.value?.menu));
+const hasShownMenu = ref(false);
+const showDvdMenu = ref(false);
 
 const showTrailersForType = computed(() => {
 	return ['episodeFile', 'movie'].includes(contentFile.value?.type);
 });
 
 const showTrailers = computed(() => {
-	return startingAtBeginning.value && showTrailersForType.value && !trailersEnded.value;
+	return startingAtBeginning.value && showTrailersForType.value && !trailersEnded.value && !showDvdMenu.value;
 })
 
+const showPlayer = computed(() => {
+	return Boolean(queryPath.value && !hasEnded.value && !showTrailers.value && !showDvdMenu.value);
+});
+
+
+
 function resetState() {
-	playerRef.value?.videoRef?.pause();
-	playerRef.value?.setTime(0);
+	if (playerRef.value?.videoRef) {
+		playerRef.value.videoRef.pause();
+		playerRef.value.videoRef.currentTime = 0;
+	}
 	playerProgress.value = null;
 	parentTitle.value = null;
 	contentFile.value = null;
@@ -86,15 +96,30 @@ async function initMedia(pathToLoad: string) {
 		contentFile.value = data.data.content;
 		probe.value = data.data.probe;
 
+		await nextTick();
+
 		parentTitle.value.metadata = await MetadataService.getMetadata(parentTitle.value, true);
 
 		const startTime = await fetchInitialProgress();
 		if (!startTime) {
 			startingAtBeginning.value = true;
+			if (doDvdMenu.value && !hasShownMenu.value) {
+				showDvdMenu.value = true;
+				hasShownMenu.value = true;
+				dvdMenuRef.value?.loadMenu(parentTitle.value!.menu, parentTitle.value!.relativePath);
+			}
+			else {
+				showDvdMenu.value = false;
+			}
 		}
-		else if (playerRef.value?.videoRef) {
+		else {
 			startingAtBeginning.value = false;
-			await nextTick();
+			showDvdMenu.value = false;
+		}
+
+
+		await nextTick();
+		if (showPlayer.value && playerRef.value) {
 			playerRef.value.setTime(startTime);
 			playerRef.value.play();
 		}
@@ -349,6 +374,10 @@ async function onEnd() {
 	if (willAutoplay.value) {
 		return playNext();
 	}
+	else if (doDvdMenu.value) {
+		showDvdMenu.value = true;
+		dvdMenuRef.value?.resumeMenu();
+	}
 	else if (endScreenHasContent.value) {
 		goToEndScreen();
 	}
@@ -602,6 +631,7 @@ async function toggleScrubMenu() {
  */
 
 const loadSplashUrl = computed(() => {
+	if (doDvdMenu.value) return undefined;
 	const autoThumb = useApiStore().apiUrl + '/thumb/' + encodeMediaPath(queryPath.value) + '?width=1200&seek=3';
 	if (contentFile.value?.type === 'extra') {
 		return autoThumb;
@@ -710,6 +740,9 @@ function toggleTimer() {
 
 		<div class="theater-wrapper md:flex-row flex-column">
 			<div class="w-full flex-grow-1 relative">
+
+				<DvdMenu ref="dvdMenuRef" @play="playMedia" @close="carefulBackNav" />
+
 				<div class="end-screen absolute top-0 bottom-0 left-0 right-0 flex-column" v-if="showEndScreen"
 					:class="{ visible: showEndScreen }"
 					:style="{ background: `radial-gradient(ellipse at top right, transparent, #000a max(40%, calc(100% - 50rem)), #000e 80%), url('${loadSplashUrl}') 40% 0% / cover no-repeat` }">
@@ -785,7 +818,6 @@ function toggleTimer() {
 						</Scroll>
 					</div>
 				</div>
-
 
 				<!-- Trailers overlay (always rendered, handles itself) -->
 				<Trailers :mediaPath="queryPath" v-if="showTrailers" @end="onTrailersEnd" @close="carefulBackNav" />

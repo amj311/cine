@@ -208,7 +208,7 @@ watch(
 	() => useWatchProgressStore().lastWatchProgress,
 	(lastProgress) => {
 		if (!lastProgress) return;
-		
+
 		let media;
 		if (isSeries.value) {
 			media = mergedSeasons.value.flatMap((season: any) => season.episodes).find((episode: any) => episode.relativePath === lastProgress?.relativePath);

@@ -28,6 +28,7 @@ const props = defineProps<{
 	onEnd?: () => void;
 	onLoadedData?: (data: any) => void;
 	hideControls?: boolean;
+	noEvents?: boolean;
 	autoplay?: boolean;
 	subtitles?: Array<{
 		index: number;
@@ -223,33 +224,38 @@ onMounted(() => {
 			secondaryAudioPlayer.value.currentTime = videoRef.value!.currentTime;
 		}
 	});
-	// don't pause when touching whole area on touch screen
-	if (!useScreenStore().detectedTouch) {
-		videoRef.value?.addEventListener('click', togglePlay);
+
+
+	if (!props.noEvents) {
+		// don't pause when touching whole area on touch screen
+		if (!useScreenStore().detectedTouch) {
+			videoRef.value?.addEventListener('click', togglePlay);
+		}
+		// videoRef.value?.addEventListener('click', doubleClick);
+
+		// Setup control hiding
+		const events = ['mousemove', 'keydown', 'touchstart'];
+		events.forEach((event) => {
+			wrapperRef.value?.addEventListener(event, doShowControls, { passive: true });
+		});
+
+		// also show buttons when tv nav button is detected
+		unsubTvNav = useScreenStore().onTvNav(doShowControls);
+
+
+		// setup keybindings
+		window.addEventListener('keydown', windowKeyHandler);
+
+		// Media Session Actions
+		navigator.mediaSession.setActionHandler('pause', (e) => togglePlay());
+		navigator.mediaSession.setActionHandler('play', (e) => togglePlay());
+		navigator.mediaSession.setActionHandler('stop', (e) => togglePlay());
+		navigator.mediaSession.setActionHandler('seekforward', (e) => skipForward());
+		navigator.mediaSession.setActionHandler('seekbackward', (e) => skipBack());
+		navigator.mediaSession.setActionHandler('nexttrack', (e) => props.onNextTrack ? props.onNextTrack() : goToNextChapter());
+		navigator.mediaSession.setActionHandler('previoustrack', (e) => props.onPrevTrack ? props.onPrevTrack() : goToPrevChapter());
 	}
-	// videoRef.value?.addEventListener('click', doubleClick);
-
-	// Setup control hiding
-	const events = ['mousemove', 'keydown', 'touchstart'];
-	events.forEach((event) => {
-		wrapperRef.value?.addEventListener(event, doShowControls, { passive: true });
-	});
-
-	// also show buttons when tv nav button is detected
-	unsubTvNav = useScreenStore().onTvNav(doShowControls);
-
-
-	// setup keybindings
-	window.addEventListener('keydown', windowKeyHandler);
-
-	// Media Session Actions
-	navigator.mediaSession.setActionHandler('pause', (e) => togglePlay());
-	navigator.mediaSession.setActionHandler('play', (e) => togglePlay());
-	navigator.mediaSession.setActionHandler('stop', (e) => togglePlay());
-	navigator.mediaSession.setActionHandler('seekforward', (e) => skipForward());
-	navigator.mediaSession.setActionHandler('seekbackward', (e) => skipBack());
-	navigator.mediaSession.setActionHandler('nexttrack', (e) => props.onNextTrack ? props.onNextTrack() : goToNextChapter());
-	navigator.mediaSession.setActionHandler('previoustrack', (e) => props.onPrevTrack ? props.onPrevTrack() : goToPrevChapter());
+	
 })
 
 onBeforeUnmount(() => {

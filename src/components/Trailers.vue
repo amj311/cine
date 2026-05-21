@@ -25,7 +25,6 @@ async function fetchTrailers() {
 
 	try {
 		const lastFinished = localStorage.getItem('lastFinishedTrailers');
-		console.log(lastFinished)
 		if (lastFinished && Number(lastFinished) > Date.now() - (1000 * 60 * 15)) {
 			emit('end');
 			return;
