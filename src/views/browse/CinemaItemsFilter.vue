@@ -31,7 +31,7 @@ const filteredItems = computed(() => {
 	}
 
 	filtered = cinemaType.value === 'all' ? filtered : filtered.filter(item =>  !item.surprise && filterTypes[cinemaType.value]!.includes(item.cinemaType) || filterTypes[cinemaType.value]!.includes(item.type));
-	filtered = !searchTerm.value ? filtered : filtered.filter(item => !item.surprise && item.name.toLowerCase().replaceAll(/[^\d\w\s]/g, '').includes(searchTerm.value.toLowerCase().replaceAll(/[^\d\w\s]/g, '')));
+	filtered = !searchTerm.value ? filtered : filtered.filter(item => !item.surprise && item.name.toLowerCase().replaceAll(/[^\d\w\s]/g, '').includes(searchTerm.value.toLowerCase().split(/[^\d\w\s]/g).join('')));
 	return filtered;
 });
 

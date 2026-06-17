@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios';
 import { AuthService } from '@/services/AuthService';
+import { encodeMediaPath } from '@/utils/miscUtils';
 
 export type Host = {
 	hostname: string;
@@ -175,6 +176,10 @@ export const useApiStore = defineStore('Api', () => {
 				resolvedPath = apiUrl.value + '/' + path;
 			}
 			return resolvedPath;
-		}
+		},
+
+		getStreamUrl(mediaPath: string) {
+			return apiUrl.value + '/stream?path=' + encodeMediaPath(mediaPath);
+		},
 	}
 })

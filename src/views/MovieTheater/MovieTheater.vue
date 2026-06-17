@@ -135,6 +135,16 @@ async function initMedia(pathToLoad: string) {
 const route = useRoute();
 let wakeLock: WakeLockSentinel | null = null;
 
+function handleVideoClose() {
+	if (doDvdMenu.value) {
+		showDvdMenu.value = true;
+		dvdMenuRef.value?.resumeMenu();
+	}
+	else {
+		carefulBackNav();
+	}
+}
+
 function carefulBackNav() {
 	if (router.options?.history?.state?.back) {
 		router.back();
@@ -824,16 +834,30 @@ function toggleTimer() {
 
 				<div v-show="showPlayer" class="main-video-wrapper flex-grow-1"
 					:class="{ 'mini bg-blur-hover border-round overflow-hidden cursor-pointer': showEndScreen, focusAreaClass: !showEndScreen }"
-					:tabindex="showEndScreen ? 0 : undefined" @click="() => showEndScreen && leaveEndScreen()">
-					<VideoPlayer ref="playerRef" :key="playablePath"
-						:loadingSplash="loadSplashUrl" :title="videoTitle"
-						:onTitleClick="onTitleClick" :close="carefulBackNav"
-						:hideControls="showEndScreen" :relativePath="playablePath"
-						:onLoadedData="() => hasLoaded = true" :onPlay="onPlay" :onPause="releaseWakeLock"
-						:onEnd="onEnd" :onNextTrack="playNext" :onPrevTrack="playPrev"
+					:tabindex="showEndScreen ? 0 : undefined"
+					@click="() => showEndScreen && leaveEndScreen()"
+				>
+					<VideoPlayer ref="playerRef"
+						:key="playablePath"
+						:loadingSplash="loadSplashUrl"
+						:title="videoTitle"
+						:onTitleClick="onTitleClick"
+						:close="handleVideoClose"
+						:hideControls="showEndScreen"
+						:inactive="!showPlayer"
+						:relativePath="playablePath"
+						:onLoadedData="() => hasLoaded = true"
+						:onPlay="onPlay"
+						:onPause="releaseWakeLock"
+						:onEnd="onEnd"
+						:onNextTrack="playNext"
+						:onPrevTrack="playPrev"
 						:subtitles="probe?.subtitles"
 						:audio="probe?.audio"
-						:chapters="probe?.chapters" allowFullscreen showTime>
+						:chapters="probe?.chapters"
+						allowFullscreen
+						showTime
+					>
 						<template #topButtons>
 							<!-- INFO BUTTON -->
 							<Button
@@ -976,8 +1000,7 @@ function toggleTimer() {
 
 										<template v-for="creditList, key in mediaInfo.credits">
 											<div v-if="creditList.length" class="flex flex-column gap-2">
-												<h3 style="text-transform: capitalize;">{{ (key as
-													string).split('_').join(' ') }}</h3>
+												<h3 style="text-transform: capitalize;">{{ (String(key)).split('_').join(' ') }}</h3>
 												<div v-for="person in creditList"
 													class="flex-row-center gap-3 cursor-pointer" tabindex="0"
 													@click="openPersonModal(person)">

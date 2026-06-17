@@ -163,18 +163,20 @@ function openSlideshow(file: GalleryFile) {
 
 							<!-- Extras and gallery items can overlap, so hide gallery if extras are in the libraryItem -->
 							<VirtualScroll v-if="directory.galleryFiles?.length && !libraryItem?.extras" :rows="galleryRows">
-								<template #row="{ data }" :key="day.date" class="date-row" :data-track-anchor="day.date">
-									<div v-if="data.type === 'gallery'" class="gallery-grid h-full" :style="{ gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)` }">
-										<div
-											class="gallery-cell"
-											v-for="item in data.items"
-											:key="item?.relativePath"
-											:id="item?.relativePath"
-											@click="openSlideshow(item)"
-										>
-											<GalleryFileCard :file="item" />
+								<template #row="{ data }">
+									<template :key="data.date" class="date-row" :data-track-anchor="data.date">
+										<div v-if="data.type === 'gallery'" class="gallery-grid h-full" :style="{ gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)` }">
+											<div
+												class="gallery-cell"
+												v-for="item in data.items"
+												:key="item?.relativePath"
+												:id="item?.relativePath"
+												@click="openSlideshow(item)"
+											>
+												<GalleryFileCard :file="item" />
+											</div>
 										</div>
-									</div>
+									</template>
 								</template>
 							</VirtualScroll>
 

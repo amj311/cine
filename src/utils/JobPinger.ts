@@ -3,7 +3,7 @@ import { computed, ref } from "vue";
 
 export class JobPinger {
 	job = ref<any | null>(null);
-	private pingTimeout = ref(0);
+	private pingTimeout = ref(0 as any);
 	private startedAt = 0;
 
 	private promiseRes = (job: any) => { };

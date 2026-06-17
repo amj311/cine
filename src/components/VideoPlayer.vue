@@ -3,7 +3,7 @@ import { useApiStore } from '@/stores/api.store';
 import { useSettingsStore } from '@/stores/settings.store';
 import { useWatchProgressStore } from '@/stores/watchProgress.store';
 import { useToast } from 'primevue/usetoast';
-import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
 import MediaTimer from './MediaTimer.vue';
 import { encodeMediaPath, msToTimestamp, secToMs } from '@/utils/miscUtils';
 import { useFullscreenStore } from '@/stores/fullscreenStore.store';
@@ -20,6 +20,7 @@ const toast = useToast();
 const props = defineProps<{
 	relativePath?: string;
 	loadingSplash?: string,
+	hideLoading?: boolean,
 	title?: string;
 	onTitleClick?: () => void,
 	close?: () => void;
@@ -28,7 +29,7 @@ const props = defineProps<{
 	onEnd?: () => void;
 	onLoadedData?: (data: any) => void;
 	hideControls?: boolean;
-	noEvents?: boolean;
+	inactive?: boolean;
 	autoplay?: boolean;
 	subtitles?: Array<{
 		index: number;
@@ -84,29 +85,34 @@ async function prepareRemux() {
 	if (!props.relativePath) return;
 	remuxState.value = 'remuxing';
 	remuxProgress.value = 0;
-	toast.add({
-		severity: 'info',
-		summary: 'Preparing Video',
-		detail: 'This may take a few minutes...',
-		progressRef: remuxProgress,
-	} as any);
+	if (!props.hideLoading) {
+		toast.add({
+			severity: 'info',
+			summary: 'Preparing Video',
+			detail: 'This may take a few minutes...',
+			progressRef: remuxProgress,
+		} as any);
+	}
 	try {
 		const { data } = await useApiStore().api.post('/remux', { path: props.relativePath });
 		const pinger = new JobPinger(data.jobId, 2000);
 		const completedJob = await pinger.start({
 			onPing(job) {
- remuxProgress.value = job?.progress?.percentage ?? 0; 
-}
+ 				remuxProgress.value = job?.progress?.percentage ?? 0;
+			}
 		});
 		if (completedJob.value?.status === 'failed') throw new Error('Remux job failed');
 		remuxedUrl.value = data.path;
 		remuxState.value = 'ready';
 		toast.removeAllGroups();
-		toast.add({
-			severity: 'success',
-			summary: 'Video Ready',
-			life: 2000,
-		});
+		
+		if (!props.hideLoading) {
+			toast.add({
+				severity: 'success',
+				summary: 'Video Ready',
+				life: 2000,
+			});
+		}
 	}
  catch (e) {
 		console.error('Error remuxing MKV', e);
@@ -224,51 +230,65 @@ onMounted(() => {
 			secondaryAudioPlayer.value.currentTime = videoRef.value!.currentTime;
 		}
 	});
-
-
-	if (!props.noEvents) {
-		// don't pause when touching whole area on touch screen
-		if (!useScreenStore().detectedTouch) {
-			videoRef.value?.addEventListener('click', togglePlay);
-		}
-		// videoRef.value?.addEventListener('click', doubleClick);
-
-		// Setup control hiding
-		const events = ['mousemove', 'keydown', 'touchstart'];
-		events.forEach((event) => {
-			wrapperRef.value?.addEventListener(event, doShowControls, { passive: true });
-		});
-
-		// also show buttons when tv nav button is detected
-		unsubTvNav = useScreenStore().onTvNav(doShowControls);
-
-
-		// setup keybindings
-		window.addEventListener('keydown', windowKeyHandler);
-
-		// Media Session Actions
-		navigator.mediaSession.setActionHandler('pause', (e) => togglePlay());
-		navigator.mediaSession.setActionHandler('play', (e) => togglePlay());
-		navigator.mediaSession.setActionHandler('stop', (e) => togglePlay());
-		navigator.mediaSession.setActionHandler('seekforward', (e) => skipForward());
-		navigator.mediaSession.setActionHandler('seekbackward', (e) => skipBack());
-		navigator.mediaSession.setActionHandler('nexttrack', (e) => props.onNextTrack ? props.onNextTrack() : goToNextChapter());
-		navigator.mediaSession.setActionHandler('previoustrack', (e) => props.onPrevTrack ? props.onPrevTrack() : goToPrevChapter());
-	}
-	
 })
 
 onBeforeUnmount(() => {
 	mseStream.value?.destroy();
 	mseStream.value = null;
+	clearInterval(audioSyncCheck);
+
+	clearEvents();
+})
+
+function setupEvents() {
+	// don't pause when touching whole area on touch screen
+	if (!useScreenStore().detectedTouch) {
+		videoRef.value?.addEventListener('click', togglePlay);
+	}
+	// videoRef.value?.addEventListener('click', doubleClick);
+
+	// Setup control hiding
+	const events = ['mousemove', 'keydown', 'touchstart'];
+	events.forEach((event) => {
+		wrapperRef.value?.addEventListener(event, doShowControls, { passive: true });
+	});
+
+	// also show buttons when tv nav button is detected
+	unsubTvNav = useScreenStore().onTvNav(doShowControls);
+
+	// setup keybindings
+	window.addEventListener('keydown', windowKeyHandler);
+
+	// Media Session Actions
+	navigator.mediaSession.setActionHandler('pause', (e) => togglePlay());
+	navigator.mediaSession.setActionHandler('play', (e) => togglePlay());
+	navigator.mediaSession.setActionHandler('stop', (e) => togglePlay());
+	navigator.mediaSession.setActionHandler('seekforward', (e) => skipForward());
+	navigator.mediaSession.setActionHandler('seekbackward', (e) => skipBack());
+	navigator.mediaSession.setActionHandler('nexttrack', (e) => props.onNextTrack ? props.onNextTrack() : goToNextChapter());
+	navigator.mediaSession.setActionHandler('previoustrack', (e) => props.onPrevTrack ? props.onPrevTrack() : goToPrevChapter());
+}
+
+function clearEvents() {
 	const events = ['mousemove', 'keydown', 'touchstart'];
 	events.forEach((event) => {
 		wrapperRef.value?.removeEventListener(event, doShowControls);
 	});
 	window.removeEventListener('keydown', windowKeyHandler);
-	clearInterval(audioSyncCheck);
 	unsubTvNav?.();
-})
+}
+
+watch(() => props.inactive, async () => {
+	if (props.inactive) {
+		videoRef.value?.pause();
+		clearEvents();
+	}
+	else {
+		// Wait for the component to be fully rendered
+		await nextTick();
+		setupEvents();
+	}
+}, { immediate: true })
 
 function windowKeyHandler(e) {
 	// not for TVs
@@ -449,7 +469,7 @@ watch(selectedAudioIndex, async (newIdx) => {
 	}
 });
 
-let audioSyncCheck: number = 0;
+let audioSyncCheck: any = 0;
 
 async function turnOffSecondaryAudio() {
 	if (!videoRef.value) {
@@ -628,7 +648,7 @@ defineExpose({
 
 <template>
 	<div class="wrapper" ref="wrapperRef" :class="{ 'show-controls tvNavigationNoFocus': showControls }">
-		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType || isRemuxNeeded || isMseStream" :src="isMseStream ? undefined : (videoUrl || undefined)" crossorigin="use-credentials" allow :style="{ backgroundColor: background }">
+		<video ref="videoRef" class="video-player" :controls="false" :autoplay="autoplay" v-if="goodType || isRemuxNeeded || isMseStream" :src="isMseStream ? undefined : (videoUrl || undefined)" crossorigin="use-credentials" allow preload="auto" :style="{ backgroundColor: background }">
 			<!-- <track v-for="(track, i) in subtitleTracks" kind="captions" :src="track.url" srclang="en" :label="track.label" :default="i === 0 ? true : undefined" /> -->
 			<track v-if="selectedSubtitle && selectedSubtitle.format !== 'dvd_subtitle' && selectedSubtitle.format !== 'hdmv_pgs_subtitle'" :key="selectedSubtitle.url" kind="subtitles" :src="selectedSubtitle.url" srclang="en" :label="selectedSubtitle.label" default @error="handleSubtitleError" />
 		</video>
@@ -637,12 +657,14 @@ defineExpose({
 		<PgsCanvas v-if="selectedSubtitle && selectedSubtitle.format === 'hdmv_pgs_subtitle'" :videoRef="videoRef" :path="relativePath || ''" :trackIndex="selectedSubtitle.index" :key="selectedSubtitle.index" />
 
 		<div v-if="!hasLoaded" class="loading-splash">
-			<img v-if="loadingSplash" :src="loadingSplash" />
 			<template v-if="remuxState === 'error'">
 				<i class="pi pi-times-circle text-7xl text-red-400" />
 				<div class="text-white mt-3">Failed to prepare video</div>
 			</template>
-			<i v-else class="pi pi-spin pi-spinner text-7xl" />
+			<template v-else-if="!hideLoading">
+				<img v-if="loadingSplash" :src="loadingSplash" />
+				<i v-else  class="pi pi-spin pi-spinner text-7xl" />
+			</template>
 		</div>
 
 		<template v-if="!hideControls">

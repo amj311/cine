@@ -83,7 +83,7 @@ export const useProfileStore = defineStore('profile', () => {
 			if (resolved === DEFAULT_PROFILE_ID) {
 				localStorage.removeItem(localStorageKey(_email.value));
 			}
-	 else {
+			else {
 				localStorage.setItem(localStorageKey(_email.value), resolved);
 			}
 		}

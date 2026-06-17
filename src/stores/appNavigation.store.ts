@@ -4,7 +4,7 @@ import { useApiStore } from './api.store';
 
 export const useAppNavigationStore = defineStore('AppNavigation', () => {
 	const showNavbar = ref(true);
-	const libraries = ref<Array<{ folderName: string, relativePath: string, libraryItem: any }>>([]);
+	const libraries = ref<Array<{ folderName: string, relativePath: string, libraryItem: any, libraryType: string, name: string }>>([]);
 
 	async function fetchLibraries() {
 		const { data } = await useApiStore().api.get('/rootLibraries');

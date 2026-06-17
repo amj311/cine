@@ -17,7 +17,11 @@
  *     → render          — expands runs into RGBA ImageData (canvas-ready)
  */
 
-import type { RgbColor } from '../../server/utils/idxParser';
+export interface RgbColor {
+	r: number;
+	g: number;
+	b: number;
+}
 
 // ---------------------------------------------------------------------------
 // Public types

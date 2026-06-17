@@ -127,8 +127,8 @@ const quickCode = ref('');
 const validateUrl = computed(() => `web+oliveplex://validate-signin-code?code=${quickCode.value}`);
 const validateCodeQr = computed(() => quickCode.value ? getQrUrl(validateUrl.value) : '');
 // const validateCodeQr = computed(() => quickCode.value ? getQrUrl(location.origin + `/validate-signin-code?code=${quickCode.value}`) : '');
-let checkCodeTimer = 0;
-let discontinueTimer = 0;
+let checkCodeTimer = 0 as any;
+let discontinueTimer = 0 as any;
 
 async function beginCodeLogin() {
 	state.mode = 'code_login';

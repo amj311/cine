@@ -100,7 +100,7 @@ const virtualMonthRows = computed<Array<VirtualScrollRow>>(() => {
 	currentMonths.value.forEach((day) => {
 		rows.push({
 			height: 100,
-			key: day.date.replaceAll(' ', '-') + 'header',
+			key: day.date.split(' ').join('-') + 'header',
 			persist: true,
 			data: {
 				isHeader: true,
@@ -233,26 +233,28 @@ function normLabel(date) {
 						</div>
 					</template>
 
-					<template #row="{ data }" :key="day.date" class="date-row" :data-track-anchor="day.date">
-						<div class="pl-2 pb-2 pr-2 flex h-full">
-							<h2 v-if="data.isHeader" class="mt-7">{{ data.date }}</h2>
-							<div v-else class="photo-grid" :style="{ gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)` }">
-								<div
-									class="photo-cell lazy-load"
-									tabindex="0"
-									v-for="file in data.items"
-									:key="file.relativePath"
-									:id="file.relativePath"
-									@click="openSlideshow(file)"
-									data-tvNavJumpRow="photo_menu"
-								>
-									<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" />
-									<div class="overlay">
-										<i v-if="file.fileType === 'video'" class="play-icon pi pi-play" />
+					<template #row="{ data }">
+						<template :key="data.date" class="date-row" :data-track-anchor="data.date">
+							<div class="pl-2 pb-2 pr-2 flex h-full">
+								<h2 v-if="data.isHeader" class="mt-7">{{ data.date }}</h2>
+								<div v-else class="photo-grid" :style="{ gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)` }">
+									<div
+										class="photo-cell lazy-load"
+										tabindex="0"
+										v-for="file in data.items"
+										:key="file.relativePath"
+										:id="file.relativePath"
+										@click="openSlideshow(file)"
+										data-tvNavJumpRow="photo_menu"
+									>
+										<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" />
+										<div class="overlay">
+											<i v-if="file.fileType === 'video'" class="play-icon pi pi-play" />
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
+						</template>
 					</template>
 
 					<template #after>

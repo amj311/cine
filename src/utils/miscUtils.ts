@@ -103,3 +103,8 @@ if (!Array.prototype.peek) {
 export function pluralize(qty: number) {
 	return qty === 1 ? '' : 's';
 }
+
+
+export async function wait(ms: number) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}

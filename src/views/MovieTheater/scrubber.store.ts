@@ -45,7 +45,7 @@ export const useScrubberStore = defineStore('Scrubber', () => {
 	const hasChanges = computed(() => savedProfile.value && activeProfile.value && JSON.stringify(activeProfile.value) !== savedProfile.value);
 
 	const nextScrub = ref<Scrub | null>(null);
-	let scheduledTimeout: ReturnType<typeof setTimeout> = 0;
+	let scheduledTimeout: ReturnType<typeof setTimeout> = 0 as any;
 	const mediaEl = ref<HTMLVideoElement | null>(null);
 
 	async function loadProfileForPath() {

@@ -109,11 +109,15 @@ type CinemaItemStrat = Join<LibraryItemStratBase, Stratified<
 	}
 >>
 
-type MovieCinemaStrat = Join<CinemaItemStrat, Stratified<{
-	cinemaType: 'movie',
-	movie: MovieContent,
-	menu?: object,
-}>>
+type MovieCinemaStrat = Join<CinemaItemStrat, Stratified<
+	{
+		cinemaType: 'movie',
+		movie: MovieContent,
+	},
+	{
+		menu?: object,
+	}
+>>
 
 type MovieContent = TitleContent & {
 	type: 'movie',
@@ -392,15 +396,6 @@ export class LibraryService {
 			});
 			if (movieFile) {
 				const movieContent: MovieContent = this.createMovieContent(movieFile.confirmedPath)!;
-				let menu;
-				const menuFile = children.files.find(f => f.name === "menu.json");
-				if (menuFile) {
-					try {
-						menu = JSON.parse(readFileSync(menuFile.confirmedPath.absolutePath, 'utf8'));
-					} catch (e) {
-						console.error("Failed to parse json menu!", path)
-					}
-				}
 
 				return {
 					libraryTier: 'title',
@@ -415,7 +410,6 @@ export class LibraryService {
 					sortKey: LibraryService.createSortKey(folderName),
 					listName: name,
 					poster: posterPath,
-					menu
 				};
 			}
 		}
@@ -556,8 +550,18 @@ export class LibraryService {
 			}
 			else if (item.type === 'cinema' && item.cinemaType === 'movie') {
 				const extraVideos = childrenDir.files.filter((file) => file.confirmedPath.relativePath !== item.movie.relativePath);
+				let menu;
+				const menuFile = childrenDir.files.find(f => f.name === "menu.json");
+				if (menuFile) {
+					try {
+						menu = JSON.parse(readFileSync(menuFile.confirmedPath.absolutePath, 'utf8'));
+					} catch (e) {
+						console.error("Failed to parse json menu!", menuFile.confirmedPath.absolutePath)
+					}
+				}
 				details = {
-					extras: LibraryService.prepareExtras(extraVideos.map((file) => file.confirmedPath))
+					extras: LibraryService.prepareExtras(extraVideos.map((file) => file.confirmedPath)),
+					menu
 				}
 			}
 			else if (item.type === 'audiobook' || item.type === 'album') {
