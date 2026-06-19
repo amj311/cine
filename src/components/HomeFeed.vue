@@ -108,14 +108,15 @@ function formatRuntime(minutes: number) {
 													v-if="!item.libraryItems.content || !item.libraryItems.parentTitle"
 													tvNavable
 													:action="() => useQueryPathStore().goTo(item.relativePath)"
-													:progress="item.watchProgress"
-													:aspectRatio="'wide'"
-													:title="item.title"
-													:subtitle="`${timeRemaining(item.watchProgress)} left`"
-													:surprise="item.libraryItems.parentTitle.surprise"
-												>
-													<template #fallbackIcon>💿</template>
-												</MediaCard>
+														:infoAction="() => item.libraryItems.parentTitle && useQueryPathStore().goTo(item.libraryItems.parentTitle.relativePath)"
+														:progress="item.watchProgress"
+														:aspectRatio="'wide'"
+														:title="item.title"
+														:subtitle="`${timeRemaining(item.watchProgress)} left`"
+														:surprise="item.libraryItems.parentTitle?.surprise"
+													>
+														<template #fallbackIcon>💿</template>
+													</MediaCard>
 
 												<MediaCard
 													v-else-if="item.libraryItems.content.type === 'track'"
@@ -131,7 +132,7 @@ function formatRuntime(minutes: number) {
 													:aspectRatio="'square'"
 													:title="item.libraryItems.parentTitle.title"
 													:subtitle="`${timeRemaining(item.watchProgress)} left`"
-													:surprise="item.libraryItems.parentTitle.surprise"
+												:surprise="item.libraryItems.parentTitle?.surprise"
 													:loading="isLoadingMetadata"
 												>
 													<template #fallbackIcon>💿</template>
@@ -146,9 +147,10 @@ function formatRuntime(minutes: number) {
 													:aspectRatio="'wide'"
 													:title="contentName(item.libraryItems.content, item.libraryItems.parentTitle)"
 													:subtitle="item.isUpNext ? (item.duration_s ? formatRuntime(item.duration_s / 60) : 'Up Next') : `${timeRemaining(item.watchProgress)} left`"
-													:surprise="item.libraryItems.parentTitle.surprise"
-													:loading="isLoadingMetadata"
-												>
+													:surprise="item.libraryItems.parentTitle?.surprise"
+														:loading="isLoadingMetadata"
+															:infoAction="() => item.libraryItems.parentTitle && useQueryPathStore().goTo(item.libraryItems.parentTitle.relativePath)"
+														>
 													<template #fallbackIcon>🎞️</template>
 													<template #poster v-if="item.isUpNext">
 														<div class="h-full w-full flex align-items-end justify-content-start p-2">

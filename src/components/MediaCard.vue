@@ -23,6 +23,7 @@ const props = defineProps<{
 	playSrc?: string;
 	tvNavable?: boolean;
 	action?: () => void;
+	infoAction?: () => void;
 	loading?: boolean;
 	surprise?: {
 		relativePath: string,
@@ -137,6 +138,7 @@ function activate() {
 					<slot name="poster" />
 				</div>
 
+
 				<div v-if="progress?.percentage" class="progress-bar-wrapper">
 					<ProgressBar :progress="Math.max(3, progress.percentage)" />
 				</div>
@@ -152,9 +154,23 @@ function activate() {
 
 			<Skeleton v-if="loading" width="100%" height="100%" />
 		</div>
-		<div v-if="title || subtitle" class="mt-1 p-1">
-			<div v-if="title" class="title">{{ hideSurprise ? (surprise?.title || 'Surprise!') : title }}</div>
-			<div v-if="subtitle" class="subtitle text-capitalize" style="opacity: .7">{{ hideSurprise ? (canRevealSurprise ? 'Open now!' : 'Coming soon') : subtitle }}</div>
+		<div v-if="title || subtitle" class="mt-1 p-1 flex align-items-center justify-content-between">
+			<div class="flex-grow-1 overflow-hidden">
+				<div v-if="title" class="title">{{ hideSurprise ? (surprise?.title || 'Surprise!') : title }}</div>
+				<div v-if="subtitle" class="subtitle text-capitalize" style="opacity: .7">{{ hideSurprise ? (canRevealSurprise ? 'Open now!' : 'Coming soon') : subtitle }}</div>
+			</div>
+			<Button
+				v-if="infoAction"
+				@click.stop="infoAction"
+				@keydown.enter.prevent="infoAction"
+				@keydown.space.prevent="infoAction"
+				:tabindex="0"
+				:aria-label="'View details'"
+				data-focus-priority="1"
+				icon="pi pi-info-circle"
+				text
+				severity="secondary"
+			/>
 		</div>
 	</div>
 
@@ -324,4 +340,27 @@ function activate() {
 .surprise-image {
 	background: url(@/assets/gift.png) center / contain no-repeat;
 }
+
+	// .info-button-wrapper {
+	// 	position: absolute;
+	// 	bottom: 8px;
+	// 	right: 8px;
+	// 	width: 2rem;
+	// 	height: 2rem;
+	// 	display: flex;
+	// 	align-items: center;
+	// 	justify-content: center;
+	// 	border-radius: 50%;
+	// 	background: rgba(0, 0, 0, 0.6);
+	// 	color: white;
+	// 	font-size: 0.9rem;
+	// 	cursor: pointer;
+	// 	transition: background 200ms ease-in-out;
+	// 	z-index: 2;
+
+	// 	&:hover,
+	// 	&[tv-focus] {
+	// 		background: rgba(0, 0, 0, 0.85);
+	// 	}
+	// }
 </style>
