@@ -368,6 +368,19 @@ export class LibraryService {
 		const posterFile = children.files.find(f => f.name.includes('poster.'));
 		const posterPath = posterFile ? '/media/' + posterFile.confirmedPath.relativePath : undefined;
 
+		if (name === 'menu') {
+			return {
+				libraryTier: 'directory',
+				type: 'folder',
+				name,
+				relativePath: path.relativePath,
+				folderName: folderName,
+				feedOrder: null,
+				listName: name,
+				sortKey: LibraryService.createSortKey(folderName),
+			}
+		}
+
 		// Take care of series and movies first
 		if (year) {
 			// Search for "Season" folders
