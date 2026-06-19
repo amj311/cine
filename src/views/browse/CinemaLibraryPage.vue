@@ -204,7 +204,7 @@ const letterGroups = computed(() => {
 					>
 						<MediaCard
 							:aspectRatio="'wide'"
-							:imageUrl="item.still_thumb"
+							:imageUrl="'/thumb/' + encodeMediaPath(item.relativePath) + '?seek=20'"
 							:title="item.name"
 							:playSrc="item.relativePath"
 						/>
