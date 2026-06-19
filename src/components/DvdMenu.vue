@@ -16,6 +16,7 @@ const parentTitlePath = ref('');
 // const videoPlayerRef = ref<InstanceType<typeof VideoPlayer>>();
 const preloaderRef = ref<HTMLVideoElement>();
 const showStartButton = ref(false);
+const fatalError = ref<Error | null>(null);
 
 
 onMounted(() => {
@@ -97,6 +98,7 @@ function listenWithCleanup(event: keyof HTMLVideoElementEventMap, handler) {
 async function waitForVideoEnd() {
 	return new Promise<void>((res, rej) => {
 		listenWithCleanup('ended', (cleanup) => { cleanup(); res(); })
+		listenWithCleanup('error', (cleanup) => { cleanup(); rej(new Error("Error playing video!")); })
 	})
 }
 
@@ -108,6 +110,7 @@ async function waitForVideoTime(time_sec: number) {
 				res();
 			}
 		})
+		listenWithCleanup('error', (cleanup) => { cleanup(); rej(new Error("Error playing video!")); })
 	})
 }
 
@@ -148,7 +151,9 @@ async function enterPage(pageId: string, skipEntry = false) {
 	}
 
 	if (page.backgroundVideo) {
-		await setBackgroundVideo(page.backgroundVideo);
+		await setBackgroundVideo(page.backgroundVideo).catch((error) => {
+			fatalError.value = error;
+		});
 		await nextTick();
 	}
 
@@ -166,53 +171,20 @@ async function enterPage(pageId: string, skipEntry = false) {
 async function playSequence(sequence) {
 	for (const step of sequence) {
 		if (step.backgroundVideo) {
-			await setBackgroundVideo(step.backgroundVideo);
-			if (step.backgroundVideo.end) {
-				await waitForVideoTime(step.backgroundVideo.end);
+			try {
+				await setBackgroundVideo(step.backgroundVideo);
+
+				if (step.backgroundVideo.end) {
+					await waitForVideoTime(step.backgroundVideo.end);
+				}
+				else {
+					await waitForVideoEnd();
+				}
 			}
-			else {
-				await waitForVideoEnd();
-			}
-		}
-	}
-}
-
-async function preloadPageVideos(page) {
-	// gather all video urls
-	const paths: string[] = [];
-
-	for (const seq of (page.entrySequence || []).concat(page.exitSequence || [])) {
-		if (seq.backgroundVideo) {
-			paths.push(seq.backgroundVideo.path);
-		}
-	}
-
-	if (page.backgroundVideo) {
-		paths.push(page.backgroundVideo.path);
-	}
-
-	for (const frame of page.frames || []) {
-		for (const element of frame.elements || []) {
-			const path = element.action?.args?.path || element.action?.args?.video?.path;
-			if (path) {
-				paths.push(path);
+			catch (error) {
+				console.error('Error occurred while playing sequence step:', error);
 			}
 		}
-	}
-
-	for (const path of paths) {
-		preloadPath.value = buildMediaPath(path);
-		await nextTick();
-		const videoRef = preloaderRef.value;
-		if (!videoRef) {
-			console.error('Could not preload video', path);
-			continue;
-		}
-		videoRef.load();
-		await new Promise(res => {
-			videoRef?.addEventListener('canplay', res);
-			videoRef?.addEventListener('error', res);
-		})
 	}
 }
 
@@ -240,6 +212,7 @@ async function setBackgroundVideo(backgroundVideo) {
 
 	if (previousBackgroundVideoPath !== activeBackgroundVideo.value?.path) {
 		previousBackgroundVideoEl?.pause();
+		previousBackgroundVideoEl?.removeEventListener('timeupdate', loopHandler);
 		await new Promise<void>((resolve, reject) => {
 			videoEl.addEventListener('canplay', () => {
 				resolve();
@@ -249,9 +222,11 @@ async function setBackgroundVideo(backgroundVideo) {
 			});
 		}).catch((error) => {
 			console.error('Error occurred while waiting for video to load:', error);
+			throw new Error("Error occurred while waiting for video to load!");
 		});
 		// queuedVideos.value.delete(previousBackgroundVideoPath);
 	}
+
 
 	topVideoPath.value = activeBackgroundVideo.value.path;
 }
@@ -346,7 +321,6 @@ defineExpose({
 
 <template>
 	<div class="wrapper tvNavigationFocusArea" ref="wrapperRef" v-if="menu">
-		<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="$emit('close')" class="fixed top-0 left-0 text-xl" style="z-index: 2" />
 
 		<!-- <video ref="preloaderRef" class="video-player" :controls="false" :src="useApiStore().getStreamUrl(preloadPath)" preload="true" crossorigin="use-credentials" allow></video> -->
 		<div v-for="path in queuedVideos" class="absolute-full queued-video" :class="{ 'top': path === topVideoPath ? 1 : 0 }" ><VideoPlayer :key="path" :ref="(ref) => videoPlayerRefs.set(path, ref as InstanceType<typeof VideoPlayer>)" :hideControls="true" :hideLoading="true" :inactive="true" :relativePath="buildMediaPath(path)" /></div>
@@ -406,9 +380,14 @@ defineExpose({
 				<Button class="square text-7xl" text btn-blur-hover btn-drop-shadow severity="contrast" data-focus-priority="1">
 					<i class="material-symbols-outlined">play_arrow</i>
 				</Button>
-			</div>
 		</div>
-	</template>
+
+		<div v-if="fatalError" class="absolute-full flex-center-all bg-black text-white">
+			<p>Menu could not be loaded :(</p>
+		</div>
+		<Button variant="text" severity="contrast" icon="pi pi-arrow-left" @click="$emit('close')" class="fixed top-0 left-0 text-xl" style="z-index: 2" />
+	</div>
+</template>
 
 <style scoped lang="scss">
 .wrapper {

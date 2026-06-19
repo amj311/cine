@@ -51,7 +51,7 @@ const probe = ref<any>(null);
 const playablePath = computed(() => contentFile.value?.relativePath);
 
 const dvdMenuRef = ref<InstanceType<typeof DvdMenu>>();
-const doDvdMenu = computed(() => Boolean(parentTitle.value?.menu));
+const doDvdMenu = computed(() => Boolean(parentTitle.value?.menu) && contentFile.value?.type === 'movie');
 const hasShownMenu = ref(false);
 const showDvdMenu = ref(false);
 
