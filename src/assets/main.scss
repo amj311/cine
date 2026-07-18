@@ -94,6 +94,10 @@ h1, h2, h3, h4, h5, h6 {
 	cursor: pointer;
 	text-decoration: none;
 
+	&.primary {
+		color: var(--p-primary-color);
+	}
+
 	&:hover {
 		text-decoration: underline;
 	}

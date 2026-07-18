@@ -23,7 +23,9 @@ const state = reactive({
 	familyName: '',
 	email: '',
 	password: '',
+	passwordConfirm: '',
 	showPassword: false,
+	showPasswordConfirm: false,
 	mode: 'login',
 	hasSentEmail: false,
 	isLoading: false,
@@ -35,13 +37,25 @@ async function loginErrors(op: () => void) {
 		await op();
 	}
 	catch (error: any) {
+		// weak password instructions
+		if (error.message.includes('auth/weak-password')) {
+			const message = error.message.split('Firebase: ')[1]?.split(' (auth/weak-password)')[0];
+			userStore.loginError = message;
+			return;
+		}
+
 		const errorGroups = [
 			{
 				message: 'Check your email/password',
 				matches: [
 					'auth/invalid-email',
+					'auth/invalid-credential',
 					'auth/missing-password',
-					'auth/weak-password',
+				],
+			},
+			{
+				message: 'That email already has an account.',
+				matches: [
 					'auth/email-already-in-use',
 				],
 			},
@@ -59,7 +73,6 @@ async function loginErrors(op: () => void) {
 			}
 		}
 
-		console.error(error.message);
 		userStore.loginError = "Unknown error";
 	}
 	finally {
@@ -75,6 +88,10 @@ async function loginWithEmail() {
 }
 async function createEmailUser() {
 	loginErrors(async () => {
+		if (state.password !== state.passwordConfirm) {
+			userStore.loginError = "Passwords do not match";
+			return;
+		}
 		await AuthService.createEmailUser(state.email, state.password, state.givenName, state.familyName);
 		emit('authenticated');
 	})
@@ -211,7 +228,7 @@ onBeforeUnmount(() => {
 						class="w-full"
 					/>
 
-					<template v-if="state.mode === 'signup'">
+					<!-- <template v-if="state.mode === 'signup'">
 						<InputText
 							transparent
 							type="text"
@@ -228,7 +245,7 @@ onBeforeUnmount(() => {
 							size="large"
 							class="w-full"
 						/>
-					</template>
+					</template> -->
 
 
 					<InputGroup>
@@ -256,6 +273,31 @@ onBeforeUnmount(() => {
 						</template>
 					</InputGroup>
 
+					<!-- confirm password -->
+					<template v-if="state.mode === 'signup'">
+						<InputGroup>
+							<InputText
+								transparent
+								v-model="state.passwordConfirm"
+								placeholder="Confirm Password"
+								:type="state.showPasswordConfirm ? 'text' : 'password'"
+								size="large"
+								class="w-full"
+							/>
+							<InputGroupAddon
+								transparent
+								style="cursor: pointer"
+								@click="state.showPasswordConfirm = !state.showPasswordConfirm"
+								tabindex="0"
+							>
+								<i
+									class="pi"
+									:class="state.showPasswordConfirm ? 'pi-eye-slash' : 'pi-eye'"
+								/>
+							</InputGroupAddon>
+						</InputGroup>
+					</template>
+
 
 					<div class="flex flex-column align-items-center mt-3 gap-4">
 						<template v-if="state.mode === 'signup'">
@@ -265,6 +307,7 @@ onBeforeUnmount(() => {
 								:loading="state.isLoading"
 								class="w-full my-3 justify-content-around"
 								role="submit"
+								@click="doFormSubmit"
 							>
 								Create Account
 							</button>

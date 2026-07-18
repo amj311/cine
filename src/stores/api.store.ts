@@ -17,7 +17,7 @@ export const useApiStore = defineStore('Api', () => {
 		...(window.location.href.includes(':5') ? [{ hostname: 'Local', baseUrl: "http://localhost:5000", appUrl: "http://localhost:5173" }] : []),
 		{ hostname: 'Remote', baseUrl: import.meta.env.VITE_REMOTE_HOST_URL },
 		{ hostname: 'LAN', baseUrl: import.meta.env.VITE_LAN_HOST_URL },
-	]
+	];
 	const additionalHosts = ref<Array<Host>>(loadCustomHosts());
 	const availableHosts = computed(() => standardHosts.concat(additionalHosts.value));
 
@@ -31,14 +31,6 @@ export const useApiStore = defineStore('Api', () => {
 			baseURL: apiUrl.value,
 			withCredentials: true,
 		})
-
-		// client.interceptors.request.use(async (config) => {
-		// 	const token = await AuthService.getToken();
-		// 	if (token) {
-		// 		config.headers.Authorization = token;
-		// 	}
-		// 	return config;
-		// });
 
 		client.interceptors.response.use(null, async (error) => {
 			if (error.isAxiosError && error.response?.status === 401) {

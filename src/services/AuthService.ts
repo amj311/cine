@@ -92,22 +92,25 @@ export const AuthService = {
 			throw new Error(error.message);
 		}
 
-		this.setAuthUser(newFbUser);
+		// if successful, do login
+		await this.signInWithEmail(email, password, true);
 	},
 
-	async signInWithEmail(email, password) {
+	async signInWithEmail(email, password, skipServerAuth = false) {
 		try {
 			// first try direct login
-			try {
-				// authenticate with server directly for LAN setup
-				await useApiStore().api.post('/auth', {
-					emailHash: SHA256(email),
-					passHash: SHA256(password),
-				});
-				await this.restoreActiveSession();
-				return;
+			if (!skipServerAuth) {
+				try {
+					// authenticate with server directly for LAN setup
+					await useApiStore().api.post('/auth', {
+						emailHash: SHA256(email),
+						passHash: SHA256(password),
+					});
+					await this.restoreActiveSession();
+					return;
+				}
+				catch { }
 			}
-			catch { }
 
 			// then try firebase
 			this.pauseAuthListeners = true;
