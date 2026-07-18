@@ -53,6 +53,11 @@ export class LoanService {
 		return await loanStore.getValues();
 	}
 
+	public static async getLoansByEmail(email: string) {
+		const allLoans = await loanStore.getValues();
+		return allLoans.filter(loan => loan.email === email);
+	}
+
 	public static async upsertLoan(loan: Loan) {
 		await loanStore.set(loan.relativePath, loan);
 	}

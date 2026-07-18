@@ -166,7 +166,7 @@ function formatRuntime(minutes: number) {
 						</div>
 					</template>
 
-					<template v-if="feedRow.type === 'new-items'">
+					<template v-if="feedRow.type === 'items'">
 						<h3>{{ feedRow.title }}</h3>
 						<div class="feed-scroll-wrapper">
 							<Scroll>

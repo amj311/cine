@@ -406,7 +406,7 @@ async function returnLoan() {
 
 			<Message v-if="loan && (canStream || useUserStore().isOwner)" severity="warn" class="flex-row-center">
 				<template #icon><i class="material-symbols-outlined text-2xl">hand_package</i></template>
-				This title is on loan until {{ new Date(loan.expires).toLocaleDateString() }}
+				This title is on loan {{ loan.expires ? `until ${ new Date(loan.expires).toLocaleDateString() }` : 'indefinitely' }}
 				<Button v-if="useUserStore().isOwner" text severity="info" @click="manageLoan">Manage Loan</Button>
 				<Button v-else-if="canStream" text severity="info" @click="returnLoan">Return Loan</Button>
 			</Message>

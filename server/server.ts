@@ -1079,8 +1079,28 @@ app.get('/api/feed', async (req, res) => {
 		if (newItems.length > 0) {
 			feedLists.push({
 				title: "New Media",
-				type: "new-items",
+				type: "items",
 				items: newItems,
+			});
+		}
+
+		// Loaned Items
+		const email = getSessionEmail();
+		const activeLoans = await LoanService.getLoansByEmail(email);
+		const loanedItems = (await Promise.all(activeLoans.map(async (loan) => ({
+			libraryItem: {
+				...await LibraryService.parseFolderToItem(DirectoryService.confirmPath(loan.relativePath)!),
+				watchProgress: await WatchProgressService.getWatchProgress(DirectoryService.confirmPath(loan.relativePath)!),
+			},
+			relativePath: loan.relativePath,
+			expires: loan.expires,
+		})))).filter(item => item.libraryItem);
+
+		if (loanedItems.length > 0) {
+			feedLists.push({
+				title: "Your Active Loans",
+				type: "items",
+				items: loanedItems,
 			});
 		}
 

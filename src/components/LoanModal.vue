@@ -70,7 +70,7 @@ async function save() {
 		await modal.value?.close();
 		toast.add({
 			life: 5000,
-			severity: 'error',
+			severity: 'success',
 			summary: 'Title loaned!',
 		})
 	}
