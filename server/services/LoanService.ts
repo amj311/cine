@@ -36,6 +36,11 @@ export class LoanService {
 		if (!contentLibraryItem.parentTitle) {
 			throw new Error("Streamable file must have parent library!");
 		}
+
+		if ('isPublic' in contentLibraryItem.parentTitle && contentLibraryItem.parentTitle.isPublic) {
+			return true;
+		}
+
 		const loan = await this.getLoan(contentLibraryItem.parentTitle.relativePath);
 		return loan ? email === loan.email : email === process.env.VITE_OWNER_EMAIL;
 	}

@@ -36,6 +36,7 @@ type LibraryItemStratBase = Stratified<
 		sortKey: string,
 		imdbId?: string,
 		poster?: string,
+		public?: boolean,
 	},
 	{},
 	{
@@ -362,7 +363,7 @@ export class LibraryService {
 
 	private static async computeFolderToItem(path: ConfirmedPath): Promise<Base<LibraryItemStrat>> {
 		const folderName = path.relativePath.split('/').pop() || path.relativePath;
-		const { name, year, imdbId } = LibraryService.parseNamePieces(folderName);
+		const { name, year, imdbId, isPublic } = LibraryService.parseNamePieces(folderName);
 		const children = await DirectoryService.listDirectory(path);
 
 		const posterFile = children.files.find(f => f.name.includes('poster.'));
@@ -383,22 +384,27 @@ export class LibraryService {
 
 		// Take care of series and movies first
 		if (year) {
+			const commonAttributes = {
+				libraryTier: 'title',
+				type: 'cinema',
+				name,
+				year,
+				imdbId: imdbId || undefined,
+				relativePath: path.relativePath,
+				folderName: folderName,
+				sortKey: LibraryService.createSortKey(folderName),
+				listName: name,
+				poster: posterPath,
+				isPublic: isPublic || undefined,
+			} as const;
+
 			// Search for "Season" folders
 			const allSeasonFolders = children.folders.filter((folder) => folder.name.toLowerCase().includes('season'));
 			if (allSeasonFolders.length > 0) {
 				return {
-					libraryTier: 'title',
-					type: 'cinema',
+					...commonAttributes,
 					cinemaType: 'series',
-					name,
-					year,
-					imdbId: imdbId || undefined,
-					relativePath: path.relativePath,
-					folderName: folderName,
 					numSeasons: allSeasonFolders.length,
-					sortKey: LibraryService.createSortKey(folderName),
-					listName: name,
-					poster: posterPath,
 				};
 			}
 
@@ -411,18 +417,9 @@ export class LibraryService {
 				const movieContent: MovieContent = this.createMovieContent(movieFile.confirmedPath)!;
 
 				return {
-					libraryTier: 'title',
-					type: 'cinema',
+					...commonAttributes,
 					cinemaType: 'movie',
-					name,
-					year,
-					imdbId: imdbId || undefined,
-					relativePath: path.relativePath,
-					folderName: folderName,
 					movie: movieContent,
-					sortKey: LibraryService.createSortKey(folderName),
-					listName: name,
-					poster: posterPath,
 				};
 			}
 		}
@@ -1105,10 +1102,12 @@ export class LibraryService {
 		const year = YearRegExp.exec(folderName)?.[1];
 		const titleBeforeYear = folderName.split(YearRegExp)[0].trim();
 
-		const versionRegExp = RegExp(/.version(?<version>[^\.]{1,50})\./g);
+		const versionRegExp = RegExp(/\.version(?<version>[^\.]{1,50})\./g);
 		const version = versionRegExp.exec(nameOrPath)?.groups?.version?.replaceAll('_', ' ').trim() || null;
 
-		const imdbRegExp = RegExp(/.imdb-(?<imdbId>tt\d{7,8})/g);
+		const publicRegExp = RegExp(/\.public/g);
+
+		const imdbRegExp = RegExp(/\.imdb-(?<imdbId>tt\d{7,8})/g);
 		const imdbId = imdbRegExp.exec(nameOrPath)?.groups?.imdbId?.trim() || null;
 
 		return {
@@ -1116,6 +1115,7 @@ export class LibraryService {
 			year,
 			version,
 			imdbId,
+			isPublic: Boolean(publicRegExp.test(nameOrPath)),
 		}
 	}
 

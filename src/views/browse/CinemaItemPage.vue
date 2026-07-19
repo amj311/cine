@@ -278,6 +278,7 @@ const loan = computed(() => props.libraryItem.loan);
 const loanModal = ref<InstanceType<typeof LoanModal>>();
 
 const canStream = computed(() => {
+	if (props.libraryItem.isPublic) return true;
 	return loan.value ? loan.value.email === useUserStore().currentUser.email : useUserStore().isOwner;
 })
 

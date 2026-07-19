@@ -21,7 +21,7 @@ function subtitle(item: any): string {
 	if (item.year) return item.year;
 	if (item.artist) return item.artist;
 	if (item.author) return item.author;
-	if (item.numSeasons) return `${item.numSeasons} Season${item.numSeasons !== 1 ? 's' : ''}`;
+	if (item.numSeasons) return `${item.numSeasons} Season${item.numSeasons === 1 ? '' : 's'}`;
 	return '';
 }
 </script>

@@ -33,7 +33,7 @@ const props = defineProps<{
 				:imageUrl="libraryItem.poster || metadata?.poster_thumb"
 				:aspectRatio="'tall'"
 				:title="libraryItem.name"
-				:subtitle="`${libraryItem.numSeasons} Season${libraryItem.numSeasons.length ? 's' : ''}`"
+				:subtitle="`${libraryItem.numSeasons} Season${libraryItem.numSeasons === 1 ? '' : 's'}`"
 				:progress="libraryItem.movie?.watchProgress"
 				:action="() => useQueryPathStore().goTo(libraryItem.relativePath)"
 				:loading="isLoadingMetadata"
