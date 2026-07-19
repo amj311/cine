@@ -2,7 +2,7 @@
 	setup
 	lang="ts"
 >
-import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useBackgroundStore } from '@/stores/background.store';
 import { useApiStore } from '@/stores/api.store';
 import { useWatchProgressStore, type Bookmark, type WatchProgress } from '@/stores/watchProgress.store';
@@ -106,31 +106,33 @@ const isM4b = computed(() => true);
 const totalTime = computed(() => isM4b.value ? props.libraryItem?.chapters[0]?.trackDuration : props.libraryItem?.chapters.reduce((acc: number, chapter: any) => acc + chapter.duration, 0));
 
 async function playChapter(chapter: Chapter, time: number = chapter.start_s || 0) {
+	console.log("playChapter", chapter, props.libraryItem.chapters);
 	if (!audioRef.value) {
 		return;
 	}
 	
-	currentChapterIdx.value = props.libraryItem.chapters.findIndex(c => c === chapter);
+	currentChapterIdx.value = props.libraryItem.chapters.findIndex(c => c.id === chapter.id);
+	const newChapter = props.libraryItem.chapters[currentChapterIdx.value];
 
 	// CURRENT CHAPTER REF WILL UPDATE HERE
-	if (!currentChapter.value) {
+	if (!newChapter) {
 		throw new Error("Could not find chapter");
 	}
 
 	playingTrack.value = {
-		relativePath: currentChapter.value.relativePath,
-		duration: currentChapter.value.trackDuration,
+		relativePath: newChapter.relativePath,
+		duration: newChapter.trackDuration,
 	}
 
 	audioRef.value.src = useApiStore().apiUrl + ('/stream?path=') + playingTrack.value!.relativePath;
 	await audioRef.value.play();
-	audioRef.value.currentTime = time ?? currentChapter.value.start_s;
+	audioRef.value.currentTime = time ?? newChapter.start_s;
 	startProgressUpdate();
 
 	// set device media image
 	if ('mediaSession' in navigator) {
 		navigator.mediaSession.metadata = new MediaMetadata({
-			title: currentChapter.value.title,
+			title: newChapter.title,
 			artist: props.libraryItem.author,
 			album: props.libraryItem.title,
 			artwork: [
