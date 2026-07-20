@@ -48,6 +48,7 @@ type LibraryItemStratBase = Stratified<
 >
 
 type ContentFileBase = {
+	type: string,
 	libraryTier: 'content-file',
 	fileName?: string,
 	relativePath: RelativePath,
@@ -464,7 +465,8 @@ export class LibraryService {
 		}
 
 		// Identify an album if all children are audio files
-		const allChildrenAreAudio = (await Promise.all(children.files.map(async file => LibraryService.determineFileType(file.confirmedPath)))).every(type => type === 'audio');
+		// Use computed content files because they are cached for each path
+		const allChildrenAreAudio = (await Promise.all(children.files.map(async file => await LibraryService.parseFileToContentItem(file.confirmedPath)))).every(item => item?.type === 'audio');
 		if (children.files.length > 0 && allChildrenAreAudio) {
 			const firstTrackProbe = await ProbeService.getTrackData(children.files[0].confirmedPath);
 			if (firstTrackProbe?.genre === 'Audiobook' || children.files[0].name.endsWith('.m4b')) {

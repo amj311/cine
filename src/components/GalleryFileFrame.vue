@@ -143,6 +143,7 @@ const loadError = ref<any>(null);
 				ref="videoPlayer"
 				:relativePath="file.relativePath"
 				:hideControls="hideControls"
+				:hideLoading="true"
 				:autoplay="autoplay"
 				style="width: 100%; height: 100%;"
 				:style="{ objectFit, background: 'transparent' }"

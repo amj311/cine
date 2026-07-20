@@ -22,7 +22,7 @@ async function loadFeed() {
 		const { data } = await useApiStore().api.get('/feed');
 		const feedRows = data.data || [];
 		if (!useUserStore().isOwner && useAppNavigationStore().libraries?.length) {
-			feedRows.unshift({
+			feedRows.push({
 				type: 'libraries',
 				title: 'Your Shared Libraries',
 				items: useAppNavigationStore().libraries,
