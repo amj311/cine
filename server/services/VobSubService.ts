@@ -69,8 +69,8 @@ export class VobSubService {
 			mkvTrackId = trackIndex;
 		} else {
 			// Remux the single subtitle stream into a temp MKV
-			await useFfmpeg(confirmedPath.absolutePath as any, (ffmpeg, resolve, reject) => {
-				ffmpeg
+			await useFfmpeg<string | null>(async (ffmpeg, resolve, reject) => {
+				ffmpeg(confirmedPath.absolutePath)
 					.outputOptions([`-map 0:${trackIndex}`, '-c copy', '-preset veryfast'])
 					.output(TEMP_MKV_PATH)
 					.on('end', resolve)

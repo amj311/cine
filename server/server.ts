@@ -605,9 +605,9 @@ app.get("/api/stream", async function (req, res) {
 
 	if (resolvedPath.relativePath.endsWith('.3gp')) {
 		const outputFilePath = path.join(__dirname, '../dist/assets/conversion.mp4');
-		await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
+		await useFfmpeg(async (ffmpeg, resolve, reject) => {
 			// Convert 3GP to MP4
-			ffmpeg.output(outputFilePath)
+			ffmpeg(resolvedPath.absolutePath).output(outputFilePath)
 				.outputOptions('-preset veryfast')
 				.on('end', () => {
 					resolve();
@@ -706,8 +706,9 @@ app.post('/api/prepareAudio', async (req, res) => {
 			// Use ffmpeg to extract indicated audio stream from video file as mp4
 			// This should be coming from an m-4 video file, so keeping the same codec means we can do a direct copy
 			const outputFilePath = path.join(__dirname, '../dist/assets/secondary-audio.mp4');
-			await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
-				ffmpeg.outputOptions([`-map 0:${index}`, '-c copy'])
+			await useFfmpeg(async (ffmpeg, resolve, reject) => {
+				ffmpeg(resolvedPath.absolutePath)
+					.outputOptions([`-map 0:${index}`, '-c copy'])
 					.output(outputFilePath)
 					.on('progress', (data: { percent: number }) => {
 						progress(data.percent)
@@ -774,8 +775,8 @@ app.post('/api/remux', async (req, res) => {
 			for (const file of fs.readdirSync(cacheDir)) {
 				fs.rmSync(path.join(cacheDir, file));
 			}
-			await useFfmpeg(resolvedPath.absolutePath, (ffmpeg, resolve, reject) => {
-				ffmpeg
+			await useFfmpeg(async (ffmpeg, resolve, reject) => {
+				ffmpeg(resolvedPath.absolutePath)
 					.outputOptions(['-c:v copy', '-c:a copy', '-sn', '-movflags +faststart'])
 					.output(cachePath)
 					.on('progress', (data: { percent: number }) => {
@@ -1041,7 +1042,6 @@ app.get('/api/feed', async (req, res) => {
 
 		const libraries = await LibraryService.getRootLibraries();
 
-
 		// // New Movies and shows!
 		// Need to get filestats for all items
 		const mediaTypes = ['cinema', 'audio'];
@@ -1259,13 +1259,13 @@ app.get('/api/subtitles', async (req, res) => {
 				}
 				res.setHeader('Content-Type', 'text/vtt');
 
-				useFfmpeg(fullPath.absolutePath, (ffmpeg, resolve, reject) => {
-					const command = ffmpeg
+				useFfmpeg(async (ffmpeg, resolve, reject) => {
+					const command = ffmpeg(fullPath.absolutePath)
 						.outputOptions(`-map 0:${subtitleIndex}`)
 						.outputOptions('-c:s webvtt')
 						.format('webvtt');
 
-					command.on('end', () => resolve(undefined));
+					command.on('end', () => resolve());
 					command.on('error', (err: any) => {
 						console.error("Error while extracting subtitles:", err);
 						if (!res.headersSent) {
@@ -1283,8 +1283,9 @@ app.get('/api/subtitles', async (req, res) => {
 			// 	// use ffmpeg to pass the data into a buffer and send it as text
 			// 	const subtitleIndex = subtitleStream.index;
 			// 	const outputFilePath = path.join(__dirname, '../dist/assets/output.txt');
-			// 	useFfmpeg(fullPath.absolutePath, (ffmpeg) => {
-			// 		ffmpeg.outputOptions(`-map 0:${subtitleIndex}`)
+			// 	useFfmpeg(async (ffmpeg, resolve, reject) => {
+			// 		ffmpeg(fullPath.absolutePath)
+			// 			.outputOptions(`-map 0:${subtitleIndex}`)
 			// 			.outputOptions('-f srt') // Output format as SRT
 			// 			.save(outputFilePath)
 			// 			.on('end', () => {

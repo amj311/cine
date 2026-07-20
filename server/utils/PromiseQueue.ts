@@ -7,6 +7,10 @@ export class PromiseQueue {
 		} = {}
 	) { };
 
+	get size(): number {
+		return this.queue.length;
+	}
+
 	public add<T>(promiseFn: () => Promise<T>): Promise<T> {
 		return new Promise((resolve, reject) => {
 			this.queue.push(() => promiseFn().then(resolve).catch(reject));

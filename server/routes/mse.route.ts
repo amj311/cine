@@ -5,6 +5,7 @@ import { ProbeService } from '../services/ProbeService';
 import { LoanService } from '../services/LoanService';
 import { getSessionEmail } from '../services/SessionService';
 import ffmpeg from 'fluent-ffmpeg';
+import { useFfmpeg } from '../utils/ffmpeg';
 
 const route = express.Router({ mergeParams: true });
 
@@ -219,7 +220,8 @@ route.get('/chunk', async (req, res) => {
 	req.on('close', cleanup);
 	req.on('error', cleanup);
 
-	cmd = ffmpeg(resolvedPath.absolutePath)
+	await useFfmpeg(async (ffmpeg, resolve, reject) => {
+		cmd = ffmpeg(resolvedPath.absolutePath)
 		.seekInput(startSec)
 		.duration(endSec - startSec)
 		.outputOptions([
@@ -239,9 +241,12 @@ route.get('/chunk', async (req, res) => {
 					res.status(500).end();
 				}
 			}
+			reject(err);
 		});
 
-	cmd.pipe(res as any, { end: true });
+		cmd.pipe(res as any, { end: true });
+		resolve();
+	})
 });
 
 export default route;

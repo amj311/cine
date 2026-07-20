@@ -105,13 +105,11 @@ export class ThumbnailService {
 	 */
 	private static async getVideoFrame(filePath: ConfirmedPath, seek: number = 0) {
 		const probe = await ProbeService.getProbeData(filePath);
-
 		const maxSeek = Math.min(probe?.glossary.duration_s ? probe?.glossary.duration_s - 1 : Infinity, seek);
+		const chunks: Buffer[] = [];
 
-		return await useFfmpeg<Buffer>(filePath.absolutePath, (ffmpeg, resolve, reject) => {
-			const chunks: Buffer[] = [];
-
-			ffmpeg
+		await useFfmpeg<void>(async (ffmpeg, resolve, reject) => {
+			ffmpeg(filePath.absolutePath)
 				// Seek on the input rather than output, but for some reason this doesn't work for album covers
 				.inputOptions(maxSeek > 0 ? [`-ss ${maxSeek}`] : [])
 				.outputOptions([
@@ -130,13 +128,14 @@ export class ThumbnailService {
 					chunks.push(chunk);
 				})
 				.on('end', () => {
-					resolve(Buffer.concat(chunks));
+					resolve();
 				})
 				.on('error', (err: any) => {
 					console.error("Error while processing video:", err.message);
 					reject(err);
 				});
 		});
+		return Buffer.concat(chunks);
 	};
 
 	private static cacheThumbnail(relativePath: RelativePath, width: number, seek: number, buffer: Buffer) {

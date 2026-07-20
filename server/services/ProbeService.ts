@@ -2,6 +2,7 @@ import { AbsolutePath, ConfirmedPath, RelativePath } from './DirectoryService';
 import ffmpeg from 'fluent-ffmpeg';
 import { safeParseInt } from '../utils/miscUtils';
 import { execFile } from 'child_process';
+import { useFfmpeg } from '../utils/ffmpeg';
 
 const MAX_CACHE_SIZE = 100; // Maximum number of Probes to cache
 const probeCache = new Map<RelativePath, ProbeData>();
@@ -130,7 +131,7 @@ export class ProbeService {
 	private static async probeFile(filePath: AbsolutePath): Promise<ProbeData | null> {
 		let probeData: ProbeData | null = null;
 		try {
-			probeData = await new Promise((resolve, reject) => {
+			await useFfmpeg<void>(async (ffmpeg, resolve, reject) => {
 				ffmpeg.ffprobe(filePath, ['-show_chapters'], async (err: any, data) => {
 					if (err) {
 						console.error("Error while probing file:", err);
@@ -138,7 +139,7 @@ export class ProbeService {
 						return;
 					}
 
-					const probeData: ProbeData = {
+					probeData = {
 						glossary: {
 							subtitles: [],
 							audio: [],
@@ -192,7 +193,7 @@ export class ProbeService {
 							end_s: c.end_time,
 						}))
 					}
-					resolve(probeData);
+					resolve();
 				});
 			});
 			return probeData;
@@ -211,8 +212,8 @@ export class ProbeService {
 	 * Only looks for frames in the first few seconds to avoid long processing times on large files.
 	 * @param filePath 
 	 */
-	private static hasMultipleVideoFrames(filePath: AbsolutePath): Promise<boolean> {
-		return new Promise((resolve, reject) => {
+	private static async hasMultipleVideoFrames(filePath: AbsolutePath): Promise<boolean> {
+		return await useFfmpeg<boolean>((_ffmpeg, resolve, reject) => {
 			// use ffprobe to look for video frames in the first 2 seconds of the file
 			// select only video streams to avoid non-video frames
 			// use exec to call ffprobe directly so we can control the arguments
