@@ -283,35 +283,32 @@ type GalleryFileData = ContentFileBase & {
 	sortKey: string,
 }
 
-export const PhotoTypes = ['jpg', 'jpeg', 'png', 'gif'] as const;
-type PhotoType = typeof PhotoTypes[number];
+export const PhotoExtensions = ['jpg', 'jpeg', 'png', 'gif'];
 export type Photo = GalleryFileData & {
 	type: 'photo',
-	fileType: PhotoType,
+	fileType: 'photo',
 	takenAt?: string,
 }
 
-export const VideoTypes = ['mp4', '3gp', '3g2', 'mkv'] as const;
-type VideoType = typeof VideoTypes[number];
+export const VideoExtensions = ['mp4', '3gp', '3g2', 'mkv'];
 type Video = GalleryFileData & {
 	type: 'video',
-	fileType: VideoType,
+	fileType: 'video',
 	takenAt?: string,
 }
 
-export const AudioTypes = ['mp4', 'mp3', 'm4a', 'm4b', 'aac', 'flac'] as const;
-type AudioType = typeof AudioTypes[number];
+export const AudioExtensions = ['mp4', 'mp3', 'm4a', 'm4b', 'aac', 'flac'];
 type Audio = GalleryFileData & {
 	type: 'audio',
-	fileType: AudioType,
+	fileType: 'audio',
 	takenAt?: Date,
 }
 
 // Dictionary for faster fileType lookup
 const FileTypeDictionary = {
-	...Object.fromEntries(PhotoTypes.map((type) => [type, 'photo'])),
-	...Object.fromEntries(VideoTypes.map((type) => [type, 'video'])),
-	...Object.fromEntries(AudioTypes.map((type) => [type, 'audio'])),
+	...Object.fromEntries(PhotoExtensions.map((type) => [type, 'photo'])),
+	...Object.fromEntries(VideoExtensions.map((type) => [type, 'video'])),
+	...Object.fromEntries(AudioExtensions.map((type) => [type, 'audio'])),
 } as const;
 
 type GalleryFile = Photo | Video | Audio;
@@ -411,7 +408,7 @@ export class LibraryService {
 			// Identify movie when a child item has the same name and year
 			const movieFile = children.files.find((file) => {
 				const { name: mediaName, year: fileYear } = LibraryService.parseNamePieces(file.name);
-				return VideoTypes.includes(file.name.split('.').pop() as any) && mediaName === name && fileYear === year;
+				return VideoExtensions.includes(file.name.split('.').pop() as any) && mediaName === name && fileYear === year;
 			});
 			if (movieFile) {
 				const movieContent: MovieContent = this.createMovieContent(movieFile.confirmedPath)!;
@@ -467,8 +464,8 @@ export class LibraryService {
 		}
 
 		// Identify an album if all children are audio files
-		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioTypes.includes(file.name.split('.').pop() as AudioType));
-		if (allChildrenAreAudio) {
+		const allChildrenAreAudio = (await Promise.all(children.files.map(async file => LibraryService.determineFileType(file.confirmedPath)))).every(type => type === 'audio');
+		if (children.files.length > 0 && allChildrenAreAudio) {
 			const firstTrackProbe = await ProbeService.getTrackData(children.files[0].confirmedPath);
 			if (firstTrackProbe?.genre === 'Audiobook' || children.files[0].name.endsWith('.m4b')) {
 				const isMb4b = children.files[0].name.endsWith('.m4b');
@@ -733,7 +730,7 @@ export class LibraryService {
 				return extraFile;
 			}
 		}
-		const fileType = FileTypeDictionary[path.relativePath.split('.').pop() as keyof typeof FileTypeDictionary];
+		const fileType = await LibraryService.determineFileType(path);
 		if (!fileType) {
 			return null;
 		}
@@ -747,7 +744,22 @@ export class LibraryService {
 			takenAt,
 			sortKey: (takenAt?.toISOString() || '') + fileName,
 			listName: fileName,
+			libraryTier: 'content-file',
 		} as GalleryFile;
+	}
+
+	private static async determineFileType(path: ConfirmedPath): Promise<'photo' | 'video' | 'audio'> {
+		// many audio file extensions could also be. video.
+		// check for multiple video frames first.
+		if (AudioExtensions.includes(path.relativePath.split('.').pop() || '')) {
+			const probe = await ProbeService.getProbeData(path);
+			if (probe?.glossary?.hasMultipleVideoFrames) {
+				return 'video';
+			}
+		}
+
+		// otherwise rely on file extension
+		return FileTypeDictionary[path.relativePath.split('.').pop() || ''] as 'photo' | 'video' | 'audio';
 	}
 
 	public static async reloadLibraryItemData(path: ConfirmedPath) {
@@ -833,7 +845,7 @@ export class LibraryService {
 
 		await Promise.all(seasonFolders.map(async (folderPath) => {
 			const { files } = await DirectoryService.listDirectory(folderPath);
-			const videoFiles = files.filter((file) => VideoTypes.some(t => file.confirmedPath.relativePath.endsWith(t)));
+			const videoFiles = files.filter((file) => VideoExtensions.some(t => file.confirmedPath.relativePath.endsWith(t)));
 
 			const folderSeasonNumber = parseInt(folderPath.relativePath.split('/').pop()?.replace(/season /gi, '') || '');
 
@@ -970,7 +982,7 @@ export class LibraryService {
 	}
 
 	private static prepareExtras(filePaths: Array<ConfirmedPath>): Extra[] {
-		return filePaths.filter(p => VideoTypes.some(t => p.relativePath.endsWith(t))).map((filePath) => {
+		return filePaths.filter(p => VideoExtensions.some(t => p.relativePath.endsWith(t))).map((filePath) => {
 			const { name: extraName, type: extraType } = LibraryService.getExtraNameAndType(filePath.relativePath);
 			return {
 				libraryTier: 'content-file',
@@ -1149,7 +1161,7 @@ export class LibraryService {
 	}
 
 	private static async determineMediaTypeInLibrary(path: ConfirmedPath): Promise<Base<LibraryStrat>['libraryType'] | null> {
-		// recursivle search for first descendent that matches a media description
+		// recursive search for first descendent that matches a media description
 		async function findMediaWithin(path: ConfirmedPath): Promise<Base<LibraryStrat>['libraryType'] | null> {
 			const { folders, files } = await DirectoryService.listDirectory(path);
 			if (folders.length === 0 && files.length === 0) {
@@ -1157,10 +1169,10 @@ export class LibraryService {
 			}
 			for (const file of files) {
 				// Not currently saving any images in library other than photos, so we can rely on that here
-				if (PhotoTypes.some(a => file.name.endsWith(a))) {
+				if (PhotoExtensions.some(a => file.name.endsWith(a))) {
 					return 'photos';
 				}
-				if (AudioTypes.some(a => file.name.endsWith(a))) {
+				if (AudioExtensions.some(a => file.name.endsWith(a))) {
 					return 'audio';
 				}
 			}

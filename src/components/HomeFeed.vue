@@ -274,7 +274,7 @@ function formatRuntime(minutes: number) {
 		}
 	}
 
-	&.new-items .feed-row-card-wrapper {
+	&.items .feed-row-card-wrapper {
 		--baseWidth: min(8rem, 30vw);
 		--mult: 1;
 		width: calc(var(--baseWidth) * var(--mult));

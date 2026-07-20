@@ -39,6 +39,7 @@ function maxWidth(width: number) {
 	return Math.min(window.innerWidth * 4, width);
 }
 
+const isLoading = ref(true);
 const baseUrl = computed(() => useApiStore().apiUrl + '/thumb/' + props.file.relativePath);
 const lowResUrl = computed(() => {
 	return baseUrl.value + '?width=' + maxWidth(sizeWidths[props.loadSequence?.[0] || ''] || sizeWidth.value);
@@ -99,8 +100,12 @@ const ratio = ref(1);
 function checkForPanoramic(e) {
 	const image = e.target;
 	const naturalRatio = image.naturalWidth / image.naturalHeight;
-	const panoramicRatioLimit = 2.5;
-	isPanoramic.value = naturalRatio > panoramicRatioLimit || naturalRatio < 1 / panoramicRatioLimit;
+
+	// engage panoramic mode if the image exceeds the current screen aspect ratio
+	const panoramicRatioLimit = window.innerWidth / window.innerHeight;
+	const isWiderThanScreen = naturalRatio > 1 && naturalRatio > (panoramicRatioLimit * 1.25);
+	const isTallerThanScreen = naturalRatio < 1 && naturalRatio < (panoramicRatioLimit * 0.75);
+	isPanoramic.value = isWiderThanScreen || isTallerThanScreen;
 	ratio.value = naturalRatio;
 }
 
@@ -126,12 +131,12 @@ const loadError = ref<any>(null);
 			<img
 				v-if="file.fileType === 'photo' || showThumbnail"
 				:src="hiResReady ? hiResUrl : lowResUrl" 
-				:alt="file.fileName" 
+				:alt="isLoading ? '' : file.fileName" 
 				style="width: 100%; height: 100%;"
 				:style="{ objectFit }"
 				:class="{ 'blurred': !hiResReady && loadSequence?.includes('blur') }"
 				@error="(e) => loadError = e"
-				@load="(e) => { checkForPanoramic(e); loadError = false; }"
+				@load="(e) => { checkForPanoramic(e); loadError = false; isLoading = false; }"
 			/>
 			<VideoPlayer
 				v-else-if="file.fileType === 'video' || file.fileName.endsWith('.mp4')"
@@ -141,11 +146,15 @@ const loadError = ref<any>(null);
 				:autoplay="autoplay"
 				style="width: 100%; height: 100%;"
 				:style="{ objectFit, background: 'transparent' }"
-				@loadedData="loadError = false"
+				@loadedData="() => { loadError = false; isLoading = false; }"
 				@error="(e) => loadError = e"
 				:background="videoBackground"
 				:seekerEl="videoSeeker"
 			/>
+
+			<div v-if="isLoading" class="loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+				<i class="pi pi-spin pi-spinner text-5xl" />
+			</div>
 		</div>
 	</div>
 </template>

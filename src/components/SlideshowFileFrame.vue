@@ -58,7 +58,7 @@ const videoSeeker = ref<HTMLInputElement>();
 					<div v-if="file.takenAt"><i class="pi pi-calendar" /> {{ new Date(file.takenAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) }}</div>
 					<div v-if="fileFolders.length"><i class="pi pi-folder-open" /> {{ fileFolders.join(' / ') }}</div>
 				</div>
-				<div class="actions flex flex-column-center justify-content-end">
+				<div class="actions flex flex-col-center justify-content-end">
 					<slot name="actions" />
 				</div>
 			</div>

@@ -224,7 +224,7 @@ function togglePanoramic() {
 					<div class="active frame">
 						<SlideshowFileFrame :showArrows="!verticalMode" :onPrev="() => uiSwap(goToPrev)" :onNext="() => uiSwap(goToNext)" ref="activeSlideFrame" :onClose="close" :file="activeFile" active>
 							<template #actions>
-								<Button :variant="panTrigger?.show ? '' : 'text'" severity="contrast" v-if="activeFrame?.isPanoramic" @click="togglePanoramic"><i class="material-symbols-outlined">vrpano</i></Button>
+								<Button size="large" variant="text" severity="contrast" v-if="activeFrame?.isPanoramic" @click="togglePanoramic"><i class="material-symbols-outlined text-2xl">vrpano</i></Button>
 							</template>
 						</SlideshowFileFrame>
 					</div>

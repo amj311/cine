@@ -234,12 +234,12 @@ function normLabel(date) {
 					</template>
 
 					<template #row="{ data }">
-						<template :key="data.date" class="date-row" :data-track-anchor="data.date">
+						<div :key="data.date" class="date-row" :data-track-anchor="data.date">
 							<div class="pl-2 pb-2 pr-2 flex h-full">
 								<h2 v-if="data.isHeader" class="mt-7">{{ data.date }}</h2>
-								<div v-else class="photo-grid" :style="{ gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)` }">
+								<div v-else class="row-item-grid" :style="{ gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)` }">
 									<div
-										class="photo-cell lazy-load"
+										class="row-item-cell lazy-load"
 										tabindex="0"
 										v-for="file in data.items"
 										:key="file.relativePath"
@@ -247,14 +247,17 @@ function normLabel(date) {
 										@click="openSlideshow(file)"
 										data-tvNavJumpRow="photo_menu"
 									>
-										<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" />
-										<div class="overlay">
+										<GalleryFileCard :file="file" />
+										<!-- <div class="media-frame">
+											<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" />
+										</div> -->
+										<!-- <div class="overlay">
 											<i v-if="file.fileType === 'video'" class="play-icon pi pi-play" />
-										</div>
+										</div> -->
 									</div>
 								</div>
 							</div>
-						</template>
+						</div>
 					</template>
 
 					<template #after>
@@ -378,14 +381,17 @@ function normLabel(date) {
 	}
 }
 
+.date-row {
+	overflow: hidden;
+	height: 100%;
+}
 
-.photo-grid {
+.row-item-grid {
 	display: grid;
-	gap: 10px;
 	height: 100%;
 	width: 100%;
 
-	.photo-cell {
+	.row-item-cell {
 		position: relative;
 		width: 100%;
 		height: 100%;
@@ -393,25 +399,32 @@ function normLabel(date) {
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: var(--color-background-mute);
-		border-radius: 5px;
-		cursor: pointer;
+		padding: 3px;
 
-		&:hover, &[tv-focus] {
-			scale: 1.03;
-			outline: 1px solid var(--color-contrast);
-		}
+		// .media-frame {
+		// 	width: 100%;
+		// 	height: 100%;
+		// 	background-color: var(--color-background-mute);
+		// 	border-radius: 5px;
+		// 	overflow: hidden;
+		// 	cursor: pointer;
 
-		.overlay {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-		}
+		// 	&:hover, &[tv-focus] {
+		// 		scale: 1.03;
+		// 		outline: 1px solid var(--color-contrast);
+		// 	}
+
+		// 	.overlay {
+		// 		position: absolute;
+		// 		top: 0;
+		// 		left: 0;
+		// 		width: 100%;
+		// 		height: 100%;
+		// 		display: flex;
+		// 		justify-content: center;
+		// 		align-items: center;
+		// 	}
+		// }
 	}
 }
 

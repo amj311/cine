@@ -103,6 +103,7 @@ function computeRows<T>(type: string, allItems: Array<T>, height: number, itemsP
 		const items = allItems.slice(start, end);
 		
 		rows.push({
+			key: `${type}-${i}`,
 			height,
 			data: {
 				type,
@@ -164,7 +165,7 @@ function openSlideshow(file: GalleryFile) {
 							<!-- Extras and gallery items can overlap, so hide gallery if extras are in the libraryItem -->
 							<VirtualScroll v-if="directory.galleryFiles?.length && !libraryItem?.extras" :rows="galleryRows">
 								<template #row="{ data }">
-									<template :key="data.date" class="date-row" :data-track-anchor="data.date">
+									<div :key="data.date" class="date-row" :data-track-anchor="data.date">
 										<div v-if="data.type === 'gallery'" class="gallery-grid h-full" :style="{ gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)` }">
 											<div
 												class="gallery-cell"
@@ -176,7 +177,7 @@ function openSlideshow(file: GalleryFile) {
 												<GalleryFileCard :file="item" />
 											</div>
 										</div>
-									</template>
+									</div>
 								</template>
 							</VirtualScroll>
 
@@ -210,6 +211,10 @@ function openSlideshow(file: GalleryFile) {
 	width: 100%;
 }
 
+.date-row {
+	overflow: hidden;
+	height: 100%;
+}
 
 .gallery-grid {
 	display: grid;

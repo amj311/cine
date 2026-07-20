@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useApiStore } from '@/stores/api.store';
 import { type GalleryFile } from '@/components/GalleryFileFrame.vue';
-import Slideshow from '@/components/Slideshow.vue';
-import VirtualScroll, { type VirtualScrollRow, type VirtualScrollRowWithPosition } from '@/components/VirtualScroll.vue';
-import Scroll from '@/components/Scroll.vue';
 import PhotoTimelineGallery from './PhotoTimelineGallery.vue';
 import { encodeMediaPath } from '@/utils/miscUtils';
 

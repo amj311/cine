@@ -1,9 +1,7 @@
-import { readdir, readFile } from 'fs/promises';
-import path from 'path';
-import { AbsolutePath, ConfirmedPath, DirectoryService, RelativePath } from './DirectoryService';
-import sharp from 'sharp';
+import { AbsolutePath, ConfirmedPath, RelativePath } from './DirectoryService';
 import ffmpeg from 'fluent-ffmpeg';
 import { safeParseInt } from '../utils/miscUtils';
+import { execFile } from 'child_process';
 
 const MAX_CACHE_SIZE = 100; // Maximum number of Probes to cache
 const probeCache = new Map<RelativePath, ProbeData>();
@@ -31,6 +29,7 @@ type ProbeData = {
 			start_s: number,
 			end_s: number,
 		}>,
+		hasMultipleVideoFrames: boolean,
 	},
 	full: ffmpeg.FfprobeData;
 }
@@ -132,7 +131,7 @@ export class ProbeService {
 		let probeData: ProbeData | null = null;
 		try {
 			probeData = await new Promise((resolve, reject) => {
-				ffmpeg.ffprobe(filePath, ['-show_chapters'], (err: any, data) => {
+				ffmpeg.ffprobe(filePath, ['-show_chapters'], async (err: any, data) => {
 					if (err) {
 						console.error("Error while probing file:", err);
 						reject(err);
@@ -144,6 +143,7 @@ export class ProbeService {
 							subtitles: [],
 							audio: [],
 							chapters: [],
+							hasMultipleVideoFrames: false,
 						},
 						full: data,
 					};
@@ -177,6 +177,11 @@ export class ProbeService {
 								});
 							}
 						}
+
+						// if there are video streams, check if any have multiple frames
+						if (data.streams.some(stream => stream.codec_type === 'video')) {
+							probeData.glossary.hasMultipleVideoFrames = await ProbeService.hasMultipleVideoFrames(filePath);
+						}
 					}
 
 					// format chapters
@@ -196,6 +201,42 @@ export class ProbeService {
 			console.error("Error while probing file:", err);
 			return null;
 		}
+	}
+
+
+	/**
+	 * Checks the number of video frames in a file.
+	 * Useful for making sure it's not just audio.
+	 * Audio files can have a video stream, but it will only have 1 frame.
+	 * Only looks for frames in the first few seconds to avoid long processing times on large files.
+	 * @param filePath 
+	 */
+	private static hasMultipleVideoFrames(filePath: AbsolutePath): Promise<boolean> {
+		return new Promise((resolve, reject) => {
+			// use ffprobe to look for video frames in the first 2 seconds of the file
+			// select only video streams to avoid non-video frames
+			// use exec to call ffprobe directly so we can control the arguments
+			const ffprobeBin = process.env.FFPROBE_PATH ?? 'ffprobe';
+			const args = [
+				'-v', 'error',
+				'-select_streams', 'v', // only select video streams
+				'-read_intervals', '%+#5', // read the first 5 seconds of the file
+				'-show_entries', 'frame=pkt_pts_time,pict_type',
+				'-of', 'json',
+				filePath,
+			];
+			execFile(ffprobeBin, args, (error, stdout, stderr) => {
+				if (error) {
+					console.error("Error while probing file for video frames:", error);
+					reject(error);
+					return;
+				}
+
+				const data = JSON.parse(stdout);
+				const videoFrames = data.frames || [];
+				resolve(videoFrames.length > 1);
+			});
+		});
 	}
 
 	private static cacheProbe(path: RelativePath, probe: ProbeData) {

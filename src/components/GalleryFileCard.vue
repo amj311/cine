@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import GalleryFileFrame, { type GalleryFile } from '@/components/GalleryFileFrame.vue';
-import Slideshow from '@/components/Slideshow.vue';
-import VirtualScroll, { type VirtualScrollRow, type VirtualScrollRowWithPosition } from '@/components/VirtualScroll.vue';
-import Scroll from '@/components/Scroll.vue';
-import { useScreenStore } from '@/stores/screen.store';
 
 const { file } = defineProps<{
 	file: GalleryFile,
@@ -55,6 +50,18 @@ const { file } = defineProps<{
 		justify-content: center;
 		align-items: center;
 	}
+}
+
+
+.play-icon {
+	font-size: 1.5rem;
+	color: var(--color-text);
+	background-color: rgba(0, 0, 0, 0.5);
+	width: 2.2em;
+	line-height: 2.2em;
+	text-align: center;
+	aspect-ratio: 1;
+	border-radius: 50%;
 }
 
 </style>

@@ -334,6 +334,7 @@ defineExpose({
 	.row-wrapper {
 		position: absolute;
 		width: 100%;
+		overflow: hidden;
 	}
 }
 </style>
