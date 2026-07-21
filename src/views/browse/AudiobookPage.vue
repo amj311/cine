@@ -237,7 +237,7 @@ function findChapterIndexAtTime(relativePath, trackTime) {
 		if (!props.libraryItem.chapters[i + 1]) {
 			return true;
 		}
-		return trackTime >= chapter.titleStartOffset && trackTime < props.libraryItem.chapters[i + 1].titleStartOffset;
+		return trackTime >= chapter.start_s && trackTime < chapter.end_s;
 	})
 }
 
@@ -351,10 +351,12 @@ function playAtBookmark(bookmarkName: string) {
 }
 
 function playTrackAtTime(relativePath: string, time: number) {
+	console.log("play track at time", relativePath, time, audioRef.value)
 	if (!audioRef.value) {
 		return;
 	}
 	const chapter = props.libraryItem.chapters[findChapterIndexAtTime(relativePath, time)];
+	console.log(chapter)
 	if (!chapter) {
 		return;
 	}
