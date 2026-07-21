@@ -15,6 +15,7 @@ const { chapters, ...props } = defineProps<{
 		start_s: number,
 		end_s: number,
 	}>;
+	showThumbs?: boolean,
 }>();
 
 const playingState = ref({
@@ -180,7 +181,7 @@ function handleDragEnd() {
 		<!-- Thumb and Seek spots -->
 		<div v-if="!useScreenStore().isSkinnyScreen" class="seek-spot absolute h-full top-0 w-full" v-for="spot of seekSpots">
 			<div class="seek-spot-target" tabindex="0" :style="{ left: `${spot.percent * 100}%` }" @click.stop="doSeek(spot.start_s)" />
-			<div class="thumb-wrapper" :class="{ 'active': activeThumb?.start_s === spot.start_s }" :style="{ left: `min(max(calc(var(--thumb-width) / 2), ${spot.percent * 100}%), calc(100% - (var(--thumb-width) / 2)))` }">
+			<div v-if="showThumbs"  class="thumb-wrapper" :class="{ 'active': activeThumb?.start_s === spot.start_s }" :style="{ left: `min(max(calc(var(--thumb-width) / 2), ${spot.percent * 100}%), calc(100% - (var(--thumb-width) / 2)))` }">
 				<img :src="useApiStore().apiUrl + '/thumb/' + encodeMediaPath(mediaRelativePath) + '?width=200&seek=' + spot.start_s + 2" />
 			</div>
 		</div>

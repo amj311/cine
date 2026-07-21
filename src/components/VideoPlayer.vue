@@ -718,7 +718,7 @@ defineExpose({
 					</Button>
 				</div>
 				<div v-if="!seekerEl" class="seeker-wrapper relative">
-					<VideoProgressBar :mediaRelativePath="relativePath || ''" v-if="videoRef" :videoRef="videoRef" :chapters="chapters" />
+					<VideoProgressBar :showThumbs="true" :mediaRelativePath="relativePath || ''" v-if="videoRef" :videoRef="videoRef" :chapters="chapters" />
 				</div>
 			</div>
 		</template>
