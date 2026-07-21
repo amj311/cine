@@ -63,7 +63,7 @@ const videoSeeker = ref<HTMLInputElement>();
 				</div>
 			</div>
 			<!-- <input v-if="file.fileType === 'video'" ref="videoSeeker" type="range" @touchmove.stop @touchend.stop /> -->
-			<VideoProgressBar  v-if="file.fileType === 'video' && galleryFrame?.videoPlayer?.videoRef" :mediaRelativePath="file.relativePath" :videoRef="galleryFrame?.videoPlayer?.videoRef" ref="videoSeeker" type="range" @touchmove.stop @touchend.stop />
+			<VideoProgressBar  v-if="file.relativePath.endsWith('mp4') && galleryFrame?.videoPlayer?.videoRef" :mediaRelativePath="file.relativePath" :videoRef="galleryFrame?.videoPlayer?.videoRef" ref="videoSeeker" type="range" @touchmove.stop @touchend.stop />
 		</div>
 	</div>
 </template>

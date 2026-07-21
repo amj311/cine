@@ -466,7 +466,8 @@ export class LibraryService {
 
 		// Identify an album if all children are audio files
 		// Use computed content files because they are cached for each path
-		const allChildrenAreAudio = (await Promise.all(children.files.map(async file => await LibraryService.parseFileToContentItem(file.confirmedPath)))).every(item => item?.type === 'audio');
+		// const allChildrenAreAudio = (await Promise.all(children.files.map(async file => await LibraryService.parseFileToContentItem(file.confirmedPath)))).every(item => item?.type === 'audio');
+		const allChildrenAreAudio = children.files.length > 0 && children.files.every((file) => AudioExtensions.includes(file.name.split('.').pop() || ''));
 		if (children.files.length > 0 && allChildrenAreAudio) {
 			const firstTrackProbe = await ProbeService.getTrackData(children.files[0].confirmedPath);
 			if (firstTrackProbe?.genre === 'Audiobook' || children.files[0].name.endsWith('.m4b')) {
@@ -753,12 +754,12 @@ export class LibraryService {
 	private static async determineFileType(path: ConfirmedPath): Promise<'photo' | 'video' | 'audio'> {
 		// many audio file extensions could also be. video.
 		// check for multiple video frames first.
-		if (AudioExtensions.includes(path.relativePath.split('.').pop() || '')) {
-			const probe = await ProbeService.getProbeData(path);
-			if (probe?.glossary?.hasMultipleVideoFrames) {
-				return 'video';
-			}
-		}
+		// if (AudioExtensions.includes(path.relativePath.split('.').pop() || '')) {
+		// 	const probe = await ProbeService.getProbeData(path);
+		// 	if (probe?.glossary?.hasMultipleVideoFrames) {
+		// 		return 'video';
+		// 	}
+		// }
 
 		// otherwise rely on file extension
 		return FileTypeDictionary[path.relativePath.split('.').pop() || ''] as 'photo' | 'video' | 'audio';

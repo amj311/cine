@@ -4,7 +4,6 @@ import GalleryFileFrame, { type GalleryFile } from '@/components/GalleryFileFram
 const { file } = defineProps<{
 	file: GalleryFile,
 }>();
-
 </script>
 
 <template>
@@ -17,7 +16,7 @@ const { file } = defineProps<{
 	>
 		<GalleryFileFrame :file="file" :objectFit="'cover'" :hide-controls="true" :size="'small'" :thumbnail="true" />
 		<div class="overlay">
-			<i v-if="file.fileType === 'video'" class="play-icon pi pi-play" />
+			<i v-if="file.relativePath.endsWith('mp4')" class="play-icon pi pi-play" />
 		</div>
 	</div>
 </template>

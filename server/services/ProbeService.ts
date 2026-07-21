@@ -181,7 +181,7 @@ export class ProbeService {
 
 						// if there are video streams, check if any have multiple frames
 						if (data.streams.some(stream => stream.codec_type === 'video')) {
-							probeData.glossary.hasMultipleVideoFrames = await ProbeService.hasMultipleVideoFrames(filePath);
+							// probeData.glossary.hasMultipleVideoFrames = await ProbeService.hasMultipleVideoFrames(filePath);
 						}
 					}
 
