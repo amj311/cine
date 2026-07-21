@@ -42,12 +42,12 @@ async function loginToDemo() {
   <div class="demo-page">
     
 	<div class="hero">
-		<h1 class="flex-row-center justify-content-start gap-3">Welcome to <Logo /></h1>
+		<h1 class="flex-row-center justify-content-start gap-3 mb-3">Welcome to <Logo /></h1>
 		<h3>A feature-rich private home media server</h3>
 	</div>
 	
 
-	<div class="mt-4">
+	<div class="mt-6">
 		<p>A demo account has been created with a subset of my library available to explore.</p>
 		<p>Only the movies under the "Blender Open Movies" folder are streamable, so some playback features will be unavailable.</p>
 		<p>Happy streaming!</p>
@@ -63,12 +63,7 @@ async function loginToDemo() {
 
 <style scoped>
 .demo-page {
-  padding: 2rem;
-}
-
-.demo-page h1 {
-  font-size: 2rem;
-  margin-bottom: 1rem;
+	padding: 2rem;
 }
 
 .hero {
@@ -76,6 +71,6 @@ async function loginToDemo() {
 
 	display: flex;
 	flex-direction: column;
-	justify-content: center;
+	justify-content: end;
 }
 </style>
