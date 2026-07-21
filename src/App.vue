@@ -19,6 +19,7 @@ import ProgressBar from 'primevue/progressbar';
 import { AuthService } from './services/AuthService';
 import Logo from './components/Logo.vue';
 import { useProfileStore } from './stores/profile.store';
+import DemoView from './views/DemoView.vue';
 
 const apiStore = useApiStore();
 
@@ -109,6 +110,10 @@ const showNavbar = computed(() => {
 
 		<template v-else-if="!apiStore.selectedHost">
 			<OfflinePage />
+		</template>
+
+		<template v-else-if="route.name === 'demo'">
+			<DemoView />
 		</template>
 
 		<template v-else-if="!useUserStore().isLoggedIn">

@@ -34,6 +34,11 @@ const router = createRouter({
 			name: 'ProtocolHandler',
 			component: () => import('@/views/ProtocolHandler.vue'),
 		},
+		{
+			path: '/demo',
+			name: 'demo',
+			component: () => import('@/views/DemoView.vue'),
+		},
 	],
 	scrollBehavior: (to, from) => {
 		if (to.path === from.path) {

@@ -64,7 +64,7 @@ async function drawPoster(url) {
 
 	canvasRef.value.width = width;
 	canvasRef.value.height = height;
-	
+
 	ctx.drawImage(gradImg, 0, 0, width, height);
 
 	const shapeCoefficient = backgroundStore.posterShape === 'square' ? 0.5 : 0.8;
@@ -96,7 +96,7 @@ async function drawPoster(url) {
 
 const route = useRoute();
 const showCustomBackgrounds = computed(() => {
-	return route?.name === 'browse';
+	return route?.name === 'browse' || route?.name === 'demo';
 });
 
 </script>

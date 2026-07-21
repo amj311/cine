@@ -161,6 +161,9 @@ export const useApiStore = defineStore('Api', () => {
 			if (path.startsWith('http')) {
 				resolvedPath = path.replace(/\/api\//, '/');
 			}
+			else if (path.startsWith('/public')) {
+				resolvedPath = path;
+			}
 			else if (path.startsWith('/')) {
 				resolvedPath = apiUrl.value + path;
 			}
