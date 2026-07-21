@@ -36,7 +36,7 @@ type LibraryItemStratBase = Stratified<
 		sortKey: string,
 		imdbId?: string,
 		poster?: string,
-		public?: boolean,
+		isPublic?: boolean,
 	},
 	{},
 	{
@@ -489,6 +489,7 @@ export class LibraryService {
 					listName: firstTrackProbe?.album || name,
 					// fileName: path.absolutePath,
 					poster: posterPath,
+					isPublic,
 				}
 			}
 			else return {
@@ -508,6 +509,7 @@ export class LibraryService {
 				listName: firstTrackProbe?.album || name,
 				// fileName: path.absolutePath,
 				poster: posterPath,
+				isPublic,
 			};
 		}
 
