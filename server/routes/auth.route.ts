@@ -1,14 +1,14 @@
 import express, { Response } from 'express';
-import { LibraryService } from '../services/LibraryService';
-import { DirectoryService } from '../services/DirectoryService';
-import { SurpriseService } from '../services/SurpriseService';
-import { SharingService } from '../services/SharingService';
-import { getSession, SessionService } from '../services/SessionService';
-import { safeParseInt } from '../utils/miscUtils';
+import { AUTH_TTL, SessionService } from '../services/SessionService';
 const route = express.Router({ mergeParams: true });
 
 function setTokenCookie(res: Response, token: string) {
-	res.cookie('stofbt', token, { signed: true });
+	res.cookie('stofbt', token, {
+		signed: true,
+		maxAge: AUTH_TTL,
+		httpOnly: true, // Highly recommended for security
+		secure: process.env.ENV === 'production' // Ensures it's only sent over HTTPS
+	});
 }
 
 route.post('', async (req, res) => {

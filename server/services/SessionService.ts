@@ -9,7 +9,7 @@ import { Store } from "./DataService";
 
 export const sessionStore = new AsyncLocalStorage<{ isOwner: boolean, email: string }>();
 
-const AUTH_TTL = 1000 * 60 * 60 * 24 * 30;
+export const AUTH_TTL = 1000 * 60 * 60 * 24 * 30;
 const CODE_TTL = 1000 * 60 * 5;
 const ownerEmail = process.env.VITE_OWNER_EMAIL!;
 if (!ownerEmail) {
